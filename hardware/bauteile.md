@@ -58,11 +58,13 @@ PA11/PA12 also die Standardbelegung.
 Aktiviert wird der Bootlader über **Pattern 11** (Tabelle 2, AN2606
 Abschnitt 4.1): über den BOOT0-Pin oder wahlweise über die Optionsbytes
 `nBOOT0` zusammen mit `nBOOT0_SEL`/`BOOT_LOCK` (Boot0-Signalquelle
-umschaltbar, RM0490 Abschnitt 2.5 „Boot configuration", Tabelle 4; die
-Bit-Definition von `nBOOT_SEL`/`nBOOT0`/`nBOOT1`/`BOOT_LOCK` selbst steht
-im Optionsbyte-Register, RM0490 Abschnitt 3.7.6 „FLASH option register
-(FLASH_OPTR)"). Für den Stapel
-relevant: **BOOT0 ist physisch PA14** (Datenblatt DS13866, Pinout: Pin
+umschaltbar, RM0490 Abschnitt 2.5 „Boot configuration", Tabelle 4). Die
+Bit-Definitionen selbst liegen in zwei verschiedenen Registern, einzeln
+geprüft: `nBOOT_SEL` (Bit 24), `nBOOT0` (Bit 26) und `nBOOT1` (Bit 25)
+stehen im RM0490 Abschnitt 3.7.6 „FLASH option register (FLASH_OPTR)";
+`BOOT_LOCK` (Bit 16) dagegen in einem anderen Register, RM0490 Abschnitt
+3.7.13 „FLASH security register (FLASH_SECR)". Für den Stapel relevant:
+**BOOT0 ist physisch PA14** (Datenblatt DS13866, Pinout: Pin
 „PA14-BOOT0"). PA14 ist zugleich SWCLK — dazu mehr in Beleg 2.
 
 Zum in der Aufgabe genannten ST-Community-Hinweis „USART2 liegt auf
