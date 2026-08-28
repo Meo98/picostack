@@ -19,6 +19,16 @@ check("vier M3", len(S.M3_HOLES), 4)
 check("Lochbild 56 mm", S.M3_HOLES[2][0] - S.M3_HOLES[0][0], 56.0)
 check("Lochbild 52 mm", S.M3_HOLES[1][1] - S.M3_HOLES[0][1], 52.0)
 
+# Alle vier Ecken einzeln, nicht nur zwei Differenzen: sonst darf die
+# vierte Bohrung irgendwo liegen und der Test merkt es nicht.
+check("Lochbild vollstaendig", sorted(S.M3_HOLES),
+      [(4.0, 4.0), (4.0, 56.0), (60.0, 4.0), (60.0, 56.0)])
+
+# Masse, die die Spezifikation zusichert und die bisher niemand prueft.
+check("Eckenradius", S.CORNER_R, 3.0)
+check("M3-Bohrdurchmesser", S.M3_DRILL, 3.2)
+check("Stapelabstand", S.STAPEL_ABSTAND, 15.0)
+
 # --- Steckerbelegung ---
 check("40 Pins beschrieben", len(S.PIN_ROLLE), 40)
 
