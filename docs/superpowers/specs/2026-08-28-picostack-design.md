@@ -197,9 +197,27 @@ Franken** (MCU, zwei Steckerteile, Leistungsstecker, zwei
 Kennwiderstände, Gatter). Heute trägt stattdessen jede Funktionsplatine
 einen eigenen Pico für rund 5 Franken.
 
-**Stapelbarkeit macht ein Modul also etwa 3,50 Franken billiger, nicht
+**Stapelbarkeit macht ein Modul also rund 3,60 Franken billiger, nicht
 teurer.** Der Sockel bleibt einmalig teurer — aber einmal pro Stapel
 statt einmal pro Funktion.
+
+## Umsetzung in Etappen
+
+Dieser Entwurf beschreibt mehr, als ein einzelner Umsetzungsplan tragen
+kann. Er zerfällt in drei Etappen, jede mit eigenem Plan:
+
+1. **Der Vertrag und der erste Stapel.** Modulsockel, Sockelplatine,
+   ein Motormodul. Damit steht alles Grundsätzliche auf dem Tisch und
+   ist am Exponat prüfbar: Stecker, Bus, Kette, Flashen, sicherer
+   Zustand.
+2. **Die Dimmer-Familie.** 1, 3 und 4 Kanäle auf demselben
+   Modulsockel — vor allem eine Übung darin, ob der Sockel wirklich
+   wiederverwendbar ist.
+3. **Veröffentlichung.** Vertrag dokumentieren, KiCad-Vorlage für den
+   Modulsockel, Beispielmodul, Lizenz.
+
+Nur Etappe 1 ist mit diesem Entwurf abgedeckt. Etappe 2 und 3 brauchen
+je eine eigene Runde, sobald Etappe 1 am Exponat gelaufen ist.
 
 ## Prüfung
 
