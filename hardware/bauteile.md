@@ -32,13 +32,17 @@ mit 14 Stück praktisch nicht verfügbar.
 **Quelle:** AN2606 „STM32 microcontroller system memory boot mode",
 Rev 61 (Januar 2024), Abschnitt 5 „STM32C011xx devices bootloader",
 Tabelle 9 und die zugehörige Fussnote. Bezogen über einen Volltext-Mirror
-(`kolegite.com`), weil `st.com` den direkten PDF-Download der aktuellen
-Revision (Rev 70, Februar 2026) programmatisch blockiert (HTTP/2
-`INTERNAL_ERROR` auf jeden Downloadversuch). Der Abschnitt zum STM32C0
-wurde laut Änderungshistorie in Rev 52 (01-Mar-2022) eingeführt und seither
-inhaltlich nicht mehr angefasst — die verwendete Rev 61 sollte deshalb mit
-Rev 70 inhaltlich übereinstimmen, das ist aber **nicht** gegen die
-Originalrevision gegengeprüft.
+(`kolegite.com`), weil der direkte Download von der offiziellen
+`st.com`-Ressourcen-URL blockiert war (HTTP/2 `INTERNAL_ERROR` auf jeden
+Versuch) — ich habe die dortige Revision deshalb **nicht selbst
+gesehen**. Ein WebSearch-Treffer zeigte für dieselbe URL den Titel
+„February 2026 AN2606 Rev 70"; das war nur ein Suchergebnis-Schnipsel,
+keine geprüfte Sichtung, und laut Prüfung durch den Auftraggeber liefert
+die offizielle URL inhaltlich tatsächlich Rev 61. Diese Aussage stützt
+sich deshalb ausschliesslich auf die tatsächlich gelesene **Rev 61**
+(Mirror). Der Abschnitt zum STM32C0 wurde laut Änderungshistorie in
+Rev 52 (01-Mar-2022) eingeführt und ist seither laut derselben
+Änderungshistorie inhaltlich nicht mehr angefasst worden.
 
 Der USART-Bootlader des STM32C011xx läuft auf **USART1**, nicht USART2.
 Laut Tabelle 9: „PA10 pin: USART1 in reception mode... PA9 pin: USART1 in
@@ -54,14 +58,18 @@ PA11/PA12 also die Standardbelegung.
 Aktiviert wird der Bootlader über **Pattern 11** (Tabelle 2, AN2606
 Abschnitt 4.1): über den BOOT0-Pin oder wahlweise über die Optionsbytes
 `nBOOT0` zusammen mit `nBOOT0_SEL`/`BOOT_LOCK` (Boot0-Signalquelle
-umschaltbar, RM0490 Abschnitt 3.5, Bit `nBOOT_SEL`). Für den Stapel
+umschaltbar, RM0490 Abschnitt 2.5 „Boot configuration", Tabelle 4; die
+Bit-Definition von `nBOOT_SEL`/`nBOOT0`/`nBOOT1`/`BOOT_LOCK` selbst steht
+im Optionsbyte-Register, RM0490 Abschnitt 3.7.6 „FLASH option register
+(FLASH_OPTR)"). Für den Stapel
 relevant: **BOOT0 ist physisch PA14** (Datenblatt DS13866, Pinout: Pin
 „PA14-BOOT0"). PA14 ist zugleich SWCLK — dazu mehr in Beleg 2.
 
 Zum in der Aufgabe genannten ST-Community-Hinweis „USART2 liegt auf
 SWDIO/SWCLK": das stimmt, ist für unseren Bootlader aber **nicht**
 relevant, weil dieser USART1 nutzt, nicht USART2. Bestätigt aus dem
-Datenblatt (DS13866 Rev 3, alternate-function-Tabelle): PA13 trägt
+Datenblatt (DS13866 Rev 3, Tabelle 13 „Port A alternate function
+mapping (AF0 to AF7)"): PA13 trägt
 `USART2_RX`, PA14 trägt `USART2_TX` als Alternate Function — der Hinweis
 bezog sich also korrekt auf USART2, nicht auf den ROM-Bootlader. Folgerung
 für den Entwurf: **USART2 darf auf keinem Modul für andere Zwecke
@@ -72,10 +80,10 @@ ein Firmware-Hinweis, keine Bootlader-Einschränkung.
 
 **Quelle:** RM0490 „STM32C0 Series advanced Arm-based 32-bit MCUs
 reference manual", Rev 3 (Dezember 2022), Abschnitt 6.3.1
-„General-purpose I/O (GPIO)" und Abschnitt 26.3.3 „Internal pull-up &
-pull-down on SWD pins". Bezogen über Mirror `state-machine.com`, weil auch
-hier der direkte `st.com`-Download blockiert war. Ergänzend: Datenblatt
-DS13866 Rev 3, Abschnitt 6.3.16 „Boot0 pin (PA14) in GPIO mode".
+„General-purpose I/O (GPIO)", Abschnitt 6.3.16 „Boot0 pin (PA14) in GPIO
+mode" und Abschnitt 26.3.3 „Internal pull-up & pull-down on SWD pins".
+Bezogen über Mirror `state-machine.com`, weil auch hier der direkte
+`st.com`-Download blockiert war.
 
 Wörtlich, RM0490 §6.3.1: „During and just after reset, the alternate
 functions are not active and most of the I/O ports are configured in
@@ -86,16 +94,17 @@ BOOT0 functionality."
 Das bestätigt die Entwurfsannahme **grösstenteils**: alle GPIO, die nicht
 Debug-Pins sind, stehen nach Reset auf **Analog** (hochohmig, kein
 Pull) — das schliesst die Bootlader-UART-Pins PA11/PA12 ein (Register
-`GPIOA_MODER`, Reset-Wert `0xEBFF FFFF`; die betroffenen Bits für
+`GPIOA_MODER` (RM0490 §6.4.1), Reset-Wert `0xEBFF FFFF`; die betroffenen Bits für
 MODE13/MODE14 = `10` (AF) sind nur PA13/PA14, alle anderen Bits bleiben
 `11` = Analog). Die **gemeinsame Sendeleitung des Bootlader-UART ist damit
 im Reset tatsächlich hochohmig**, wie der Entwurf voraussetzt.
 
 **Einschränkung, die dokumentiert gehört:** PA14 — physisch BOOT0 — ist
 zugleich SWCLK und liegt nach Reset **nicht** auf Analog, sondern in
-Alternate-Function-Modus mit aktivem internem Pull-down (RM0490 §6.4.1,
-Register `GPIOx_PUPDR`; Widerstandswert laut Datenblatt DS13866 Tabelle
-„I/O static characteristics": `RPD` typ. 40 kΩ, min. 25 kΩ, max. 55 kΩ).
+Alternate-Function-Modus mit aktivem internem Pull-down (RM0490 §6.4.4
+„GPIO port pull-up/pull-down register (GPIOx_PUPDR)"; Widerstandswert
+laut Datenblatt DS13866, Tabelle 49 „I/O static characteristics": `RPD`
+typ. 40 kΩ, min. 25 kΩ, max. 55 kΩ).
 PA13 (SWDIO) liegt analog mit Pull-up. Wenn die geplante globale
 „Flash-Modus"-Leitung der Spec auf PA14/BOOT0 gelegt wird, trägt jedes
 unbeteiligte Modul dort einen schwachen Pull-down (~40 kΩ) statt reiner
