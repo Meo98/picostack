@@ -268,18 +268,21 @@ MODULTYPEN = {
 # E24-Reihe. Die Stufen sind so gewaehlt, dass sich benachbarte
 # Spannungsteiler um mehr als 3 % unterscheiden -- weit mehr als die
 # Streuung von 1-%-Widerstaenden und die Aufloesung des ADC.
+# Die Werte sind nicht die E24-Reihe der Reihe nach, sondern so
+# gewaehlt, dass die SPANNUNGSTEILER gleichmaessig liegen. Nimmt man
+# stumpf E24, draengen sich die oberen Stufen: zwischen 150 k und 220 k
+# liegen nur 1,9 % Spannungsunterschied, weniger als die Streuung von
+# 1-%-Widerstaenden zusammen mit dem ADC-Fehler.
 ID_OBEN = 10000.0
 ID_WIDERSTAENDE = (
-    0.0, 1000.0, 2200.0, 3300.0, 4700.0, 6800.0, 10000.0, 15000.0,
-    22000.0, 33000.0, 47000.0, 68000.0, 100000.0, 150000.0, 220000.0,
-    None,                      # None = unbestueckt, liest Vollausschlag
+    0.0, 680.0, 1500.0, 2200.0, 3300.0, 4700.0, 6200.0, 7500.0,
+    10000.0, 13000.0, 16000.0, 22000.0, 30000.0, 43000.0, 68000.0,
+    150000.0,
 )
 
 
 def ID_ANTEIL(r):
     """Spannungsanteil am ADC fuer einen Kennwiderstand."""
-    if r is None:
-        return 1.0
     return r / (r + ID_OBEN)
 ```
 
@@ -643,8 +646,18 @@ auf einem Adapterplättchen, ein Pico, vier Drähte.
 - [ ] **Schritt 1: Testprogramm für das Modul bauen**
 
 Das kleinstmögliche Programm, dessen Wirkung man von aussen sieht: ein
-Pin im Sekundentakt umschalten. Als `.bin` übersetzen — der Bootlader
-kennt keine ELF-Dateien.
+Pin im Sekundentakt umschalten. Welcher Pin und welche Kopfdateien,
+haengt am Typ aus Aufgabe 1 — deshalb steht der Quelltext hier nicht,
+sondern entsteht aus dem Beispielprojekt des Herstellers.
+
+Entscheidend ist nur das Ausgabeformat: der Bootlader kennt keine
+ELF-Dateien, er nimmt rohe Bytes ab `0x08000000`.
+
+```bash
+# aus dem uebersetzten ELF ein rohes Abbild machen
+arm-none-eabi-objcopy -O binary blink.elf blink.bin
+ls -l blink.bin      # erwartet: wenige hundert Byte
+```
 
 - [ ] **Schritt 2: Verdrahtung aufbauen**
 
@@ -736,13 +749,84 @@ git commit -m "Nachweis: der Pico beschreibt einen Modul-MCU ueber den ROM-Bootl
 - Anlegen: `docs/vertrag.md`
 - Ändern: `README.md`
 
-- [ ] **Schritt 1: `docs/vertrag.md` aus dem Datenmodul erzeugen**
+- [ ] **Schritt 1: `tools/vertrag_doku.py` schreiben**
 
-Ein kleines Skript liest `stack_spec.py` und schreibt daraus die
-Tabellen: Steckerbelegung, Umriss, Modultyp-Nummern,
-Kennwiderstandsstufen. Erzeugt statt getippt, damit Dokument und Modul
-nicht auseinanderlaufen — die haeufigste Ursache dafuer, dass ein
-fremdes Modul nicht passt.
+Erzeugt statt getippt, damit Dokument und Datenmodul nicht
+auseinanderlaufen — das ist die haeufigste Ursache dafuer, dass ein
+fremdes Modul am Ende nicht passt.
+
+```python
+"""Erzeugt docs/vertrag.md aus tools/stack_spec.py.
+
+Von Hand gepflegte Doppelungen laufen auseinander. Wer die
+Steckerbelegung aendert, aendert stack_spec.py und laesst dieses
+Skript laufen -- das Dokument hat keine eigene Wahrheit.
+"""
+import os, sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import stack_spec as S
+
+ZIEL = os.path.join(HERE, "..", "docs", "vertrag.md")
+
+
+def tabelle(kopf, zeilen):
+    aus = ["| " + " | ".join(kopf) + " |",
+           "|" + "|".join(["---"] * len(kopf)) + "|"]
+    aus += ["| " + " | ".join(str(z) for z in zeile) + " |"
+            for zeile in zeilen]
+    return "\n".join(aus)
+
+
+def main():
+    teile = ["# PicoStack — der Vertrag",
+             "",
+             "Erzeugt aus `tools/stack_spec.py`. Nicht von Hand aendern.",
+             "",
+             "## Umriss",
+             "",
+             "%.1f x %.1f mm, Ecken %.1f mm gerundet, %.1f mm zwischen "
+             "den Platinen." % (S.BOARD_W, S.BOARD_H, S.CORNER_R,
+                                S.STAPEL_ABSTAND),
+             "",
+             tabelle(["M3-Bohrung", "x", "y"],
+                     [(i + 1, x, y) for i, (x, y) in
+                      enumerate(S.M3_HOLES)]),
+             "",
+             "## Steckerbelegung",
+             "",
+             tabelle(["Pin", "Rolle"],
+                     [(p, S.PIN_ROLLE[p]) for p in sorted(S.PIN_ROLLE)
+                      if S.PIN_ROLLE[p] != "frei"]),
+             "",
+             "Alle nicht aufgefuehrten Pins gehen unveraendert durch "
+             "und stehen Modulen frei zur Verfuegung.",
+             "",
+             "## Modultypen",
+             "",
+             tabelle(["Nummer", "Name", "Kanaele"],
+                     [("0x%02X" % nr, t["name"], t["kanaele"])
+                      for nr, t in sorted(S.MODULTYPEN.items())]),
+             "",
+             "Nummern ab `0x80` bleiben fremden Modulen vorbehalten.",
+             "",
+             "## Kennwiderstaende",
+             "",
+             tabelle(["Stufe", "Widerstand", "Spannungsanteil"],
+                     [(i, "%.0f" % r, "%.3f" % S.ID_ANTEIL(r))
+                      for i, r in enumerate(S.ID_WIDERSTAENDE)]),
+             ""]
+    with open(ZIEL, "w", encoding="utf-8") as f:
+        f.write("\n".join(teile))
+    print("geschrieben:", ZIEL)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Ausfuehren: `python3 tools/vertrag_doku.py`
 
 - [ ] **Schritt 2: README schreiben**
 

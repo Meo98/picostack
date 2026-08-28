@@ -206,17 +206,26 @@ statt einmal pro Funktion.
 Dieser Entwurf beschreibt mehr, als ein einzelner Umsetzungsplan tragen
 kann. Er zerfällt in drei Etappen, jede mit eigenem Plan:
 
-1. **Der Vertrag und der erste Stapel.** Modulsockel, Sockelplatine,
-   ein Motormodul. Damit steht alles Grundsätzliche auf dem Tisch und
-   ist am Exponat prüfbar: Stecker, Bus, Kette, Flashen, sicherer
-   Zustand.
+1. **Der Vertrag und der erste Stapel.** Beim Planen hat sich gezeigt,
+   dass auch diese Etappe noch zu gross für einen Plan ist; sie
+   zerfällt weiter:
+   - **1a — Vertrag und Machbarkeitsnachweis.** Steckerbelegung als
+     prüfbares Datenmodul, die Auswahlkette als Wahrheitstabelle, das
+     Bootlader-Protokoll auf dem Pico, und der Nachweis auf dem Tisch,
+     dass der Pico einen Modul-MCU wirklich beschreiben kann. Diese
+     Annahme trägt das ganze System — sie wird belegt, bevor
+     Leiterplatten darum herum entstehen.
+   - **1b — Hardware.** Modulsockel, Sockelplatine, Motormodul.
+   - **1c — Firmware.** Registersatz, sicherer Zustand, Aufzählung
+     des Stapels beim Start.
 2. **Die Dimmer-Familie.** 1, 3 und 4 Kanäle auf demselben
    Modulsockel — vor allem eine Übung darin, ob der Sockel wirklich
    wiederverwendbar ist.
 3. **Veröffentlichung.** Vertrag dokumentieren, KiCad-Vorlage für den
    Modulsockel, Beispielmodul, Lizenz.
 
-Nur Etappe 1 ist mit diesem Entwurf abgedeckt. Etappe 2 und 3 brauchen
+Nur Etappe 1 ist mit diesem Entwurf abgedeckt; ein Plan liegt
+bisher fuer 1a vor. Etappe 2 und 3 brauchen
 je eine eigene Runde, sobald Etappe 1 am Exponat gelaufen ist.
 
 ## Prüfung
