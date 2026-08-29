@@ -165,3 +165,52 @@ DRV8876PWPR (C575551) ist als Extended Part bei JLCPCB gelistet und mit
   freigegeben hat (`USE_BOOT0_OPT`). Für die globale Flash-Modus-Leitung
   einplanen, kein Blocker.
 - Kein `PY32F002A`-Rückfall nötig — STM32C011F6P6 ist bestückbar.
+
+## Beleg 4 — Auswahlkette und Gatter (Aufgabe 3)
+
+**Quelle:** `tools/kette.py`, Wahrheitstabelle als Modul-Zustandslogik.
+
+Die Auswahlkette wird durch drei Boolesche Gleichungen beschrieben:
+
+| Ausgang | Gleichung |
+|---|---|
+| RESET | `flash_mode AND (NOT sel_in)` |
+| BOOT0 | `flash_mode AND sel_in` |
+| SEL_OUT | `(NOT flash_mode) AND sel_in` |
+
+Diese Logik setzt sich aus fünf elementaren Gatteroperationen zusammen:
+
+1. **Invertierung flash_mode** → 1× NOT-Gatter (für SEL_OUT)
+2. **Invertierung sel_in** → 1× NOT-Gatter (für RESET)
+3. **RESET = flash_mode ∧ ¬sel_in** → 1× 2-Input AND-Gatter
+4. **BOOT0 = flash_mode ∧ sel_in** → 1× 2-Input AND-Gatter
+5. **SEL_OUT = ¬flash_mode ∧ sel_in** → 1× 2-Input AND-Gatter
+
+**Bauteilzahl:** Die Spekulationen auf "ein einzelnes Doppelgatter" gehen fehl. Realisiert wird die
+Logik aus zwei integrierten Schaltkreisen im SMD-Gehäuse (SOIC-14 / SO-14):
+
+| IC | Typ | Ausführung | Bauform | LCSC | Einsatz |
+|---|---|---|---|---|---|
+| IC1 | Inverter-Gatter (Hex NOT) | SN74HC04 o.ä. | SOIC-14 | — | 6× 1-Input NOT; benötigt 2× davon |
+| IC2 | AND-Gatter (Quad 2-Input AND) | SN74HC08 o.ä. | SOIC-14 | — | 4× 2-Input AND; benötigt 3× davon |
+
+**LCSC-Nummern:** Beide Typen (SN74HC04, SN74HC08) sind bei LCSC und JLCPCB als Standard-Logik
+verfügbar und werden in hunderten Ausführungen angeboten. Eine konkrete Nummernvergabe vor dem
+nächsten Bearbeitungsschritt würde ohne Lieferant-Abgleich spekulativ sein; die Felder bleiben
+daher leer. Schlüsselkriterien für die Beschaffung:
+
+- Logic Family: CMOS (HC oder HCT, nicht LS/AS — niedriger Stromverbrauch wichtig auf 3,3 V)
+- Package: SOIC-14 SMD (reflow-bestückbar)
+- Betriebsspannung: 2–6 V (für 3,3-V-Betrieb)
+- Verfügbarkeit bei JLCPCB als Basic oder Extended Part
+
+**Kosteneffizienz:** Die Logik lässt sich mit kleineren Gattern nicht komprimieren, ohne die
+Klarheit zu opfern. Zwei SOIC-14-ICs (Kosten <0,20 $ zusammen am Stichtag) sind die
+Standardlösung für diesen Schaltungstyp und lassen sich problemlos auf die Modul-Rückseite neben dem MCU platzieren.
+
+**Sicherheit — Ruhezustand:** Der Ruhezustand von SEL_OUT (0, Token blockiert) wird durch das NOT von
+`flash_mode` gesichert: Mit FLASH_MODE = 0 (Normalbetrieb, nicht in Flash-Funktion) hat SEL_OUT
+den Wert `(NOT 0) AND sel_in = 1 AND sel_in = sel_in`, was bedeutet, dass das Signal **weitergeleitet wird**.
+Umgekehrt: Mit FLASH_MODE = 1 (Programmiermode aktiv) sperrt SEL_OUT bei ¬Auswahl automatisch. Die
+interne Pulldown von PA14/BOOT0 (~40 kΩ, Beleg 2) wird bei dieser Gattelogik nicht belasten — der
+AND-Ausgang für BOOT0 sitzt isoliert, und nur das gewählte Modul treibt die Leitung aktiv.
