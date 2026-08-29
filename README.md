@@ -2,6 +2,26 @@
 
 Ein Baukasten für stapelbare Platinen auf dem Raspberry Pi Pico — ein einfacher, offener Standard damit Fremde eigene Module bauen können.
 
+## Status: Entwurfsetappe
+
+Diese Etappe setzt den **Vertrag** und die erste **Logik** um. Aber es gibt zwei große Dinge, die **noch nicht gebaut** sind:
+
+### Der Nachweis steht noch aus
+
+Der Vertrag besagt, dass der Pico einen Modul-MCU über dessen ROM-Bootlader beschreiben kann. Das ist noch nicht auf echter Hardware erprobt. Der Grund: Es gibt **noch keinen STM32 auf einem Adapterplaettchen** zum Testen.
+
+Details und was dann noch zu tun ist: siehe [`docs/nachweis-2026-08.md`](docs/nachweis-2026-08.md). 
+
+**Das Fazit:** Nimm an, dass die Schnittstellen so funktionieren wie dokumentiert, aber baue nicht auf Garantie. Wenn du ein Modul bauen möchtest, fang mit Schritt 1 (Vertrag lesen) an und schreib mir, falls Fragen auftauchen.
+
+### Es gibt noch keine Platinen
+
+Der Sockel (Pico-Träger mit den Steckersockeln), die Modulsockel (die 2×20 oben und unten) und ein Motormodul als Testfall — das alles ist eine **nächste Etappe**. Aktuell sind das nur Datenmodule, geprüfte Logik, und dieser Vertrag als Text.
+
+Wenn du schon deine Schaltung zeichnest: Leg die Ecken, Löcher und Stecker unten an, dann kannst du sofort mit Produktionspartner reden, sobald der Sockel fertig ist.
+
+---
+
 ## Wie sieht ein Stapel aus?
 
 Ein PicoStack-System ist ein vertikaler Turm:
@@ -21,7 +41,7 @@ Ein PicoStack-System ist ein vertikaler Turm:
 └─────────────────────┘
 ```
 
-Jede Platine ist **64 × 60 mm** mit Ecken von **3 mm** Radius und vier M3-Befestigungslöchern. Ein Signalstecker auf jeder Platine verbindet sie nach unten, ein zweiter (oder einer auf dem Sockel) nach oben.
+Jede Platine hat einen definierten Umriss, vier M3-Befestigungslöcher, Kantenradius und Abstand zum nächsten Modul — alle Details siehe [`docs/vertrag.md`](docs/vertrag.md), Abschnitt "Umriss". Ein Signalstecker auf jeder Platine verbindet sie nach unten, ein zweiter (oder einer auf dem Sockel) nach oben.
 
 Der Pico sitzt als Sockel zuoberst im Stapel. Er ist der Wirt: Die Module sind dafür da, um Funktionen (Motoren, Dimmer, Sensoren) zu steuern; der Pico koordiniert sie über einen gemeinsamen I²C-Bus und I/O-Pins.
 
@@ -56,7 +76,7 @@ Damit ein fremdes Modul in jeden Stapel passt, halten wir an fünf Dingen fest:
    Lies [`docs/vertrag.md`](docs/vertrag.md) und überzeugte dich, dass du alle Einschränkungen verstanden hast: Umriss, Stecker, I²C-Register, Timeout.
 
 2. **Lochbild auf deine Platine zeichnen**  
-   64 × 60 mm, Ecken 3 mm gerundet, vier M3-Bohrungen an (4, 4), (4, 56), (60, 4), (60, 56). Das geht mit KiCAD, Fusion 360, Plasticity, oder was du magst.
+   Nutze die genauen Maße und Bohrpositionen aus [`docs/vertrag.md`](docs/vertrag.md), Abschnitt "Umriss". Das geht mit KiCAD, Fusion 360, Plasticity, oder was du magst.
 
 3. **Stecker platzieren und Pins durchleiten**  
    Ein 2×20-Stecker oben (Buchse) und einer unten (Stift), in der Platine verbunden, damit die Signale durchgehen und Fremde unter das Modul ein weiteres Module drunter bauen können.
@@ -72,24 +92,6 @@ Damit ein fremdes Modul in jeden Stapel passt, halten wir an fünf Dingen fest:
 
 7. **Testen, dann teilen**  
    Fahr deinen Stapel hoch, rede mit dem Modul über I²C vom Pico aus, und schreib auf, was du gelernt hast. Wenn du magst, mach einen Git-Branch oder ein Repo und teil es mit Anderen.
-
-## Warnung: Das ist eine Entwurfsetappe
-
-Diese Etappe setzt den **Vertrag** und die erste **Logik** um. Aber es gibt zwei große Dinge, die **noch nicht gebaut** sind:
-
-### 1. Der Nachweis steht noch aus
-
-Der Vertrag besagt, dass der Pico einen Modul-MCU über dessen ROM-Bootlader beschreiben kann. Das ist noch nicht auf echter Hardware erprobt. Der Grund: Es gibt **noch keinen STM32 auf einem Adapterplaettchen** zum Testen.
-
-Details und was dann noch zu tun ist: siehe [`docs/nachweis-2026-08.md`](docs/nachweis-2026-08.md). Es ist nicht euer Projekt — but if you read this and want to help, get in touch.
-
-**Das Fazit:** Nimm an, dass die Schnittstellen so funktionieren wie dokumentiert, aber baue nicht auf Garantie. Wenn du ein Modul bauen möchtest, fang mit Schritt 1 (Vertrag lesen) an und schreib mir, falls Fragen auftauchen.
-
-### 2. Es gibt noch keine Platinen
-
-Der Sockel (Pico-Träger mit den Steckersockeln), die Modulsockel (die 2×20 oben und unten) und ein Motormodul als Testfall — das alles ist eine **nächste Etappe**. Aktuell sind das nur Datenmodule, geprüfte Logik, und dieser Vertrag als Text.
-
-Wenn du schon deine Schaltung zeichnest: Leg die Ecken, Löcher und Stecker unten an, dann kannst du sofort mit Produktionspartner reden, sobald der Sockel fertig ist.
 
 ## Weitere Lektüre
 
