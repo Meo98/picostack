@@ -62,10 +62,15 @@ b = Bootlader(u)
 check("NACK meldet Misserfolg", b.sync(), False)
 
 # --- Fehlerfaelle: Loeschen mit NACK ---
-# NACK nach dem Befehl selbst
+# NACK nach dem Befehl selbst (erste Quittung)
 u = FakeUart([NACK])
 b = Bootlader(u)
-check("Loeschen mit NACK nach Befehl", b.erase_all(), False)
+check("Loeschen meldet Fehler nach Befehl", b.erase_all(), False)
+
+# NACK nach den Daten FF FF 00 (zweite Quittung)
+u = FakeUart([ACK, NACK])
+b = Bootlader(u)
+check("Loeschen meldet Fehler nach Daten", b.erase_all(), False)
 
 # --- Fehlerfaelle: Schreiben mit NACK ---
 # NACK nach dem Befehl (erste Quittung)
