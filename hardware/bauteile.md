@@ -186,31 +186,53 @@ Diese Logik setzt sich aus fünf elementaren Gatteroperationen zusammen:
 4. **BOOT0 = flash_mode ∧ sel_in** → 1× 2-Input AND-Gatter
 5. **SEL_OUT = ¬flash_mode ∧ sel_in** → 1× 2-Input AND-Gatter
 
-**Bauteilzahl:** Die Spekulationen auf "ein einzelnes Doppelgatter" gehen fehl. Realisiert wird die
-Logik aus zwei integrierten Schaltkreisen im SMD-Gehäuse (SOIC-14 / SO-14):
+**Bauteilwahl — Einzelgatter statt Multi-Gate-ICs:** Fünf Gatterfunktionen in zwei grossen
+SOIC-14-Gehäusen (8,7 × 3,9 mm je IC) bedeuten 50 % Verschnitt bei einer Platine mit
+Kleinheit-Anspruch. Die empfohlene Lösung nutzt Einzelgatter und Doppelgatter aus der
+CMOS-Familie 74LVC1G/74LVC2G in miniaturisierten SMD-Gehäusen (SC-70 oder SOT-363,
+rund 2 × 1,25 mm je IC):
 
-| IC | Typ | Ausführung | Bauform | LCSC | Einsatz |
+| IC | Typ | Gatteranzahl | Gehäuse | LCSC | Funktion |
 |---|---|---|---|---|---|
-| IC1 | Inverter-Gatter (Hex NOT) | SN74HC04 o.ä. | SOIC-14 | — | 6× 1-Input NOT; benötigt 2× davon |
-| IC2 | AND-Gatter (Quad 2-Input AND) | SN74HC08 o.ä. | SOIC-14 | — | 4× 2-Input AND; benötigt 3× davon |
+| IC1 | Doppel-Inverter (2× 1-Input NOT) | 74LVC2G04 | SC-70 oder SOT-363 | — | Invertiert flash_mode und sel_in |
+| IC2 | Doppel-AND-Gatter (2× 2-Input AND) | 74LVC2G08 | SC-70 oder SOT-363 | — | Realisiert RESET und BOOT0 |
+| IC3 | Einzel-AND-Gatter (1× 2-Input AND) | 74LVC1G08 | SC-70 oder SOT-363 | — | Realisiert SEL_OUT |
 
-**LCSC-Nummern:** Beide Typen (SN74HC04, SN74HC08) sind bei LCSC und JLCPCB als Standard-Logik
-verfügbar und werden in hunderten Ausführungen angeboten. Eine konkrete Nummernvergabe vor dem
-nächsten Bearbeitungsschritt würde ohne Lieferant-Abgleich spekulativ sein; die Felder bleiben
-daher leer. Schlüsselkriterien für die Beschaffung:
+**Spezifikation:**
+- IC1: CMOS Doppel-NOT-Gatter, Typ 74LVC2G04 oder baugleiches IC aus der 74LVC-Familie
+- IC2: CMOS Doppel-AND-Gatter (2-Input), Typ 74LVC2G08 oder baugleiches IC aus der 74LVC-Familie
+- IC3: CMOS Einzel-AND-Gatter (2-Input), Typ 74LVC1G08 oder baugliches IC aus der 74LVC-Familie
+- Alle in Gehäusen SC-70 oder SOT-363 (max. 2 × 1,25 mm je IC)
+- Betriebsspannung: 1,65–5,5 V (kompatibel mit 3,3-V-Betrieb)
+- Stromverbrauch: CMOS (picoampere static, nanoampere dynamic)
 
-- Logic Family: CMOS (HC oder HCT, nicht LS/AS — niedriger Stromverbrauch wichtig auf 3,3 V)
-- Package: SOIC-14 SMD (reflow-bestückbar)
-- Betriebsspannung: 2–6 V (für 3,3-V-Betrieb)
-- Verfügbarkeit bei JLCPCB als Basic oder Extended Part
+**Verfügbarkeit:** LCSC und JLCPCB führen die 74LVC1G und 74LVC2G Serien als Standard-Logik.
+Eine konkrete Nummernvergabe wird bei nächster Beschaffungs-Phase recherchiert (Constraint: keine
+LCSC-Nummer ohne Produktseiten-Nachweis). Die drei Gehäuse beanspruchen zusammen eine
+Platinenfläche ungefähr ein Zehntel der früheren Zwei-SOIC-14-Lösung.
 
-**Kosteneffizienz:** Die Logik lässt sich mit kleineren Gattern nicht komprimieren, ohne die
-Klarheit zu opfern. Zwei SOIC-14-ICs (Kosten <0,20 $ zusammen am Stichtag) sind die
-Standardlösung für diesen Schaltungstyp und lassen sich problemlos auf die Modul-Rückseite neben dem MCU platzieren.
+**Alternative: Decoder-Struktur (erwogen, nicht weiter verfolgt):** RESET und BOOT0 bilden
+zusammen einen 1-aus-2-Decoder mit Freigabe (`flash_mode` als Freigabesignal, `sel_in` als
+Adresseingabe). Ein spezialisierter Decoder-IC (z.B. 74LVC138 als 3-aus-8-Decoder) wäre für
+zwei Ausgänge zu mächtig. Der Decoder-Ansatz wurde zugunsten der einfachen Einzelgatter-Lösung
+nicht weiter verfolgt.
 
-**Sicherheit — Ruhezustand:** Der Ruhezustand von SEL_OUT (0, Token blockiert) wird durch das NOT von
-`flash_mode` gesichert: Mit FLASH_MODE = 0 (Normalbetrieb, nicht in Flash-Funktion) hat SEL_OUT
-den Wert `(NOT 0) AND sel_in = 1 AND sel_in = sel_in`, was bedeutet, dass das Signal **weitergeleitet wird**.
-Umgekehrt: Mit FLASH_MODE = 1 (Programmiermode aktiv) sperrt SEL_OUT bei ¬Auswahl automatisch. Die
-interne Pulldown von PA14/BOOT0 (~40 kΩ, Beleg 2) wird bei dieser Gattelogik nicht belasten — der
-AND-Ausgang für BOOT0 sitzt isoliert, und nur das gewählte Modul treibt die Leitung aktiv.
+**Klarstellung zu MCU-Verhalten:** Der Kommentar „Ausgänge hochohmig" in `kette.py` bezieht sich
+auf die GPIO-Pins des **Modul-MCU im Reset-Zustand** — nicht auf die Ausgänge der Logik-ICs. Die
+Gatterausgänge arbeiten aktiv in Gegentaktverstärkung (totem pole) und treiben die Reset- und
+BOOT0-Eingänge des MCU mit definierten High- und Low-Pegeln. Nur die GPIO-Pins des im Reset
+gehaltenen MCU sind hochohmig, weil der MCU keinen Taktgenerator hat und keine Ausgänge aktiv
+treibt.
+
+**Token-Durchleitungslogik:** Das Token (SEL_OUT) wird unter zwei Bedingungen weitergeleitet:
+
+- **Im Normalbetrieb (FLASH_MODE = 0):** SEL_OUT folgt sel_in direkt; das Token wandert
+  ungehindert durch die Kette weiter, unabhängig von der bisherigen Auswahl.
+- **Im Flash-Modus (FLASH_MODE = 1) bei Nichtauswahl (sel_in = 0):** SEL_OUT = 0; das Token
+  wird hier blockiert und wandert nicht weiter.
+
+Im Ruhezustand eines unbeteiligten Moduls (FLASH_MODE = 0) wird das Token normalerweise
+weitergereicht (SEL_OUT = sel_in). Blockiert wird das Token nur durch eine bewusste Aktion:
+der Sockel setzt FLASH_MODE = 1, was die Schaltung in den Programmiermode versetzt, und
+die Auswahl (sel_in = 0 für alle außer dem gewählten) sorgt dafür, dass nur das ausgewählte
+Modul das Token nicht weitergeben darf.
