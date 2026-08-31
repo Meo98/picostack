@@ -2,16 +2,20 @@
 
 Erzeugt aus `tools/stack_spec.py`. Nicht von Hand aendern.
 
+## Status
+
+Die Zusagen rund um das Flashen -- die Pins `FLASH_TX`, `FLASH_RX`, `SEL`, `SEL_CLK` und `FLASH_MODE` und alles, was daran haengt -- ruhen auf einer Annahme, die noch **nicht auf Hardware belegt** ist: dass der Pico einen Modul-MCU ueber dessen ROM-Bootlader wirklich beschreiben kann. Geprueft ist bisher nur das Protokoll gegen eine Attrappe, nicht gegen echtes Silizium. Stand und offene Schritte: `docs/nachweis-2026-08.md`.
+
 ## Umriss
 
 64.0 x 60.0 mm, Ecken 3.0 mm gerundet, 15.0 mm zwischen den Platinen.
 
-| M3-Bohrung | x | y |
-|---|---|---|
-| 1 | 4.0 | 4.0 |
-| 2 | 4.0 | 56.0 |
-| 3 | 60.0 | 4.0 |
-| 4 | 60.0 | 56.0 |
+| M3-Bohrung | x | y | Bohrdurchmesser |
+|---|---|---|---|
+| 1 | 4.0 | 4.0 | 3.2 |
+| 2 | 4.0 | 56.0 | 3.2 |
+| 3 | 60.0 | 4.0 | 3.2 |
+| 4 | 60.0 | 56.0 | 3.2 |
 
 ## Steckerbelegung
 
@@ -26,6 +30,7 @@ Erzeugt aus `tools/stack_spec.py`. Nicht von Hand aendern.
 | 7 | I2C_SCL |
 | 8 | GND |
 | 9 | NOTAUS |
+| 10 | SEL_CLK |
 | 13 | GND |
 | 18 | GND |
 | 23 | GND |
@@ -38,6 +43,10 @@ Erzeugt aus `tools/stack_spec.py`. Nicht von Hand aendern.
 | 40 | VBUS |
 
 Alle nicht aufgefuehrten Pins gehen unveraendert durch und stehen Modulen frei zur Verfuegung.
+
+## Auflagen an die Modulfirmware
+
+- Ausserhalb des Flash-Modus darf ein Modul die Leitung FLASH_RX nicht treiben. FLASH_RX ist der Empfangspin des Pico und damit die gemeinsame Sendeleitung aller Module. Im Normalbetrieb sind alle Module gleichzeitig wach; treibt mehr als eines diese Leitung, fallen sie einander ins Wort und koennen einander im Gegentakt beschaedigen. Senden darf ein Modul nur, solange es ueber die Auswahlkette ausgewaehlt ist (FLASH_MODE = 1 und das eigene Flipflop Q = 1). Sonst bleibt der Pin hochohmig.
 
 ## Modultypen
 

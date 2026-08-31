@@ -26,7 +26,11 @@ STAPEL_ABSTAND = 15.0     # mm zwischen zwei Platinen
 RESERVIERT = (
     "I2C_SDA", "I2C_SCL",     # Bus zu den Modulen
     "FLASH_TX", "FLASH_RX",   # Bootlader der Modul-MCU
-    "SEL",                    # Auswahl-Token, von Modul zu Modul
+    "SEL",                    # Auswahl-Kette, von Modul zu Modul
+    "SEL_CLK",                # global: Takt der Auswahlkette. Jedes
+                              # Modul haelt die Auswahl in einem
+                              # D-Flipflop; ein Takt schiebt sie eine
+                              # Position tiefer (tools/kette.py).
     "FLASH_MODE",             # global: Stapel im Flash-Modus
     "NOTAUS",                 # global, wired-OR, wirkt ohne Software
 )
@@ -51,7 +55,23 @@ PIN_ROLLE.update({
     6:  "I2C_SDA",      # GP4
     7:  "I2C_SCL",      # GP5
     9:  "NOTAUS",       # GP6
+    10: "SEL_CLK",      # GP7
 })
+
+# --- Auflagen an die Modulfirmware ----------------------------------
+# Teil des Vertrags, aber keine Geometrie und keine Pinnummer: Regeln,
+# die Modulfirmware einhalten muss, damit ein fremdes Modul den Stapel
+# nicht lahmlegt.
+AUFLAGEN = (
+    "Ausserhalb des Flash-Modus darf ein Modul die Leitung FLASH_RX "
+    "nicht treiben. FLASH_RX ist der Empfangspin des Pico und damit "
+    "die gemeinsame Sendeleitung aller Module. Im Normalbetrieb sind "
+    "alle Module gleichzeitig wach; treibt mehr als eines diese "
+    "Leitung, fallen sie einander ins Wort und koennen einander im "
+    "Gegentakt beschaedigen. Senden darf ein Modul nur, solange es "
+    "ueber die Auswahlkette ausgewaehlt ist (FLASH_MODE = 1 und das "
+    "eigene Flipflop Q = 1). Sonst bleibt der Pin hochohmig.",
+)
 
 # --- Modultypen -----------------------------------------------------
 # 0x00 ist ungueltig (ein unbeschriebener Kennwiderstand liest 0).

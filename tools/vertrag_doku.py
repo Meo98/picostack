@@ -26,14 +26,25 @@ def main():
              "",
              "Erzeugt aus `tools/stack_spec.py`. Nicht von Hand aendern.",
              "",
+             "## Status",
+             "",
+             "Die Zusagen rund um das Flashen -- die Pins `FLASH_TX`, "
+             "`FLASH_RX`, `SEL`, `SEL_CLK` und `FLASH_MODE` und alles, "
+             "was daran haengt -- ruhen auf einer Annahme, die noch "
+             "**nicht auf Hardware belegt** ist: dass der Pico einen "
+             "Modul-MCU ueber dessen ROM-Bootlader wirklich beschreiben "
+             "kann. Geprueft ist bisher nur das Protokoll gegen eine "
+             "Attrappe, nicht gegen echtes Silizium. Stand und offene "
+             "Schritte: `docs/nachweis-2026-08.md`.",
+             "",
              "## Umriss",
              "",
              "%.1f x %.1f mm, Ecken %.1f mm gerundet, %.1f mm zwischen "
              "den Platinen." % (S.BOARD_W, S.BOARD_H, S.CORNER_R,
                                 S.STAPEL_ABSTAND),
              "",
-             tabelle(["M3-Bohrung", "x", "y"],
-                     [(i + 1, x, y) for i, (x, y) in
+             tabelle(["M3-Bohrung", "x", "y", "Bohrdurchmesser"],
+                     [(i + 1, x, y, S.M3_DRILL) for i, (x, y) in
                       enumerate(S.M3_HOLES)]),
              "",
              "## Steckerbelegung",
@@ -44,6 +55,10 @@ def main():
              "",
              "Alle nicht aufgefuehrten Pins gehen unveraendert durch "
              "und stehen Modulen frei zur Verfuegung.",
+             "",
+             "## Auflagen an die Modulfirmware",
+             "",
+             "\n\n".join("- " + a for a in S.AUFLAGEN),
              "",
              "## Modultypen",
              "",
