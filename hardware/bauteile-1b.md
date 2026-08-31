@@ -21,10 +21,14 @@ Grundlage des neuen, eigenständigen Kettensteckers sind.
 | Signalstecker, Buchse (oben, 2×20) — **verworfen, s. u.** | BOOMELE/ZHOURI-Familie, 2,54 mm Buchsenleiste | THT, Gehäusehöhe 8,5 mm über Platine | C2977589 | verworfen (Bauform an sich geprüft) | LCSC-Produktseite `lcsc.com/product-detail/C2977589.html`; Datenblatt (ZHOURI, Rev. ZRLCGY2025-06-17-CJ A/1), Masszeichnung „8,5±0,2"; JLCPCB-Produktseite `jlcpcb.com/partdetail/2.54-2*20/C2977589` (SMT Assembly, Economic/Standard PCBA) |
 | Signalstecker, Stift (unten, 2×20) — **verworfen, s. u.** | BOOMELE 2,54 mm Stiftleiste, gerade | THT, Stift 6,0 mm oberhalb / 3,0 mm unterhalb des Isolierkörpers (Gesamtlänge 9,0 mm) | C50980 | verworfen (Bauform an sich geprüft) | LCSC-Produktseite `lcsc.com/product-detail/Male-Header_Made-in-China-2-54mm-2-20P-Header_C50980.html`; Datenblatt (东莞康孚电子), Masszeichnung „3.0" / „6.0"; JLCPCB-Produktseite `jlcpcb.com/partdetail/BOOMELE-2_54mm2_20PHeader/C50980` (SMT Assembly, Economic/Standard PCBA) |
 | **Stapelstecker, Signal (2×20) — ersetzt die beiden Zeilen oben** | ZHOURI/BOOMELE „PC104-2*NA+1": Buchse mit durchgehendem Stift | THT, Gehäuse 8,5 mm über Platine, Stift 12,46 mm unterhalb des Gehäuses (Gesamtlänge 23,50 mm), 3 A/Kontakt | C35165 | ja | LCSC-Produktseite `lcsc.com/product-detail/Pin-Header-Female-Header_Boom-Precision-Elec-2-54mm-2-20P_C35165.html`; Datenblatt (ZHOURI/上海康司玛, Zeichnung „PC104-2*NA+1"), Masszeichnung „8,5±0,2" / „12,46±0,2" / „23,50"; JLCPCB-Produktseite `jlcpcb.com/partdetail/BOOMELE-2_54_2_20PFemaleLongPC104/C35165` (SMT Assembly, Economic/Standard PCBA) |
-| Kettenstecker, Buchse (oben, 1×2, trägt SEL+GND) | XFCN PM254V-11-02-H85 | THT, 8,5 mm über Platine, 3 A/Kontakt, 250 V | C541849 | ja | LCSC-Produktseite `lcsc.com/product-detail/C541849.html` (Rohdaten: „3A", „250V", „8.5mm"); JLCPCB-Produktseite `jlcpcb.com/partdetail/XFCN-PM254V_1102H85/C541849` (SMT Assembly, Economic/Standard PCBA) — laut Herstellerbezeichnung passend zur XFCN-PZ254-Reihe |
-| Kettenstecker, Stift (unten, 1×2) | XFCN PZ254V-11-02P | THT, Stift 6,0 mm oberhalb / 3,0 mm unterhalb des Isolierkörpers, 3 A/Kontakt, 250 V | C492401 | ja | LCSC-Produktseite `lcsc.com/product-detail/Pin-Header-Female-Header_XFCN-PZ254V-11-02P_C492401.html` (Rohdaten: „6mm"/„3mm" Steck-/Lötpin); JLCPCB-Produktseite `jlcpcb.com/partdetail/XFCN-PZ254V_1102P/C492401` (SMT Assembly, Economic/Standard PCBA) |
-| Leistungsstecker, Buchse (oben, 2×2) | gleiche ZHOURI-Familie, 2,54 mm | THT, 8,5 mm über Platine, 2,5 A/Kontakt | C2977590 | ja | LCSC-Produktseite `lcsc.com/product-detail/Female-Headers_ZHOURI-2-54-2-2_C2977590.html` (Rohdaten: „2.5A", „8.5mm insulation height") |
-| Leistungsstecker, Stift (unten, 2×2) | gleiche BOOMELE-Familie, 2,54 mm | THT, 6,0/3,0 mm, 3 A/Kontakt | C66690 | ja | LCSC-Produktseite `lcsc.com/product-detail/Male-Header_Double-Rows2-2p-pitch2-54mm_C66690.html` (Rohdaten: „3A", „6mm"/„3mm") |
+| ~~Kettenstecker, Buchse (oben, 1×2, trägt SEL+GND)~~ — **verworfen 2026-08-31 (Aufgabe 5e): zwei bedrahtete Hälften können sich am selben Ort keine Bohrungen teilen, s. Beleg 13** | XFCN PM254V-11-02-H85 | THT, 8,5 mm über Platine, 3 A/Kontakt, 250 V | C541849 | verworfen (Bauform an sich geprüft) | LCSC-Produktseite `lcsc.com/product-detail/C541849.html` (Rohdaten: „3A", „250V", „8.5mm"); JLCPCB-Produktseite `jlcpcb.com/partdetail/XFCN-PM254V_1102H85/C541849` (SMT Assembly, Economic/Standard PCBA) — laut Herstellerbezeichnung passend zur XFCN-PZ254-Reihe |
+| ~~Kettenstecker, Stift (unten, 1×2)~~ — **verworfen 2026-08-31 (Aufgabe 5e): zwei bedrahtete Hälften können sich am selben Ort keine Bohrungen teilen, s. Beleg 13** | XFCN PZ254V-11-02P | THT, Stift 6,0 mm oberhalb / 3,0 mm unterhalb des Isolierkörpers, 3 A/Kontakt, 250 V | C492401 | verworfen (Bauform an sich geprüft) | LCSC-Produktseite `lcsc.com/product-detail/Pin-Header-Female-Header_XFCN-PZ254V-11-02P_C492401.html` (Rohdaten: „6mm"/„3mm" Steck-/Lötpin); JLCPCB-Produktseite `jlcpcb.com/partdetail/XFCN-PZ254V_1102P/C492401` (SMT Assembly, Economic/Standard PCBA) |
+| ~~Leistungsstecker, Buchse (oben, 2×2)~~ — **verworfen 2026-08-31 (Aufgabe 5e): zwei bedrahtete Hälften können sich am selben Ort keine Bohrungen teilen, s. Beleg 13** | gleiche ZHOURI-Familie, 2,54 mm | THT, 8,5 mm über Platine, 2,5 A/Kontakt | C2977590 | verworfen (Bauform an sich geprüft) | LCSC-Produktseite `lcsc.com/product-detail/Female-Headers_ZHOURI-2-54-2-2_C2977590.html` (Rohdaten: „2.5A", „8.5mm insulation height") |
+| ~~Leistungsstecker, Stift (unten, 2×2)~~ — **verworfen 2026-08-31 (Aufgabe 5e): zwei bedrahtete Hälften können sich am selben Ort keine Bohrungen teilen, s. Beleg 13** | gleiche BOOMELE-Familie, 2,54 mm | THT, 6,0/3,0 mm, 3 A/Kontakt | C66690 | verworfen (Bauform an sich geprüft) | LCSC-Produktseite `lcsc.com/product-detail/Male-Header_Double-Rows2-2p-pitch2-54mm_C66690.html` (Rohdaten: „3A", „6mm"/„3mm") |
+| **Kettenstecker, Buchse (oben, 1×2) — ersetzt die verworfene Zeile** | Buchsenleiste 1×2, 2,54 mm, SMD senkrecht, Isolationshöhe 8,5 mm, ≥ 1 A | **SMD**, 8,5 mm über Platine | *(offen — keine gesichtete Nummer)* | Bauform ja, Polzahl nein | Bauform belegt an C261072 (BOOMELE 2.54-2\*5P, „Surface mount, vertical", „Insulation Height: 8.5mm", „Current Rating: 2.5A") und C52611 (BOOMELE 2.54-2\*25P, „SMD header 2\*25P 2.54mm H=8.5mm Gold-plated"); in 1×2 auf **keiner** Produktseite gesehen — deshalb kein LCSC-Feld, s. Beleg 13.4 |
+| **Kettenstecker, Stift (unten, 1×2) — ersetzt die verworfene Zeile** | Stiftleiste 1×2, 2,54 mm, SMD senkrecht, Isolierkörper ≤ 2,5 mm, Steckstift 6,0 mm | **SMD**, 8,5 mm unter der Platine (2,5 + 6,0) | *(offen — keine gesichtete Nummer)* | Bauform ja, Polzahl nein | Bauform belegt an C919361 (2×2), C192300 (2×4), C124390/C124391 (Ckmtw, 2×3/2×5); in 1×2 nicht gesehen, s. Beleg 13.4 |
+| **Leistungsstecker, Buchse (oben, 2×2) — ersetzt die verworfene Zeile** | Buchsenleiste 2×2, 2,54 mm, SMD senkrecht, Isolationshöhe 8,5 mm, ≥ 2,5 A/Kontakt | **SMD**, 8,5 mm über Platine | *(offen — keine gesichtete Nummer)* | Bauform ja, Polzahl nein | wie die Zeile darüber: C261072 / C52611; in 2×2 nicht gesehen, s. Beleg 13.4 |
+| **Leistungsstecker, Stift (unten, 2×2) — ersetzt die verworfene Zeile** | BOOMELE „2.54-2\*2P" | **SMD senkrecht**, Isolierkörper 2,5 mm, Steckstift 6,0 mm, 3 A/Kontakt | **C919361** | ja | LCSC-Produktseite `lcsc.com/product-detail/C919361.html` (Rohdaten: „Surface Mount (SMD), Vertical", „Insulation Height: 2.5mm", „Mating Pin Length: 6mm", „Current Rating: 3A", 28 460 auf Lager) |
 | D-Flipflop, asynchroner Löscheingang | SN74LVC1G175DCKR (TI) | SOT-363-6 (SC-70-6), 6 Pins | C202238 | ja | LCSC-Produktseite `lcsc.com/product-detail/74-Series_TI_SN74LVC1G175DCKR_SN74LVC1G175DCKR_C202238.html`; JLCPCB-Produktseite `jlcpcb.com/partdetail/TexasInstruments-SN74LVC1G175DCKR/C202238` (SMT Assembly, Economic/Standard PCBA, MSL 1); Primärquelle TI-Datenblatt `SN74LVC1G175`, Dok. SCES560G (März 2004, revidiert Juni 2015), Abschnitt 3 „Description" und Abschnitt 5 „Pin Configuration and Functions" (Gehäuse „DCK Package, 6-Pin SC70", Pin 6 = `CLR`) |
 | Gatter Dual-NAND (NOT via NAND(Q,Q), NRST) — **ersetzt die Zeilen NOT+NAND unten, s. Nachtrag 2026-08-31 (2. Runde)** | SN74LVC2G00DCUR (TI) | **VSSOP-8 (0,5 mm Pitch), 8 Pins — NICHT SOT-363**, s. Anmerkung unten | C206109 | ja | LCSC-Produktseite `lcsc.com/product-detail/C206109.html` (Rohdaten: Gehäuse „VSSOP-8-0.5mm"); TI-Datenblatt `SN74LVC2G00`, „Dual 2-Input Positive-NAND Gate" |
 | ~~Gatter NOT (Invertierung Q)~~ — **verworfen, s. Nachtrag 2026-08-31 (2. Runde): ersetzt durch eine Einheit des Dual-NAND (Eingänge kurzgeschlossen)** | SN74LVC1G04DCKR (TI) | SOT-353 (SC-70-5), 5 Pins | C8207 | ja (Bauform an sich geprüft, aber verworfen) | LCSC-Produktseite `lcsc.com/product-detail/C8207.html`; JLCPCB-Produktseite `jlcpcb.com/partdetail/TexasInstruments-SN74LVC1G04DCKR/C8207` (SMT Assembly, Economic/Standard PCBA, MSL 1) |
@@ -204,6 +208,8 @@ von ausserhalb der Datenblattzeichnung, kein Ersatz für die eigene
 Rechnung, aber eine Bestätigung, dass die eigene Dimensionsinterpretation
 der Zeichnung (M und F wie oben zugeordnet) nicht offensichtlich falsch
 ist.
+
+> **Überholt seit 2026-08-31 (Aufgabe 5e), s. Beleg 13.** Die hier für den Kettenstecker gewählten bedrahteten Teile (C492401 / C541849) sind nicht baubar — zwei bedrahtete Hälften am selben Ort brauchten dieselben Bohrungen. Der Kettenstecker ist jetzt ein **SMD-Paar**, Einstecktiefe 5,60 statt 3,1 mm.
 
 **Der Kettenstecker reproduziert den ursprünglichen Befund unverändert.**
 Die eine Leitung, die weiterhin aufgetrennt werden muss (`SEL`), bekommt
@@ -460,6 +466,8 @@ Fehler sind (sonst „repariert" sie der nächste Blick).
 - `tests/test_modulsockel.py`: neuer ERC-Testschritt (siehe unten).
 
 ## Beleg 4 — Leistungsstecker: Bauform gewählt, Strombelastbarkeit belegt
+
+> **Überholt seit 2026-08-31 (Aufgabe 5e), s. Beleg 13.** Die hier gewählte bedrahtete Buchse/Stift-Paarung (C2977590 / C66690) ist nicht baubar: beide Hälften müssen am selben Ort sitzen und bräuchten dann dieselben Bohrungen. Der Leistungsstecker ist jetzt ein **SMD-Paar**. Die Stromrechnung unten (Engpass Buchse, zwei Kontakte je Ader, ~5 A vor Derating) gilt unverändert weiter — die SMD-Buchse trägt dieselben 2,5 A je Kontakt.
 
 **Bauform:** dieselbe 2,54-mm-Stift-/Buchsenleisten-Familie wie der
 Signalstecker (BOOMELE/ZHOURI), aber als eigener, getrennter 2×2-Stecker
@@ -1097,6 +1105,209 @@ Aus dem Altprojekt geerbt, nicht Gegenstand dieser Aufgabe, gehört
 nachgerechnet.
 
 
+## Beleg 13 — Ketten- und Leistungsstecker: SMD-Paare statt bedrahteter Paare (Aufgabe 5e, 2026-08-31)
+
+**Der Fehler.** Beide Stecker waren Paare aus Buchse oben (J101/J103) und
+Stiftleiste unten (J102/J104), beide **bedrahtet**, beide an derselben Stelle.
+An derselben Stelle *müssen* sie sitzen: alle Platinen des Stapels sind gleich,
+und eine Verschiebung hebt sich zwischen zwei gleichen Platinen nicht auf, sie
+summiert sich — der Stift an der Unterseite von Modul N trifft die Buchse an der
+Oberseite von Modul N+1 nur bei identischer (x|y). Zwei bedrahtete Bauteile
+können sich aber keine Bohrungen teilen. Der 2×20 hat das am 31.08. gelöst,
+indem er ein echter Stapelstecker mit durchgehendem Stift wurde (Beleg 6); bei
+den beiden kleinen Steckern blieb der Fehler stehen.
+
+### 13.1 Warum die Kette kein durchgehender Stift sein darf
+
+Nachgerechnet, nicht angenommen. Bei durchgehenden Kontakten ist Kontakt *k*
+**ein** Netz über den ganzen Stapel. Alle Module sind gleich gebaut, verbinden
+also denselben Modulknoten mit demselben Kontakt. Läge `SEL_OUT` auf Kontakt *a*
+und `SEL_IN` auf Kontakt *b*, verlangte die Kette `SEL_OUT(n) = SEL_IN(n+1)` für
+**jedes** *n* — erfüllbar nur, wenn Netz(*a*) = Netz(*b*). Dann liegen alle
+`SEL_IN` und alle `SEL_OUT` des Stapels auf einem Knoten: D und Q jedes
+Flipflops kurzgeschlossen, das Schieberegister aus `tools/kette.py` wirkungslos.
+**Die Rechnung hängt nicht an der Kontaktzahl** — auch zwei oder zwanzig
+Kontakte des vorhandenen 2×20 können die Kette nicht tragen.
+
+Zwei bedrahtete Hälften am selben Ort brauchten dieselben Bohrungen, und dieselbe
+Bohrung *ist* ein durchgehender Kontakt. Die Mischung THT/SMD geht ebenfalls
+nicht: die Bohrungen der bedrahteten Hälfte liegen genau dort, wo die Kontakte
+der SMD-Hälfte auf der Gegenseite liegen müssten. Es bleibt: **beide Hälften
+oberflächenmontiert.**
+
+### 13.2 Einen 2×2-Stapelstecker gibt es bei LCSC nicht
+
+Für den Leistungsstecker wäre ein durchgehender Stift **erlaubt** (beide Hälften
+führen Pin für Pin `PWR24V`/`GND`). Gesucht bei LCSC und in der
+JLCPCB-Bestückungsbibliothek. Auf Produktseiten tatsächlich gesehen:
+
+| LCSC | Hersteller/Teil | Befund |
+|---|---|---|
+| `C35165` | BOOMELE „2.54-2*20PPC104" | Stapelstecker, **2×20**; Attribute: „Through Hole", „Current Rating: 3A", „Insulation Height: 8.3mm", „PIN Length: 12.3mm" (Zeichnung: 8,5 / 12,46 mm, s. Beleg 1) |
+| `C5307344` | ZHOURI „PC104-2*20" | Stapelstecker, **2×20**; „Current Rating: 2.5A", „Insulation Height: 10.5mm", „PIN Length: 12.2mm" |
+| `C5307345` | ZHOURI „PC104-2*40" | Stapelstecker, **2×40** |
+| `C72555` | BOOMELE „2.54-2*8P3.8" | „Female header 2*8P pitch 2.54mm **Heightened, Pins are long 3.8mm**", 2×8 |
+| `C5307342` / `C5307343` / `C5307346` | ZHOURI PM2.54-2*6 / PM2.54-2*16 / PM2.0-1*10 | die Nachbarnummern derselben Reihe: **gewöhnliche** Buchsen, Lötstift 2,8–3,2 mm |
+
+**Kleinere Polzahlen als 2×20 gibt es in dieser Bauform nicht.** Das
+nächstliegende „langbeinige" Teil (`C72555`) überbrückt den Spalt nicht einmal:
+M = 3,8 − 1,6 = 2,2 mm, M + F = 2,2 + 8,5 = **10,7 mm < G = 11,4 mm**.
+
+### 13.3 Die Leistung über den vorhandenen 2×20 zu führen, geht auch nicht
+
+Dort ist **kein Kontakt frei**: alle 40 tragen Pico-Pins (`PIN_ROLLE`), und die
+Sockelplatine verbindet sie mit dem Pico — 24 V auf einem davon zerstört ihn.
+Elektrisch tot sind allein Kontakt 30 (`RUN`) und 35 (`ADC_VREF`), die kein
+Modul anfassen darf. Das wäre **ein** Pfad für 24 V mit 3 A (`C35165`):
+
+* **unter dem Bedarf** — der DRV8876 zieht über 2,5 A (Beleg 4 / SLVSDS7B), und
+  der Stapelstrom ist die Summe aller Module darunter;
+* **im 2,54-mm-Raster direkt neben 3,3-V-GPIO** (Kontakt 29 = GP22, 31 = GP26);
+* gegen die ausdrückliche Design-Doc-Vorgabe, Motorströme vom Signalstecker
+  getrennt zu führen.
+
+### 13.4 Die gewählten Bauteile
+
+Alle Angaben von tatsächlich geöffneten LCSC-Produktseiten, 2026-08-31.
+
+**Stiftleiste unten — SMD, senkrecht, 2,54 mm:**
+
+* **`C919361`** — BOOMELE „2.54-2*2P", **2×2**: „Mounting: Surface Mount (SMD),
+  Vertical", „Insulation Height: 2.5mm", „Mating Pin Length: 6mm",
+  „Current Rating: 3A", Kontakt Messing, 28 460 auf Lager.
+  → **Stift des Leistungssteckers.**
+* Dieselbe Bauform in anderen Polzahlen, als Beleg dafür, dass 2,5 mm / 6,0 mm
+  der Familienwert ist: `C192300` (BOOMELE 2.54-2*4P, 2×4, SMD vertikal,
+  2,5 mm / 6 mm, 3 A, 11 780 auf Lager); `C124390` (Ckmtw B-2100N06P-B111, 2×3,
+  SMD vertikal, **2,0 mm** / 6 mm); `C124391` (Ckmtw B-2100N10P-B110, 2×5, SMD
+  vertikal, 2,0 mm / 6 mm).
+* **1×2 nicht gesehen** → die LCSC-Nummer des Kettenstecker-Stifts bleibt
+  **leer**. Spezifikation: *Stiftleiste 1×2, 2,54 mm, SMD senkrecht,
+  Isolierkörper ≤ 2,5 mm, Steckstift 6,0 mm.*
+
+**Buchse oben — SMD, senkrecht, 2,54 mm, Isolationshöhe 8,5 mm:**
+
+* `C261072` — BOOMELE „2.54-2*5P", 2×5: „Mounting: Surface mount, vertical",
+  „Insulation Height: 8.5mm", „Current Rating: 2.5A", Messing vergoldet,
+  3 175 auf Lager.
+* `C52611` — BOOMELE „2.54-2*25P", 2×25: „SMD header 2*25P 2.54mm **H=8.5mm**
+  Gold-plated", „Mounting: SMD".
+* **1×2 und 2×2 nicht gesehen** → beide LCSC-Nummern bleiben **leer**.
+  Spezifikation: *Buchsenleiste 1×2 bzw. 2×2, 2,54 mm, SMD senkrecht,
+  Isolationshöhe 8,5 mm, ≥ 1 A (Kette) bzw. ≥ 2,5 A je Kontakt (Leistung).*
+
+**Warum nicht die kurzen SMD-Buchsen:** `C2685112` (Liansheng FH-00339) und
+`C2685115` (FH-00369), beide 2×20, „Surface Mount, Vertical", sind nur
+**3,9 mm** hoch. M + F = 8,5 + 3,9 = 12,4 mm gegen G = 11,4 mm ergäbe 1,0 mm
+Einstecktiefe — derselbe dünne Rand, den Beleg 1 schon einmal verworfen hat.
+
+**Ein vollständig belegtes Paar existiert, nur in falscher Polzahl:**
+`C261072` (Buchse 2×5) + `C124391` (Stift 2×5). Wer nicht warten will, bis die
+2×2/1×2-Buchse auftaucht, kann darauf umsteigen; das ändert die Polzahl in
+`stack_spec.STECKER_KETTE["pins"]` und in `tools/sch/modulsockel.py`, sonst
+nichts an der Konstruktion.
+
+### 13.5 Höhenrechnung
+
+    G = STAPEL_ABSTAND − PLATINE_DICKE          = 13,0 − 1,6  = 11,40 mm
+    F = Isolationshöhe der Buchse                             =  8,50 mm
+    M = Isolierkörper 2,50 + Steckstift 6,00                  =  8,50 mm
+
+    Einstecktiefe            = (M + F) − G = 17,00 − 11,40    =  5,60 mm
+    Luft Stiftkörper/Buchse  = G − F − Isolierkörper          =  0,40 mm
+
+**5,60 mm statt 3,1 mm** — der Gewinn kommt daher, dass ein SMD-Stift **auf** der
+Platine sitzt statt in ihr: kein 3,0-mm-Lötschwanz, keine Platinendurchführung.
+Der Wert wird in `stack_spec.EINSTECKTIEFE_SMD_PAAR()` aus den Bauteilmassen
+gerechnet, nicht eingetragen. Zusätzlich geprüft: die Einstecktiefe ist nicht
+grösser als der Stift lang ist (5,60 ≤ 6,00 mm).
+
+**0,40 mm Luft** ist der neue enge Punkt: der Isolierkörper des Stifts kann nicht
+in die Buchse eintauchen und muss über deren Oberkante bleiben. Nominell
+positiv, aber im ungünstigen Toleranzstapel (± 0,2 mm je Bauteil, ± 10 %
+Platinendicke) kann er verschwinden — dann stossen die Kunststoffe aneinander,
+bevor die Abstandsbolzen sitzen. **Zwei belegte Auswege, beide Entscheidung des
+Auftraggebers:**
+
+1. Ein SMD-Stift mit **2,0 mm** Isolierkörper (dieselbe Bauform, belegt an
+   `C124390`/`C124391`) → 0,90 mm Luft bei 5,10 mm Einstecktiefe.
+2. `STAPEL_ABSTAND` von 13,0 auf **13,5 mm** → 0,90 mm Luft, 5,10 mm
+   Einstecktiefe, 7,46 mm am Stapelstecker und **mehr** Luft über den Klemmen
+   (1,80 statt 1,30 mm). Verbessert jede einzelne Reserve; nicht getan, weil
+   `STAPEL_ABSTAND` nicht Teil der Aufgabe war und am Gehäuse (Aufgabe 9) hängt.
+
+Damit dreht sich die Richtung der Enge um: `STAPEL_ABSTAND` wird jetzt **nach
+unten** von der Buchsenluft begrenzt (G ≥ 8,5 + 2,5 = 11,0 mm, also
+≥ 12,6 mm) — enger als die Klemmen (11,7 mm) — und nach oben praktisch von
+nichts (erst ab 16,6 mm fiele die Einstecktiefe unter 2,0 mm).
+
+### 13.6 Strom am Leistungsstecker
+
+Engpass ist die **Buchse mit 2,5 A je Kontakt** (`C261072`, „Current Rating:
+2.5A"); der Stift kann 3 A (`C919361`). Zwei Kontakte je Ader ergeben
+rechnerisch **5,0 A vor Derating** — dieselbe Vorsicht wie in Beleg 4: das ist
+eine Parallel-Summe von Einzelkontakt-Nennwerten, keine Herstelleraussage über
+Parallelbetrieb bei ungleichen Kontaktwiderständen. **Ein** Motormodul (DRV8876,
+ITRIP ≈ 2,538 A, Beleg 4 / Stromgrenze) passt mit Faktor 2; mehrere gleichzeitig
+unter Volllast nicht. Mehr Reserve gäbe es nur mit mehr Kontakten — dann aber
+mit dem 2×5-Paar aus 13.4.
+
+### 13.7 Was das am Layout ändert
+
+Ein SMD-Paar baut breiter als eine bedrahtete Stiftleiste: die Lötpads liegen
+seitlich **neben** den Stiften. Höfe weiterhin aus echten `.kicad_mod`-Dateien
+(kicad-footprints `a2d01395d2`), jetzt aus den SMD-Fassungen, und als
+**Vereinigung beider Hälften** gerechnet:
+
+| Stecker | Kontakt 1 | Fläche vorher | Fläche jetzt |
+|---|---|---|---|
+| Kette | 12,50 \| 2,75 (unverändert) | 10,73 0,98 14,27 7,07 | **9,09 0,87 15,91 7,17** |
+| Leistung | 57,50 → **54,70** \| 42,00 | 55,73 40,23 61,82 46,32 | **50,10 40,22 61,84 46,32** |
+
+Der Leistungsstecker **musste** wandern: an x = 57,50 hätte sein Hof bei
+x = 64,64 über die Platinenkante gestanden. x = 54,70 ist die am weitesten rechts
+liegende zulässige Lage, an der die Verdreh-Probe noch über der 2,5-mm-Reissleine
+bleibt (**2,755 mm**; bei x = 56,00 wären es nur 2,460 mm) — abgesucht in
+0,1-mm-Schritten über alle zulässigen Lagen. Die Reissleine wurde nicht gesenkt.
+
+### 13.8 Auflagen, die aus dieser Bauart folgen
+
+1. **Keine Durchkontaktierung zwischen den beiden Kontaktflächen des
+   Kettensteckers.** Oben liegt `SEL_IN`, unten `SEL_OUT`. Die fehlende
+   Verbindung *ist* die Funktion. Beim Leistungsstecker ist die Verbindung
+   erlaubt, gehört aber in eine eigene Durchkontaktierung **neben** dem Pad, nicht
+   in das SMD-Pad selbst.
+2. **Zugentlastung für beide SMD-Steckerpaare.** Die Steckkraft eines ganzen
+   Stapels darf nicht an den Lötstellen hängen. Zulässig: zwei zusätzliche
+   mechanische Befestigungspunkte je Stecker **oder** ein Fügeverfahren, bei dem
+   erst gesteckt und dann auf die Abstandsbolzen geschraubt wird. Welches von
+   beiden, entscheidet die Layout-Aufgabe — aber nicht keines von beiden.
+   Konkrete Bohrungskoordinaten sind hier bewusst **nicht** festgelegt; sie wären
+   eine Zahl ohne Herkunft.
+3. **Beidseitige SMD-Bestückung.** Der Stapel braucht jetzt Bauteile auf der
+   Unterseite (die beiden Stiftleisten). Bei JLCPCB möglich, kostet aber einen
+   zweiten Bestückungsvorgang. Vorher waren beide Seiten bedrahtet. Das ist ein
+   Preis, kein Fehler — er gehört in die Kalkulation.
+4. **Die Footprints bleiben Platzhalter**, nur genauere: die SMD-Fassungen der
+   KiCad-Standardbibliothek statt der bedrahteten. Vor der Bestellung müssen
+   eigene `.kicad_mod` gezeichnet und die Lage neu nachgerechnet werden;
+   `tests/test_stack_spec.py` erzwingt das über den Abgleich der
+   Footprint-Namen mit `tools/sch/modulsockel.py`.
+
+### 13.9 Was der Test seither festhält
+
+`tests/test_stack_spec.py` prüft neu eine **Regel** statt einer Zahl: jeder
+Stecker trägt maschinenlesbar `durchgehend`, `montage_oben`, `montage_unten`,
+`haelften_gleiche_netze`; ein durchgehender Stecker darf nur dort stehen, wo
+beide Seiten dasselbe Netz führen, und ein Paar darf **nicht zwei bedrahtete
+Hälften** haben. Auf einer Wegwerfkopie mit dem Stand vom 30.08. (nur die
+Montageart zurückgedreht) meldet er vier Zusicherungen rot; erklärt man den
+Kettenstecker stattdessen zum durchgehenden Stapelstecker, meldet er die zwei
+anderen. Gegen die wortwörtliche Datei von `2c06340` läuft er gar nicht erst
+durch — `STECKER_LEISTUNG` existierte dort nicht. Dass die Bauart des
+Leistungssteckers nirgends maschinenlesbar stand, ist Teil des Befunds.
+
+
 ## Zusammenfassung für die Beschaffung
 
 | Offener Punkt aus der Aufgabe | Antwort |
@@ -1118,3 +1329,4 @@ nachgerechnet.
 | **Zwei Auflagen aus Aufgabe 5d, die niemand übersehen darf** | (1) **Unbenutzter Kanal muss am Stecker gebrückt werden** — Kanal 1 = J3 Pin 1+2, Kanal 2 = J3 Pin 3+4, sonst meldet er dauerhaft Notaus (Jumper 2,54 mm; zusätzlich Siebdruck-Auflage für Aufgabe 7). (2) **Die bestehende Verkabelung des Pêche-aux-Canards-Exponats muss umgeklemmt werden** — J3 hat weiterhin vier Pole, ein altes Kabel passt mechanisch, das Exponat stünde danach dauerhaft auf Notaus. Details Beleg 11, Auflagen 1 und 2 |
 | **Optokoppler-Footprint passt nicht (Nebenbefund Aufgabe 5d)** | `SOP-4_3.8x4.1mm_P2.54mm` gegen den PC817-Gullwing (Körper 6,5 × 4,58 mm, Spanne 10,0 mm, Reihe 7,62 mm laut D2-A03101EN) — betrifft auch das geerbte U2. Aufgabe 7 muss einen eigenen Footprint zeichnen; ebenso offen: R6 verheizt an 24 V ≈ 0,24 W in einem 0805. Details Beleg 12 |
 | A_IPROPI des DRV8876 nachgeprüft (Aufgabe-5-Fix-1) | **1000 µA/A**, bestätigt aus dem PDF SLVSDS7B, Abschnitt 6.5, Block „CURRENT SENSE AND REGULATION (IPROPI, VREF)" — der Wert 1100 µA/A gehört zu keinem der beiden Familienmitglieder (der Schwestertyp DRV8874, Dok. SLVSF66A, nennt 450 µA/A). Damit bleibt ITRIP = 2,538 A bei R5 = 1,3 kΩ richtig, Marge unverändert ~27 % über 2 A |
+| **Ketten- und Leistungsstecker waren nicht baubar (Aufgabe 5e)** | Beide waren Paare aus **bedrahteter** Buchse oben und **bedrahteter** Stiftleiste unten am selben Ort — zwei bedrahtete Bauteile können sich aber keine Bohrungen teilen. Jetzt **SMD-Paare** (Buchse oben, Stiftleiste unten, gleicher Ort, keine Durchkontaktierung dazwischen); Einstecktiefe 5,60 statt 3,1 mm. Ein 2×2-**Stapelstecker** existiert bei LCSC nicht (nur 2×20/2×40), und über den vorhandenen 2×20 lässt sich die Leistung nicht führen (kein freier Kontakt, alle 40 sind Pico-Pins). Belegte Nummer: **C919361** (Stift 2×2). Buchsen 1×2/2×2 und Stift 1×2: **Nummer offen**, Spezifikation in Beleg 13.4; vollständig belegtes Ersatzpaar in 2×5: C261072 + C124391. Enger Punkt: 0,40 mm Luft über der Buchse (Beleg 13.5) |
