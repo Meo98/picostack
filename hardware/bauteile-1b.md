@@ -34,7 +34,9 @@ Grundlage des neuen, eigenständigen Kettensteckers sind.
 | 5-V-Regler | K7805-2000R3 | SIP-3 | C2931187 | ja | bereits geprüft in Etappe 1a / LED-Dimmer-Projekt, siehe `hardware/bauteile.md` — hier unverändert übernommen, nicht neu recherchiert |
 | Klemme 2-polig | DB128L-5.08-2P-GN-S | THT, 5,08 mm | C395868 | ja | bereits geprüft in Etappe 1a / LED-Dimmer-Projekt — unverändert übernommen |
 | Klemme 3-polig | DB128L-5.08-3P-GN-S | THT, 5,08 mm | C395869 | ja | LCSC-Produktseite `lcsc.com/product-detail/C395869.html` (16 A, 300 V, M2-Schraube, 12–22 AWG); JLCPCB-Produktseite bestätigt (DORABO-Familie, SMT/Wave-Assembly, Economic/Standard PCBA) — selbe Farbe/Baureihe wie die bereits geprüfte 2-polige Klemme |
-| Schaltdiode (Notaus-Verriegelung, Aufgabe 5) | 1N4148W (ST/Semtech) | SOD-123 | C81598 | ja | LCSC-Produktseite `lcsc.com/product-detail/Switching-Diode_ST-Semtech-1N4148W_C81598.html` (Rohdaten: Gehäuse „SOD-123", `Vf "1V@50mA"`); JLCPCB-Produktseite `jlcpcb.com/partdetail/ST-1N4148W/C81598` bestätigt SMT-Assembly („Economic and Standard" PCBA, MSL 3) |
+| ~~Schaltdiode (Notaus-Verriegelung, Aufgabe 5)~~ — **verworfen, s. Nachtrag 2026-08-31 (Aufgabe-5-Fix-1): eine Si-Diode ist für den gezogenen Ruhepegel der NOTAUS-Sammelleitung zu hochohmig, s. Beleg 10** | 1N4148W (ST/Semtech) | SOD-123 | C81598 | ja (Bauform an sich geprüft, aber verworfen) | LCSC-Produktseite `lcsc.com/product-detail/Switching-Diode_ST-Semtech-1N4148W_C81598.html` (Rohdaten: Gehäuse „SOD-123", `Vf "1V@50mA"`); JLCPCB-Produktseite `jlcpcb.com/partdetail/ST-1N4148W/C81598` bestätigt SMT-Assembly („Economic and Standard" PCBA, MSL 3) |
+| **Koppeldiode NOTAUS-Sammelleitung (D3/D4, Aufgabe-5-Fix-1) — ersetzt die Zeile darüber** | BAT54W (YANGJIE), Schottky | SOD-123 (gleicher Footprint wie bisher) | C699107 | ja | LCSC-Produktseite `lcsc.com/product-detail/Schottky-Barrier-Diodes-SBD_Yangzhou-Yangjie-Elec-Tech-BAT54W_C699107.html` (Rohdaten: Hersteller „YANGJIE", Gehäuse „SOD-123", 30 V, 200 mA, Leckstrom „2µA@25V"; Bestand am Recherchetag 440 Stück — **wenig, vor der Bestellung prüfen**). Grenzwerte für die Pegelrechnung aus dem Vishay-Typdatenblatt `BAT54W`, Dok. **86408, Rev. 1.0 vom 20-Nov-2023**, Tabelle „ELECTRICAL CHARACTERISTICS" (T_amb = 25 °C): V_F ≤ 240 mV @ 0,1 mA, ≤ 320 mV @ 1 mA, ≤ 400 mV @ 10 mA, I_R ≤ 2 µA @ 25 V. **Ehrlich vermerkt:** das Yangjie-eigene PDF war über LCSC nicht als PDF abrufbar (die Datenblatt-URL liefert eine HTML-Seite); die zitierten Grenzwerte sind die des JEDEC-Typs BAT54W bei Vishay, nicht die von Yangjie selbst. Vor der Fertigung mit dem Yangjie-Datenblatt gegenprüfen |
+| Verriegelungsgatter NOTAUS→nSLEEP (U3, Aufgabe-5-Fix-1) | SN74LVC1G08DCKR (TI) — **zweite Verwendung desselben Bauteils wie U103**, keine neue Nummer | SOT-353 (SC-70-5), 5 Pins | C7832 | ja | dieselbe geprüfte Produktseite wie die BOOT0-Zeile oben; Grenzwerte für die Pegelrechnung aus dem TI-Datenblatt `SN74LVC1G08`, Dok. **SCES217AA** (April 1999, revidiert August 2026), Abschnitt 5.3 „Recommended Operating Conditions" (V_IH ≥ 2,0 V, V_IL ≤ 0,8 V bei V_CC = 3–3,6 V) und Abschnitt 5.5 „Electrical Characteristics" (V_OH ≥ V_CC − 0,15 V bei −100 µA, V_OL ≤ 0,1 V bei 100 µA, I_I ≤ ±5 µA) |
 
 Von den acht in der ersten Fassung neu recherchierten Nummern (nicht sieben, wie dort irrtümlich stand — Zählfehler korrigiert) sowie den drei in dieser Nachbesserung hinzugekommenen (Stapelstecker C35165, Kettenstecker C541849/C492401) wurde jede auf einer echten LCSC- oder
 JLCPCB-Produktseite gesichtet (Datenblatt-Zeichnung oder strukturierte
@@ -798,6 +800,101 @@ Footprint-Geometrie-Prüfung (z. B. `tools/pcb/pcb_checks.py`, das laut
 Aufgabe-7-Brief ohnehin auf „verpolte Elkos" prüft), keine, die der
 Schaltplan selbst erzwingen kann.
 
+## Beleg 10 — Notaus-Verriegelung: die Pegel, nicht nur die Bauteile (Aufgabe-5-Fix-1, 2026-08-31)
+
+**Der Befund.** Die erste Fassung des Motormoduls verriegelte `NOTAUS` →
+`nSLEEP` mit einer Diode (D2) und einem Vorwiderstand (R14, 1 kΩ) vor dem
+MCU-Vorwiderstand R9 (100 Ω). Der Kommentar dazu rechnete den *Fehlstrom*
+aus ((3,3 − 0,6)/1100 ≈ 2,4 mA, unbedenklich für den GPIO) — aber nicht die
+*Spannung* am Pin. R9 und R14 bilden einen Spannungsteiler:
+
+    U(nSLEEP) = 0,6 V + 2,4 mA × 1 kΩ ≈ 3,05 V
+
+V_IL des DRV8876-nSLEEP-Eingangs ist 0,8 V (SLVSDS7B, Abschnitt 6.5,
+Block „LOGIC-LEVEL INPUTS", Zeile V_VM ≥ 5 V). Der Pin blieb also nicht nur
+über V_IL, sondern sogar über V_IH (1,5 V): **die Verriegelung wirkte
+nicht.** Genau in dem Fall, für den sie gebaut war — hängender MCU, GPIO
+aktiv auf HIGH eingefroren — wäre der Motor angeblieben.
+
+**Der zweite, unabhängige Grund.** Auch ohne R14 hätte die Klemme die
+Schwelle verfehlt. Die Sammelleitung `NOTAUS` geht nämlich nicht auf 0 V:
+sie wird über D3/D4 gegen den potentialfreien Schaltkontakt
+heruntergezogen und liegt damit selbst **eine Durchlassspannung** über
+Masse. Eine zweite Diode vom nSLEEP-Pin auf diesen Bus addiert die nächste:
+
+    U(nSLEEP) = V_F(D3) + V_F(D2) ≈ 1,0 … 1,3 V   (1N4148W)   > 0,8 V
+
+Selbst mit **Schottky-Dioden auf beiden Wegen** blieben im Grenzfall
+2 × 400 mV = 0,8 V übrig — exakt die Schwelle, null Reserve. Eine passive
+Dioden-UND-Verknüpfung kann diese Schwelle in dieser Topologie nicht
+sicher einhalten.
+
+**Die Lösung: ein UND-Gatter.** `U1_NSLEEP = NSLEEP(MCU) ∧ NOTAUS`, gebildet
+von U3 (`SN74LVC1G08`, C7832 — dasselbe Bauteil wie U103, keine neue
+Bauteilnummer) plus Abblockkondensator C14. D2 und R14 entfallen. Der
+Gatterausgang ist eine Gegentaktstufe, deshalb sind die Pegel garantiert
+statt gerechnet (SCES217AA, Abschnitt 5.5, jeweils bei 100 µA Laststrom):
+
+| Fall | U an U1 Pin 3 | Schwelle (SLVSDS7B 6.5) | Reserve |
+|---|---|---|---|
+| NOTAUS gezogen | ≤ V_OL = **0,10 V** | V_IL = 0,8 V | 0,70 V |
+| Normalbetrieb | ≥ V_OH = **3,15 V** | V_IH = 1,5 V | 1,65 V |
+
+Die V_OL/V_OH-Werte gelten bis 100 µA Laststrom; der interne Pulldown des
+nSLEEP-Pins (R_PD = 100 kΩ, SLVSDS7B 6.5) zieht bei 3,15 V nur 32 µA — die
+Bedingung ist eingehalten. Fällt die 3,3-V-Schiene aus, geht der
+Gatterausgang mit und derselbe Pulldown legt den Treiber schlafen: die
+Ausfallrichtung ist die sichere.
+
+**Nebenwirkung, die das Ursprungsanliegen erledigt.** R14 war eingefügt
+worden, um den MCU-GPIO zu schützen (ohne ihn hätte die Diodenklemme über
+R9 = 100 Ω rund 27 mA gezogen). Ein CMOS-Gattereingang zieht I_I ≤ ±5 µA
+(SCES217AA 5.5) — das Schutzanliegen ist ohne Widerstand erledigt, und
+ohne die Wirkung zu verhindern. R9 bleibt bei 100 Ω und ist jetzt ein
+reiner Serien-/ESD-Widerstand (0,5 mV Abfall).
+
+**Warum D3/D4 jetzt Schottky sind.** Der gezogene Ruhepegel des Busses *ist*
+die Durchlassspannung dieser Dioden, und alles, was am Bus hängt — das
+Gatter hier (V_IL = 0,8 V), der Pico auf der Sockelplatine, künftige
+Module — muss diesen Pegel als LOW lesen. Für den Auslegungsfall aus
+Beleg 8 (zehn Module, jedes mit R15 = 10 kΩ gegen 3,3 V):
+
+    I(Bus) = 10 × (3,3 V − 0,4 V) / 10 kΩ ≈ 2,9 mA
+    V_F(BAT54W) ≤ 400 mV   (Vishay 86408, MAX-Wert schon bei 10 mA)
+    Reserve gegen V_IL = 0,8 V:  ≥ 0,4 V
+
+Mit einem 1N4148W läge derselbe Pegel bei rund 0,6–0,65 V, und das
+Datenblatt nennt für diese kleinen Ströme **überhaupt keinen MAX-Wert** —
+für eine Sicherheitsfunktion nicht nachweisbar genug. Der BAT54W sitzt in
+derselben Bauform (SOD-123); der Footprint bleibt unverändert.
+
+**R15 bleibt bei 10 kΩ** und wird bewusst *nicht* vergrößert: bei zehn
+Modulen parallel ergibt das 1 kΩ Bus-Pullup, und die Leckströme aller
+Koppeldioden (I_R ≤ 2 µA, Vishay 86408) und Gattereingänge (≤ 5 µA) heben
+den Ruhepegel um weniger als 0,1 V an — der Bus bleibt sicher über
+V_IH = 2,0 V. Ein sehr viel hochohmigerer Pullup würde genau das kippen.
+
+**Testabdeckung.** `tests/test_motormodul.py` prüft seit dieser
+Nachbesserung nicht mehr die Anwesenheit der Diode, sondern die **Pegel**:
+alle Größen (R9, R15, V_IL/V_IH des Treibers, V_OL/V_OH/V_IL/V_IH/I_I des
+Gatters, V_F/I_R der Schottky-Diode) liegen als benannte Konstanten in
+`tools/sch/motormodul.py`, jede mit Dokumentnummer und Abschnitt. Der Test
+rechnet damit den Pegel am nSLEEP-Pin aus — **hergeleitet aus dem, was
+laut Schaltplan auf dem Netz `U1_NSLEEP` hängt** — und enthält drei
+Gegenproben, die zeigen, dass die alte Klemme, die Klemme ohne R14 und
+sogar die reine Schottky-Variante die Schwelle verfehlen.
+
+**Offener Punkt für Aufgabe 7 (PCB-Layout).** `NOTAUS_1`/`NOTAUS_2` haben
+keinen eigenen Pullup; sie hängen am internen Pullup des Modul-MCU, den
+erst die Firmware einschaltet. Für die *Sicherheitsfunktion* ist das
+folgenlos (der Schaltkontakt zieht den Bus über D3/D4 unabhängig davon
+herunter), für die *Kanaldiagnose* aber schon: vor dem ersten
+Firmware-Lauf und bei hohen Temperaturen (Schottky-Leckstrom gegen einen
+~40-kΩ-Pullup) ist der gelesene Pegel nicht garantiert. Wenn die
+Kanaldiagnose verlässlich sein soll, gehören zwei 10-kΩ-Pullups dazu —
+bewusst nicht in dieser Nachbesserung ergänzt, weil sie am Auftrag
+(Verriegelung) vorbeigeht.
+
 ## Zusammenfassung für die Beschaffung
 
 | Offener Punkt aus der Aufgabe | Antwort |
@@ -814,3 +911,5 @@ Schaltplan selbst erzwingen kann.
 | Stromgrenze DRV8876 (Motormodul, Aufgabe 5) | Altprojekt-Wert (R5=2,2k → 1,5 A) reichte für den 2-A-Motor nicht (dokumentierter Muttern-Board-Fehler); neu gerechnet über TI-Gleichung 3 (SLVSDS7B, Abschnitt 7.3.3.2): R5 = 1,3 kΩ → ITRIP ≈ 2,538 A (~27 % Marge über 2 A, deutlich unter IOCP-min 3,5 A); R10 bleibt DNP, unveränderter Altprojekt-Wert (4,7 kΩ) |
 | 3,3-V-Haushalt des Stapels (Aufgabe 5) | Nachgerechnet mit den zwei neuen Verbrauchern des Motormoduls (Kennwiderstände, VREF) — bleibt unkritisch: ≈5,56 mA/Modul worst case, ~53 Module trügen das 300-mA-Budget der Pico-3V3-Schiene; Details Beleg 8 |
 | Layout-Auflage C12-Polarität (Aufgabe 5) | Schaltplan-Polung geprüft (Pin 1 „+" an +24V, testgesichert) — Aufgabe 7 muss zusätzlich die Footprint-Silk-Polarität gegen Pad 1 prüfen, das sieht keine ERC/Netzlisten-Prüfung; Details Beleg 9 |
+| **Notaus-Verriegelung wirkte nicht (Aufgabe-5-Fix-1)** | Die Diodenklemme D2+R14 liess den nSLEEP-Pin bei ≈3,05 V stehen (V_IL wäre 0,8 V); ersetzt durch ein UND-Gatter U3 (`SN74LVC1G08`, C7832, keine neue Bauteilnummer) + C14, D2/R14 entfallen, D3/D4 jetzt Schottky (BAT54W, C699107). Reserve jetzt 0,70 V gegen V_IL bzw. 1,65 V gegen V_IH; Details Beleg 10 |
+| A_IPROPI des DRV8876 nachgeprüft (Aufgabe-5-Fix-1) | **1000 µA/A**, bestätigt aus dem PDF SLVSDS7B, Abschnitt 6.5, Block „CURRENT SENSE AND REGULATION (IPROPI, VREF)" — der Wert 1100 µA/A gehört zu keinem der beiden Familienmitglieder (der Schwestertyp DRV8874, Dok. SLVSF66A, nennt 450 µA/A). Damit bleibt ITRIP = 2,538 A bei R5 = 1,3 kΩ richtig, Marge unverändert ~27 % über 2 A |

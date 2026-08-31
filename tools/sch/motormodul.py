@@ -99,14 +99,27 @@ bevor bestueckt wird) steht in hardware/bauteile-1b.md, Beleg 9.
 **4. NOTAUS wirkt ohne Software.** Der Weg, den das Signal nimmt, steht
 unten bei `_notaus_verriegelung()` im Detail; hier die Kurzfassung: die
 Endstufe wird ueber das DRV8876-eigene nSLEEP-Pin abgeschaltet (ein
-echter Hardware-Steuereingang des Treibers, kein Software-Zustand) --
-eine Halbleiterdiode (D2) verbindet das nSLEEP-Signal, das der Modul-MCU
-sonst treibt, EINSEITIG mit der globalen NOTAUS-Sammelleitung: sinkt
-NOTAUS (von IRGENDEINEM Modul im Stapel heruntergezogen), zieht die
-Diode nSLEEP mit herunter -- unabhaengig davon, was der eigene MCU tut
-oder ob er ueberhaupt noch reagiert. Der MCU kann nSLEEP weiterhin selbst
-treiben (Diode sperrt in die andere Richtung), verliert diese
-Faehigkeit aber vollstaendig, sobald NOTAUS gezogen wird.
+echter Hardware-Steuereingang des Treibers, kein Software-Zustand). Die
+Verriegelung ist ein UND-Gatter (U3, SN74LVC1G08):
+
+    U1_NSLEEP = NSLEEP(vom Modul-MCU)  UND  NOTAUS(Sammelleitung)
+
+Sinkt NOTAUS -- von IRGENDEINEM Modul im Stapel heruntergezogen --, geht
+der Gatterausgang auf VOL und legt den Treiber schlafen, unabhaengig
+davon, was der eigene MCU auf seinem NSLEEP-Pin treibt oder ob er
+ueberhaupt noch laeuft. Der MCU behaelt die volle Kontrolle in die
+andere Richtung (MCU LOW -> Ausgang LOW), verliert sie aber
+vollstaendig, sobald NOTAUS gezogen wird.
+
+**Diese Fassung ersetzt eine Diodenklemme (D2 + R14), die NICHT wirkte**
+-- vollstaendige Fehleranalyse in `_notaus_verriegelung()` unten und in
+`.superpowers/sdd/2026-08-31-etappe-1b-sockel-und-motormodul/
+aufgabe-5-fix1-report.md`. Kurz: eine Diode von NSLEEP nach NOTAUS bildet
+zusammen mit dem MCU-Vorwiderstand einen Spannungsteiler und laesst den
+Pin bei rund 3,0 V stehen (VIL waere 0,8 V); und selbst ohne
+Vorwiderstand hoben ZWEI Diodenspannungen in Reihe (D2 zum Bus, D3/D4
+vom Bus zum Schaltkontakt) den Pin auf rund 1,2 V. Ein Gatter hat dieses
+Problem nicht: sein Ausgang ist eine echte Gegentaktstufe.
 """
 import os
 import sys
@@ -124,9 +137,10 @@ FP_C0805 = modulsockel.FP_C0805
 FP_HDR_1X04 = "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
 FP_CP_RADIAL = "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm"          # Aufgabenbrief 4, woertlich
 FP_TVS_SMC = "Diode_SMD:D_SMC_Handsoldering"                      # Aufgabenbrief 4, woertlich
-FP_SOD123 = "Diode_SMD:D_SOD-123"                                 # 1N4148W (D2/D3/D4)
+FP_SOD123 = "Diode_SMD:D_SOD-123"                                 # BAT54W (D3/D4)
 FP_TO252 = "Package_TO_SOT_SMD:TO-252-3_TabPin2"                  # Q1, aus dem Altprojekt
 FP_SOP4 = "Package_SO:SOP-4_3.8x4.1mm_P2.54mm"                    # U2 (PC817), aus dem Altprojekt
+FP_SOT353 = modulsockel.FP_SOT353                                 # U3 (SN74LVC1G08), wie U103
 # DRV8876: der reparierte Footprint aus dem Altprojekt (Waermepad MIT
 # Masken-/Pastenoeffnung, segmentiertes Pastenmuster, 12 Waermevias mit
 # echtem Restring auf Pad 17) -- Aufgabenbrief Schritt 2. Uebernommen nach
@@ -172,14 +186,68 @@ R5_WERT = "1.3k"         # ITRIP ~= 2,538 A bei VVREF=3,3V, AIPROPI=1000uA/A
 # ---------------------------------------------- NOTAUS-Verriegelung (neu)
 # Kein Gegenstueck im Altprojekt -- dort sass der Pico selbst auf den
 # Notaus-Eingaengen, ein Verriegelungspfad ohne MCU war dort nicht
-# gefordert. Bauteil: 1N4148W (SOD-123), LCSC C81598 -- Produktseite
-# tatsaechlich gesichtet: `lcsc.com/product-detail/Switching-Diode_ST-
-# Semtech-1N4148W_C81598.html` (Rohdaten: Gehaeuse "SOD-123", Vf "1V@
-# 50mA"); JLCPCB-Produktseite `jlcpcb.com/partdetail/ST-1N4148W/C81598`
-# bestaetigt SMT-Assembly ("Economic and Standard" PCBA, MSL 3).
-D_NOTAUS_WERT = "1N4148W"
-R14_WERT = "1k"          # Strombegrenzung D2-Zweig, s. _notaus_verriegelung()
+# gefordert.
+#
+# D3/D4 koppeln die zwei lokalen Schaltkontakte auf die
+# NOTAUS-Sammelleitung. Sie sind SCHOTTKY-Dioden, nicht (wie zuerst
+# gebaut) 1N4148W -- Begruendung in `_notaus_verriegelung()`: der
+# gezogene Ruhepegel des Busses IST die Durchlassspannung dieser Diode,
+# und die eines 1N4148W ist bei den hier fliessenden Stroemen nicht
+# nachweisbar unterhalb der 0,8-V-VIL-Schwelle der Bauteile, die am Bus
+# haengen. Bauteil: BAT54W (SOD-123), LCSC C699107 -- Produktseite
+# tatsaechlich gesichtet: `lcsc.com/product-detail/Schottky-Barrier-
+# Diodes-SBD_Yangzhou-Yangjie-Elec-Tech-BAT54W_C699107.html` (Rohdaten:
+# Hersteller YANGJIE, Gehaeuse "SOD-123", 30 V, 200 mA, Leckstrom
+# "2uA@25V").
+D_KOPPEL_WERT = "BAT54W"
 R15_WERT = "10k"         # Pullup NOTAUS-Sammelleitung an 3V3, s. dort
+C14_WERT = "0.1u"        # Abblockkondensator U3 (Verriegelungsgatter)
+
+# ------------------------------------- benannte Groessen der Verriegelung
+# Diese Werte sind die Rechengrundlage der Pegelpruefung in
+# tests/test_motormodul.py -- sie stehen hier und nicht nur im Fliesstext,
+# damit die Zusicherung die Rechnung tatsaechlich nachvollzieht statt nur
+# die Anwesenheit von Bauteilen zu bestaetigen.
+V_3V3 = 3.3                     # Schienenspannung des Stapels
+
+# DRV8876, Dok. SLVSDS7B (AUGUST 2019 - REVISED NOVEMBER 2019),
+# Abschnitt 6.5 "Electrical Characteristics", Block "LOGIC-LEVEL INPUTS
+# (EN/IN1, PH/IN2, nSLEEP)". VVM ist hier 24 V, also gilt die Zeile
+# "VVM >= 5 V".
+DRV_VIL_MAX = 0.8               # V, MAX
+DRV_VIH_MIN = 1.5               # V, MIN
+DRV_RPD = 100e3                 # Ohm, "RPD Input pulldown resistance ... 100 kOhm"
+DRV_IIH_MAX = 75e-6             # A bei VI = 5 V ("IIH Input logic high current")
+
+# SN74LVC1G08 (U3), Dok. SCES217AA (APRIL 1999 - REVISED AUGUST 2026),
+# Abschnitt 5.3 "Recommended Operating Conditions" (VIH/VIL, Zeile
+# "VCC = 3V to 3.6V") und Abschnitt 5.5 "Electrical Characteristics"
+# (VOH/VOL/II).
+GATTER_VIL_MAX = 0.8            # V, Abschnitt 5.3
+GATTER_VIH_MIN = 2.0            # V, Abschnitt 5.3
+GATTER_VOL_MAX = 0.1            # V bei IOL = 100 uA, Abschnitt 5.5
+GATTER_VOH_MIN = V_3V3 - 0.15   # V bei IOH = -100 uA ("VCC - 0.15"), Abschnitt 5.5
+GATTER_IO_BEZUG = 100e-6        # A -- der Laststrom, fuer den VOL/VOH oben gelten
+GATTER_II_MAX = 5e-6            # A, "II ... +-5 uA", Abschnitt 5.5
+
+# BAT54W (D3/D4), Vishay-Datenblatt Dok. 86408, Rev. 1.0 vom 20-Nov-2023,
+# Tabelle "ELECTRICAL CHARACTERISTICS" (Tamb = 25 C): VF MAX 240 mV bei
+# 0,1 mA, 320 mV bei 1 mA, 400 mV bei 10 mA; IR MAX 2 uA bei VR = 25 V.
+SCHOTTKY_VF_MAX_1MA = 0.32      # V
+SCHOTTKY_VF_MAX_10MA = 0.40     # V
+SCHOTTKY_IR_MAX = 2e-6          # A bei VR = 25 V
+
+# Widerstandswerte, die in der Pegelrechnung vorkommen.
+R9_OHM = 100.0                  # MCU -> U3 Eingang A (reiner Serienwiderstand)
+R15_OHM = 10e3                  # Pullup NOTAUS je Modul
+MODULE_IM_STAPEL = 10           # Auslegungsfall aus hardware/bauteile-1b.md, Beleg 8
+
+# Nur fuer die Gegenprobe im Test: so war die Verriegelung zuerst gebaut
+# (Diode D2 von NSLEEP auf NOTAUS, davor R14 als Strombegrenzung). Beide
+# Bauteile sind ENTFALLEN; die Zahlen bleiben, damit der Test zeigen kann,
+# dass genau diese Anordnung die VIL-Schwelle verfehlt.
+ALT_R14_OHM = 1000.0
+ALT_VF_1N4148 = 0.6             # V, gaengiger Arbeitspunkt einer Si-Diode
 
 
 def _load_libs(sch):
@@ -191,6 +259,10 @@ def _load_libs(sch):
     sch.lib_extends("Transistor_FET:IRF4905", "Transistor_FET.kicad_sym",
                      "IRF9540N", "IRF4905")
     sch.lib("Isolator:PC817", "Isolator.kicad_sym", "PC817")
+    # U3: dasselbe Gatter-Bauteil wie U103 im Modulsockel (SN74LVC1G08,
+    # SOT-353) -- keine neue Bauteilnummer noetig, LCSC C7832 ist in
+    # hardware/bauteile-1b.md bereits auf der Produktseite geprueft.
+    sch.lib("74xGxx:74LVC1G08", "74xGxx.kicad_sym", "74LVC1G08")
     sch.lib("Connector:Screw_Terminal_01x02", "Connector.kicad_sym",
             "Screw_Terminal_01x02")
     sch.lib("Connector:Screw_Terminal_01x03", "Connector.kicad_sym",
@@ -332,10 +404,17 @@ def _endstufe_treiber(sch, ox, oy, netze):
                 rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
     sch.netz("R8", "1", "U", netze["IN2"])
     sch.netz("R8", "2", "D", "U1_PH_IN2")
+    # R9 endet seit der Verriegelungs-Nachbesserung NICHT mehr am
+    # DRV8876-Pin, sondern am Eingang A des UND-Gatters U3
+    # (s. `_notaus_verriegelung()`); U1_NSLEEP treibt jetzt allein U3.
+    # R9 ist damit ein reiner Serien-/ESD-Widerstand vor einem
+    # CMOS-Eingang: er fuehrt hoechstens II = +-5 uA (SCES217AA,
+    # Abschnitt 5.5), macht also 0,5 mV Spannungsabfall -- 100 Ohm sind
+    # dafuer richtig und muessen NICHT vergroessert werden.
     sch.bauteil("R9", "Device:R", (ox - 40.64, oy + 25.4), R9_WERT, FP_R0805,
                 rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
     sch.netz("R9", "1", "U", netze["NSLEEP"])
-    sch.netz("R9", "2", "D", "U1_NSLEEP")
+    sch.netz("R9", "2", "D", "NSLEEP_GATTER")
 
     # R13: NFAULT-Pullup an 3V3 (Open-Drain-Ausgang des DRV8876).
     sch.bauteil("R13", "Device:R", (ox - 40.64, oy), R13_WERT, FP_R0805,
@@ -402,17 +481,17 @@ def _notaus_verriegelung(sch, ox, oy, netze):
     """Die Hardware-Verriegelung aus Punkt 4 des Auftrags, samt J3 (Notaus-
     Stiftleiste, 4-polig, unveraendert aus dem Altprojekt uebernommen).
 
-    ZWEI unabhaengige Diodenpfade, beide 1N4148W (Device:D, Pin 1 = K,
-    Pin 2 = A -- eigene Pruefung der KiCad-Quelle):
+    ZWEI unabhaengige Wege, einer je Richtung:
 
     (a) J3 Pin 1/3 (Notaus_1/Notaus_2, je ein potentialfreier Schalter
         gegen GND, wie im Altprojekt) erreichen JE EINEN eigenen
         Modul-MCU-Eingang (fuer die Software-Diagnose: welcher der
         zwei Kanaele ausgeloest hat -- diese Unterscheidung bleibt
         erhalten, die beiden Kanaele werden NICHT lokal kurzgeschlossen)
-        UND je eine Diode (D3 fuer Notaus_1, D4 fuer Notaus_2) auf die
-        globale Sammelleitung NOTAUS: Anode an NOTAUS, Kathode an
-        Notaus_1/2. Wird ein lokaler Schalter gegen GND geschlossen,
+        UND je eine Schottky-Diode (D3 fuer Notaus_1, D4 fuer Notaus_2,
+        Device:D, Pin 1 = K, Pin 2 = A -- eigene Pruefung der
+        KiCad-Quelle) auf die globale Sammelleitung NOTAUS: Anode an
+        NOTAUS, Kathode an Notaus_1/2. Wird ein lokaler Schalter gegen GND geschlossen,
         zieht das ueber die zugehoerige Diode auch NOTAUS herunter --
         "jeder kann sie herunterziehen" (Design-Dok, Abschnitt
         "Bus und Adressierung"), rein durch einen Schaltkontakt gegen
@@ -422,35 +501,76 @@ def _notaus_verriegelung(sch, ox, oy, netze):
         MCU-Diagnose unabhaengig lesbar, auch wenn ein FREMDES Modul
         NOTAUS gezogen hat).
 
-    (b) D2 (samt Vorwiderstand R14) verbindet NOTAUS EINSEITIG mit dem
-        DRV8876-seitigen Ende von NSLEEP (nach R9, direkt am Treiber-
-        Pin, NICHT am MCU-Pin -- entscheidend, weil genau DORT die
-        Wirkung ankommen muss): Anode an NSLEEP (ueber R14), Kathode an
-        NOTAUS. Sinkt NOTAUS unter die VIL-Schwelle des DRV8876-NSLEEP-
-        Eingangs (laut Datenblatt Abschnitt 6.5 "Electrical
-        Characteristics", VIL fuer nSLEEP bei VVM>=5V: 0-0,8V), zieht
-        die Diode den NSLEEP-Pin des Treibers ueber sie mit herunter --
-        der Treiber legt daraufhin ALLE Ausgaenge in Hi-Z (Datenblatt,
-        Abschnitt "Device Functional Modes"/nSLEEP-Beschreibung: "an
-        ultra-low power mode"), UNABHAENGIG davon, was der eigene
-        Modul-MCU auf seinem NSLEEP-GPIO treibt oder ob er ueberhaupt
-        noch laeuft. Haengt der MCU mit seinem GPIO aktiv auf HIGH
-        (der ungemuetlichste Fall: haengender MCU, Ausgang eingefroren),
-        begrenzt R9 (100 Ohm, Vorwiderstand MCU->NSLEEP) zusammen mit R14
-        (1 kOhm, hier neu) den Fehlstrom durch die Diode auf rund
-        (3,3V - 0,6V) / 1100 Ohm =~ 2,4 mA -- weit unter jedem
-        GPIO-Grenzwert, kein Kurzschluss zwischen MCU-Treiber und
-        Diodenklemme. Ohne R14 waere allein R9 (100 Ohm) mit rund 27 mA
-        zu knapp bemessen fuer genau diesen Fall -- deshalb der
-        zusaetzliche Widerstand, nicht nur die Diode allein.
-        Zusaetzliche, vom MCU vollkommen unabhaengige Absicherung: das
-        DRV8876-NSLEEP-Pin traegt laut Datenblatt (Abschnitt 6.5, "RPD
-        Input pulldown resistance ... 100 kOhm") einen eigenen internen
-        Pulldown -- ein unbestromter oder hochohmiger MCU-Pin laesst den
-        Treiber von sich aus schlafen, bevor NOTAUS ueberhaupt greifen
-        muss. Das ist keine Ersatz-Absicherung fuer diese Aufgabe (der
-        haengende, AKTIV TREIBENDE MCU bleibt der massgebliche Fall),
-        aber ein zusaetzliches, dokumentiertes Sicherheitsnetz.
+    (b) U3 (SN74LVC1G08, UND-Gatter) bildet die eigentliche Verriegelung:
+
+            U1_NSLEEP (an U1 Pin 3) = NSLEEP_GATTER (vom MCU ueber R9)
+                                      UND  NOTAUS (Sammelleitung)
+
+        Der Gatterausgang ist eine Gegentaktstufe: er gibt VOL <= 0,1 V
+        bzw. VOH >= VCC-0,15 V ab (SCES217AA, Abschnitt 5.5, jeweils bei
+        100 uA Laststrom -- der DRV8876-nSLEEP-Pin zieht ueber seinen
+        internen 100-kOhm-Pulldown hoechstens 33 uA, liegt also mit
+        grossem Abstand innerhalb dieser Bedingung). Damit gilt:
+
+          * NOTAUS gezogen -> U1 Pin 3 <= 0,1 V, VIL des DRV8876 waere
+            0,8 V (SLVSDS7B, Abschnitt 6.5): 0,7 V Reserve. Der Treiber
+            geht in "an ultra-low power mode" und legt alle Ausgaenge in
+            Hi-Z -- EGAL, was der Modul-MCU treibt oder ob er noch lebt.
+          * Normalbetrieb -> U1 Pin 3 >= 3,15 V, VIH waere 1,5 V:
+            1,65 V Reserve.
+          * MCU LOW -> Ausgang LOW: der MCU behaelt seine Schlafsteuerung.
+          * Der MCU-GPIO speist nichts mehr in die Verriegelung ein: ein
+            CMOS-Gattereingang zieht II <= +-5 uA (SCES217AA, 5.5).
+
+    ## Warum NICHT die urspruengliche Diodenklemme (D2 + R14)
+
+    Die erste Fassung dieser Datei loeste (b) mit einer Diode D2 von
+    NSLEEP nach NOTAUS und einem Vorwiderstand R14 (1 kOhm) davor. Sie
+    hat NICHT gewirkt, aus zwei voneinander unabhaengigen Gruenden --
+    beide sind reine Pegelrechnungen, beide sind in
+    tests/test_motormodul.py als Gegenprobe hinterlegt:
+
+    1. **R14 macht aus der Klemme einen Spannungsteiler.** Der alte
+       Kommentar rechnete nur den FEHLSTROM aus ((3,3-0,6)/1100 =~
+       2,4 mA, unbedenklich fuer den GPIO), nicht die SPANNUNG am Pin.
+       Mit R9 = 100 Ohm gegen 3,3 V und R14 = 1 kOhm plus Diode gegen
+       0 V steht der Knoten bei
+
+           U = 0,6 V + 2,4 mA x 1 kOhm =~ 3,05 V
+
+       -- weit ueber VIL = 0,8 V. Genau der Widerstand, der den GPIO
+       schuetzen sollte, verhinderte die Wirkung. Schutz und Wirkung
+       schlossen sich in dieser Anordnung aus.
+
+    2. **Auch ohne R14 stehen ZWEI Diodenspannungen in Reihe.** Der Bus
+       geht nicht auf 0 V: er wird ueber D3/D4 gegen den Schaltkontakt
+       heruntergezogen, liegt also selbst eine Durchlassspannung ueber
+       Masse. Eine zweite Diode D2 vom NSLEEP-Pin auf diesen Bus haette
+       den Pin auf VF(D3) + VF(D2) gehoben -- mit 1N4148W rund 1,0 bis
+       1,3 V, also ebenfalls ueber VIL = 0,8 V. Selbst mit Schottky-
+       Dioden auf BEIDEN Wegen blieben im Grenzfall (2 x 400 mV bei
+       10 mA, Vishay 86408) genau 0,8 V uebrig -- null Reserve. Eine
+       passive Dioden-UND-Verknuepfung kann diese Schwelle in dieser
+       Topologie nicht sicher einhalten; ein Gatter kann es.
+
+    Der zweite Grund ist auch der Grund, warum D3/D4 jetzt SCHOTTKY-
+    Dioden (BAT54W) sind und keine 1N4148W mehr: der gezogene Ruhepegel
+    der Sammelleitung IST die Durchlassspannung dieser Dioden, und alles,
+    was am Bus haengt (das Gatter hier mit VIL = 0,8 V, der Pico auf der
+    Sockelplatine, kuenftige Module), muss diesen Pegel als LOW lesen.
+    Rechnung fuer den Auslegungsfall aus hardware/bauteile-1b.md,
+    Beleg 8 (zehn Module, jedes mit R15 = 10 kOhm gegen 3,3 V):
+
+        I(Bus)  = 10 x (3,3 V - 0,4 V) / 10 kOhm =~ 2,9 mA
+        VF(BAT54W) <= 400 mV  (Vishay 86408, MAX-Wert bei 10 mA, also
+                               erst recht bei 2,9 mA)
+        Reserve gegen VIL = 0,8 V: >= 0,4 V
+
+    Mit 1N4148W laege derselbe Pegel bei rund 0,6-0,65 V, und das
+    Datenblatt nennt fuer diese kleinen Stroeme ueberhaupt keinen
+    MAX-Wert -- fuer eine Sicherheitsfunktion nicht nachweisbar genug.
+    Der BAT54W ist in derselben Bauform (SOD-123) wie die bisherigen
+    Dioden; der Footprint bleibt unveraendert.
 
     R15 (10k, NOTAUS -> 3V3) ist der Pullup, der der Sammelleitung
     ueberhaupt einen definierten Ruhepegel gibt -- ohne ihn waere HIGH
@@ -461,7 +581,18 @@ def _notaus_verriegelung(sch, ox, oy, netze):
     erste tatsaechlich gebaute Modul geschlossen wird (mehrere Module
     duerfen denselben schwachen Pullup parallel tragen, das ist bei
     einem wired-OR-Bus ueblich und schadet nicht, es erhoeht nur
-    geringfuegig den Ruhestrom).
+    geringfuegig den Ruhestrom). 10 kOhm bleibt bewusst stehen und wird
+    NICHT vergroessert: bei zehn Modulen parallel bleibt der Bus-Pullup
+    bei 1 kOhm, und die Leckstroeme aller Koppeldioden (BAT54W: IR <=
+    2 uA bei 25 V, Vishay 86408) und Gattereingaenge (<= 5 uA) heben den
+    Ruhepegel damit um weniger als 0,1 V an -- der Bus bleibt sicher
+    ueber VIH = 2,0 V.
+
+    Das DRV8876-nSLEEP-Pin traegt zusaetzlich einen eigenen internen
+    Pulldown (SLVSDS7B, Abschnitt 6.5, "RPD Input pulldown resistance
+    ... 100 kOhm"): faellt die 3,3-V-Schiene aus, geht auch der
+    Gatterausgang mit, und der Treiber schlaeft von sich aus. Die
+    Ausfallrichtung des Gatters ist damit die sichere.
     """
     sch.bauteil("J3", "Connector:Conn_01x04_Pin", (ox, oy),
                 "Notaus-Stiftleiste", FP_HDR_1X04, rot=180,
@@ -471,30 +602,40 @@ def _notaus_verriegelung(sch, ox, oy, netze):
     sch.netz("J3", "3", "R", "NOTAUS_2")
     sch.netz("J3", "4", "R", "GND")
 
-    sch.bauteil("D3", "Device:D", (ox + 25.4, oy - 5.08), D_NOTAUS_WERT,
+    # ACHTUNG (per kicad-cli sch erc gefunden): Device:D hat Pin 1 (K)
+    # LINKS (x=-3,81) und Pin 2 (A) RECHTS (x=+3,81) -- die Stichleitung
+    # muss deshalb vom Koerper WEG zeigen (Pin 1 -> "L", Pin 2 -> "R"),
+    # sonst kreuzt sie den eigenen anderen Pin und verschmilzt beide
+    # Netze.
+    sch.bauteil("D3", "Device:D", (ox + 25.4, oy - 5.08), D_KOPPEL_WERT,
                 FP_SOD123, rot=0, roff=(0, 2.54), voff=(0, -2.54))
     sch.netz("D3", "1", "L", "NOTAUS_1")          # Kathode
     sch.netz("D3", "2", "R", netze["NOTAUS"])      # Anode
-    sch.bauteil("D4", "Device:D", (ox + 25.4, oy - 15.24), D_NOTAUS_WERT,
+    sch.bauteil("D4", "Device:D", (ox + 25.4, oy - 15.24), D_KOPPEL_WERT,
                 FP_SOD123, rot=0, roff=(0, 2.54), voff=(0, -2.54))
     sch.netz("D4", "1", "L", "NOTAUS_2")          # Kathode
     sch.netz("D4", "2", "R", netze["NOTAUS"])      # Anode
 
-    sch.bauteil("R14", "Device:R", (ox + 50.8, oy + 10.16), R14_WERT, FP_R0805,
-                rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
-    sch.netz("R14", "1", "U", "U1_NSLEEP")
-    sch.netz("R14", "2", "D", "D2_A")
-    sch.bauteil("D2", "Device:D", (ox + 50.8, oy - 2.54), D_NOTAUS_WERT,
-                FP_SOD123, rot=0, roff=(0, 2.54), voff=(0, -2.54))
-    # ACHTUNG (per kicad-cli sch erc gefunden): Device:D hat Pin 1 (K)
-    # LINKS (x=-3,81) und Pin 2 (A) RECHTS (x=+3,81) -- die Stichleitung
-    # muss deshalb vom Koerper WEG zeigen (Pin 1 -> "L", Pin 2 -> "R"),
-    # sonst kreuzt sie den eigenen anderen Pin und verschmilzt beide Netze
-    # (so zuerst geschrieben: "R"/"L" vertauscht, D2_A verschmolz mit
-    # NOTAUS). D3/D4 unten hatten die Richtung von Anfang an richtig --
-    # dieselbe Regel, nur hier zunaechst falsch angewendet.
-    sch.netz("D2", "1", "L", netze["NOTAUS"])      # Kathode
-    sch.netz("D2", "2", "R", "D2_A")               # Anode <- R14 <- NSLEEP
+    # U3: das Verriegelungsgatter. A = NSLEEP_GATTER (vom Modul-MCU ueber
+    # R9), B = NOTAUS (Sammelleitung), Y = U1_NSLEEP (an U1 Pin 3).
+    # Pinbelegung wie U103 in modulsockel.py (1=A, 2=B, 3=GND, 4=Y,
+    # 5=VCC). Der Platz ist bewusst so gewaehlt, dass keine Stichleitung
+    # auf der Spalte x = ox_treiber-40,64 endet, auf der R7..R10 sitzen --
+    # dort verschmolzen in dieser Aufgabe schon einmal zwei Netze.
+    sch.bauteil("U3", "74xGxx:74LVC1G08", (ox + 35.56, oy + 40.64),
+                "SN74LVC1G08", FP_SOT353, rot=0,
+                roff=(-15.24, 12.7), voff=(-15.24, 15.24))
+    sch.netz("U3", "1", "L", "NSLEEP_GATTER")     # A  <- MCU ueber R9
+    sch.netz("U3", "2", "L", netze["NOTAUS"])      # B  <- Sammelleitung
+    sch.netz("U3", "3", "D", "GND")
+    sch.netz("U3", "4", "R", "U1_NSLEEP")          # Y  -> DRV8876 Pin 3
+    sch.netz("U3", "5", "U", "3V3")
+
+    # C14: Abblockkondensator fuer U3, wie ihn jedes Logik-IC braucht.
+    sch.bauteil("C14", "Device:C", (ox + 68.58, oy + 40.64), C14_WERT,
+                FP_C0805, rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
+    sch.netz("C14", "1", "U", "3V3")
+    sch.netz("C14", "2", "D", "GND")
 
     sch.bauteil("R15", "Device:R", (ox + 76.2, oy + 15.24), R15_WERT, FP_R0805,
                 rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))

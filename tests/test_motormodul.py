@@ -87,6 +87,117 @@ check("R10 bleibt der unveraenderte Altprojekt-Wert (nur DNP, nicht neu "
       "gerechnet -- die Aufgabe verlangt das nur fuer R5)",
       motormodul.R10_WERT, "4.7k")
 
+# ------------------------------- Punkt 4: die PEGEL der Notaus-Verriegelung
+# Diese Zusicherungen pruefen nicht, ob ein Bauteil da ist, sondern welche
+# SPANNUNG am nSLEEP-Pin des DRV8876 tatsaechlich ansteht. Genau daran
+# scheiterte die erste Fassung: sie hatte eine Diode, aber keinen Pegel.
+# Alle Groessen kommen aus tools/sch/motormodul.py; dort steht zu jeder die
+# Datenblattquelle mit Dokumentnummer und Abschnitt.
+M = motormodul
+
+
+def _nsleep_diodenklemme(r_vor, r_serie, v_klemme,
+                          rpd=M.DRV_RPD, v_quelle=M.V_3V3):
+    """Spannung am nSLEEP-Knoten einer passiven Diodenklemme.
+
+    Ein haengender Modul-MCU treibt ueber `r_vor` aktiv HIGH; die Klemme
+    zieht ueber `r_serie` gegen `v_klemme` (= Busspannung + Vorwaerts-
+    spannung der Klemmdiode). `rpd` ist der interne Pulldown des
+    DRV8876-nSLEEP-Pins. Knotengleichung:
+
+        (v_quelle - U)/r_vor = (U - v_klemme)/r_serie + U/rpd
+
+    `r_serie = 0` heisst: die Diode sitzt ohne Vorwiderstand direkt am
+    Knoten, dann ist U = v_klemme.
+    """
+    if r_serie == 0:
+        return v_klemme
+    leitwert = 1.0 / r_vor + 1.0 / r_serie + 1.0 / rpd
+    return (v_quelle / r_vor + v_klemme / r_serie) / leitwert
+
+
+# --- Gegenprobe 1: die urspruengliche Klemme (R9=100, R14=1k, Si-Diode) ---
+# Selbst wenn die Sammelleitung ideal auf 0 V laege, steht der Pin bei
+# rund 3,05 V. R14 schuetzt den GPIO und verhindert dabei die Wirkung.
+_u_alt = _nsleep_diodenklemme(M.R9_OHM, M.ALT_R14_OHM, M.ALT_VF_1N4148)
+check("Gegenprobe: die alte Klemme mit R14 verfehlt VIL des DRV8876",
+      _u_alt > M.DRV_VIL_MAX, True)
+check("Gegenprobe: sie liegt sogar ueber VIH -- der Treiber bleibt wach",
+      _u_alt > M.DRV_VIH_MIN, True)
+check("Gegenprobe: der gerechnete Pegel liegt bei rund 3,05 V",
+      round(_u_alt, 2), 3.05)
+
+# --- Gegenprobe 2: R14 weg, R9 gross -- ZWEI Diodenspannungen in Reihe ---
+# Der Bus geht nicht auf 0 V, sondern liegt selbst eine Diodenspannung
+# ueber Masse (D3/D4 gegen den Schaltkontakt). Eine zweite Diode zum
+# nSLEEP-Pin addiert die naechste.
+_u_ohne_r14 = _nsleep_diodenklemme(10e3, 0.0, 2 * M.ALT_VF_1N4148)
+check("Gegenprobe: Klemme ohne R14 (R9=10k) bleibt trotzdem ueber VIL",
+      _u_ohne_r14 > M.DRV_VIL_MAX, True)
+
+# --- Gegenprobe 3: dieselbe passive Klemme mit Schottky auf BEIDEN Wegen
+# haette im Grenzfall exakt null Reserve.
+_u_schottky = 2 * M.SCHOTTKY_VF_MAX_10MA
+check("Gegenprobe: passiv mit zwei Schottky-Dioden bleibt keine Reserve "
+      "gegen VIL", _u_schottky >= M.DRV_VIL_MAX, True)
+
+# --- die gebaute Loesung: UND-Gatter mit Gegentaktausgang ---------------
+_u_notaus = M.GATTER_VOL_MAX          # SCES217AA 5.5, VOL bei IOL=100uA
+_u_normal = M.GATTER_VOH_MIN          # SCES217AA 5.5, VOH bei IOH=-100uA
+check("NOTAUS gezogen: U(nSLEEP) liegt unter VIL des DRV8876",
+      _u_notaus < M.DRV_VIL_MAX, True)
+check("NOTAUS gezogen: mindestens 0,5 V Reserve gegen VIL",
+      (M.DRV_VIL_MAX - _u_notaus) >= 0.5, True)
+check("Normalbetrieb: U(nSLEEP) liegt ueber VIH des DRV8876",
+      _u_normal > M.DRV_VIH_MIN, True)
+check("Normalbetrieb: mindestens 1,0 V Reserve gegen VIH",
+      (_u_normal - M.DRV_VIH_MIN) >= 1.0, True)
+# VOL/VOH gelten nur bis 100 uA Laststrom -- der interne nSLEEP-Pulldown
+# des DRV8876 muss darunter bleiben, sonst gilt die Rechnung nicht.
+check("der nSLEEP-Pulldown (100 kOhm) bleibt unter der Laststrom-"
+      "Bedingung, fuer die VOH/VOL gelten",
+      (_u_normal / M.DRV_RPD) <= M.GATTER_IO_BEZUG, True)
+
+# --- der Eingang B des Gatters: was der NOTAUS-Bus liefert --------------
+# Gezogener Bus = Vorwaertsspannung der Koppeldiode D3/D4. Der Strom
+# kommt aus den R15-Pullups aller Module im Stapel.
+_i_bus = M.MODULE_IM_STAPEL * (M.V_3V3 - M.SCHOTTKY_VF_MAX_10MA) / M.R15_OHM
+check("Bus-Strom bei zehn Modulen bleibt unter 10 mA -- dem Stuetzpunkt, "
+      "fuer den der VF-MAX-Wert der Koppeldiode gilt",
+      _i_bus <= 10e-3, True)
+check("gezogener NOTAUS-Bus liegt unter VIL des Gatters",
+      M.SCHOTTKY_VF_MAX_10MA < M.GATTER_VIL_MAX, True)
+check("gezogener NOTAUS-Bus haelt mindestens 0,3 V Reserve gegen VIL",
+      (M.GATTER_VIL_MAX - M.SCHOTTKY_VF_MAX_10MA) >= 0.3, True)
+# Mit einer Si-Diode (1N4148W, wie zuerst gebaut) waere derselbe Pegel
+# nicht mehr sicher unter der Schwelle -- deshalb Schottky.
+check("Gegenprobe: eine Si-Koppeldiode risse die 0,3-V-Reserve auf",
+      (M.GATTER_VIL_MAX - M.ALT_VF_1N4148) >= 0.3, False)
+check("D3/D4 sind deshalb Schottky-Dioden", M.D_KOPPEL_WERT, "BAT54W")
+
+# Ruhepegel des Busses: die Leckstroeme aller Koppeldioden und
+# Gattereingaenge gegen den parallelgeschalteten Pullup.
+_r_bus = M.R15_OHM / M.MODULE_IM_STAPEL
+_i_leck = M.MODULE_IM_STAPEL * (2 * M.SCHOTTKY_IR_MAX + M.GATTER_II_MAX)
+_u_bus_high = M.V_3V3 - _i_leck * _r_bus
+check("Ruhepegel des NOTAUS-Busses bleibt ueber VIH des Gatters",
+      _u_bus_high > M.GATTER_VIH_MIN, True)
+
+# --- die Rueckwirkung auf den MCU-GPIO ---------------------------------
+# Genau das Anliegen, das R14 einmal loesen sollte: der GPIO darf nicht
+# in die Verriegelung einspeisen. Ein CMOS-Gattereingang loest das ohne
+# Widerstand -- und ohne die Wirkung zu verhindern.
+check("der MCU-GPIO speist hoechstens Gattereingangs-Leckstrom ein "
+      "(unter 0,1 mA)", M.GATTER_II_MAX < 0.1e-3, True)
+check("R9 (100 Ohm) macht dabei weniger als 1 mV Abfall -- kein Grund, "
+      "ihn zu vergroessern", (M.GATTER_II_MAX * M.R9_OHM) < 1e-3, True)
+# Zum Vergleich: die Diodenklemme ohne R14 haette denselben GPIO mit
+# rund 27 mA belastet -- der Grund, aus dem R14 ueberhaupt entstand.
+_i_alt = (M.V_3V3 - M.ALT_VF_1N4148) / M.R9_OHM
+check("Gegenprobe: die Diodenklemme ohne R14 haette den GPIO mit ueber "
+      "20 mA belastet", _i_alt > 20e-3, True)
+
+
 _KICAD_CLI = shutil.which("kicad-cli")
 if _KICAD_CLI is None:
     print("UEBERSPRUNGEN: kicad-cli nicht in PATH gefunden -- die "
@@ -127,10 +238,15 @@ else:
 
     # -------------------------------------------------- Bauteilliste
     _refs = sorted(set(c[0] for c in _sch.COMPS if not c[0].startswith("#")))
-    _erwartet_endstufe = {"D1", "D2", "D3", "D4", "C9", "C10", "C11", "C12",
-                           "C13", "J2", "J3", "J5", "Q1", "R5", "R6", "R7",
-                           "R8", "R9", "R10", "R11", "R12", "R13", "R14",
-                           "R15", "U1", "U2"}
+    # D2 und R14 sind ENTFALLEN (die Diodenklemme, die nicht wirkte --
+    # s. Pegelrechnung oben und tools/sch/motormodul.py,
+    # _notaus_verriegelung()); dafuer sind U3 (Verriegelungsgatter) und
+    # C14 (dessen Abblockkondensator) dazugekommen. Wer R14/D2 wieder
+    # einbaut, faellt hier auf.
+    _erwartet_endstufe = {"D1", "D3", "D4", "C9", "C10", "C11", "C12",
+                           "C13", "C14", "J2", "J3", "J5", "Q1", "R5", "R6",
+                           "R7", "R8", "R9", "R10", "R11", "R12", "R13",
+                           "R15", "U1", "U2", "U3"}
     _erwartet_sockel = {"U100", "U101", "U102", "U103", "R100", "R101",
                          "R102", "R104", "R105", "C100", "C101",
                          "J100", "J101", "J102", "J103", "J104"}
@@ -194,8 +310,8 @@ else:
     _an_notaus = set(_netz_pins(_sch, _gen, modulsockel.NETZE_NACH_AUSSEN["NOTAUS"]))
     check("NOTAUS erreicht den Stapelstecker (J100 Pin 9)",
           ("J100", "9") in _an_notaus, True)
-    check("NOTAUS erreicht D2 (Verriegelung Richtung NSLEEP)",
-          ("D2", "1") in _an_notaus, True)
+    check("NOTAUS erreicht U3 Pin 2 (Eingang B des Verriegelungsgatters)",
+          ("U3", "2") in _an_notaus, True)
     check("NOTAUS erreicht D3 (lokaler Notaus-Eingang 1)",
           ("D3", "2") in _an_notaus, True)
     check("NOTAUS erreicht D4 (lokaler Notaus-Eingang 2)",
@@ -217,18 +333,60 @@ else:
     check("J3 Pin 1 traegt NOTAUS_1", ("J3", "1") in _an_notaus1, True)
     check("J3 Pin 3 traegt NOTAUS_2", ("J3", "3") in _an_notaus2, True)
 
-    # Die Verriegelung sitzt auf der DRV8876-Seite von NSLEEP (nach R9),
-    # NICHT auf der MCU-Seite -- sonst wirkt sie nicht, wenn der MCU
-    # haengt UND sein Pin aktiv treibt (s. Moduldoku in motormodul.py).
+    # Die Verriegelung sitzt IM Signalweg zwischen MCU und DRV8876: der
+    # MCU erreicht den Treiber-nSLEEP-Pin nur noch ueber das Gatter.
+    # Das Netz U1_NSLEEP darf deshalb GENAU zwei Pins tragen -- den
+    # Gatterausgang und den Treibereingang. Haengt dort noch etwas
+    # anderes (etwa eine wieder eingebaute Diodenklemme R14/D2), ist die
+    # Gegentaktstufe des Gatters nicht mehr allein bestimmend und diese
+    # Zusicherung wird rot.
     _an_u1_nsleep = set(_netz_pins(_sch, _gen, "U1_NSLEEP"))
-    check("R14 (Verriegelungs-Vorwiderstand) haengt auf der DRV8876-Seite "
-          "von NSLEEP (nach R9), nicht auf der MCU-Seite",
-          ("R14", "1") in _an_u1_nsleep, True)
-    check("U1 Pin 3 (DRV8876 NSLEEP) haengt auf demselben Netz wie R14",
+    check("U3 Pin 4 (Gatterausgang Y) treibt U1_NSLEEP",
+          ("U3", "4") in _an_u1_nsleep, True)
+    check("U1 Pin 3 (DRV8876 nSLEEP) haengt auf demselben Netz",
           ("U1", "3") in _an_u1_nsleep, True)
+    check("auf U1_NSLEEP haengt NICHTS ausser Gatterausgang und "
+          "Treibereingang (kein zweiter Treiber, keine Diodenklemme)",
+          _an_u1_nsleep, {("U3", "4"), ("U1", "3")})
+
+    def _u_nsleep_aus_schaltplan(pins_am_netz):
+        """Pegel am DRV8876-nSLEEP-Pin im Notaus-Fall, hergeleitet aus
+        dem, was laut Schaltplan tatsaechlich auf U1_NSLEEP haengt.
+
+        Treibt dort allein der Gatterausgang, gilt VOL (SCES217AA 5.5).
+        Haengt dort etwas anderes, ist es die passive Klemme, wie sie
+        zuerst gebaut war (R14 + D2 gegen den MCU-Vorwiderstand R9) --
+        dann gilt die Knotengleichung, und der Pegel verfehlt VIL. So
+        wird diese Zusicherung rot, sobald jemand R14/D2 wieder
+        einbaut."""
+        if pins_am_netz - {("U1", "3")} == {("U3", "4")}:
+            return M.GATTER_VOL_MAX
+        return _nsleep_diodenklemme(M.R9_OHM, M.ALT_R14_OHM, M.ALT_VF_1N4148)
+
+    _u_ist = _u_nsleep_aus_schaltplan(_an_u1_nsleep)
+    check("aus dem Schaltplan hergeleitet: U(nSLEEP) liegt im Notaus-Fall "
+          "unter VIL des DRV8876", _u_ist < M.DRV_VIL_MAX, True)
+
+    # Der MCU erreicht das Gatter ueber R9 und sonst nichts.
+    _an_gatter_a = set(_netz_pins(_sch, _gen, "NSLEEP_GATTER"))
+    check("R9 speist den Gattereingang A", ("R9", "2") in _an_gatter_a, True)
+    check("U3 Pin 1 (Eingang A) haengt am selben Netz",
+          ("U3", "1") in _an_gatter_a, True)
+    check("zwischen R9 und Gattereingang A haengt sonst nichts",
+          _an_gatter_a, {("R9", "2"), ("U3", "1")})
     _an_mcu_nsleep = set(_netz_pins(_sch, _gen, modulsockel.NETZE_NACH_AUSSEN["NSLEEP"]))
-    check("die Verriegelung (R14) haengt NICHT auf der MCU-Seite von NSLEEP",
-          ("R14", "1") in _an_mcu_nsleep, False)
+    check("das Gatter haengt NICHT direkt auf der MCU-Seite von NSLEEP "
+          "(R9 bleibt dazwischen)",
+          any(ref == "U3" for ref, _ in _an_mcu_nsleep), False)
+
+    # Versorgung des Gatters -- ohne sie ist die Verriegelung ein
+    # unbestuecktes Versprechen.
+    check("U3 Pin 5 (VCC) haengt an 3V3",
+          ("U3", "5") in set(_netz_pins(_sch, _gen, "3V3")), True)
+    check("U3 Pin 3 (GND) haengt an GND",
+          ("U3", "3") in set(_netz_pins(_sch, _gen, "GND")), True)
+    check("C14 blockt die Gatterversorgung ab (Pin 1 an 3V3)",
+          ("C14", "1") in set(_netz_pins(_sch, _gen, "3V3")), True)
 
     # ------------------------------------------------------------- ERC
     ERWARTETE_ERC_FEHLER = 0
