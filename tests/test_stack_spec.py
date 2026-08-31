@@ -29,7 +29,24 @@ check("Lochbild vollstaendig", sorted(S.M3_HOLES),
 # Masse, die die Spezifikation zusichert und die bisher niemand prueft.
 check("Eckenradius", S.CORNER_R, 3.0)
 check("M3-Bohrdurchmesser", S.M3_DRILL, 3.2)
-check("Stapelabstand", S.STAPEL_ABSTAND, 13.5)
+check("Stapelabstand", S.STAPEL_ABSTAND, 13.6)
+
+# Der Spalt G zwischen zwei Platinen IST die Bauhoehe der Abstands-
+# bolzen, die den Stapel tragen. Er muss deshalb ein handelsuebliches
+# Mass sein -- ein rechnerisch schoener Wert wie 11,90 mm ist als
+# Bauteil nicht zu kaufen und faellt erst beim Gehaeuse auf, lange
+# nachdem die Platinen gefertigt sind. Genau so ist es zweimal
+# passiert: 13,0 mm ergab 11,40 mm, 13,5 mm ergab 11,90 mm, beides
+# keine Katalogmasse; erst 13,6 mm trifft mit 12,00 mm eines. Diese
+# Pruefung haelt den Grund fest, damit die naechste Aenderung von
+# STAPEL_ABSTAND nicht wieder daran vorbeigeht.
+BOLZEN_KATALOG = (10.0, 11.0, 12.0, 15.0, 16.0, 20.0)  # mm, gaengige
+# M3-Distanzbolzen (Sechskant, Messing) -- die Reihe, die jeder
+# Haendler fuehrt. Kein Datenblattwert, sondern eine Sortimentsangabe:
+# wer einen Bolzen ausserhalb dieser Reihe braucht, soll das bewusst
+# entscheiden und die Reihe hier erweitern.
+check("Spalt entspricht einem handelsueblichen Abstandsbolzen",
+      round(S.STAPEL_ABSTAND - S.PLATINE_DICKE, 2) in BOLZEN_KATALOG, True)
 
 # --- Steckerbelegung ---
 check("40 Pins beschrieben", len(S.PIN_ROLLE), 40)
@@ -163,11 +180,11 @@ check("Leistungsstecker nicht schwaecher als der Signalstecker",
 # naechsten Denkfehler ab: wer STAPEL_ABSTAND aendert, ohne die
 # Steckermasse mitzudenken, oder umgekehrt.
 MINDEST_EINSTECKTIEFE = 2.0  # mm, konservativ unter dem knappsten
-# belegten Fall (Ketten- und Leistungsstecker, rechnerisch je 5,10 mm
-# bei 13,5 mm, hardware/bauteile-1b.md Beleg 13/14) -- faengt Rechen-
+# belegten Fall (Ketten- und Leistungsstecker, rechnerisch je 5,00 mm
+# bei 13,6 mm, hardware/bauteile-1b.md Beleg 13/14) -- faengt Rechen-
 # oder Bauteiländerungen ab, ohne die exakte Zahl selbst zu
 # duplizieren. Die Schwelle bleibt bei 2,0 mm, obwohl der Ist-Wert
-# sich zweimal geaendert hat (3,1 -> 5,60 -> 5,10 mm): sie ist die
+# sich dreimal geaendert hat (3,1 -> 5,60 -> 5,10 -> 5,00 mm): sie ist die
 # Reissleine, nicht die Messlatte.
 check("Stapelstecker-Einstecktiefe ueber Mindestschwelle",
       S.EINSTECKTIEFE_STAPEL() > MINDEST_EINSTECKTIEFE, True)
@@ -187,7 +204,7 @@ for _n, _st in (("Kette", S.STECKER_KETTE), ("Leistung", S.STECKER_LEISTUNG)):
     # Abstandsbolzen sitzen -- die Platinen liessen sich dann nicht
     # mehr flach verschrauben. Das ist der engste Punkt des Stapels und
     # der Grund, warum STAPEL_ABSTAND nicht unter 12,6 mm darf. Seit
-    # Aufgabe 5g (STAPEL_ABSTAND 13,0 -> 13,5 mm) sind es 0,90 statt
+    # Aufgabe 5g und der Bolzenkorrektur (13,0 -> 13,5 -> 13,6 mm) sind es 1,00 statt
     # 0,40 mm; die Pruefung bleibt trotzdem "> 0" und nicht "> 0,9" --
     # sie soll den Vorzeichenwechsel fangen, nicht den heutigen Wert
     # festschreiben.
@@ -201,7 +218,7 @@ for _n, _st in (("Kette", S.STECKER_KETTE), ("Leistung", S.STECKER_LEISTUNG)):
 # anschlagen, bevor die Platinen auf Abstand sind: seine Einstecktiefe
 # muss kleiner bleiben als die Buchse tief ist. Das ist die Reserve,
 # die beim SENKEN von STAPEL_ABSTAND als erste verschwaende (bei
-# 13,5 mm: 8,50 - 7,46 = 1,04 mm).
+# 13,6 mm: 8,50 - 7,36 = 1,14 mm).
 check("Stapelstift schlaegt nicht am Buchsengrund an",
       S.EINSTECKTIEFE_STAPEL() < S.STECKER_STAPEL["gehaeusehoehe_mm"], True)
 

@@ -21,18 +21,29 @@ PLATINE_DICKE = 1.6      # mm, Standard-PCB-Dicke (JLCPCB); auch Grundlage
 M3_DRILL = 3.2
 M3_HOLES = [(4.0, 4.0), (4.0, 56.0), (60.0, 4.0), (60.0, 56.0)]
 
-STAPEL_ABSTAND = 13.5     # mm zwischen zwei Platinen (Platinenoberkante
-# zu Platinenoberkante). Dritte Runde, 2026-08-31 (Aufgabe 5g) --
-# ersetzt 13,0 mm, das seinerseits die urspruenglichen 15,0 mm ersetzt
+STAPEL_ABSTAND = 13.6     # mm zwischen zwei Platinen (Platinenoberkante
+# zu Platinenoberkante). Vierte Runde, 2026-08-31 -- ersetzt 13,5 mm,
+# das nur Stunden vorher 13,0 mm das seinerseits die urspruenglichen 15,0 mm ersetzt
 # hatte. Herleitung, siehe hardware/bauteile-1b.md, Beleg 6 (zweite
 # Runde), Beleg 13.5 und Beleg 14:
 #
-#   Spalt G = STAPEL_ABSTAND - PLATINE_DICKE = 13,5 - 1,6 = 11,90 mm
-#   Kettenstecker  : Einstecktiefe = 17,00 - 11,90 = 5,10 mm (EINSTECKTIEFE_KETTE())
-#   Leistungsstecker: dieselbe Rechnung             = 5,10 mm (EINSTECKTIEFE_LEISTUNG())
-#   Stapelstecker  : Einstecktiefe = 19,36 - 11,90 = 7,46 mm (EINSTECKTIEFE_STAPEL())
-#   Luft Stiftkoerper/Buchsenoberkante = 11,90 - 8,50 - 2,50
-#                                                   = 0,90 mm (LUFT_STIFTKOERPER())
+#   Spalt G = STAPEL_ABSTAND - PLATINE_DICKE = 13,6 - 1,6 = 12,00 mm
+#   Kettenstecker  : Einstecktiefe = 17,00 - 12,00 = 5,00 mm (EINSTECKTIEFE_KETTE())
+#   Leistungsstecker: dieselbe Rechnung             = 5,00 mm (EINSTECKTIEFE_LEISTUNG())
+#   Stapelstecker  : Einstecktiefe = 19,36 - 12,00 = 7,36 mm (EINSTECKTIEFE_STAPEL())
+#   Luft Stiftkoerper/Buchsenoberkante = 12,00 - 8,50 - 2,50
+#                                                   = 1,00 mm (LUFT_STIFTKOERPER())
+#
+# WARUM AUSGERECHNET 13,6. Der Spalt G IST die Bauhoehe der Abstands-
+# bolzen, die den Stapel mechanisch tragen -- und 11,90 mm gibt es
+# nicht zu kaufen. Handelsuebliche M3-Bolzen kommen in 10/11/12/15 mm.
+# 13,6 mm trifft mit G = 12,00 mm ein Katalogmass genau, bei 1,00 mm
+# Luft statt 0,90 und einer Einstecktiefe, die nur 0,10 mm unter der
+# von 13,5 liegt. Der Fehler war geerbt: auch 13,0 mm ergab mit
+# 11,40 mm kein Katalogmass, es hat nur niemand nachgesehen, weil die
+# Bolzen erst im Gehaeuse (Aufgabe 9) vorkommen -- dort waere es als
+# Sonderanfertigung oder als Stapel aus Unterlegscheiben aufgefallen,
+# lange nachdem die Platinen gefertigt sind.
 #
 # WARUM 13,5 UND NICHT 13,0. Die 0,40 mm Luft, die 13,0 mm liess, waren
 # der engste Punkt des ganzen Stapels: der Isolierkoerper der SMD-
