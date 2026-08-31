@@ -6,20 +6,33 @@ Garantie. Vorlage und Sorgfaltsmassstab: `hardware/bauteile.md` (Etappe 1a).
 
 ## Bauteiltabelle
 
+**Nachtrag 2026-08-31 (Prüfung durch den Auftraggeber):** Der 2×20-Signalstecker
+ist nach der Entscheidung des Auftraggebers **kein** Buchse/Stift-Paar mehr,
+sondern ein echter Stapelstecker (Buchse mit durchgehendem Stift). Die
+ursprünglichen zwei Zeilen dafür (Buchse C2977589 / Stift C50980) stehen unten
+als **verworfen** markiert, ersetzt durch die neue Stapelstecker-Zeile.
+Begründung und Rechnung: Beleg 1 (überarbeitet) und der neue Abschnitt
+„Beleg 6 — Entscheidung Stapelstecker". Die beiden verworfenen Bauteile
+bleiben sichtbar stehen, weil ihre Zahlen (6,0/3,0 mm bzw. 8,5 mm) jetzt die
+Grundlage des neuen, eigenständigen Kettensteckers sind.
+
 | Zweck | Typ | Bauform | LCSC | geprüft | Quelle |
 |---|---|---|---|---|---|
-| Signalstecker, Buchse (oben, 2×20) | BOOMELE/ZHOURI-Familie, 2,54 mm Buchsenleiste | THT, Gehäusehöhe **8,5 mm** über Platine | C2977589 | ja | LCSC-Produktseite `lcsc.com/product-detail/C2977589.html`; Datenblatt (ZHOURI, Rev. ZRLCGY2025-06-17-CJ A/1), Masszeichnung „8,5±0,2"; JLCPCB-Produktseite `jlcpcb.com/partdetail/2.54-2*20/C2977589` (SMT Assembly, Economic/Standard PCBA) |
-| Signalstecker, Stift (unten, 2×20) | BOOMELE 2,54 mm Stiftleiste, gerade | THT, Stift **6,0 mm** oberhalb / **3,0 mm** unterhalb des Isolierkörpers (Gesamtlänge 9,0 mm) | C50980 | ja | LCSC-Produktseite `lcsc.com/product-detail/Male-Header_Made-in-China-2-54mm-2-20P-Header_C50980.html`; Datenblatt (东莞康孚电子), Masszeichnung „3.0" / „6.0"; JLCPCB-Produktseite `jlcpcb.com/partdetail/BOOMELE-2_54mm2_20PHeader/C50980` (SMT Assembly, Economic/Standard PCBA) |
-| Leistungsstecker, Buchse (oben, 2×2) | gleiche ZHOURI-Familie, 2,54 mm | THT, **8,5 mm** über Platine, 2,5 A/Kontakt | C2977590 | ja | LCSC-Produktseite `lcsc.com/product-detail/Female-Headers_ZHOURI-2-54-2-2_C2977590.html` (Rohdaten: „2.5A", „8.5mm insulation height") |
+| Signalstecker, Buchse (oben, 2×20) — **verworfen, s. u.** | BOOMELE/ZHOURI-Familie, 2,54 mm Buchsenleiste | THT, Gehäusehöhe 8,5 mm über Platine | C2977589 | verworfen (Bauform an sich geprüft) | LCSC-Produktseite `lcsc.com/product-detail/C2977589.html`; Datenblatt (ZHOURI, Rev. ZRLCGY2025-06-17-CJ A/1), Masszeichnung „8,5±0,2"; JLCPCB-Produktseite `jlcpcb.com/partdetail/2.54-2*20/C2977589` (SMT Assembly, Economic/Standard PCBA) |
+| Signalstecker, Stift (unten, 2×20) — **verworfen, s. u.** | BOOMELE 2,54 mm Stiftleiste, gerade | THT, Stift 6,0 mm oberhalb / 3,0 mm unterhalb des Isolierkörpers (Gesamtlänge 9,0 mm) | C50980 | verworfen (Bauform an sich geprüft) | LCSC-Produktseite `lcsc.com/product-detail/Male-Header_Made-in-China-2-54mm-2-20P-Header_C50980.html`; Datenblatt (东莞康孚电子), Masszeichnung „3.0" / „6.0"; JLCPCB-Produktseite `jlcpcb.com/partdetail/BOOMELE-2_54mm2_20PHeader/C50980` (SMT Assembly, Economic/Standard PCBA) |
+| **Stapelstecker, Signal (2×20) — ersetzt die beiden Zeilen oben** | ZHOURI/BOOMELE „PC104-2*NA+1": Buchse mit durchgehendem Stift | THT, Gehäuse 8,5 mm über Platine, Stift 12,46 mm unterhalb des Gehäuses (Gesamtlänge 23,50 mm), 3 A/Kontakt | C35165 | ja | LCSC-Produktseite `lcsc.com/product-detail/Pin-Header-Female-Header_Boom-Precision-Elec-2-54mm-2-20P_C35165.html`; Datenblatt (ZHOURI/上海康司玛, Zeichnung „PC104-2*NA+1"), Masszeichnung „8,5±0,2" / „12,46±0,2" / „23,50"; JLCPCB-Produktseite `jlcpcb.com/partdetail/BOOMELE-2_54_2_20PFemaleLongPC104/C35165` (SMT Assembly, Economic/Standard PCBA) |
+| Kettenstecker, Buchse (oben, 1×2, trägt SEL+GND) | XFCN PM254V-11-02-H85 | THT, 8,5 mm über Platine, 3 A/Kontakt, 250 V | C541849 | ja | LCSC-Produktseite `lcsc.com/product-detail/C541849.html` (Rohdaten: „3A", „250V", „8.5mm"); JLCPCB-Produktseite `jlcpcb.com/partdetail/XFCN-PM254V_1102H85/C541849` (SMT Assembly, Economic/Standard PCBA) — laut Herstellerbezeichnung passend zur XFCN-PZ254-Reihe |
+| Kettenstecker, Stift (unten, 1×2) | XFCN PZ254V-11-02P | THT, Stift 6,0 mm oberhalb / 3,0 mm unterhalb des Isolierkörpers, 3 A/Kontakt, 250 V | C492401 | ja | LCSC-Produktseite `lcsc.com/product-detail/Pin-Header-Female-Header_XFCN-PZ254V-11-02P_C492401.html` (Rohdaten: „6mm"/„3mm" Steck-/Lötpin); JLCPCB-Produktseite `jlcpcb.com/partdetail/XFCN-PZ254V_1102P/C492401` (SMT Assembly, Economic/Standard PCBA) |
+| Leistungsstecker, Buchse (oben, 2×2) | gleiche ZHOURI-Familie, 2,54 mm | THT, 8,5 mm über Platine, 2,5 A/Kontakt | C2977590 | ja | LCSC-Produktseite `lcsc.com/product-detail/Female-Headers_ZHOURI-2-54-2-2_C2977590.html` (Rohdaten: „2.5A", „8.5mm insulation height") |
 | Leistungsstecker, Stift (unten, 2×2) | gleiche BOOMELE-Familie, 2,54 mm | THT, 6,0/3,0 mm, 3 A/Kontakt | C66690 | ja | LCSC-Produktseite `lcsc.com/product-detail/Male-Header_Double-Rows2-2p-pitch2-54mm_C66690.html` (Rohdaten: „3A", „6mm"/„3mm") |
-| D-Flipflop, asynchroner Löscheingang | SN74LVC1G175DCKR (TI) | **SOT-363-6** (SC-70-6), 6 Pins | C202238 | ja | LCSC-Produktseite `lcsc.com/product-detail/74-Series_TI_SN74LVC1G175DCKR_SN74LVC1G175DCKR_C202238.html`; JLCPCB-Produktseite `jlcpcb.com/partdetail/TexasInstruments-SN74LVC1G175DCKR/C202238` (SMT Assembly, Economic/Standard PCBA, MSL 1); Datenblatt Nexperia 74LVC1G175 Rev. 11 (15. Aug. 2023) — baugleiche Funktion, TI-Bauteil elektrisch/pinkompatibel |
-| Gatter NOT (Invertierung Q) | SN74LVC1G04DCKR (TI) | **SOT-353** (SC-70-5), 5 Pins | C8207 | ja | LCSC-Produktseite `lcsc.com/product-detail/C8207.html`; JLCPCB-Produktseite `jlcpcb.com/partdetail/TexasInstruments-SN74LVC1G04DCKR/C8207` (SMT Assembly, Economic/Standard PCBA, MSL 1) |
-| Gatter Dual-AND (RESET, BOOT0) | 74LVC2G08GT,115 (Nexperia) | **XSON-8** (1×2 mm), 8 Pins | C548580 | ja | JLCPCB-Produktseite `jlcpcb.com/partdetail/Nexperia-74LVC2G08GT115/C548580` (SMT Assembly, Economic/Standard PCBA, MSL 1) |
+| D-Flipflop, asynchroner Löscheingang | SN74LVC1G175DCKR (TI) | SOT-363-6 (SC-70-6), 6 Pins | C202238 | ja | LCSC-Produktseite `lcsc.com/product-detail/74-Series_TI_SN74LVC1G175DCKR_SN74LVC1G175DCKR_C202238.html`; JLCPCB-Produktseite `jlcpcb.com/partdetail/TexasInstruments-SN74LVC1G175DCKR/C202238` (SMT Assembly, Economic/Standard PCBA, MSL 1); Primärquelle TI-Datenblatt `SN74LVC1G175`, Dok. SCES560G (März 2004, revidiert Juni 2015), Abschnitt 3 „Description" und Abschnitt 5 „Pin Configuration and Functions" (Gehäuse „DCK Package, 6-Pin SC70", Pin 6 = `CLR`) |
+| Gatter NOT (Invertierung Q) | SN74LVC1G04DCKR (TI) | SOT-353 (SC-70-5), 5 Pins | C8207 | ja | LCSC-Produktseite `lcsc.com/product-detail/C8207.html`; JLCPCB-Produktseite `jlcpcb.com/partdetail/TexasInstruments-SN74LVC1G04DCKR/C8207` (SMT Assembly, Economic/Standard PCBA, MSL 1) |
+| Gatter Dual-AND (RESET, BOOT0) | 74LVC2G08GT,115 (Nexperia) | XSON-8 (1×2 mm), 8 Pins | C548580 | ja | JLCPCB-Produktseite `jlcpcb.com/partdetail/Nexperia-74LVC2G08GT115/C548580` (SMT Assembly, Economic/Standard PCBA, MSL 1) |
 | 5-V-Regler | K7805-2000R3 | SIP-3 | C2931187 | ja | bereits geprüft in Etappe 1a / LED-Dimmer-Projekt, siehe `hardware/bauteile.md` — hier unverändert übernommen, nicht neu recherchiert |
 | Klemme 2-polig | DB128L-5.08-2P-GN-S | THT, 5,08 mm | C395868 | ja | bereits geprüft in Etappe 1a / LED-Dimmer-Projekt — unverändert übernommen |
 | Klemme 3-polig | DB128L-5.08-3P-GN-S | THT, 5,08 mm | C395869 | ja | LCSC-Produktseite `lcsc.com/product-detail/C395869.html` (16 A, 300 V, M2-Schraube, 12–22 AWG); JLCPCB-Produktseite bestätigt (DORABO-Familie, SMT/Wave-Assembly, Economic/Standard PCBA) — selbe Farbe/Baureihe wie die bereits geprüfte 2-polige Klemme |
 
-Alle sieben neu recherchierten Nummern wurden auf einer echten LCSC- oder
+Von den acht in der ersten Fassung neu recherchierten Nummern (nicht sieben, wie dort irrtümlich stand — Zählfehler korrigiert) sowie den drei in dieser Nachbesserung hinzugekommenen (Stapelstecker C35165, Kettenstecker C541849/C492401) wurde jede auf einer echten LCSC- oder
 JLCPCB-Produktseite gesichtet (Datenblatt-Zeichnung oder strukturierte
 Attribute), nicht aus dem Gedächtnis übernommen. Wo eine WebSearch-Kurzfassung
 unterwegs Angaben behauptete, die dem tatsächlich gelesenen Datenblatt
@@ -118,18 +131,117 @@ die Entscheidung darüber liegt beim Auftraggeber:
    nicht weiter verfolgt, weil ausserhalb des Bindungsrahmens „nur
    gesichtete LCSC/JLCPCB-Nummern".
 
+### Nachtrag 2026-08-31 — Entscheidung des Auftraggebers: doch der Stapelstecker
+
+Der Auftraggeber hat nach Prüfung dieses Befundes entschieden: **der
+2×20-Signalstecker wird der oben verworfene PC104-Stapelstecker (LCSC
+C35165)** — nicht mehr das Buchse/Stift-Paar C2977589/C50980. Begründung
+und Grenzen dieser Entscheidung stehen ausführlich in Beleg 6 unten; hier
+nur die nachgerechnete Geometrie, weil sie dieselbe Systematik wie oben
+verwendet, nur mit einem anderen Bauteil.
+
+**Geometrie beim durchgehenden Stift.** Anders als beim Buchse/Stift-Paar
+sitzt hier auf **jedem** Modul dieselbe Buchse-mit-langem-Stift (C35165).
+Der Stift von Modul A führt durch dessen eigene Platine (1,6 mm) hindurch
+und ragt dann weiter nach unten in die Buchse von Modul B hinein:
+
+    M = Stiftlänge unter dem Gehäuse − Platinendicke von A
+      = 12,46 mm − 1,6 mm = 10,86 mm  (Nettoreichweite unter A's Unterseite)
+    F = Gehäusehöhe der Buchse über B's Oberseite = 8,5 mm  (unverändert)
+
+Dieselbe Bedingung wie oben (M ≤ G ≤ M + F, mit G = STAPEL_ABSTAND −
+1,6 mm) ergibt jetzt:
+
+    M + F = 10,86 mm + 8,5 mm = 19,36 mm
+    G(15,0 mm) = 15,0 mm − 1,6 mm = 13,4 mm
+
+    M = 10,86 mm ≤ 13,4 mm  → kein Anschlagen, 2,54 mm Puffer
+    Einstecktiefe = 19,36 mm − 13,4 mm = 5,96 mm  → komfortabel
+
+Umgestellt nach dem gültigen Bereich für `STAPEL_ABSTAND` (Bedingung
+M ≤ G ≤ M+F, G = STAPEL_ABSTAND − 1,6 mm):
+
+    STAPEL_ABSTAND_min = M + 1,6 mm  = 10,86 + 1,6  = 12,46 mm
+    STAPEL_ABSTAND_max = M+F + 1,6 mm = 19,36 + 1,6 = 20,96 mm
+
+**Ergebnis: 15,0 mm liegt komfortabel im gültigen Bereich [12,46 mm;
+20,96 mm]**, mit 5,96 mm rechnerischer Einstecktiefe — deutlich mehr
+Reserve als die 1,1 mm des ursprünglich geprüften Paars. Auch im
+ungünstigsten Toleranzfall (±0,2 mm auf beiden Bauteilmassen, ±0,16 mm
+Platinendicke) bleibt die Einstecktiefe über 5,5 mm; eine Nachrechnung mit
+den etwas niedrigeren, automatisch aus dem LCSC-Attributfeld gelesenen
+Werten (8,3 mm statt 8,5 mm, 12,3 mm statt 12,46 mm — kleine Abweichung
+zur direkt aus der Datenblattzeichnung gelesenen Zahl, vermutlich Rundung
+der automatischen Attributextraktion) ändert daran nichts Wesentliches
+(M+F ≈ 19,0 mm, Einstecktiefe ≈ 5,6 mm bei 15,0 mm).
+
+**`STAPEL_ABSTAND` muss also NICHT geändert werden.** Die Vermutung des
+Auftraggebers, es könnte auf 12,6 mm sinken müssen, hat sich mit den
+tatsächlich gelesenen Datenblattzahlen nicht bestätigt — 15,0 mm passt mit
+gutem Spielraum. Umgesetzt in `tools/stack_spec.py` als Kommentar bei
+`STAPEL_ABSTAND` und in den neuen Konstanten `STECKER_STAPEL`/
+`STECKER_KETTE`.
+
+**Unabhängige Bestätigung, nicht aus dem Datenblatt:** PC/104 ist ein
+dokumentierter Industriestandard mit **fest definiertem** Platinenabstand
+von 0,600 Zoll = 15,24 mm (Quelle: PC/104-Consortium, `pc104.org/hardware-
+specifications/pc104/`; unabhängig bestätigt durch Samtec, die für exakt
+diesen Standard passende Abstandsbolzen mit 15,24 mm Stapelhöhe führen).
+Das hier gewählte Bauteil trägt den Namen „PC104-2\*NA+1“ und ist damit
+mit hoher Wahrscheinlichkeit für genau diesen Industriewert ausgelegt —
+15,24 mm liegt nur 0,24 mm über unserem Vertragswert 15,0 mm, tief im oben
+berechneten gültigen Bereich. Das ist ein unabhängiger Plausibilitätscheck
+von ausserhalb der Datenblattzeichnung, kein Ersatz für die eigene
+Rechnung, aber eine Bestätigung, dass die eigene Dimensionsinterpretation
+der Zeichnung (M und F wie oben zugeordnet) nicht offensichtlich falsch
+ist.
+
+**Der Kettenstecker reproduziert den ursprünglichen Befund unverändert.**
+Die eine Leitung, die weiterhin aufgetrennt werden muss (`SEL`), bekommt
+zwangsläufig wieder ein normales Buchse/Stift-Paar (kein Durchgangsstift
+möglich, sonst liesse sie sich nicht auftrennen — derselbe Grund, der den
+2×20-Stecker ursprünglich zum Paar gemacht hatte). Die dafür gefundenen,
+extra für die Zweipoligkeit gesichteten Bauteile XFCN PZ254V-11-02P
+(C492401, Stift) und XFCN PM254V-11-02-H85 (C541849, Buchse) tragen
+**exakt dieselben Masse** wie C50980/C2977589 (6,0/3,0 mm bzw. 8,5 mm,
+beide Datenblätter/Attribute gesichtet) — die Rechnung von oben gilt
+deshalb unverändert: **1,1 mm Einstecktiefe bei 15,0 mm, derselbe dünne
+Rand wie ursprünglich gefunden.** Der Umstieg auf den Stapelstecker löst
+das Höhenproblem nur für die 39 durchgereichten Leitungen, nicht für den
+Kettenstecker. Das ist keine neue Erkenntnis, sondern derselbe Befund wie
+oben, jetzt auf einen kleineren, eigenständigen Stecker konzentriert statt
+über den ganzen 40-Pin-Stecker verteilt — hier explizit festgehalten, weil
+das beim ersten Lesen der Aufgabenstellung leicht überlesen werden könnte:
+„zur selben Bauhöhe passen" heisst nicht „dasselbe Höhenproblem gelöst".
+
 ## Beleg 2 — D-Flipflop mit asynchronem Löscheingang: gefunden
 
 **Ergebnis: Ja, es gibt eines, JLCPCB-bestückbar.** `SN74LVC1G175DCKR`
-(Texas Instruments), LCSC C202238, Gehäuse SOT-363-6 (6 Pins). Laut
-Nexperia-Datenblatt zur baugleichen Funktion 74LVC1G175 (Rev. 11, 15. Aug.
-2023), Abschnitt 1 „General description": „individual data (D) input,
-clock (CP) input, master reset (MR) input, and Q output […] The master
-reset (MR) is an asynchronous active LOW input and operates independently
-of the clock input." Funktionstabelle (Abschnitt 7, Tabelle 4): `MR=L` →
-`Q=L`, unabhängig von Takt und D. Das TI-Bauteil ist die pin- und
-funktionskompatible Variante desselben Standardtyps (Familienname
-„74LVC1G175" bei beiden Herstellern identisch); auf der tatsächlich
+(Texas Instruments), LCSC C202238, Gehäuse SOT-363-6 (6 Pins).
+
+**Primärquelle, direkt gelesen:** TI-Datenblatt `SN74LVC1G175`, Dokument
+SCES560G, „MARCH 2004 – REVISED JUNE 2015“ (heruntergeladen von
+`ti.com/lit/ds/symlink/sn74lvc1g175.pdf`). Titel bereits im Dokumentkopf:
+„SN74LVC1G175 Single D-Type Flip-Flop With Asynchronous Clear“. Abschnitt 3
+„Description“, wörtlich: „The SN74LVC1G175 device has an asynchronous
+clear (CLR) input. When CLR is high, data from the input pin (D) is
+transferred to the output pin (Q) on the clock's (CLK) rising edge. When
+CLR is low, Q is forced into the low state, regardless of the clock edge
+or data on D.“ Abschnitt 5 „Pin Configuration and Functions“ zeigt für das
+hier gewählte Gehäuse „DCK Package, 6-Pin SC70“ die Pinbelegung 1=CLK,
+2=GND, 3=D, 4=Q, 5=VCC, 6=CLR (aktiv LOW, Balken über CLR im Schaltzeichen
+und in der Pin-Tabelle als „Clear Data Input“ beschriftet) — exakt das
+Gehäuse von C202238 (LCSC-Attribut „SC70(6)“ bzw. „SOT-363-6“, dieselbe
+Bauform unter anderem Namen).
+
+Ergänzend, nicht als Ersatz für die Primärquelle: Nexperia führt denselben
+Standardtyp unter identischem Familiennamen 74LVC1G175 (Datenblatt Rev. 11,
+15. Aug. 2023) mit gleicher Funktion („master reset MR, asynchronous
+active LOW“) — die beiden Hersteller bieten pin- und funktionskompatible
+Varianten desselben Typs an. Die vorherige Fassung dieses Dokuments zitierte
+irrtümlich nur die Nexperia-Quelle für ein bei LCSC als TI-Bauteil
+gesichtetes Teil; korrigiert auf die tatsächliche Herstellerquelle des
+gesichteten Bauteils. Auf der tatsächlich
 gesichteten LCSC-Produktseite steht die TI-Beschreibung wörtlich „Single
 D-Type Flip-Flop With Asynchronous Clear".
 
@@ -267,12 +379,70 @@ die Höhenrechnung aus Beleg 1 zu ändern — die Familie bleibt dieselbe.
   eigener URL gesichtet, die LCSC-Produktseite mit der vollständigen
   Spezifikation aber schon.
 
+## Beleg 6 — Entscheidung Stapelstecker: warum zuerst ausgeschlossen, warum jetzt doch
+
+**Warum ursprünglich ausgeschlossen (Etappe 1b, erste Fassung dieses
+Dokuments, und schon im Design-Doc):** Der Signalstecker führt alle 40
+Pico-Pins durch den Stapel. Ein „echter Stapelstecker" — eine Buchse mit
+einem einzigen, durchgehenden Stift statt getrennter Buchse oben/Stift
+unten — bildet auf **jedem** dieser 40 Pins denselben elektrischen Knoten
+von der Platinenoberseite bis zur Unterseite. Für 39 der 40 Leitungen ist
+das gewollt: I²C, die Flash-UART, `SEL_CLK`, `FLASH_MODE`, `NOTAUS`,
+Versorgung und alle freien GPIO sind **globale oder durchgereichte Netze**
+— im ganzen Stapel dasselbe Signal, unabhängig davon, welches Modul gerade
+angesprochen wird. Genau **eine** Leitung ist anders: `SEL`, die
+Auswahlkette. Sie ist ein Schieberegister (`tools/kette.py`) — jedes
+Modul haelt seinen eigenen Zustand `Q` in einem Flipflop, und `SEL` muss
+von Modul zu Modul **unterbrochen** werden koennen (D des einen Moduls ist
+Q des Moduls darueber, nicht dieselbe Leitung). Ein durchgehender Stift
+kann das nicht: er verbindet `SEL` elektrisch mit sich selbst durch den
+ganzen Stapel, und aus der Kette würde ein einziger gemeinsamer Knoten —
+das Schieberegister bräche zusammen, mehrere Module wären gleichzeitig
+„ausgewählt". Deshalb stand in der ersten Fassung dieses Dokuments (siehe
+Beleg 1, unveränderter Text oben): der PC104-Stapelstecker C35165 sei
+„elektrisch ein Sockel-plus-langer-Stift in einem Bauteil — genau die
+Bauform, die der Vertrag ausdrücklich ausschliesst" und wurde verworfen.
+
+**Was sich geändert hat, ist nicht die Physik, sondern der Zuschnitt.**
+Der ursprüngliche Ausschluss galt dem *ganzen* 2×20-Stecker, weil er alle
+40 Leitungen auf einmal traf. Er bleibt für **eine** Leitung richtig
+(`SEL`) — aber falsch verallgemeinert für die anderen 39. Die Lösung des
+Auftraggebers trennt das: Der 2×20-Stecker traegt nur noch die 39
+Leitungen, die ohnehin durchgehend sein sollen, als echter Stapelstecker
+mit den bekannten Vorteilen (ein Bauteil statt zwei, mechanisch belastbare
+lange Kontakte, siehe Beleg 1 Nachtrag für die Hoehenrechnung). `SEL`
+bekommt einen eigenen, kleinen, **nicht** durchgehenden Stecker
+(Kettenstecker, C492401/C541849) — dort gilt der ursprüngliche Ausschluss
+unveraendert, und genau deshalb ist der Kettenstecker ein normales
+Buchse/Stift-Paar wie der alte 2×20-Stecker es war, mit demselben
+1,1-mm-Befund (Beleg 1, Nachtrag).
+
+**Was das für den Vertrag bedeutet (`tools/stack_spec.py`):**
+
+- `SEL` faellt aus `RESERVIERT` und `PIN_ROLLE` heraus; Pin 4 (GP2) ist
+  wieder `"frei"`.
+- Zwei neue Konstanten `STECKER_STAPEL` und `STECKER_KETTE` halten Bauteil,
+  Hoehenrechnung und (fuer den Kettenstecker) die Pinbelegung fest, analog
+  zu den anderen Vertragsgegenstaenden.
+- `STAPEL_ABSTAND` bleibt bei 15,0 mm (Beleg 1, Nachtrag: passt komfortabel
+  zum Stapelstecker; der Kettenstecker traegt weiterhin nur 1,1 mm
+  Einstecktiefe, dokumentiert, nicht stillschweigend uebergangen).
+- `docs/vertrag.md` wurde mit `python3 tools/vertrag_doku.py` neu erzeugt
+  und zeigt jetzt einen eigenen Abschnitt „Stapelstecker und
+  Kettenstecker" mit Bauteil, Hoehen und der Pinbelegung des
+  Kettensteckers.
+- `tests/test_stack_spec.py` prueft neu: `SEL` steht in keiner Rolle mehr,
+  Pin 4 ist frei, und `STECKER_KETTE` traegt genau zwei Pins (`SEL` und
+  `GND`).
+
 ## Zusammenfassung für die Beschaffung
 
 | Offener Punkt aus der Aufgabe | Antwort |
 |---|---|
-| Steckerhöhe vs. 15 mm | Passt rechnerisch (14,5 mm Reserve gegen 13,4 mm Spalt), aber nur mit 1,1 mm Einstecktiefe — dünner Rand, drei Wege in Beleg 1, Entscheidung offen |
-| D-Flipflop mit Löscheingang | Gefunden: SN74LVC1G175DCKR, C202238, SOT-363-6, JLCPCB-bestückbar; braucht neue Leitung ODER lokales RC-POR |
+| Steckerhöhe vs. 15 mm, ursprüngliches Buchse/Stift-Paar | Passte rechnerisch, aber nur mit 1,1 mm Einstecktiefe — dünner Rand (Beleg 1) |
+| **Entscheidung 2026-08-31** | Stapelstecker (Buchse mit durchgehendem Stift, C35165) für 39 der 40 Leitungen; eigener Kettenstecker (C492401/C541849) nur für `SEL`. `STAPEL_ABSTAND` bleibt 15,0 mm — passt komfortabel zum Stapelstecker (5,96 mm Einstecktiefe), der Kettenstecker traegt weiterhin nur 1,1 mm (Beleg 1 Nachtrag, Beleg 6) |
+| D-Flipflop mit Löscheingang | Gefunden: SN74LVC1G175DCKR, C202238, SOT-363-6, JLCPCB-bestückbar; Primärquelle TI SCES560G; braucht neue Leitung ODER lokales RC-POR |
 | Gatter (NOT, 2× AND) | Beide JLCPCB-bestückbar: C8207 (SOT-353) und C548580 (XSON-8, deckt beide AND-Funktionen) |
 | Leistungsstecker + Strombelastbarkeit | 2×2 derselben Stecker-Familie, ~5 A/Ader vor Derating (Engpass Buchse 2,5 A/Kontakt); Positionszahl ist Vorschlag, kein Vertragswert |
 | Klemme 3-polig | DB128L-5.08-3P-GN-S, C395869, 16 A/300 V |
+| `tools/stack_spec.py`, `docs/vertrag.md`, Tests | Nachgezogen: SEL raus aus PIN_ROLLE/RESERVIERT, STECKER_STAPEL/STECKER_KETTE neu, Vertrag neu erzeugt, Tests ergänzt (siehe Beleg 6) |

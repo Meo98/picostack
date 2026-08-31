@@ -44,6 +44,23 @@ for pin, rolle in S.PIN_ROLLE.items():
         check("Pin %d ist kein Versorgungspin" % pin,
               S.IST_VERSORGUNG(pin), False)
 
+# --- Stapelstecker/Kettenstecker (seit 2026-08-31) -------------------
+# SEL laeuft seit der Umstellung auf den Stapelstecker (Buchse mit
+# durchgehendem Stift) nicht mehr ueber den 2x20-Stecker, sondern ueber
+# einen eigenen Kettenstecker -- Pin 4 (GP2) ist deshalb wieder frei,
+# und "SEL" darf in RESERVIERT/PIN_ROLLE nicht mehr auftauchen.
+check("SEL nicht mehr reserviert", "SEL" in S.RESERVIERT, False)
+check("SEL steht in keiner Pin-Rolle mehr",
+      "SEL" in S.PIN_ROLLE.values(), False)
+check("Pin 4 (GP2) wieder frei", S.PIN_ROLLE[4], "frei")
+
+# Der Kettenstecker traegt genau SEL und eine GND, sonst nichts.
+check("Kettenstecker zweipolig", len(S.STECKER_KETTE["pins"]), 2)
+check("Kettenstecker traegt SEL",
+      "SEL" in S.STECKER_KETTE["pins"].values(), True)
+check("Kettenstecker traegt GND",
+      "GND" in S.STECKER_KETTE["pins"].values(), True)
+
 # --- Modultypen ---
 check("Motor hat Nummer", "Motor" in
       {t["name"] for t in S.MODULTYPEN.values()}, True)

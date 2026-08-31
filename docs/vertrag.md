@@ -4,7 +4,7 @@ Erzeugt aus `tools/stack_spec.py`. Nicht von Hand aendern.
 
 ## Status
 
-Die Zusagen rund um das Flashen -- die Pins `FLASH_TX`, `FLASH_RX`, `SEL`, `SEL_CLK` und `FLASH_MODE` und alles, was daran haengt -- ruhen auf einer Annahme, die noch **nicht auf Hardware belegt** ist: dass der Pico einen Modul-MCU ueber dessen ROM-Bootlader wirklich beschreiben kann. Geprueft ist bisher nur das Protokoll gegen eine Attrappe, nicht gegen echtes Silizium. Stand und offene Schritte: `docs/nachweis-2026-08.md`.
+Die Zusagen rund um das Flashen -- die Leitungen `FLASH_TX`, `FLASH_RX`, `SEL`, `SEL_CLK` und `FLASH_MODE` (SEL seit 2026-08-31 auf dem eigenen Kettenstecker, alle anderen auf dem 2x20-Stapelstecker) und alles, was daran haengt -- ruhen auf einer Annahme, die noch **nicht auf Hardware belegt** ist: dass der Pico einen Modul-MCU ueber dessen ROM-Bootlader wirklich beschreiben kann. Geprueft ist bisher nur das Protokoll gegen eine Attrappe, nicht gegen echtes Silizium. Stand und offene Schritte: `docs/nachweis-2026-08.md`.
 
 ## Umriss
 
@@ -24,7 +24,6 @@ Die Zusagen rund um das Flashen -- die Pins `FLASH_TX`, `FLASH_RX`, `SEL`, `SEL_
 | 1 | FLASH_TX |
 | 2 | FLASH_RX |
 | 3 | GND |
-| 4 | SEL |
 | 5 | FLASH_MODE |
 | 6 | I2C_SDA |
 | 7 | I2C_SCL |
@@ -43,6 +42,17 @@ Die Zusagen rund um das Flashen -- die Pins `FLASH_TX`, `FLASH_RX`, `SEL`, `SEL_
 | 40 | VBUS |
 
 Alle nicht aufgefuehrten Pins gehen unveraendert durch und stehen Modulen frei zur Verfuegung.
+
+## Stapelstecker und Kettenstecker
+
+Der 2x20-Signalstecker (Steckerbelegung oben) ist ein **Stapelstecker**: Buchse mit durchgehendem Stift (Stapelstecker), 2x20, 2,54 mm. Bauteil: LCSC `C35165`, Gehaeusehoehe 8.50 mm, Stiftlaenge unterhalb des Gehaeuses 12.46 mm. Quelle: hardware/bauteile-1b.md, Beleg 1 (Fassung 2026-08-31).
+
+Einzige Ausnahme ist die Auswahlkette (`SEL`): sie muss von Modul zu Modul aufgetrennt werden (Schieberegister, `tools/kette.py`) und ist deshalb kein Pin des Stapelsteckers mehr. Sie laeuft ueber einen eigenen, zweipoligen **Kettenstecker** (Buchse oben / Stiftleiste unten (auftrennbar), 1x2, 2,54 mm): traegt SEL (Auswahlkette) und eine GND daneben. Buchse LCSC `C541849`, Stiftleiste LCSC `C492401`. Quelle: hardware/bauteile-1b.md, Beleg 1 (Fassung 2026-08-31).
+
+| Pin (Kettenstecker) | Rolle |
+|---|---|
+| 1 | SEL |
+| 2 | GND |
 
 ## Auflagen an die Modulfirmware
 

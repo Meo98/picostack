@@ -28,8 +28,10 @@ def main():
              "",
              "## Status",
              "",
-             "Die Zusagen rund um das Flashen -- die Pins `FLASH_TX`, "
-             "`FLASH_RX`, `SEL`, `SEL_CLK` und `FLASH_MODE` und alles, "
+             "Die Zusagen rund um das Flashen -- die Leitungen "
+             "`FLASH_TX`, `FLASH_RX`, `SEL`, `SEL_CLK` und `FLASH_MODE` "
+             "(SEL seit 2026-08-31 auf dem eigenen Kettenstecker, alle "
+             "anderen auf dem 2x20-Stapelstecker) und alles, "
              "was daran haengt -- ruhen auf einer Annahme, die noch "
              "**nicht auf Hardware belegt** ist: dass der Pico einen "
              "Modul-MCU ueber dessen ROM-Bootlader wirklich beschreiben "
@@ -55,6 +57,32 @@ def main():
              "",
              "Alle nicht aufgefuehrten Pins gehen unveraendert durch "
              "und stehen Modulen frei zur Verfuegung.",
+             "",
+             "## Stapelstecker und Kettenstecker",
+             "",
+             "Der 2x20-Signalstecker (Steckerbelegung oben) ist ein "
+             "**Stapelstecker**: %s. Bauteil: LCSC `%s`, "
+             "Gehaeusehoehe %.2f mm, Stiftlaenge unterhalb des Gehaeuses "
+             "%.2f mm. Quelle: %s." % (
+                 S.STECKER_STAPEL["typ"], S.STECKER_STAPEL["buchse_lcsc"],
+                 S.STECKER_STAPEL["gehaeusehoehe_mm"],
+                 S.STECKER_STAPEL["stiftlaenge_unter_gehaeuse_mm"],
+                 S.STECKER_STAPEL["quelle"]),
+             "",
+             "Einzige Ausnahme ist die Auswahlkette (`SEL`): sie muss "
+             "von Modul zu Modul aufgetrennt werden (Schieberegister, "
+             "`tools/kette.py`) und ist deshalb kein Pin des "
+             "Stapelsteckers mehr. Sie laeuft ueber einen eigenen, "
+             "zweipoligen **Kettenstecker** (%s): %s. Buchse LCSC "
+             "`%s`, Stiftleiste LCSC `%s`. Quelle: %s." % (
+                 S.STECKER_KETTE["typ"], S.STECKER_KETTE["zweck"],
+                 S.STECKER_KETTE["buchse_lcsc"],
+                 S.STECKER_KETTE["stift_lcsc"],
+                 S.STECKER_KETTE["quelle"]),
+             "",
+             tabelle(["Pin (Kettenstecker)", "Rolle"],
+                     [(p, r) for p, r in
+                      sorted(S.STECKER_KETTE["pins"].items())]),
              "",
              "## Auflagen an die Modulfirmware",
              "",
