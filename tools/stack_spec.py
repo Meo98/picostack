@@ -77,6 +77,23 @@ RESERVIERT = (
                               # Position tiefer (tools/kette.py).
     "FLASH_MODE",             # global: Stapel im Flash-Modus
     "NOTAUS",                 # global, wired-OR, wirkt ohne Software
+    "SEL_OUT",                # der Pico-Pin, der die Auswahlkette treibt
+                              # (Pin 4 / GP2). KEIN Pin des 2x20-Stapel-
+                              # steckers -- laeuft ausserhalb davon auf
+                              # STECKER_KETTE (s. Kommentar dort). Bis
+                              # 2026-08-31 (Aufgabe-4-Fix-1-Runde) stand
+                              # dafuer lokal, unreserviert Pin 11 (GP8)
+                              # auf der Sockelplatine; das kollidierte,
+                              # sobald Befund 1 derselben Runde jeden
+                              # freien GPIO -- auch Pin 11 -- zum Stapel
+                              # durchreichte (zwei Ausgaenge auf einem
+                              # Netz, sobald ein Modul GP8 selbst nutzt).
+                              # Pin 4 (GP2) war vor der Steckertrennung
+                              # bereits SEL und bekommt die Rolle jetzt
+                              # zurueck, s. Kommentar bei PIN_ROLLE[4]
+                              # unten und .superpowers/sdd/
+                              # 2026-08-31-etappe-1b-sockel-und-motormodul/
+                              # aufgabe-4-fix1-report.md.
 )
 
 _GND = {3, 8, 13, 18, 23, 28, 33, 38}
@@ -94,8 +111,18 @@ PIN_ROLLE.update({
     36: "3V3", 37: "3V3_EN", 39: "VSYS", 40: "VBUS",
     1:  "FLASH_TX",     # GP0
     2:  "FLASH_RX",     # GP1
-    # 4 (GP2) war SEL, jetzt wieder frei -- SEL laeuft ueber
-    # STECKER_KETTE, nicht mehr ueber diesen Stecker.
+    # 4 (GP2) war SEL, dann (Etappe 1b, erste Runde) kurz wieder frei --
+    # SEL laeuft seit der Steckertrennung ueber STECKER_KETTE, nicht
+    # mehr ueber den 2x20-Stapelstecker. "Frei" war dabei nur halb
+    # richtig: die vorige Runde liess den Pin zwar ungenutzt am 2x20-
+    # Stecker, verdrahtete ihn dann aber lokal auf der Sockelplatine
+    # unreserviert an Pin 11 (GP8) als SEL-Treiber -- eine stille
+    # Kollision, sobald ein Modul GP8 selbst braucht (Aufgabe-4-Fix-1-
+    # Runde, Befund 2). Pin 4 (GP2) traegt die Rolle deshalb jetzt
+    # wieder als echte Vertragsrolle SEL_OUT (s. RESERVIERT oben):
+    # treibt STECKER_KETTE direkt vom Pico aus, weiterhin KEIN Pin
+    # dieses 2x20-Steckers.
+    4:  "SEL_OUT",      # GP2
     5:  "FLASH_MODE",   # GP3
     6:  "I2C_SDA",      # GP4
     7:  "I2C_SCL",      # GP5

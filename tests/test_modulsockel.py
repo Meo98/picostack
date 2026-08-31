@@ -44,8 +44,17 @@ def check(label, got, want):
 
 netze = modulsockel.NETZE_NACH_AUSSEN
 
-# Der Block muss jede reservierte Leitung des Vertrags bedienen.
+# Der Block muss jede reservierte Leitung des Vertrags bedienen --
+# ausser SEL_OUT: das ist seit Befund 2 (Aufgabe-4-Fix-1, 2026-08-31)
+# eine Vertragsrolle, aber KEIN Pin dieses 2x20-Stapelsteckers (SEL
+# laeuft ueber den eigenen Kettenstecker, stack_spec.STECKER_KETTE).
+# modulsockel._stapelstecker() behandelt die Rolle deshalb ausdruecklich
+# als no_connect, nicht als STECKER_NETZE-Eintrag -- dieselbe Ausnahme
+# wie unten fuer die alte Rolle "SEL", nur jetzt unter neuem Namen und
+# mit echtem RESERVIERT-Status.
 for rolle in S.RESERVIERT:
+    if rolle == "SEL_OUT":
+        continue
     check("Rolle %s im Block" % rolle, rolle in modulsockel.STECKER_NETZE, True)
 
 # Und keine erfinden, die der Vertrag nicht kennt.
@@ -54,9 +63,11 @@ unbekannt = set(modulsockel.STECKER_NETZE) - set(S.RESERVIERT) - {
 check("keine erfundenen Steckerleitungen", unbekannt, set())
 
 # SEL laeuft ueber den eigenen Kettenstecker, nicht mehr ueber den
-# 2x20 -- STECKER_NETZE (die Rollen DIESES Steckers) darf "SEL" daher
-# nicht enthalten.
+# 2x20 -- STECKER_NETZE (die Rollen DIESES Steckers) darf weder "SEL"
+# noch "SEL_OUT" enthalten.
 check("SEL nicht im 2x20-Stapelstecker", "SEL" in modulsockel.STECKER_NETZE, False)
+check("SEL_OUT nicht im 2x20-Stapelstecker",
+      "SEL_OUT" in modulsockel.STECKER_NETZE, False)
 
 # Die Endstufe bekommt genau die Anschluesse, die sie braucht.
 for n in ("IN1", "IN2", "NSLEEP", "NFAULT", "IPROPI", "NOTAUS"):
@@ -119,6 +130,18 @@ else:
         _ref, _pin, _libid, _value = _treiber[0]
         check("das Gatter an NRST ist ein NAND (invertierend), kein AND",
               _libid, "74xGxx:74LVC2G00")
+
+    # ------------------------------------------- Modulseite bleibt nc
+    # Gegenprobe zu Befund 1/2 (Aufgabe-4-Fix-1, s. tests/
+    # test_sockelplatine.py): die Sockelplatine reicht freie GPIO durch
+    # und behandelt SEL_OUT als Vertragsrolle, die Modulseite
+    # (modulsockel._stapelstecker(), hier ueber J100) bleibt dabei
+    # ausdruecklich unveraendert -- beide Faelle no_connect.
+    check("J100 Pin 4 (SEL_OUT) bleibt no_connect",
+          _sch.pinpos("J100", "4") in _sch.NOCONN, True)
+    for _p in ("11", "12", "20", "29", "31", "34"):
+        check("J100 Pin %s (freier GPIO) bleibt no_connect" % _p,
+              _sch.pinpos("J100", _p) in _sch.NOCONN, True)
 
     # ------------------------------------------------------------- ERC
     # Aufgabe 3, Nachtrag (Pruefer-Befund #2): drei echte Fehler (Phantom-

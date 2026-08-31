@@ -655,10 +655,35 @@ ungünstigsten Toleranzstapel positiv.
 15,0 mm` entworfen bzw. ist dafuer vorgesehen und muss auf den neuen Wert
 13,0 mm nachgezogen werden, sobald diese Aufgabe angegangen wird.
 
+## Beleg 7 — Layout-Auflage: C3 muss nah an U2 Pin 1 sitzen (Aufgabe-4-Fix-1, 2026-08-31)
+
+**Hintergrund.** `tools/sch/sockelplatine.py` setzt C1 (HF-Abblockung an
+U2, den Reglerpins direkt benachbart) auf 100 nF/50 V statt der vom
+Datenblatt für die K78xx-2000R3-Baureihe genannten 22 µF/50 V (Begründung
+im Code: 22 µF/50 V ist in 0805/X7R keine sinnvolle Bauform). C3 (220 µF
+radial, ohnehin für "Stützung am 24-V-Eingang" im Aufgabenbrief
+vorgesehen) übernimmt dabei die vom Datenblatt eigentlich gemeinte
+Speicherkapazität an U2s Eingang.
+
+**Auflage, damit das haelt.** Diese Aufteilung funktioniert nur, wenn C3
+tatsächlich **nah an U2 Pin 1 (IN)** sitzt — nicht irgendwo sonst auf der
+Platine. Liegt zwischen C3 und U2 Pin 1 eine lange Leiterbahn, macht die
+Schleifeninduktivität dieser Strecke die Stützwirkung zunichte: C3 kann
+dann hochfrequente Stromtransienten am Reglereingang nicht mehr
+abfangen, genau die Aufgabe, die die Absicht (C1 klein/HF, C3 groß/
+Speicher) ihm zuweist. Das ist keine Platzierungsempfehlung, sondern eine
+**Layout-Auflage für Aufgabe 6** (PCB-Layout der Sockelplatine): C3
+gehört so nah wie mechanisch sinnvoll an U2 Pin 1, mit möglichst kurzer,
+möglichst breiter Verbindung (kurze Schleife PWR24V zwischen C3⁺ und U2
+Pin 1, ebenso kurzer Rückweg über GND). Der Schaltplan selbst kann diese
+Auflage nicht erzwingen (Netzlisten kennen keine Distanz) — deshalb hier
+schriftlich festgehalten, nicht nur im Code kommentiert.
+
 ## Zusammenfassung für die Beschaffung
 
 | Offener Punkt aus der Aufgabe | Antwort |
 |---|---|
+| Layout-Auflage C3 nah an U2 Pin 1 (Aufgabe-4-Fix-1) | C1 (100 nF) übernimmt nur die lokale HF-Abblockung, C3 (220 µF) die vom Datenblatt gemeinte Speicherkapazität — hält nur bei kurzer, niederinduktiver Verbindung C3↔U2 Pin 1 (Beleg 7); an Aufgabe 6 (PCB-Layout) weitergereicht |
 | Steckerhöhe vs. 15 mm, ursprüngliches Buchse/Stift-Paar | Passte rechnerisch, aber nur mit 1,1 mm Einstecktiefe — dünner Rand (Beleg 1) |
 | **Entscheidung 2026-08-31 (erste Runde)** | Stapelstecker (Buchse mit durchgehendem Stift, C35165) für 39 der 40 Leitungen; eigener Kettenstecker (C492401/C541849) nur für `SEL`. `STAPEL_ABSTAND` zunächst bei 15,0 mm belassen — passte komfortabel zum Stapelstecker (5,96 mm Einstecktiefe), der Kettenstecker trug aber nur 1,1 mm (Beleg 1 Nachtrag, Beleg 6) |
 | **Entscheidung 2026-08-31 (zweite Runde)** | Keine passende längere Stiftleiste gefunden (zwei unabhängige Suchen) → `STAPEL_ABSTAND` auf **13,0 mm** gesenkt: Kettenstecker jetzt 3,1 mm Einstecktiefe, Stapelstecker 7,96 mm; Klemmenhöhe belegt (DB128L 10,10 mm, K7805 10,2 mm, beide Datenblätter gelesen) bleibt unter der 11,0-mm-Reissleine, 1,2–1,3 mm Luft im Spalt (Beleg 6, zweite Runde). Gehäuse (Aufgabe 9) noch auf 13,0 mm nachzuziehen |

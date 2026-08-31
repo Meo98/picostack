@@ -12,9 +12,10 @@ Von modulsockel.py wird ausschliesslich wiederverwendet:
   - die Footprint-Konstanten (FP_R0805, FP_C0805, FP_HDR_1X02,
     FP_HDR_2X02) fuer Bauteile, die auf beiden Plattenarten gleich
     aussehen
-  - _stapelstecker() unveraendert fuer J2 -- Punkt 2 unten erklaert,
-    warum genau dasselbe Bauteil wie bei jedem Modul zum Einsatz kommt,
-    obwohl die Rollenzuordnung (PIN_ROLLE) dieselbe bleibt
+  - _stapelstecker() fuer J2 (mit frei_durchreichen=True, seit Aufgabe-
+    4-Fix-1 -- s. Punkt 5 unten) -- Punkt 2 unten erklaert, warum genau
+    dasselbe Bauteil wie bei jedem Modul zum Einsatz kommt, obwohl die
+    Rollenzuordnung (PIN_ROLLE) dieselbe bleibt
 
 modulsockel.einbauen(..., mit_flipflop=False) wird HIER BEWUSST NICHT
 aufgerufen: das wuerde zusaetzlich zum Stapelstecker auch beide Haelften
@@ -61,6 +62,42 @@ nachgereicht, 2026-08-31):
    Pico erzeugt sie selbst aus VSYS und speist sie hier in J2 Pin 36
    ein (stack_spec.PIN_ROLLE[36] == "3V3"). tests/test_sockelplatine.py
    sichert das mit einer eigenen, expliziten Pruefung ab (siehe dort).
+
+Nachtrag 2026-08-31 (Aufgabe-4-Fix-1, zwei zusammenhaengende Befunde der
+vorigen Runde uebersehen):
+
+5. Befund 1 -- die volle 2x20-Durchreichung fehlte: freie Pico-GPIO
+   waren hier UND auf J2 (modulsockel._stapelstecker()) no_connect. Der
+   Stapelstecker leitet zwar mechanisch durch, aber ohne einen Draht vom
+   Pico zum jeweiligen J2-Pin haengt an diesem Leiter nichts -- kein
+   Modul konnte je einen freien GPIO benutzen, obwohl stack_spec.py
+   "freie GPIO" ausdruecklich als eine im ganzen Stapel gleiche Netzart
+   nennt. Fix: modulsockel._stapelstecker() bekam einen neuen Parameter
+   frei_durchreichen (Vorgabe False, unveraendertes Verhalten fuer jedes
+   Modul-J100); J2 wird hier mit frei_durchreichen=True aufgerufen, UND
+   U1 verdrahtet dieselben Pins unter demselben Netznamen
+   (modulsockel.PIN_GPIO_NAME). RUN (Pin 30) und ADC_VREF (Pin 35)
+   bleiben trotzdem no_connect -- s. Kommentar bei ihrer Verdrahtung
+   unten, warum sie keine echten GPIO sind.
+
+   Befund 2 -- GP8 als lokaler SEL-Treiber kollidiert seit Befund 1: Pin
+   11 (GP8) trieb bisher lokal J3, ausdruecklich als "keine
+   Vertragsleitung" kommentiert. Das ging nur gut, solange Pin 11 tot
+   war -- nach Befund 1 wird er ein durchgereichter freier GPIO, und ein
+   Modul, das ihn beansprucht, triebe gegen den Sockel (zwei Ausgaenge
+   auf einem Netz). Fix: SEL_OUT bekommt Pin 4 (GP2) zurueck -- der war
+   vor der Steckertrennung schon SEL und traegt jetzt wieder eine echte
+   Vertragsrolle (stack_spec.PIN_ROLLE[4] == "SEL_OUT",
+   stack_spec.RESERVIERT), aber KEIN Pin von J2 (s. Kommentar bei J3
+   unten). Pin 11 (GP8) ist seither ein gewoehnlicher freier GPIO.
+
+   Ausserdem in dieser Runde geklaert: AGND (Pin 33) ist laut
+   Pico-Datenblatt keine interne Verbindung zu GND, sondern eine eigene
+   analoge Massenflaeche, die der Hersteller optional (nicht
+   zwingend) mit digitaler Masse verbinden laesst -- s. Kommentar bei
+   ihrer Verdrahtung unten. Vollstaendiger Bericht:
+   .superpowers/sdd/2026-08-31-etappe-1b-sockel-und-motormodul/
+   aufgabe-4-fix1-report.md.
 """
 import os
 import sys
@@ -230,13 +267,14 @@ def bauen(sch, ox, oy):
 
     # ---------------------------------------------------- J3 Kettenstecker
     # Nur die Stiftseite -- Punkt 3 der Moduldoku oben: der Sockel treibt
-    # SEL nur nach unten, empfaengt nichts von oben. GPIO8 (physischer
-    # Pin 11) ist eine freie Pico-Leitung (stack_spec.PIN_ROLLE[11] ==
-    # "frei") und wird hier lokal als SEL-Treiber der Kette festgelegt --
-    # das ist keine Vertragsleitung (SEL laeuft ausserhalb des
-    # 2x20-Stapelsteckers ueber den eigenen Kettenstecker, siehe
-    # stack_spec.py-Kommentar bei STECKER_KETTE), sondern eine rein
-    # lokale Entscheidung dieser Platine.
+    # SEL nur nach unten, empfaengt nichts von oben. Getrieben von Pin 4
+    # (GP2, physisch), stack_spec.PIN_ROLLE[4] == "SEL_OUT" -- seit
+    # Befund 2 (Aufgabe-4-Fix-1) eine echte Vertragsrolle, KEIN Pin des
+    # 2x20-Stapelsteckers J2 (der laeuft ueber den eigenen Kettenstecker,
+    # s. stack_spec.py-Kommentar bei STECKER_KETTE). Vorher stand hier
+    # lokal, unreserviert GP8 (Pin 11) -- das kollidierte, sobald Befund 1
+    # derselben Runde auch Pin 11 als freien GPIO zum Stapel durchreichte
+    # (zwei Ausgaenge auf einem Netz, sobald ein Modul GP8 selbst nutzt).
     j3x, j3y = ox + 76.2, oy - 55.88
     sch.bauteil("J3", "Connector_Generic:Conn_01x02", (j3x, j3y),
                 "Kettenstecker, Stift (treibt SEL)", FP_HDR_1X02, rot=0,
@@ -245,10 +283,19 @@ def bauen(sch, ox, oy):
     sch.netz("J3", "2", "L", "GND")
 
     # ---------------------------------------------------- J2 Stapelstecker
-    # Unveraendert modulsockel._stapelstecker() -- Punkt 2 der Moduldoku
-    # oben: derselbe Stecker wie bei jedem Modul, auch wenn die obere
-    # Buchsenoeffnung hier nie bestueckt wird.
-    modulsockel._stapelstecker(sch, "J2", ox + 190.5, oy + 76.2)
+    # modulsockel._stapelstecker() -- Punkt 2 der Moduldoku oben:
+    # derselbe Stecker wie bei jedem Modul, auch wenn die obere
+    # Buchsenoeffnung hier nie bestueckt wird. frei_durchreichen=True,
+    # NUR hier, NICHT bei einem Modul-J100 -- Befund 1 (Aufgabe-4-Fix-1):
+    # der Sockel traegt den Pico direkt und muss jeden freien GPIO
+    # tatsaechlich zum Stapel durchreichen, sonst erreicht ihn kein
+    # Modul (der Stapelstecker leitet zwar mechanisch durch, aber ohne
+    # einen Draht vom Pico dorthin haengt an dem Leiter nichts). Ein
+    # Modul dagegen verdrahtet einen freien GPIO nur, wenn es ihn
+    # tatsaechlich braucht -- s. modulsockel._stapelstecker()-Docstring
+    # fuer die Begruendung dieser bewusst unterschiedlichen Behandlung.
+    modulsockel._stapelstecker(sch, "J2", ox + 190.5, oy + 76.2,
+                                frei_durchreichen=True)
 
     # ---------------------------------------------------- U1 Pico
     px, py = ox + 292.1, oy + 12.7
@@ -266,34 +313,65 @@ def bauen(sch, ox, oy):
     # zusaetzliche netz()-Aufrufe fuer sie waeren exakt deckungsgleiche
     # Extra-Draehte, kein zusaetzlicher Anschluss.
     sch.netz("U1", "3", "D", "GND")          # GND (+ sechs versteckte Duplikate)
-    sch.nc("U1", "4")                         # GP2 -- frei (frueher SEL, s. stack_spec)
+    # Pin 4 (GP2): SEL_OUT, s. Kommentar bei J3 oben -- treibt den
+    # Kettenstecker direkt vom Pico aus, laeuft NICHT ueber J2.
+    sch.netz("U1", "4", "L", "SEL_OUT")      # GP2 -- treibt J3
     sch.netz("U1", "5", "L", "FLASH_MODE")   # GP3
     sch.netz("U1", "6", "L", "I2C_SDA")      # GP4
     sch.netz("U1", "7", "L", "I2C_SCL")      # GP5
     sch.netz("U1", "9", "L", "NOTAUS")       # GP6
     sch.netz("U1", "10", "L", "SEL_CLK")     # GP7
-    sch.netz("U1", "11", "L", "SEL_OUT")     # GP8 -- treibt J3 (s. oben)
-    for p in ("12", "14", "15", "16", "17", "19", "20"):
-        sch.nc("U1", p)                       # GP9..GP15, frei
-    for p in ("21", "22", "24", "25", "26", "27", "29"):
-        sch.nc("U1", p)                       # GP16..GP22, frei
+    # GP8..GP22, GP26..GP28: alle "frei" (stack_spec.PIN_ROLLE) und seit
+    # Befund 1 (Aufgabe-4-Fix-1) tatsaechlich zum Stapel durchgereicht --
+    # an J2 unter demselben Netznamen (modulsockel._stapelstecker(...,
+    # frei_durchreichen=True) oben). Vorher waren diese Pins hier nc,
+    # obwohl stack_spec.py "freie GPIO" ausdruecklich als eine im ganzen
+    # Stapel gleiche Netzart nennt (STECKER_STAPEL-Kommentar) -- kein
+    # einziger freier GPIO erreichte je ein Modul. modulsockel.
+    # PIN_GPIO_NAME ist die gemeinsame Quelle der Netznamen fuer U1 UND
+    # J2, damit beide Seiten garantiert denselben Namen tragen. GP8
+    # (Pin 11) war bis zu dieser Runde lokal der SEL-Treiber (s. J3-
+    # Kommentar oben) -- jetzt wieder ein gewoehnlicher freier GPIO.
+    for p in ("11", "12", "14", "15", "16", "17", "19", "20"):
+        sch.netz("U1", p, "L", modulsockel.PIN_GPIO_NAME[int(p)])
+    for p in ("21", "22", "24", "25", "26", "27", "29", "31", "32", "34"):
+        sch.netz("U1", p, "R", modulsockel.PIN_GPIO_NAME[int(p)])
+    # RUN (Pin 30) und ADC_VREF (Pin 35) bleiben BEWUSST nc, obwohl
+    # stack_spec.PIN_ROLLE auch sie generisch als "frei" fuehrt (die
+    # Voreinstellung fuer jeden nicht ausdruecklich zugewiesenen Pin,
+    # unabhaengig davon, ob er ein GPIO ist) -- keiner von beiden ist
+    # tatsaechlich ein GPIO. RUN ist der aktiv-LOW Reset-Eingang des
+    # RP2040 mit eigenem ~50-kOhm-Pullup (Raspberry Pi Pico Datasheet,
+    # Release 21, Abschnitt 2.1, S. 7: "To reset RP2040, short this pin
+    # low.") -- ihn durch den Stapel zu reichen, gaebe jedem Modul die
+    # Moeglichkeit, den Pico zurueckzusetzen. ADC_VREF ist eine aus 3V3
+    # gefilterte Referenzspannung, kein digitales Signal. s.
+    # modulsockel.PIN_GPIO_NAME-Kommentar fuer dieselbe Begruendung.
     sch.nc("U1", "30")                        # RUN -- Pico-eigener Pullup, unbenutzt
-    sch.nc("U1", "31")                        # GP26_ADC0, frei
-    sch.nc("U1", "32")                        # GP27_ADC1, frei
     # AGND (Pin 33) NICHT mit GND verdrahten, obwohl stack_spec.PIN_ROLLE
-    # beide als "GND" fuehrt: das Pico-Symbol markiert AGND ALS EIGENEN
-    # "Power output"-Pin (eigene Pruefung: symlib-Pintyp "power_out",
-    # eigene, von Pin 3 abweichende Koordinate -- kein verstecktes
-    # Duplikat wie 8/13/18/23/28/38). Zwei "Power output"-Pins auf
-    # demselben Netz meldet kicad-cli sch erc als FEHLER ("Pins of type
-    # Power output and Power output are connected"), nicht nur als
-    # Warnung. Da diese Platine keinen ADC-Kanal nutzt (GPIO26..28 sind
-    # alle no_connect, s. o.), braucht AGND hier keine Masse-Referenz --
+    # beide als "GND" fuehrt -- eine bewusste, dokumentierte Abweichung
+    # vom Vertrag, kein Versehen: das Pico-Symbol markiert AGND ALS
+    # EIGENEN "Power output"-Pin (eigene Pruefung: symlib-Pintyp
+    # "power_out", eigene, von Pin 3 abweichende Koordinate -- kein
+    # verstecktes Duplikat wie 8/13/18/23/28/38). Zwei "Power output"-
+    # Pins auf demselben Netz meldet kicad-cli sch erc als FEHLER ("Pins
+    # of type Power output and Power output are connected"), nicht nur
+    # als Warnung. Laut Datenblatt (Raspberry Pi Pico Datasheet, Release
+    # 21, Abschnitt 2.1 "Raspberry Pi Pico pinout", S. 7) ist AGND KEIN
+    # interner Kurzschluss zu GND, sondern eine eigene analoge
+    # Massenflaeche: "AGND is the ground reference for GPIO26-29, there
+    # is a separate analog ground plane running under these signals and
+    # terminating at this pin. If the ADC is not used or ADC performance
+    # is not critical, this pin can be connected to digital ground."
+    # Das Datenblatt nennt das Verbinden also ausdruecklich als Option
+    # ("can be"), nicht als Vorgabe -- diese Platine verwendet keinen
+    # ADC-Kanal (GP26..28 werden zwar seit Befund 1 zum Stapel
+    # durchgereicht, s.o., aber von KEINEM Bauteil dieser Platine als
+    # ADC-Eingang benutzt), braucht also keine analoge Masse-Referenz.
     # no_connect ist ehrlich (die Leitung bleibt tatsaechlich unbenutzt)
     # und vermeidet den ERC-Fehler, statt ihn nur zu unterdruecken.
     sch.nc("U1", "33")                        # AGND, unbenutzt (kein ADC-Kanal hier)
-    sch.nc("U1", "34")                        # GP28_ADC2, frei
-    sch.nc("U1", "35")                        # ADC_VREF, unbenutzt
+    sch.nc("U1", "35")                        # ADC_VREF, unbenutzt (kein ADC-Kanal hier)
     sch.netz("U1", "36", "U", "3V3")         # 3V3_OUT -- QUELLE der Stapel-3V3-Schiene
     sch.nc("U1", "37")                        # 3V3_EN -- Pico-eigener Pullup, unbenutzt
     # Pin 39 = VSYS: die kritischste Leitung dieses Schaltplans. +5V

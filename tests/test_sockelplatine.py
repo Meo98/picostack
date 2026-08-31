@@ -144,15 +144,41 @@ else:
     # -------------------------------------------------- SEL erreicht J3
     # Punkt 3: der Sockel treibt SEL nur nach unten (nur die Stiftseite
     # des Kettensteckers) -- J3 Pin 1 muss auf demselben Netz haengen wie
-    # der treibende Pico-GPIO.
+    # der treibende Pico-GPIO. Seit Befund 2 (Aufgabe-4-Fix-1) ist das
+    # Pin 4 (GP2, stack_spec.PIN_ROLLE[4] == "SEL_OUT"), nicht mehr GP8.
     _an_sel = set(_netz_pins(_sch, _gen, "SEL_OUT"))
     check("J3 Pin 1 (Kettenstecker, Stift) an SEL_OUT", ("J3", "1") in _an_sel, True)
-    check("mindestens ein Pico-GPIO treibt SEL_OUT",
-          any(ref == "U1" for ref, _ in _an_sel), True)
+    check("U1 Pin 4 (GP2) treibt SEL_OUT", ("U1", "4") in _an_sel, True)
     # J3 traegt NUR die Stiftseite -- die Referenzliste oben (exakt
     # J1..J4, kein zusaetzliches "J101"-aequivalentes Buchsenbauteil)
     # ist bereits die Pruefung dafuer, dass keine Kettenstecker-Buchse
     # (oben) mitgebaut wurde.
+
+    # ------------------------ Befund 2: SEL-Treiber NICHT auf J2 -----
+    # Der Kern von Befund 2 (Aufgabe-4-Fix-1): der SEL-Treiberpin darf
+    # auf dem 2x20-Stapelstecker J2 UEBERHAUPT NICHT erscheinen -- sonst
+    # triebe ein Modul, das denselben physischen Pin als freien GPIO
+    # beansprucht, gegen den Sockel (zwei Ausgaenge auf einem Netz).
+    # Baut man die alte, lokale GP8-Verdrahtung (ohne Sonderrolle) wieder
+    # ein UND reicht Befund 1 gleichzeitig jeden freien GPIO durch, wird
+    # genau das wieder wahr -- diese Pruefung faengt es ab.
+    check("SEL-Treiberpin (U1 Pin 4) erscheint NICHT auf J2",
+          any(ref == "J2" for ref, _ in _an_sel), False)
+
+    # ------------------ Befund 1: freie GPIO erreichen J2 ------------
+    # stack_spec.py nennt "freie GPIO" ausdruecklich als eine Leitungsart,
+    # die im ganzen Stapel dasselbe Netz ist (STECKER_STAPEL-Kommentar) --
+    # jeder als "frei" gefuehrte GPIO-Pin muss auf der Sockelplatine mit
+    # dem gleichnummerierten J2-Pin verbunden sein, sonst kann ihn kein
+    # Modul je benutzen. modulsockel.PIN_GPIO_NAME ist die massgebliche
+    # Liste der tatsaechlich durchgereichten GPIO (RUN/ADC_VREF bewusst
+    # ausgenommen, s. dortiger Kommentar). Setzt man frei_durchreichen
+    # auf J2 wieder ab (Befund 1 erneut eingebaut), verschwindet der
+    # J2-Anteil dieser Netze wieder -- diese Pruefung wird dann rot.
+    for _pin, _name in sorted(modulsockel.PIN_GPIO_NAME.items()):
+        _an_gpio = set(_netz_pins(_sch, _gen, _name))
+        check("U1 Pin %d (%s) erreicht J2 Pin %d" % (_pin, _name, _pin),
+              {("U1", str(_pin)), ("J2", str(_pin))} <= _an_gpio, True)
 
     # ------------------------------------------------------------- ERC
     ERWARTETE_ERC_FEHLER = 0

@@ -47,12 +47,24 @@ for pin, rolle in S.PIN_ROLLE.items():
 # --- Stapelstecker/Kettenstecker (seit 2026-08-31) -------------------
 # SEL laeuft seit der Umstellung auf den Stapelstecker (Buchse mit
 # durchgehendem Stift) nicht mehr ueber den 2x20-Stecker, sondern ueber
-# einen eigenen Kettenstecker -- Pin 4 (GP2) ist deshalb wieder frei,
-# und "SEL" darf in RESERVIERT/PIN_ROLLE nicht mehr auftauchen.
+# einen eigenen Kettenstecker -- die Rolle "SEL" darf in
+# RESERVIERT/PIN_ROLLE nicht mehr auftauchen.
 check("SEL nicht mehr reserviert", "SEL" in S.RESERVIERT, False)
 check("SEL steht in keiner Pin-Rolle mehr",
       "SEL" in S.PIN_ROLLE.values(), False)
-check("Pin 4 (GP2) wieder frei", S.PIN_ROLLE[4], "frei")
+
+# Pin 4 (GP2) war kurz "frei" (erste Runde), ist seit Befund 2
+# (Aufgabe-4-Fix-1, 2026-08-31) aber wieder eine echte Vertragsrolle:
+# SEL_OUT, der Pico-Pin, der die Auswahlkette treibt. Grund: die lokale,
+# unreservierte Verdrahtung auf GP8 (Pin 11) kollidierte, sobald Pin 11
+# selbst zu einem durchgereichten freien GPIO wurde (stack_spec selbst
+# bleibt unveraendert dafuer verantwortlich, dass GP8 wieder "frei" ist,
+# s. Pruefung unten).
+check("Pin 4 (GP2) traegt SEL_OUT", S.PIN_ROLLE[4], "SEL_OUT")
+check("SEL_OUT reserviert", "SEL_OUT" in S.RESERVIERT, True)
+check("SEL_OUT kein Versorgungspin", S.IST_VERSORGUNG(4), False)
+check("Pin 11 (GP8) frei (kein lokaler SEL-Treiber mehr)",
+      S.PIN_ROLLE[11], "frei")
 
 # Der Kettenstecker traegt genau SEL und eine GND, sonst nichts.
 check("Kettenstecker zweipolig", len(S.STECKER_KETTE["pins"]), 2)

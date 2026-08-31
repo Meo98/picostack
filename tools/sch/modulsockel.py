@@ -123,7 +123,42 @@ FP_HDR_2X02 = "Connector_PinHeader_2.54mm:PinHeader_2x02_P2.54mm_Vertical"
 # ------------------------------------------------------- Netze am Stecker
 # Rolle -> Netzname am 2x20-Stapelstecker. Ausschliesslich aus dem
 # Vertrag gelesen, nicht abgeschrieben: das ist der Sinn von PIN_ROLLE.
-STECKER_NETZE = {rolle: rolle for rolle in set(S.PIN_ROLLE.values()) if rolle != "frei"}
+# "SEL_OUT" ist zwar seit Befund 2 (Aufgabe-4-Fix-1) eine echte
+# Vertragsrolle (stack_spec.RESERVIERT), aber ausdruecklich KEIN Pin
+# DIESES Steckers -- SEL laeuft ueber den eigenen STECKER_KETTE (s.
+# stack_spec.py). Sie bleibt deshalb hier aussen vor, genau wie "frei";
+# _stapelstecker() behandelt beide gleich als no_connect (Modulseite)
+# bzw. Sonderfall (Sockelseite, s. dort).
+STECKER_NETZE = {rolle: rolle for rolle in set(S.PIN_ROLLE.values())
+                  if rolle not in ("frei", "SEL_OUT")}
+
+# Physische Pico-Pins mit Vertragsrolle "frei" (stack_spec.PIN_ROLLE),
+# die tatsaechlich echte GPIO sind -- ihre Bezeichnung aus dem Pico-
+# Datenblatt-Pinout (Raspberry Pi Ltd, "Raspberry Pi Pico Datasheet",
+# Release 21, Build 03.07.2026, Abschnitt 2.1 "Raspberry Pi Pico
+# pinout", S. 6f., Figure 2). Nur diese 18 Pins werden von
+# sockelplatine.py tatsaechlich zum Stapel durchgereicht
+# (frei_durchreichen=True unten) -- ABSICHTLICH NICHT enthalten sind
+# Pin 30 (RUN) und Pin 35 (ADC_VREF): stack_spec.PIN_ROLLE fuehrt auch
+# sie generisch als "frei" (die Voreinstellung fuer jeden nicht
+# ausdruecklich zugewiesenen Pin, unabhaengig davon, ob er ueberhaupt
+# ein GPIO ist), aber keiner der beiden ist ein GPIO. RUN ist der
+# aktiv-LOW Reset-Eingang des RP2040 mit eigenem ~50-kOhm-Pullup nach
+# 3V3 (Datenblatt, selber Abschnitt, S. 7: "RUN is the RP2040 enable
+# pin... To reset RP2040, short this pin low.") -- ihn ungeprueft durch
+# den ganzen Stapel zu reichen, gaebe jedem Modul die Moeglichkeit, den
+# Pico zurueckzusetzen. ADC_VREF ist die (aus 3V3 gefilterte) Referenz-
+# spannung des ADC, kein digitales Signal. Beide bleiben deshalb auf
+# J2 no_connect, obwohl PIN_ROLLE sie technisch als "frei" fuehrt --
+# eine bewusste Entscheidung dieser Runde (Aufgabe-4-Fix-1), keine
+# Erweiterung des Vertrags selbst (stack_spec traegt bewusst nur Pin-
+# Nummern, keine GPIO-Namen, s. Kommentar dort).
+PIN_GPIO_NAME = {
+    11: "GP8", 12: "GP9", 14: "GP10", 15: "GP11", 16: "GP12",
+    17: "GP13", 19: "GP14", 20: "GP15", 21: "GP16", 22: "GP17",
+    24: "GP18", 25: "GP19", 26: "GP20", 27: "GP21", 29: "GP22",
+    31: "GP26", 32: "GP27", 34: "GP28",
+}
 
 # Was die Endstufe (z.B. der Motortreiber im Motormodul, Aufgabe 5)
 # anschliesst -- lokale Netze am Modul-MCU, keine Stecker-Rollen. NOTAUS
@@ -170,15 +205,48 @@ def _load_libs(sch):
             "Conn_02x02_Odd_Even")
 
 
-def _stapelstecker(sch, ref, ox, oy):
-    """J100: der 2x20-Stapelstecker, Pin fuer Pin aus stack_spec.PIN_ROLLE."""
+def _stapelstecker(sch, ref, ox, oy, frei_durchreichen=False):
+    """J100/J2: der 2x20-Stapelstecker, Pin fuer Pin aus stack_spec.PIN_ROLLE.
+
+    frei_durchreichen=False (Vorgabe, jedes Modul -- J100): freie GPIO
+    bleiben no_connect. Ein Modul, das einen freien GPIO tatsaechlich
+    braucht, verdrahtet ihn selbst in seinem eigenen Schaltplan -- eine
+    stumme Stichleitung mit demselben Label wie auf der Sockelplatine
+    waere sonst auf jedem Modul unbenutzter Ballast.
+
+    frei_durchreichen=True (nur die Sockelplatine, J2): dieselben Pins
+    werden stattdessen unter ihrem GPIO-Namen (PIN_GPIO_NAME) auf ein
+    Label gelegt. Der Sockel ist die einzige Platine, die den Pico
+    selbst traegt -- reicht er einen freien GPIO nicht durch, erreicht
+    ihn ueberhaupt kein Modul im Stapel (Befund 1, Aufgabe-4-Fix-1:
+    der Stapelstecker leitet zwar mechanisch durch, aber ohne einen
+    Draht vom Pico dorthin haengt an dem Leiter nichts). Absichtlich
+    verschieden von der Modulseite, kein Versehen -- NICHT durch
+    Vereinheitlichen "aufraeumen": s. sockelplatine.py fuer die
+    Gegenseite dieser Entscheidung.
+    """
     sch.bauteil(ref, "Connector_Generic:Conn_02x20_Odd_Even", (ox, oy),
                 "Stapelstecker 2x20", FP_HDR_2X20, rot=0,
                 roff=(-5.08, 25.4), voff=(-5.08, 27.94))
     for pin in range(1, 41):
         rolle = S.PIN_ROLLE[pin]
         richtung = "L" if pin % 2 else "R"
-        if rolle == "frei" or rolle in ("3V3_EN", "VSYS", "VBUS"):
+        if rolle == "SEL_OUT":
+            # SEL_OUT ist seit Befund 2 (Aufgabe-4-Fix-1) eine echte
+            # Vertragsrolle (stack_spec.RESERVIERT), aber KEIN Pin
+            # dieses 2x20-Stapelsteckers -- die Auswahlkette laeuft
+            # ueber den eigenen STECKER_KETTE (stack_spec.py). Deshalb
+            # ausdruecklich no_connect statt eines STECKER_NETZE[rolle]-
+            # Nachschlags: STECKER_NETZE fuehrt "SEL_OUT" absichtlich
+            # nicht (s. dort), ein unveraenderter Nachschlag liefe hier
+            # in einen KeyError.
+            sch.nc(ref, str(pin))
+        elif rolle == "frei":
+            if frei_durchreichen and pin in PIN_GPIO_NAME:
+                sch.netz(ref, str(pin), richtung, PIN_GPIO_NAME[pin])
+            else:
+                sch.nc(ref, str(pin))
+        elif rolle in ("3V3_EN", "VSYS", "VBUS"):
             sch.nc(ref, str(pin))
         else:
             sch.netz(ref, str(pin), richtung, STECKER_NETZE[rolle])

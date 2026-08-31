@@ -24,6 +24,7 @@ Die Zusagen rund um das Flashen -- die Leitungen `FLASH_TX`, `FLASH_RX`, `SEL`, 
 | 1 | FLASH_TX |
 | 2 | FLASH_RX |
 | 3 | GND |
+| 4 | SEL_OUT |
 | 5 | FLASH_MODE |
 | 6 | I2C_SDA |
 | 7 | I2C_SCL |
