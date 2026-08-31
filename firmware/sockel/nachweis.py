@@ -4,15 +4,21 @@ Reihenfolge: ueber die Kettenlogik in den Bootlader bringen,
 synchronisieren, loeschen, blockweise schreiben, ueber dieselbe
 Kettenlogik zurueck in die Anwendung.
 
-Auf dem Tischaufbau gibt es noch kein Gatter: Pico und MCU sind ueber
-vier blanke Draehte verbunden (siehe docs/nachweis-2026-08.md). Die
-Pico-UART-Pins entsprechen FLASH_TX/FLASH_RX aus stack_spec.PIN_ROLLE
-(Steckerpins 1/2) und fuehren direkt zum Bootlader-USART der MCU
-(physisch PA11/PA12, siehe hardware/bauteile.md). BOOT0 und NRST
-dagegen liegen hier direkt an den rohen MCU-Pins (PA14/NRST) an, nicht
-an SEL/FLASH_MODE (Steckerpins 4/5) -- auf der fertigen Platine leitet
-erst ein Gatter aus SEL und FLASH_MODE die Reset- und
-Bootlader-Auswahl ab, und dieses Gatter existiert auf dem Tisch nicht.
+Auf dem Tischaufbau gibt es weder Flipflop noch Gatter: Pico und MCU
+sind ueber vier blanke Draehte verbunden (siehe
+docs/nachweis-2026-08.md). Die Pico-UART-Pins entsprechen
+FLASH_TX/FLASH_RX aus stack_spec.PIN_ROLLE (Steckerpins 1/2) und
+fuehren direkt zum Bootlader-USART der MCU (physisch PA11/PA12, siehe
+hardware/bauteile.md). BOOT0 und NRST dagegen liegen hier direkt an
+den rohen MCU-Pins (PA14/NRST) an, nicht an SEL/SEL_CLK/FLASH_MODE --
+auf der fertigen Platine haelt erst ein D-Flipflop die Auswahl (Q) und
+ein Gatter leitet daraus mit FLASH_MODE Reset und Bootlader-Auswahl
+ab. Beides existiert auf dem Tisch nicht; das eine Modul am Tisch ist
+hier von Hand als "ausgewaehlt" gesetzt (q=1).
+
+EHRLICHKEIT: Dieses Programm ist noch nie auf Hardware gelaufen. Es
+ist nicht einmal syntaktisch auf einem Pico geprueft -- MicroPython
+mit machine.UART gibt es auf dem Entwicklungsrechner nicht.
 """
 from machine import Pin, UART
 import time
@@ -27,25 +33,27 @@ boot0 = Pin(2, Pin.OUT)
 nrst = Pin(3, Pin.OUT)
 
 
-def reset(flash_mode, sel_in):
+def reset(flash_mode, q):
     """Reset- und BOOT0-Pegel nicht direkt setzen, sondern ueber
-    kette.modul_zustand(flash_mode, sel_in) ableiten -- derselben
-    Logik, die auf der fertigen Platine ein Gatter aus den
-    Verdrahtungssignalen SEL und FLASH_MODE bildet (Steckerpins 4/5,
-    stack_spec.PIN_ROLLE). Ein direktes Setzen von BOOT0/NRST wuerde
-    eine zweite, womoeglich abweichende Logik neben die Kettenlogik
-    stellen, die schon gegen die Wahrheitstabelle geprueft ist
-    (tests/test_kette.py). So prueft dieser Nachweis am Tisch
-    denselben Weg, den spaeter das Gatter in Kupfer ausfuehrt --
-    nur eben in Software nachgerechnet, weil das Gatter auf dem
-    Tischaufbau (noch) fehlt.
+    kette.modul_zustand(flash_mode, q) ableiten -- derselben
+    Gatterlogik, die auf der fertigen Platine aus FLASH_MODE und dem
+    Flipflop-Ausgang Q gebildet wird. Ein direktes Setzen von
+    BOOT0/NRST wuerde eine zweite, womoeglich abweichende Logik neben
+    die Kettenlogik stellen, die schon gegen die Wahrheitstabelle
+    geprueft ist (tests/test_kette.py). So prueft dieser Nachweis am
+    Tisch denselben Weg, den spaeter die Gatter in Kupfer ausfuehren --
+    nur eben in Software nachgerechnet, weil sie auf dem Tischaufbau
+    (noch) fehlen.
 
-    flash_mode=1, sel_in=1 waehlt dieses (einzige) Modul im
-    Flash-Modus: reset=0, boot0=1 -- der Bootlader startet.
+    q ist am Tisch von Hand gesetzt: es gibt nur ein Modul und kein
+    Schieberegister, das die Auswahl weiterschieben koennte.
+
+    flash_mode=1, q=1 waehlt dieses (einzige) Modul im Flash-Modus:
+    reset=0, boot0=1 -- der Bootlader startet.
     flash_mode=0 ist der Normalbetrieb: reset=0, boot0=0 -- die
     Anwendung startet.
     """
-    reset_haltung, boot0_ziel, _sel_out = modul_zustand(flash_mode, sel_in)
+    reset_haltung, boot0_ziel, _sel_out = modul_zustand(flash_mode, q)
     boot0.value(boot0_ziel)
     nrst.value(0)
     time.sleep_ms(10)
@@ -54,7 +62,7 @@ def reset(flash_mode, sel_in):
 
 
 def aufspielen(pfad):
-    reset(flash_mode=1, sel_in=1)
+    reset(flash_mode=1, q=1)
     bl = Bootlader(uart)
     if not bl.sync():
         raise RuntimeError("keine Antwort vom Bootlader")
@@ -71,5 +79,5 @@ def aufspielen(pfad):
             if not bl.write(adresse, block):
                 raise RuntimeError("Schreiben abgelehnt bei 0x%08X" % adresse)
             adresse += len(block)
-    reset(flash_mode=0, sel_in=0)
+    reset(flash_mode=0, q=0)
     print("aufgespielt:", pfad)
