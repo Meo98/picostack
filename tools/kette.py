@@ -62,7 +62,15 @@ def modul_zustand(flash_mode, q):
 
 
 class Modul:
-    """Ein Modul in der Kette: D-Flipflop plus Gatterlogik."""
+    """Ein Modul in der Kette: D-Flipflop plus Gatterlogik.
+
+    Der Default q=0 ist eine Annahme dieser Simulation, keine
+    Eigenschaft der Hardware: ein reales D-Flipflop hat beim
+    Einschalten einen undefinierten Zustand. Deshalb muss der Sockel
+    die Kette leertakten, bevor er FLASH_MODE das erste Mal auf 1
+    setzt (siehe docs/superpowers/specs/2026-08-28-picostack-design.md,
+    Abschnitt "Bus und Adressierung", "Einschaltzustand").
+    """
 
     def __init__(self, q=0):
         self.q = 1 if q else 0

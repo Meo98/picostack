@@ -238,6 +238,15 @@ liegt über dem statischen, nicht darunter.)
   hoch ist, damit keine 1 im Register stehen bleibt. Beides funktioniert;
   der Reset wäre nur eine Leitung wert, wenn ein Typ ihn ohnehin hat.
 
+**Auswahlkriterium aus der Einschalt-Analyse:** Ein reales Flipflop hat
+beim Einschalten einen undefinierten Zustand, nicht `Q=0`. Der Sockel
+muss die Kette deshalb leertakten, bevor er `FLASH_MODE` das erste Mal
+auf 1 setzt (verbindliche Regel, siehe Design-Doc, Abschnitt „Bus und
+Adressierung", „Einschaltzustand"). Ein Flipflop mit asynchronem
+Löscheingang erspart dieses Leertakten, wenn der Sockel ihn beim Start
+ansteuert — das macht den asynchronen Löscheingang zu einem echten
+Auswahlkriterium bei der Typwahl, nicht nur zu einer Ersparnis.
+
 **Verfügbarkeit:** LCSC und JLCPCB führen die Serien 74LVC1G und 74LVC2G
 als Standard-Logik. Eine konkrete Nummernvergabe wird bei der nächsten
 Beschaffungs-Phase recherchiert (Constraint: keine LCSC-Nummer ohne

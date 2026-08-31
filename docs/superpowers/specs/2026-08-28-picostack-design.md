@@ -145,6 +145,20 @@ Normalbetrieb, wenn alle Module gleichzeitig laufen, sichert das keine
 Hardware mehr ab — dort gilt die Auflage im Vertrag, dass Modulfirmware
 diese Leitung nicht treiben darf.
 
+**Einschaltzustand.** Ein reales D-Flipflop hat beim Einschalten einen
+undefinierten Zustand — anders als die Simulation, die immer mit
+`Q=0` beginnt. Steht `Q` mehrerer Module zufällig auf 1, sind mehrere
+Modul-MCU gleichzeitig wach und im Bootlader, sobald `FLASH_MODE` zum
+ersten Mal auf 1 geht — noch bevor überhaupt ein Takt gelaufen ist —,
+und funken sich über dieselbe Sendeleitung gegenseitig zu. Deshalb die
+verbindliche Regel: Der Sockel muss die Kette **leertakten**, bevor er
+`FLASH_MODE` das erste Mal auf 1 setzt — mindestens so viele Takte mit
+einer 0 an `SEL_IN`, wie Module im Stapel stecken können, solange
+`FLASH_MODE` noch 0 ist. Erst danach darf er die 1 einschieben.
+Alternativ ein Flipflop mit asynchronem Löscheingang, beim Start
+angesteuert — das ist der sauberere Weg und erspart das Leertakten,
+kostet aber eine Leitung oder ein RC-Glied.
+
 Auf jedem Modul leitet ein kleines Gatter aus dem Flipflop-Ausgang und
 dem Flash-Modus die beiden Signale ab, die der MCU braucht (Reset und
 die Bootlader-Auswahl):
