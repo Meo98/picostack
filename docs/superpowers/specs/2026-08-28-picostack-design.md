@@ -261,6 +261,17 @@ kann. Er zerfällt in drei Etappen, jede mit eigenem Plan:
      Annahme trägt das ganze System — sie wird belegt, bevor
      Leiterplatten darum herum entstehen.
    - **1b — Hardware.** Modulsockel, Sockelplatine, Motormodul.
+     **Auflage an die Leitungsführung der Flash-UART:** kurz und
+     sauber, keine unnötigen Umwege oder parallel geführten
+     Störquellen. Der ROM-Bootlader misst das Sync-Byte `0x7F` über
+     einen Timer, um die Baudrate zu bestimmen — das gelingt nur
+     unmittelbar nach dem Reset und ist ein Einmalversuch: Ein
+     Störimpuls auf der Leitung während dieses Fensters lässt die
+     Erkennung scheitern und verlangt einen erneuten Reset (Beleg und
+     Einordnung in `docs/nachweis-2026-08.md`, Abschnitt "Wie riskant
+     ist die offene Annahme?"). Eine saubere, kurze Leitungsführung
+     ist damit keine Layout-Kosmetik, sondern Bedingung dafür, dass
+     das Flashen überhaupt zuverlässig anläuft.
    - **1c — Firmware.** Registersatz, sicherer Zustand, Aufzählung
      des Stapels beim Start.
 2. **Die Dimmer-Familie.** 1, 3 und 4 Kanäle auf demselben

@@ -31,6 +31,27 @@ Werte nach ST AN3155 (Rev. 16, Februar 2023):
   - XOR für alle Daten-Bytes
   - Befehl + Komplement (XOR = 0xFF)
   - Global erase (0xFFFF) mit Checksum 0x00
+
+REVISIONSABGLEICH (2026-08, siehe docs/nachweis-2026-08.md): Es gibt
+eine neuere Fassung, AN3155 Rev 21 (Februar 2026, bestaetigt ueber die
+ST-Downloadseite und unabhaengig ueber die Revisionshistorie auf
+stmcu.jp: Rev 17 05.03.2024, Rev 18 24.05.2024, Rev 19 04.02.2025,
+Rev 20 03.07.2025, Rev 21 Februar 2026). Gegen die hier verwendeten
+Werte geprueft -- ACK/NACK (0x79/0x1F), SYNC (0x7F), die Befehlscodes
+0x44/0x31/0x21, die Komplement- und XOR-Pruefsummenregel aus
+"Communication safety", die Laengenbyte-Konvention N/N+1 bei Write
+Memory und der Massenloeschcode 0xFFFF mit Checksum 0x00 bei Extended
+Erase: **unveraendert gegenueber Rev 16**. Rev 17-21 fuegen laut
+Revisionshistorie nur neue MCU-Serien zur Produktliste hinzu
+(u.a. STM32U0, STM32WBA, STM32WB0, STM32U3, STM32WL3x) und aendern
+Abbildungen/Protection-Hinweise, nicht die Bytes auf der Leitung.
+Rev 16 wurde Seite fuer Seite gegengelesen (PDF direkt geladen); Rev 21
+wurde ueber einen Proxy-Abruf gelesen, dessen Angaben (Revisionsdaten,
+Befehlstabelle, Communication-safety-Text, Write-Memory- und
+Extended-Erase-Abschnitt) mit einer zweiten, unabhaengigen Quelle
+(stmcu.jp) und der Google-Suchvorschau des PDF selbst abgeglichen
+wurden, aber nicht Seite fuer Seite lokal nachvollzogen wie bei Rev 16.
+Bezug bleibt deshalb Rev 16 als gepruefte Primaerquelle.
 """
 
 ACK = 0x79
