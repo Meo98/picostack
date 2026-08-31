@@ -11,8 +11,23 @@ zweipoligen Kettenstecker (stack_spec.STECKER_KETTE). Deshalb ist "SEL"
 absichtlich NICHT in stack_spec.RESERVIERT und darf auch nicht in
 modulsockel.STECKER_NETZE auftauchen -- die Pruefung unten spiegelt
 das.
+
+Zwei Pruefungen unten (Polaritaet an NRST, ERC-Lauf) bauen den Block
+tatsaechlich per `modulsockel.einbauen()` auf, was ueber `gen.py` ->
+`symlib.py` ein installiertes `kicad-cli` braucht (fuer die Symbol-
+bibliothekspfade UND fuer den ERC-Lauf selbst). Ist `kicad-cli` in der
+Umgebung nicht auffindbar, werden genau diese zwei Pruefungen mit einer
+deutlichen Meldung uebersprungen, statt entweder mit einem rohen
+Tracebook abzubrechen oder still gruen zu melden -- die Dict/Konstanten-
+Pruefungen oben brauchen kein kicad-cli und laufen immer.
 """
-import os, sys
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 for d in ("tools", "tools/sch"):
     sys.path.insert(0, os.path.join(HERE, "..", d))
@@ -50,18 +65,8 @@ for n in ("IN1", "IN2", "NSLEEP", "NFAULT", "IPROPI", "NOTAUS"):
 # Zwei Kennwiderstaende, nicht einer -- 256 Modultypen.
 check("zwei Kennwiderstaende", modulsockel.ANZAHL_KENNWIDERSTAENDE, 2)
 
-# ------------------------------------------------------------ Polaritaet
-# Aufgabe 3 (Reset-Verpolung, siehe hardware/bauteile-1b.md, Nachtrag
-# 2026-08-31): NRST am STM32C011 ist aktiv LOW. Das Gatter, das NRST
-# treibt, muss deshalb INVERTIEREND sein (NAND) -- eine blosse
-# Gatterzaehlung faengt eine Verpolung nicht: ein AND-Gatter an
-# derselben Stelle waere immer noch "ein Gatter". Deshalb wird hier der
-# Block tatsaechlich aufgebaut und der Verdrahtung bis zum treibenden
-# Bauteil gefolgt, statt nur eine Ref-Bezeichnung abzufragen.
-import gen as _gen  # noqa: E402
 
-
-def _netz_pins(sch, netzname):
+def _netz_pins(sch, gen_mod, netzname):
     """Alle (ref, pinnr, libid, value) an Pins, deren Stichleitung auf
     einem Label `netzname` endet (Pin-Ende oder Gegenstueck einer
     WIRES-Strecke, die dort ankommt)."""
@@ -78,22 +83,94 @@ def _netz_pins(sch, netzname):
         nums = einheiten[einheit] if einheiten else sch.PINS[libid].keys()
         for num in nums:
             p = sch.PINS[libid][num]
-            xy = _gen.xf(pos, (p[0], p[1]), rot)
+            xy = gen_mod.xf(pos, (p[0], p[1]), rot)
             if xy in pin_pts:
                 treffer.append((ref, num, libid, value))
     return treffer
 
 
-_sch = _gen.Schaltplan("modulsockel_test", "Modulsockel (Test)", "")
-modulsockel.einbauen(_sch, 0.0, 0.0, mit_flipflop=True)
-_an_nrst = _netz_pins(_sch, "NRST")
-check("zwei Pins am Netz NRST (MCU-Eingang + Gatter-Ausgang)", len(_an_nrst), 2)
-_treiber = [t for t in _an_nrst if t[0] != "U100"]
-check("genau ein Gatter treibt NRST", len(_treiber), 1)
-if _treiber:
-    _ref, _pin, _libid, _value = _treiber[0]
-    check("das Gatter an NRST ist ein NAND (invertierend), kein AND",
-          _libid, "74xGxx:74LVC1G00")
+_KICAD_CLI = shutil.which("kicad-cli")
+if _KICAD_CLI is None:
+    print("UEBERSPRUNGEN: kicad-cli nicht in PATH gefunden -- die "
+          "Polaritaets- und ERC-Pruefung (beide bauen den Block ueber "
+          "gen.py/symlib.py tatsaechlich auf, das braucht kicad-cli fuer "
+          "die Symbolbibliothekspfade) koennen in dieser Umgebung nicht "
+          "laufen und werden ausgelassen. Alle anderen Pruefungen liefen.")
+else:
+    import gen as _gen
+
+    # ------------------------------------------------------ Polaritaet
+    # Aufgabe 3 (Reset-Verpolung, siehe hardware/bauteile-1b.md, Nachtrag
+    # 2026-08-31): NRST am STM32C011 ist aktiv LOW. Das Gatter, das NRST
+    # treibt, muss deshalb INVERTIEREND sein (NAND) -- eine blosse
+    # Gatterzaehlung faengt eine Verpolung nicht: ein AND-Gatter an
+    # derselben Stelle waere immer noch "ein Gatter". Deshalb wird hier
+    # der Block tatsaechlich aufgebaut und der Verdrahtung bis zum
+    # treibenden Bauteil gefolgt, statt nur eine Ref-Bezeichnung
+    # abzufragen. Seit dem zweiten Nachtrag treibt eine EINHEIT eines
+    # Dual-NAND-Bauteils (74xGxx:74LVC2G00) NRST, kein Einzel-Gatter mehr.
+    _sch = _gen.Schaltplan("modulsockel_test", "Modulsockel (Test)", "")
+    modulsockel.einbauen(_sch, 0.0, 0.0, mit_flipflop=True)
+    _an_nrst = _netz_pins(_sch, _gen, "NRST")
+    check("zwei Pins am Netz NRST (MCU-Eingang + Gatter-Ausgang)", len(_an_nrst), 2)
+    _treiber = [t for t in _an_nrst if t[0] != "U100"]
+    check("genau ein Gatter treibt NRST", len(_treiber), 1)
+    if _treiber:
+        _ref, _pin, _libid, _value = _treiber[0]
+        check("das Gatter an NRST ist ein NAND (invertierend), kein AND",
+              _libid, "74xGxx:74LVC2G00")
+
+    # ------------------------------------------------------------- ERC
+    # Aufgabe 3, Nachtrag (Pruefer-Befund #2): drei echte Fehler (Phantom-
+    # Stromsymbole, ungeloeste extends-Vererbung, Koordinaten neben dem
+    # Raster) wurden beim ersten Durchlauf dieser Aufgabe nur durch einen
+    # MANUELLEN `kicad-cli sch erc`-Lauf gefunden -- die reine
+    # Pin-auf-Draht-Selbstpruefung (gen.Schaltplan.selbstpruefung) sieht
+    # keinen davon. Aufgabe 4/5 erzeugen mit demselben Generator zwei
+    # weitere Schaltplaene; bricht dort einer der drei Fehler wieder auf,
+    # faellt es sonst niemandem auf. Deshalb hier der ERC-Lauf als
+    # Testschritt: bauen, exportieren, pruefen, aufraeumen.
+    ERWARTETE_ERC_WARNUNGEN = 6  # isolated_pin_label fuer IN1/IN2/NSLEEP/
+    # NFAULT/IPROPI/NOTAUS -- absichtlich einseitige Uebergabenetze, die
+    # erst Aufgabe 5 (Motormodul) auf der Gegenseite schliesst. Steigt
+    # diese Zahl, ist das entweder ein neues, ebenso erklaerbares
+    # Warnungsmuster ODER ein echter neuer Befund -- in jedem Fall soll
+    # der Test es melden, nicht stillschweigend durchwinken.
+
+    _tmp = tempfile.mkdtemp(prefix="modulsockel_erc_")
+    try:
+        _sch_erc = _gen.Schaltplan("modulsockel_erc_test",
+                                    "Modulsockel (ERC-Test)", "")
+        modulsockel.einbauen(_sch_erc, 0.0, 0.0, mit_flipflop=True)
+        _sch_pfad = _sch_erc.schreiben(os.path.join(_tmp, "Modulsockel.kicad_sch"))
+        _json_pfad = os.path.join(_tmp, "erc.json")
+        _proc = subprocess.run(
+            [_KICAD_CLI, "sch", "erc", "--format", "json",
+             "--output", _json_pfad, _sch_pfad],
+            capture_output=True, text=True)
+        if not os.path.exists(_json_pfad):
+            fails.append("kicad-cli sch erc lieferte keinen JSON-Report "
+                          "(rc=%s): %s" % (_proc.returncode, _proc.stderr.strip()))
+        else:
+            with open(_json_pfad, encoding="utf-8") as f:
+                _report = json.load(f)
+            _errors = []
+            _warnings = []
+            for _sheet in _report.get("sheets", []):
+                for _v in _sheet.get("violations", []):
+                    if _v["severity"] == "error":
+                        _errors.append(_v)
+                    elif _v["severity"] == "warning":
+                        _warnings.append(_v)
+            check("ERC-Fehler auf dem erzeugten Blatt", len(_errors), 0)
+            check("ERC-Warnungen auf dem erzeugten Blatt (isolierte "
+                  "Uebergabenetze IN1/IN2/NSLEEP/NFAULT/IPROPI/NOTAUS)",
+                  len(_warnings), ERWARTETE_ERC_WARNUNGEN)
+            if _errors:
+                for _e in _errors:
+                    print("  ERC-Fehler:", _e.get("type"), "-", _e.get("description"))
+    finally:
+        shutil.rmtree(_tmp, ignore_errors=True)
 
 if fails:
     print("FEHLGESCHLAGEN:")

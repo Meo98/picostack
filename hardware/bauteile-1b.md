@@ -26,8 +26,9 @@ Grundlage des neuen, eigenständigen Kettensteckers sind.
 | Leistungsstecker, Buchse (oben, 2×2) | gleiche ZHOURI-Familie, 2,54 mm | THT, 8,5 mm über Platine, 2,5 A/Kontakt | C2977590 | ja | LCSC-Produktseite `lcsc.com/product-detail/Female-Headers_ZHOURI-2-54-2-2_C2977590.html` (Rohdaten: „2.5A", „8.5mm insulation height") |
 | Leistungsstecker, Stift (unten, 2×2) | gleiche BOOMELE-Familie, 2,54 mm | THT, 6,0/3,0 mm, 3 A/Kontakt | C66690 | ja | LCSC-Produktseite `lcsc.com/product-detail/Male-Header_Double-Rows2-2p-pitch2-54mm_C66690.html` (Rohdaten: „3A", „6mm"/„3mm") |
 | D-Flipflop, asynchroner Löscheingang | SN74LVC1G175DCKR (TI) | SOT-363-6 (SC-70-6), 6 Pins | C202238 | ja | LCSC-Produktseite `lcsc.com/product-detail/74-Series_TI_SN74LVC1G175DCKR_SN74LVC1G175DCKR_C202238.html`; JLCPCB-Produktseite `jlcpcb.com/partdetail/TexasInstruments-SN74LVC1G175DCKR/C202238` (SMT Assembly, Economic/Standard PCBA, MSL 1); Primärquelle TI-Datenblatt `SN74LVC1G175`, Dok. SCES560G (März 2004, revidiert Juni 2015), Abschnitt 3 „Description" und Abschnitt 5 „Pin Configuration and Functions" (Gehäuse „DCK Package, 6-Pin SC70", Pin 6 = `CLR`) |
-| Gatter NOT (Invertierung Q) | SN74LVC1G04DCKR (TI) | SOT-353 (SC-70-5), 5 Pins | C8207 | ja | LCSC-Produktseite `lcsc.com/product-detail/C8207.html`; JLCPCB-Produktseite `jlcpcb.com/partdetail/TexasInstruments-SN74LVC1G04DCKR/C8207` (SMT Assembly, Economic/Standard PCBA, MSL 1) |
-| Gatter NAND (NRST) — **ersetzt eines der beiden AND, s. Nachtrag 2026-08-31** | SN74LVC1G00DCKR (TI) | SOT-353 (SC-70-5), 5 Pins | C8185 | ja | LCSC-Produktseite `lcsc.com/product-detail/C8185.html` (Rohdaten: „SOT-353“, „ultra-small DPW package… 0.8 mm × 0.8 mm“); TI-Datenblatt `SN74LVC1G00`, „Single 2-Input Positive-NAND Gate“ |
+| Gatter Dual-NAND (NOT via NAND(Q,Q), NRST) — **ersetzt die Zeilen NOT+NAND unten, s. Nachtrag 2026-08-31 (2. Runde)** | SN74LVC2G00DCUR (TI) | **VSSOP-8 (0,5 mm Pitch), 8 Pins — NICHT SOT-363**, s. Anmerkung unten | C206109 | ja | LCSC-Produktseite `lcsc.com/product-detail/C206109.html` (Rohdaten: Gehäuse „VSSOP-8-0.5mm"); TI-Datenblatt `SN74LVC2G00`, „Dual 2-Input Positive-NAND Gate" |
+| ~~Gatter NOT (Invertierung Q)~~ — **verworfen, s. Nachtrag 2026-08-31 (2. Runde): ersetzt durch eine Einheit des Dual-NAND (Eingänge kurzgeschlossen)** | SN74LVC1G04DCKR (TI) | SOT-353 (SC-70-5), 5 Pins | C8207 | ja (Bauform an sich geprüft, aber verworfen) | LCSC-Produktseite `lcsc.com/product-detail/C8207.html`; JLCPCB-Produktseite `jlcpcb.com/partdetail/TexasInstruments-SN74LVC1G04DCKR/C8207` (SMT Assembly, Economic/Standard PCBA, MSL 1) |
+| ~~Gatter NAND (NRST)~~ — **verworfen, s. Nachtrag 2026-08-31 (2. Runde): ersetzt durch die zweite Einheit desselben Dual-NAND** | SN74LVC1G00DCKR (TI) | SOT-353 (SC-70-5), 5 Pins | C8185 | ja (Bauform an sich geprüft, aber verworfen) | LCSC-Produktseite `lcsc.com/product-detail/C8185.html` (Rohdaten: „SOT-353“, „ultra-small DPW package… 0.8 mm × 0.8 mm“); TI-Datenblatt `SN74LVC1G00`, „Single 2-Input Positive-NAND Gate“ |
 | Gatter AND (BOOT0) | SN74LVC1G08DCKR (TI) | SOT-353 (SC-70-5), 5 Pins | C7832 | ja | LCSC-Produktseite `lcsc.com/product-detail/C7832.html` (Rohdaten: „SC-70-5“, „ultra-small DPW package… 0.8 mm × 0.8 mm“); TI-Datenblatt `SN74LVC1G08`, „Single 2-Input Positive-AND Gate“ |
 | ~~Gatter Dual-AND (RESET, BOOT0) — **verworfen, s. Nachtrag 2026-08-31**~~ | 74LVC2G08GT,115 (Nexperia) | XSON-8 (1×2 mm), 8 Pins | C548580 | ja (Bauform an sich geprüft, aber verworfen) | JLCPCB-Produktseite `jlcpcb.com/partdetail/Nexperia-74LVC2G08GT115/C548580` (SMT Assembly, Economic/Standard PCBA, MSL 1) |
 | 5-V-Regler | K7805-2000R3 | SIP-3 | C2931187 | ja | bereits geprüft in Etappe 1a / LED-Dimmer-Projekt, siehe `hardware/bauteile.md` — hier unverändert übernommen, nicht neu recherchiert |
@@ -390,6 +391,68 @@ einen vierten Gattertyp (einen zusätzlichen Inverter) einzuführen.
   angeschlossene Gatter invertierend (NAND) ist, nicht nur eine
   Gatterzahl-Prüfung.
 
+### Nachtrag 2026-08-31, zweite Runde — der zusätzliche Baustein war vermeidbar
+
+**Befund der Prüfung:** Die obige Aufteilung in zwei Einzel-Gatter-ICs
+übersah den Standardtrick, dass **ein NAND mit kurzgeschlossenen
+Eingängen ein Inverter ist** — `¬Q = NAND(Q,Q)`. Damit sind die
+NOT-Funktion (`Q → NQ`) und das NRST-Gatter (`NAND(FLASH_MODE, NQ)`)
+beide NAND und passen in **ein** Doppel-NAND-Bauteil; nur `BOOT0` bleibt
+als eigenständiges AND übrig. Physische Gatter-ICs: **zwei statt drei**
+(vorher: NOT + NAND + AND je einzeln).
+
+**Bauteil:** `SN74LVC2G00DCUR` (TI), LCSC **C206109**, „Dual 2-Input
+Positive-NAND Gate". **Wichtige Korrektur der zunächst genannten
+Gehäuseangabe:** Trotz der Namensähnlichkeit zum SOT-363-Flipflop
+(`SN74LVC1G175DCKR`) ist dieses Bauteil **nicht** SOT-363/SC-70-6 —
+das auf der LCSC-Produktseite (`lcsc.com/product-detail/C206109.html`)
+tatsächlich genannte Gehäuse ist **„VSSOP-8-0.5mm"**, unabhängig
+bestätigt über eine zweite Suche (DigiKey/weitere Distributoren nennen
+denselben Wert: „NAND Gate IC with 2 channels in an 8-VSSOP package").
+Das ist auch physikalisch zwingend: SOT-363/SC-70-6 hat nur 6 Anschlüsse,
+ein Dual-2-Input-Gatter braucht mindestens 8 (2×(2 Eingänge + 1 Ausgang)
++ VCC + GND) — ein Dual-Gatter passt in dieses 6-Pin-Gehäuse gar nicht.
+Verwendeter KiCad-Footprint: `Package_SO:VSSOP-8_2.3x2mm_P0.5mm`
+(0,5-mm-Pitch, passend zur LCSC-Gehäuseangabe).
+
+**Verdrahtung (`tools/sch/modulsockel.py`, U102):** Pin-Gruppierung laut
+KiCad-Symbol `74xGxx:74LVC2G00` (`tools/sch/symlib.py`, `_subunits()`
+nachgemessen): Einheit 1 = Pins {1,2,7} (Eingänge 1/2, Ausgang 7),
+Einheit 2 = Pins {3,5,6} (Eingänge 5/6, Ausgang 3), Einheit 3 = Pins
+{4,8} (GND/VCC, gemeinsam). Einheit 1 bekommt an beiden Eingängen
+`SEL_OUT` (Q) — die absichtliche Kurzschaltung, die den Inverter bildet
+— und liefert `NQ` auf Pin 7. Einheit 2 bildet aus `FLASH_MODE` und `NQ`
+das Ergebnis `NRST` auf Pin 3, direkt an PF2-NRST des MCU. Im Code
+ausführlich kommentiert, warum die zwei kurzgeschlossenen Pins **kein**
+Fehler sind (sonst „repariert" sie der nächste Blick).
+
+**Ersetzt/verworfen (Tabelle oben nachgezogen):**
+- `SN74LVC1G04DCKR` (NOT, C8207) — Bauform weiterhin korrekt geprüft,
+  aber nicht mehr verbaut.
+- `SN74LVC1G00DCKR` (NAND, C8185) — dito, ersetzt durch eine Einheit des
+  Dual-NAND.
+- `SN74LVC1G08DCKR` (AND, C7832) — **bleibt unverändert** für `BOOT0`;
+  kein Gegenstück im Dual-NAND, weil ein homogenes Dual-Gatter nicht eine
+  AND- und eine NAND-Einheit zugleich liefern kann.
+
+**Umgesetzt:**
+
+- `tools/sch/modulsockel.py`: `U102` ist jetzt `SN74LVC2G00DCUR`
+  (Dual-NAND, drei Platzierungen wie zuvor beim verworfenen Dual-AND:
+  Einheit 1 = NOT via NAND(Q,Q), Einheit 2 = NRST-NAND, Einheit 3 =
+  Versorgung). `U103` bleibt der Einzel-AND-Gatter-IC für `BOOT0`
+  (vorher `U104`, umbenannt, da die Lücke durch die Konsolidierung
+  entfällt). Neue Footprint-Konstante `FP_VSSOP8`.
+- `hardware/bauteile-1b.md`: neue Zeile für `SN74LVC2G00DCUR` (C206109),
+  die drei ersetzten Einzel-Gatter-Zeilen als verworfen markiert (Bauform
+  weiterhin korrekt), Gehäuseangabe „VSSOP-8", nicht „SOT-363" — mit
+  eigener Anmerkung, weil das zunächst falsch vermutet wurde.
+- `tests/test_modulsockel.py`: bestehende Polaritäts-Zusicherung bleibt
+  gültig (sucht das treibende Bauteil an `NRST` generisch über die
+  Verdrahtung, nicht über eine feste Referenzbezeichnung) — geprüft
+  gegen `libid == "74xGxx:74LVC2G00"`, die neue Multi-Unit-Einheit.
+- `tests/test_modulsockel.py`: neuer ERC-Testschritt (siehe unten).
+
 ## Beleg 4 — Leistungsstecker: Bauform gewählt, Strombelastbarkeit belegt
 
 **Bauform:** dieselbe 2,54-mm-Stift-/Buchsenleisten-Familie wie der
@@ -600,7 +663,7 @@ ungünstigsten Toleranzstapel positiv.
 | **Entscheidung 2026-08-31 (erste Runde)** | Stapelstecker (Buchse mit durchgehendem Stift, C35165) für 39 der 40 Leitungen; eigener Kettenstecker (C492401/C541849) nur für `SEL`. `STAPEL_ABSTAND` zunächst bei 15,0 mm belassen — passte komfortabel zum Stapelstecker (5,96 mm Einstecktiefe), der Kettenstecker trug aber nur 1,1 mm (Beleg 1 Nachtrag, Beleg 6) |
 | **Entscheidung 2026-08-31 (zweite Runde)** | Keine passende längere Stiftleiste gefunden (zwei unabhängige Suchen) → `STAPEL_ABSTAND` auf **13,0 mm** gesenkt: Kettenstecker jetzt 3,1 mm Einstecktiefe, Stapelstecker 7,96 mm; Klemmenhöhe belegt (DB128L 10,10 mm, K7805 10,2 mm, beide Datenblätter gelesen) bleibt unter der 11,0-mm-Reissleine, 1,2–1,3 mm Luft im Spalt (Beleg 6, zweite Runde). Gehäuse (Aufgabe 9) noch auf 13,0 mm nachzuziehen |
 | D-Flipflop mit Löscheingang | Gefunden: SN74LVC1G175DCKR, C202238, SOT-363-6, JLCPCB-bestückbar; Primärquelle TI SCES560G; braucht neue Leitung ODER lokales RC-POR |
-| Gatter (NOT, 2× AND) | ~~Beide JLCPCB-bestückbar: C8207 (SOT-353) und C548580 (XSON-8, deckt beide AND-Funktionen)~~ — **überholt, s. Nachtrag 2026-08-31:** `NRST` war verpolt (AND statt NAND auf einen aktiv-LOW-Pin); jetzt 1× NOT (C8207), 1× NAND (C8185), 1× AND (C7832), alle SOT-353 |
+| Gatter (NOT, 2× AND) | ~~Beide JLCPCB-bestückbar: C8207 (SOT-353) und C548580 (XSON-8, deckt beide AND-Funktionen)~~ — **überholt, s. Nachtrag 2026-08-31 (2. Runde):** `NRST` war verpolt (AND statt NAND auf einen aktiv-LOW-Pin); jetzt 1× Dual-NAND `SN74LVC2G00DCUR` (C206109, VSSOP-8 — NICHT SOT-363, s. Anmerkung) deckt NOT (via NAND(Q,Q)) UND das NRST-Gatter ab, plus 1× Einzel-AND `SN74LVC1G08DCKR` (C7832, SOT-353) für BOOT0 — **zwei physische Gatter-ICs statt drei** |
 | Leistungsstecker + Strombelastbarkeit | 2×2 derselben Stecker-Familie, ~5 A/Ader vor Derating (Engpass Buchse 2,5 A/Kontakt); Positionszahl ist Vorschlag, kein Vertragswert |
 | Klemme 3-polig | DB128L-5.08-3P-GN-S, C395869, 16 A/300 V |
 | `tools/stack_spec.py`, `docs/vertrag.md`, Tests | Nachgezogen: SEL raus aus PIN_ROLLE/RESERVIERT, STECKER_STAPEL/STECKER_KETTE neu, Vertrag neu erzeugt, Tests ergänzt (siehe Beleg 6) |
