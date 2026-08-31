@@ -5,15 +5,25 @@ Modul-MCU. Absichtlich klein gehalten: synchronisieren, loeschen,
 schreiben, starten -- mehr braucht das Aufspielen einer Firmware
 nicht.
 
+Bewusst NICHT dabei ist der Get-Befehl: AN3155 Abschnitt 3.1 laesst
+den Chip mit ACK, N, Version, N Befehlsbytes und nochmals ACK
+antworten. Wer davon nur die erste Quittung abholt, laesst den Rest im
+Empfangspuffer stehen -- der naechste Befehl liest ihn dann als seine
+eigene Quittung. Gebraucht wird Get hier nirgends; halb umgesetzt ist
+er gefaehrlicher als gar nicht umgesetzt.
+
 Die Schnittstelle ist 8 Datenbits mit gerader Paritaet und einem
 Stoppbit. Jeder Befehl geht mit seinem Einerkomplement hinaus; das ist
 die einzige Pruefung, die das Protokoll auf der Befehlsebene hat.
+
+EHRLICHKEIT: Diese Umsetzung ist nur gegen eine Attrappe geprueft
+(tests/test_an3155.py), nie gegen echtes Silizium. Kein STM32 hat je
+darauf geantwortet.
 
 Werte nach ST AN3155 (Rev. 16, Februar 2023):
 - ACK/NACK: Abschnitt "Communication safety" (Seite 8/50)
 - SYNC und Bootloader-Sequenz: Abschnitt 1 (Seite 5/50)
 - Befehlscodes: Table 2 (Seite 7/50)
-- Get: Abschnitt 3.1 (Seite 9/50)
 - Go: Abschnitt 3.5 (Seite 18/50)
 - Write Memory: Abschnitt 3.6 (Seite 20/50)
 - Extended Erase Memory: Abschnitt 3.8 (Seite 26/50)
@@ -27,7 +37,6 @@ ACK = 0x79
 NACK = 0x1F
 
 SYNC = 0x7F
-CMD_GET = 0x00
 CMD_ERASE_EXT = 0x44
 CMD_WRITE = 0x31
 CMD_GO = 0x21
@@ -46,7 +55,17 @@ class Bootlader:
 
     # --- unterste Ebene ---
     def _quittung(self):
+        """Ein Byte lesen und pruefen, ob es ACK ist.
+
+        machine.UART.read() liefert bei Zeitueberschreitung None, nicht
+        b"" -- len(None) wuerde einen TypeError werfen. Genau dieser
+        Fall ist "Pico an, kein Chip antwortet", also der erste
+        Handgriff am Tisch: er muss ein sauberes False melden, keinen
+        Absturz.
+        """
         a = self.uart.read(1)
+        if not a:
+            return False
         return len(a) == 1 and a[0] == ACK
 
     def _befehl(self, code):
@@ -59,9 +78,6 @@ class Bootlader:
         self.uart.write(bytes([SYNC]))
         return self._quittung()
 
-    def get(self):
-        return self._befehl(CMD_GET)
-
     def erase_all(self):
         if not self._befehl(CMD_ERASE_EXT):
             return False
@@ -70,7 +86,7 @@ class Bootlader:
         return self._quittung()
 
     def write(self, adresse, daten):
-        if len(daten) > 256 or len(daten) % 4:
+        if not daten or len(daten) > 256 or len(daten) % 4:
             raise ValueError("Block muss 1..256 Byte und durch 4 teilbar sein")
         if not self._befehl(CMD_WRITE):
             return False

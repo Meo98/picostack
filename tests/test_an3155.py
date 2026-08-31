@@ -27,6 +27,20 @@ class FakeUart:
         return bytes(aus)
 
 
+class StummeUart(FakeUart):
+    """Ein UART, an dem niemand antwortet.
+
+    machine.UART.read() liefert bei Zeitueberschreitung None -- nicht
+    b"", wie die einfache Attrappe oben. Genau dieser Unterschied hat
+    den Fehlerpfad verdeckt: len(None) wirft TypeError, und der Fall
+    "Pico an, kein Chip antwortet" ist der allererste Handgriff am
+    Tisch.
+    """
+
+    def read(self, n):
+        return None
+
+
 # --- Synchronisieren ---
 u = FakeUart([ACK])
 b = Bootlader(u)
@@ -88,11 +102,29 @@ u = FakeUart([ACK, ACK, NACK])
 b = Bootlader(u)
 check("Schreiben meldet Fehler nach Daten", b.write(0x08000000, b"\x01\x02\x03\x04"), False)
 
-# --- Get command ---
-u = FakeUart([ACK])
+# --- Kein Chip am anderen Ende ---
+# Die UART laeuft in die Zeitueberschreitung und liefert None. Das muss
+# ein sauberes False geben, keinen TypeError.
+u = StummeUart([])
 b = Bootlader(u)
-check("Get-Befehl sendet Code", b.get(), True)
-check("Get sendet 0x00 mit Komplement", bytes(u.gesendet), b"\x00\xff")
+check("ohne Antwort meldet sync Misserfolg", b.sync(), False)
+check("ohne Antwort meldet erase_all Misserfolg", b.erase_all(), False)
+check("ohne Antwort meldet write Misserfolg",
+      b.write(0x08000000, b"\x01\x02\x03\x04"), False)
+check("ohne Antwort meldet go Misserfolg", b.go(0x08000000), False)
+
+# --- Leerer Block wird abgewiesen ---
+# len(b"") ist durch 4 teilbar und kaeme durch die Pruefung; das
+# Laengenbyte N-1 waere dann -1 und bytes([-1]) wuerde erst spaeter
+# sterben -- mitten im Schreibvorgang, nach dem gesendeten Befehl.
+u = FakeUart([ACK, ACK, ACK])
+b = Bootlader(u)
+try:
+    b.write(0x08000000, b"")
+    fails.append("leerer Block: kein ValueError")
+except ValueError:
+    pass
+check("leerer Block sendet nichts", bytes(u.gesendet), b"")
 
 # --- Go command ---
 u = FakeUart([ACK, ACK])

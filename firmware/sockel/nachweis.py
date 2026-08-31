@@ -28,7 +28,18 @@ from kette import modul_zustand
 BLOCK = 256
 START = 0x08000000
 
-uart = UART(0, baudrate=115200, bits=8, parity=0, stop=1, tx=0, rx=1)
+# timeout: MicroPython liefert bei Zeitueberschreitung None zurueck,
+# was an3155._quittung() als "keine Antwort" meldet. Ohne timeout=
+# blockiert read() je nach Port unbestimmt lange -- ein Modul ohne
+# bestueckten MCU laesst den Nachweis dann einfach haengen, statt einen
+# Fehler zu melden.
+# 2000 ms: Die Quittungen auf SYNC und die Schreibbloecke kommen in
+# wenigen Millisekunden; der lange Fall ist die Massenloeschung, deren
+# Dauer wir nicht nachgeschlagen haben. Der Wert ist deshalb bewusst
+# grosszuegig geschaetzt und nicht aus einem Datenblatt hergeleitet --
+# er soll nur verhindern, dass ein toter Chip den Aufbau blockiert.
+uart = UART(0, baudrate=115200, bits=8, parity=0, stop=1, tx=0, rx=1,
+            timeout=2000)
 boot0 = Pin(2, Pin.OUT)
 nrst = Pin(3, Pin.OUT)
 
