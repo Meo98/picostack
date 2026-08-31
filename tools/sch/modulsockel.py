@@ -110,15 +110,29 @@ FP_SOT353 = "Package_TO_SOT_SMD:SOT-353_SC-70-5"
 # (lcsc.com/product-detail/C206109.html): Gehaeuse "VSSOP-8-0.5mm".
 FP_VSSOP8 = "Package_SO:VSSOP-8_2.3x2mm_P0.5mm"
 FP_HDR_2X20 = "Connector_PinHeader_2.54mm:PinHeader_2x20_P2.54mm_Vertical"
-FP_HDR_1X02 = "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
-FP_HDR_2X02 = "Connector_PinHeader_2.54mm:PinHeader_2x02_P2.54mm_Vertical"
-# Alle drei Header-Footprints sind Platzhalter aus der KiCad-Standard-
-# bibliothek. Die tatsaechlichen Bauteile (STECKER_STAPEL/STECKER_KETTE
-# in stack_spec.py, plus der Leistungsstecker aus hardware/bauteile-1b.md)
-# sind Spezialteile (Buchse mit durchgehendem Stift bzw. bestimmte
-# Einstecktiefen) und brauchen eigene .kicad_mod-Footprints -- das ist
-# Sache der PCB-Layout-Aufgaben (Aufgabe 6/7 dieser Etappe), nicht dieses
-# Schaltplan-Blocks.
+# Ketten- und Leistungsstecker sind seit Aufgabe 5e (2026-08-31)
+# SMD-PAARE: Buchse oben, Stiftleiste unten, am selben Ort. Zwei
+# bedrahtete Haelften am selben Ort brauchten dieselben Bohrungen und
+# waeren damit derselbe Leiter -- fuer die Auswahlkette (SEL_IN oben,
+# SEL_OUT unten) genau falsch. Die Herleitung steht vollstaendig im
+# Block bei stack_spec.STECKER_KETTE. Deshalb hier vier Footprints
+# statt zwei: Buchse (PinSocket) und Stiftleiste (PinHeader) je Groesse.
+FP_SKT_1X02 = ("Connector_PinSocket_2.54mm:"
+               "PinSocket_1x02_P2.54mm_Vertical_SMD_Pin1Left")
+FP_HDR_1X02 = ("Connector_PinHeader_2.54mm:"
+               "PinHeader_1x02_P2.54mm_Vertical_SMD_Pin1Left")
+FP_SKT_2X02 = ("Connector_PinSocket_2.54mm:"
+               "PinSocket_2x02_P2.54mm_Vertical_SMD")
+FP_HDR_2X02 = ("Connector_PinHeader_2.54mm:"
+               "PinHeader_2x02_P2.54mm_Vertical_SMD")
+# Alle fuenf Header-Footprints sind Platzhalter aus der KiCad-Standard-
+# bibliothek. Die tatsaechlichen Bauteile (STECKER_STAPEL/STECKER_KETTE/
+# STECKER_LEISTUNG in stack_spec.py) sind Spezialteile (Buchse mit
+# durchgehendem Stift bzw. bestimmte Bauhoehen) und brauchen eigene
+# .kicad_mod-Footprints -- das ist Sache der PCB-Layout-Aufgaben
+# (Aufgabe 6/7 dieser Etappe), nicht dieses Schaltplan-Blocks. Die
+# Bauform (bedrahtet/SMD, Buchse/Stift) stimmt jetzt aber, und
+# stack_spec.FOOTPRINT_HOF rechnet mit genau diesen Hoefen.
 
 # ------------------------------------------------------- Netze am Stecker
 # Rolle -> Netzname am 2x20-Stapelstecker. Ausschliesslich aus dem
@@ -267,12 +281,12 @@ def _kettenstecker(sch, ref_oben, ref_unten, ox, oy):
     assert S.STECKER_KETTE["pins"][1] == "SEL"
     assert S.STECKER_KETTE["pins"][2] == "GND"
     sch.bauteil(ref_oben, "Connector_Generic:Conn_01x02", (ox, oy),
-                "Kettenstecker, Buchse oben", FP_HDR_1X02, rot=0,
+                "Kettenstecker, Buchse oben (SMD)", FP_SKT_1X02, rot=0,
                 roff=(-5.08, 3.81), voff=(-5.08, 6.35))
     sch.netz(ref_oben, "1", "L", "SEL_IN")
     sch.netz(ref_oben, "2", "L", "GND")
     sch.bauteil(ref_unten, "Connector_Generic:Conn_01x02", (ox, oy - 10.16),
-                "Kettenstecker, Stift unten", FP_HDR_1X02, rot=0,
+                "Kettenstecker, Stift unten (SMD)", FP_HDR_1X02, rot=0,
                 roff=(-5.08, 3.81), voff=(-5.08, 6.35))
     sch.netz(ref_unten, "1", "L", "SEL_OUT")
     sch.netz(ref_unten, "2", "L", "GND")
@@ -284,12 +298,12 @@ def _leistungsstecker(sch, ref_oben, ref_unten, ox, oy):
     hardware/bauteile-1b.md, Beleg 4)."""
     netze = {"1": "PWR24V", "2": "GND", "3": "PWR24V", "4": "GND"}
     sch.bauteil(ref_oben, "Connector_Generic:Conn_02x02_Odd_Even", (ox, oy),
-                "Leistungsstecker, Buchse oben", FP_HDR_2X02, rot=0,
+                "Leistungsstecker, Buchse oben (SMD)", FP_SKT_2X02, rot=0,
                 roff=(-5.08, 3.81), voff=(-5.08, 6.35))
     for pin, name in netze.items():
         sch.netz(ref_oben, pin, "L" if pin in ("1", "3") else "R", name)
     sch.bauteil(ref_unten, "Connector_Generic:Conn_02x02_Odd_Even", (ox, oy - 7.62),
-                "Leistungsstecker, Stift unten", FP_HDR_2X02, rot=0,
+                "Leistungsstecker, Stift unten (SMD)", FP_HDR_2X02, rot=0,
                 roff=(-5.08, 3.81), voff=(-5.08, 6.35))
     for pin, name in netze.items():
         sch.netz(ref_unten, pin, "L" if pin in ("1", "3") else "R", name)
@@ -320,9 +334,10 @@ def _kennwiderstand(sch, ref_ober, ref_kenn, ox, oy, netz):
 #: IMMER no_connect -- ein Modul, das den Debug-Pin fuer eigene Zwecke
 #: kapert, verliert die Moeglichkeit, es je wieder per SWD anzusprechen,
 #: falls die Firmware haengt. Aufgabe 5 (Motormodul) ist die erste
-#: Nutzerin: drei der vier Pins tragen dort SENSOR_3V3/NOTAUS_1/NOTAUS_2
-#: (der Optokoppler- und die zwei lokalen Notaus-Eingaenge muessen an den
-#: MCU, s. tools/sch/motormodul.py) -- ohne diese Konstante haette
+#: Nutzerin: drei der vier Pins tragen dort SENSOR_3V3/SCHLEIFE_1/
+#: SCHLEIFE_2 (der Optokoppler-Ausgang und die zwei Schleifenknoten der
+#: Notaus-Kanaele muessen an den MCU; SCHLEIFE_1/2 hiessen bis zur
+#: Ruhestrom-Umstellung NOTAUS_1/2, s. tools/sch/motormodul.py) -- ohne diese Konstante haette
 #: einbauen() sie unbedingt auf nc() gelegt, und ein nachtraeglicher
 #: netz()-Aufruf auf demselben Pin waere ein Widerspruch (no_connect UND
 #: Draht auf demselben Punkt).

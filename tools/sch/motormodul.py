@@ -97,10 +97,11 @@ Layout-Auflage (Footprint-Silk-Polaritaet gegen den Schaltplan pruefen,
 bevor bestueckt wird) steht in hardware/bauteile-1b.md, Beleg 9.
 
 **4. NOTAUS wirkt ohne Software.** Der Weg, den das Signal nimmt, steht
-unten bei `_notaus_verriegelung()` im Detail; hier die Kurzfassung: die
-Endstufe wird ueber das DRV8876-eigene nSLEEP-Pin abgeschaltet (ein
-echter Hardware-Steuereingang des Treibers, kein Software-Zustand). Die
-Verriegelung ist ein UND-Gatter (U3, SN74LVC1G08):
+unten bei `_notaus_schleifen()` und `_notaus_verriegelung()` im Detail;
+hier die Kurzfassung: die Endstufe wird ueber das DRV8876-eigene
+nSLEEP-Pin abgeschaltet (ein echter Hardware-Steuereingang des Treibers,
+kein Software-Zustand). Die Verriegelung ist ein UND-Gatter (U3,
+SN74LVC1G08):
 
     U1_NSLEEP = NSLEEP(vom Modul-MCU)  UND  NOTAUS(Sammelleitung)
 
@@ -120,6 +121,30 @@ Pin bei rund 3,0 V stehen (VIL waere 0,8 V); und selbst ohne
 Vorwiderstand hoben ZWEI Diodenspannungen in Reihe (D2 zum Bus, D3/D4
 vom Bus zum Schaltkontakt) den Pin auf rund 1,2 V. Ein Gatter hat dieses
 Problem nicht: sein Ausgang ist eine echte Gegentaktstufe.
+
+**5. Der Notaus-EINGANG arbeitet im Ruhestrom (Aufgabe 5d, 2026-08-31).**
+Der externe Kontakt ist jetzt ein OEFFNER: im Normalbetrieb geschlossen,
+Oeffnen loest aus -- und ebenso jeder Kabelbruch, jeder abgezogene
+Stecker, jede lose Klemme. Vorher war es ein Schliesser ("zumachen =
+Notaus"), bei dem ein gebrochenes Kabel wie "alles in Ordnung" aussah.
+Vollstaendige Herleitung, alle fuenf geforderten Betrachtungen
+(Schleifenspannung, Kurzschluss der Rueckleitung, Querschluss der
+Kanaele, Strombegrenzung, unbenutzter Kanal) und die Rechnungen dazu
+stehen in `_notaus_schleifen()`. Die drei Kernpunkte:
+
+  * Je Kanal gehen 24 V ueber 3,3 kOhm hinaus und kommen ueber eine
+    zweite Ader und einen weiteren 3,3 kOhm in die LED eines
+    Optokopplers zurueck; dessen Emitter treibt gegen einen 4,7-kOhm-
+    Pulldown den Knoten SCHLEIFE_1/2. Geschlossen = HIGH, offen = LOW.
+  * Der Knoten kann den wired-OR-Bus NICHT selbst ziehen -- ein Pulldown
+    gegen zehn parallele 10-kOhm-Pullups steht bei 2,7 V. Deshalb sitzt
+    zwischen Knoten und Bus ein Inverter mit Open-Drain-Ausgang
+    (U6/U7, SN74LVC1G06). Die bisherigen Koppeldioden D3/D4 entfallen
+    dabei ersatzlos.
+  * J3 bleibt vierpolig (zwei Adern je Kanal statt Signal+GND). **Ein
+    unbenutzter Kanal muss am Stecker gebrueckt werden**, sonst meldet er
+    dauerhaft Notaus; und die bestehende Verkabelung des
+    Peche-aux-Canards-Exponats muss beim Umstieg umgeklemmt werden.
 """
 import os
 import sys
@@ -140,7 +165,17 @@ FP_TVS_SMC = "Diode_SMD:D_SMC_Handsoldering"                      # Aufgabenbrie
 FP_SOD123 = "Diode_SMD:D_SOD-123"                                 # BAT54W (D3/D4)
 FP_TO252 = "Package_TO_SOT_SMD:TO-252-3_TabPin2"                  # Q1, aus dem Altprojekt
 FP_SOP4 = "Package_SO:SOP-4_3.8x4.1mm_P2.54mm"                    # U2 (PC817), aus dem Altprojekt
-FP_SOT353 = modulsockel.FP_SOT353                                 # U3 (SN74LVC1G08), wie U103
+FP_SOT353 = modulsockel.FP_SOT353                                 # U3/U6/U7 (SOT-353), wie U103
+# 1206 statt 0805 NUR fuer die vier Schleifenwiderstaende R16..R19: sie
+# liegen als einzige Bauteile dieser Platine dauerhaft an 24 V und
+# muessen einen aeusseren Dauerkurzschluss aushalten -- Rechnung in
+# `_notaus_schleifen()`, Punkt 4. Belegt an einem echten Bauteil:
+# UNI-ROYAL 1206W4F3301T5E, 3,3 kOhm +-1 %, **250 mW**, 200 V max.
+# Arbeitsspannung, LCSC C26032 -- Produktseite tatsaechlich gesichtet
+# (`lcsc.com/product-detail/Chip-Resistor-Surface-Mount_Uniroyal-Elec-
+# 1206W4F3301T5E_C26032.html`, Rohdaten: Gehaeuse "1206", "3.3kOhm",
+# Toleranz "+-1%", Leistung "250mW", "200V", Bestand 164 200).
+FP_R1206 = "Resistor_SMD:R_1206_3216Metric"
 # DRV8876: der reparierte Footprint aus dem Altprojekt (Waermepad MIT
 # Masken-/Pastenoeffnung, segmentiertes Pastenmuster, 12 Waermevias mit
 # echtem Restring auf Pad 17) -- Aufgabenbrief Schritt 2. Uebernommen nach
@@ -183,25 +218,31 @@ R13_WERT = "10k"         # NFAULT-Pullup an 3V3
 # NICHT der Altprojekt-Wert (2,2k, dort zu klein fuer den 2-A-Motor).
 R5_WERT = "1.3k"         # ITRIP ~= 2,538 A bei VVREF=3,3V, AIPROPI=1000uA/A
 
-# ---------------------------------------------- NOTAUS-Verriegelung (neu)
+# ---------------------------------------------- NOTAUS-Verriegelung
 # Kein Gegenstueck im Altprojekt -- dort sass der Pico selbst auf den
 # Notaus-Eingaengen, ein Verriegelungspfad ohne MCU war dort nicht
 # gefordert.
 #
-# D3/D4 koppeln die zwei lokalen Schaltkontakte auf die
-# NOTAUS-Sammelleitung. Sie sind SCHOTTKY-Dioden, nicht (wie zuerst
-# gebaut) 1N4148W -- Begruendung in `_notaus_verriegelung()`: der
-# gezogene Ruhepegel des Busses IST die Durchlassspannung dieser Diode,
-# und die eines 1N4148W ist bei den hier fliessenden Stroemen nicht
-# nachweisbar unterhalb der 0,8-V-VIL-Schwelle der Bauteile, die am Bus
-# haengen. Bauteil: BAT54W (SOD-123), LCSC C699107 -- Produktseite
-# tatsaechlich gesichtet: `lcsc.com/product-detail/Schottky-Barrier-
-# Diodes-SBD_Yangzhou-Yangjie-Elec-Tech-BAT54W_C699107.html` (Rohdaten:
-# Hersteller YANGJIE, Gehaeuse "SOD-123", 30 V, 200 mA, Leckstrom
-# "2uA@25V").
+# D3/D4 (Schottky-Koppeldioden von den lokalen Schaltkontakten auf die
+# Sammelleitung) sind ENTFALLEN -- Begruendung in `_notaus_schleifen()`:
+# der Eingang arbeitet seit dieser Aufgabe nach dem Ruhestromprinzip, und
+# ein passiver Pulldown kann einen wired-OR-Bus nicht herunterziehen. Die
+# Zahlen des BAT54W bleiben als benannte Konstanten stehen, weil die
+# Gegenproben in tests/test_motormodul.py mit ihnen rechnen (und weil ein
+# kuenftiges Fremdmodul den Bus weiterhin ueber eine Schottky-Diode
+# ziehen darf -- die Pegelrechnung fuer den Gattereingang B bleibt
+# dadurch unveraendert gueltig).
 D_KOPPEL_WERT = "BAT54W"
 R15_WERT = "10k"         # Pullup NOTAUS-Sammelleitung an 3V3, s. dort
 C14_WERT = "0.1u"        # Abblockkondensator U3 (Verriegelungsgatter)
+
+# ------------------------------ Ruhestrom-Notauseingang (Aufgabe 5d, neu)
+# Werte: Herleitung vollstaendig in `_notaus_schleifen()`.
+R_SCHLEIFE_WERT = "3.3k"   # R16..R19, je zwei in Reihe pro Kanal, 1206
+R_PULLDOWN_WERT = "4.7k"   # R20/R21, Pulldown am rueckkehrenden Knoten
+C_INV_WERT = "0.1u"        # C15/C16, Abblockkondensatoren U6/U7
+OPTO_WERT = "PC817"        # U4/U5, dasselbe Bauteil wie U2 (Sensoreingang)
+INVERTER_WERT = "SN74LVC1G06"   # U6/U7, Inverter mit Open-Drain-Ausgang
 
 # ------------------------------------- benannte Groessen der Verriegelung
 # Diese Werte sind die Rechengrundlage der Pegelpruefung in
@@ -230,12 +271,67 @@ GATTER_VOH_MIN = V_3V3 - 0.15   # V bei IOH = -100 uA ("VCC - 0.15"), Abschnitt 
 GATTER_IO_BEZUG = 100e-6        # A -- der Laststrom, fuer den VOL/VOH oben gelten
 GATTER_II_MAX = 5e-6            # A, "II ... +-5 uA", Abschnitt 5.5
 
-# BAT54W (D3/D4), Vishay-Datenblatt Dok. 86408, Rev. 1.0 vom 20-Nov-2023,
-# Tabelle "ELECTRICAL CHARACTERISTICS" (Tamb = 25 C): VF MAX 240 mV bei
-# 0,1 mA, 320 mV bei 1 mA, 400 mV bei 10 mA; IR MAX 2 uA bei VR = 25 V.
+# BAT54W (ehemals D3/D4), Vishay-Datenblatt Dok. 86408, Rev. 1.0 vom
+# 20-Nov-2023, Tabelle "ELECTRICAL CHARACTERISTICS" (Tamb = 25 C): VF MAX
+# 240 mV bei 0,1 mA, 320 mV bei 1 mA, 400 mV bei 10 mA; IR MAX 2 uA bei
+# VR = 25 V.
 SCHOTTKY_VF_MAX_1MA = 0.32      # V
 SCHOTTKY_VF_MAX_10MA = 0.40     # V
 SCHOTTKY_IR_MAX = 2e-6          # A bei VR = 25 V
+
+# SN74LVC1G06 (U6/U7), Inverter mit Open-Drain-Ausgang, TI-Datenblatt
+# Dok. SCES295AB (JUNE 2000 - REVISED OCTOBER 2025). Abschnitt 5.3
+# "Recommended Operating Conditions", Zeilen "VCC = 3V to 3.6V" bzw.
+# "VCC = 3V": VIH MIN 2 V, VIL MAX 0,8 V, IOL MAX 24 mA. Abschnitt 5.5
+# "Electrical Characteristics": VOL MAX 0,1 V bei IOL = 100 uA
+# (VCC 1,65-5,5 V) und VOL MAX 0,4 V bei IOL = 16 mA (VCC = 3 V);
+# II ("Inflection-point current", A-Eingang) MAX +-1 uA; Ioff
+# ("Off-state current", VI oder VO = 5,5 V, VCC = 0) MAX +-10 uA;
+# ICC MAX 10 uA. Abschnitt 1 "Features": "Schmitt trigger action on all
+# ports" -- der Eingang vertraegt die langsamen Flanken des Optokopplers.
+INV_VIL_MAX = 0.8               # V, Abschnitt 5.3
+INV_VIH_MIN = 2.0               # V, Abschnitt 5.3
+INV_VOL_MAX_100UA = 0.1         # V bei IOL = 100 uA, Abschnitt 5.5
+INV_VOL_MAX_16MA = 0.4          # V bei IOL = 16 mA, VCC = 3 V, Abschnitt 5.5
+INV_IOL_BEZUG_16MA = 16e-3      # A -- Stuetzpunkt zu INV_VOL_MAX_16MA
+INV_IOL_MAX = 24e-3             # A, Abschnitt 5.3, VCC = 3 V
+INV_II_MAX = 1e-6               # A, Abschnitt 5.5
+INV_IOFF_MAX = 10e-6            # A, Abschnitt 5.5
+
+# PC817 (U4/U5, und dasselbe Bauteil wie U2), SHARP-Datenblatt
+# "PC817X Series", Sheet No. D2-A03101EN, Date Sep. 30. 2003.
+# "Absolute Maximum Ratings": IF 50 mA, IC 50 mA, P (Diode) 70 mW,
+# Ptot 200 mW, Topr -30 bis +100 C.
+# "Electro-optical Characteristics" (Ta = 25 C):
+#   VF   IF = 20 mA          TYP 1,2 V   MAX 1,4 V
+#   ICEO VCE = 50 V, IF = 0              MAX 100 nA
+#   IC   IF = 5 mA, VCE = 5 V   MIN 2,5 mA  MAX 30,0 mA   (= CTR 50-600 %)
+#   VCE(sat) IF = 20 mA, IC = 1 mA       MAX 0,2 V
+# "Model Line-up": Rangmarke A = IC 4,0 bis 8,0 mA bei IF = 5 mA; das
+# beschaffte PC817X1CSP9F traegt Rang A. Gerechnet wird trotzdem mit dem
+# Familien-Minimum 2,5 mA -- der schlechtere der beiden Werte.
+OPTO_VF_TYP = 1.2               # V bei IF = 20 mA
+OPTO_VF_MAX = 1.4               # V bei IF = 20 mA
+OPTO_IF_ABSMAX = 50e-3          # A
+OPTO_IF_BEZUG = 5e-3            # A -- Stuetzpunkt der IC-MIN-Zeile
+OPTO_IC_MIN_BEI_5MA = 2.5e-3    # A, MIN bei IF = 5 mA, VCE = 5 V
+OPTO_ICEO_MAX = 100e-9          # A
+OPTO_VCESAT_MAX = 0.2           # V bei IF = 20 mA, IC = 1 mA
+
+# 24-V-Schiene des Stapels. Kein Datenblattwert: die Anlage wird aus einem
+# 24-V-Netzteil gespeist, +-10 % ist die uebliche Auslegungstoleranz einer
+# solchen Schiene. Bewusst als Annahme benannt, nicht als Beleg.
+V_24V_NOM = 24.0
+V_24V_MIN = 21.6                # 24 V - 10 %
+V_24V_MAX = 26.4                # 24 V + 10 %
+
+# UNI-ROYAL 1206W4F3301T5E, LCSC C26032 (Produktseite gesichtet, s.
+# FP_R1206 oben): 3,3 kOhm, +-1 %, 250 mW, 200 V max. Arbeitsspannung.
+R1206_P_NENN = 0.25             # W
+R1206_U_MAX = 200.0             # V
+R_SCHLEIFE_OHM = 3300.0         # R16..R19 (je Kanal zwei in Reihe)
+R_SCHLEIFE_TOL = 0.01           # +-1 %
+R_PULLDOWN_OHM = 4700.0         # R20/R21
 
 # Widerstandswerte, die in der Pegelrechnung vorkommen.
 R9_OHM = 100.0                  # MCU -> U3 Eingang A (reiner Serienwiderstand)
@@ -263,6 +359,12 @@ def _load_libs(sch):
     # SOT-353) -- keine neue Bauteilnummer noetig, LCSC C7832 ist in
     # hardware/bauteile-1b.md bereits auf der Produktseite geprueft.
     sch.lib("74xGxx:74LVC1G08", "74xGxx.kicad_sym", "74LVC1G08")
+    # U6/U7: Inverter mit OPEN-DRAIN-Ausgang (SN74LVC1G06, SOT-353,
+    # derselbe Footprint wie U3). Warum ein Open-Drain-Ausgang und kein
+    # gewoehnliches Gatter: s. `_notaus_schleifen()`, Abschnitt "Warum
+    # nicht Pulldown + Diode". Pin 1 (NC) fuehrt das KiCad-Symbol gar
+    # nicht -- die Selbstpruefung verlangt ihn deshalb auch nicht.
+    sch.lib("74xGxx:74LVC1G06", "74xGxx.kicad_sym", "74LVC1G06")
     sch.lib("Connector:Screw_Terminal_01x02", "Connector.kicad_sym",
             "Screw_Terminal_01x02")
     sch.lib("Connector:Screw_Terminal_01x03", "Connector.kicad_sym",
@@ -477,57 +579,430 @@ def _motor_out(sch, ox, oy):
     sch.netz("J5", "2", "L", "Out2")
 
 
+def _notaus_schleifen(sch, ox, oy, netze):
+    """Der Notaus-Eingang nach dem RUHESTROMPRINZIP (Aufgabe 5d).
+
+    ## Was vorher falsch war
+
+    Bis zu dieser Aufgabe war der externe Kontakt ein SCHLIESSER: J3 Pin 1
+    bzw. 3 lag ueber einen potentialfreien Kontakt an GND, Schliessen
+    hiess Notaus. Damit sehen ein Kabelbruch, ein abgezogener Stecker und
+    eine lose Klemme genau wie "alles in Ordnung" aus -- die
+    Schutzfunktion verschwindet still. Ein Not-Halt-Kreis arbeitet
+    deshalb mit OEFFNERN im Ruhestrom: Strom fliesst im Normalbetrieb,
+    und alles, was den Stromfluss unterbricht -- der Taster, ein Bruch,
+    ein gezogener Stecker, eine korrodierte Klemme -- loest aus.
+
+    ## Was jetzt gilt
+
+    Je Kanal fuehrt die Platine eine Ader nach draussen und nimmt sie
+    ueber eine zweite zurueck. Dazwischen liegt der Oeffner. Der Weg
+    (Kanal 1, Kanal 2 ist Bauteil fuer Bauteil identisch):
+
+        +24V --R16(3k3)-- J3.1 ==Oeffner== J3.2 --R18(3k3)-- U4-LED -- GND
+                                                              |
+        3V3 --U4-Kollektor ... U4-Emitter --+-- SCHLEIFE_1 ----+
+                                            |
+                                          R20 (4k7, Pulldown)
+                                            |
+                                           GND
+
+    SCHLEIFE_1 geht an (a) den Modul-MCU (U100 Pin 3, Kanaldiagnose) und
+    (b) den Eingang von U6. Schleife geschlossen -> LED leuchtet ->
+    Fototransistor leitet -> SCHLEIFE_1 HIGH -> "in Ordnung". Schleife an
+    IRGENDEINER Stelle offen -> kein LED-Strom -> R20 zieht SCHLEIFE_1
+    auf GND -> "Notaus".
+
+    Die Polaritaet, die der MCU liest, bleibt dabei dieselbe wie vorher:
+    LOW an seinem Eingang heisst weiterhin "dieser Kanal meldet Notaus".
+    Der Netzname wechselt trotzdem (NOTAUS_1/2 -> SCHLEIFE_1/2), damit
+    niemand alte Firmware oder alte Doku unbemerkt weiterverwendet: die
+    Bedeutung des Pegels ist gleich, die Bedeutung des KONTAKTS ist es
+    nicht.
+
+    ## Punkt 1: welche Spannung geht nach draussen -- und warum nicht 3,3 V
+
+    Nach draussen gehen die **24 V** der lokalen, ueber Q1 geschuetzten
+    Schiene, und die Rueckwandlung macht ein OPTOKOPPLER, kein
+    Spannungsteiler. Drei Gruende:
+
+    1. **Stoerfestigkeit.** Museumskabel sind lang und liegen neben
+       Motor- und Netzleitungen. Ein 3,3-V-Signal auf eine hochohmige
+       Last gegeben wird von eingekoppelter Stoerspannung und von
+       Kriechwegen (Feuchte, Staub in einer Klemme) in BEIDE Richtungen
+       verfaelscht. Hier fliesst stattdessen ein definierter STROM von
+       rund 3,5 mA (Rechnung unten); ein Kriechweg von einigen zehn
+       kOhm aendert daran nichts Wesentliches, und eine eingekoppelte
+       Stoerung muesste Milliampere liefern, um die LED zu taeuschen.
+    2. **Kontaktbenetzung.** Ein mechanischer Kontakt, ueber den nur
+       Mikroampere fliessen, oxidiert und wird unzuverlaessig. 3,5 mA
+       sind ein brauchbarer Benetzungsstrom.
+    3. **Kein Feldpotential an der Logik.** Der Optokoppler trennt den
+       Aussenkreis vom Logikknoten. Was auf der Ader passiert -- 24 V,
+       0 V, Stoerimpulse -- erreicht weder das Gatter noch den MCU. Der
+       Pegel an SCHLEIFE_1 wird ausschliesslich von der eigenen
+       3,3-V-Schiene und R20 gemacht. (Galvanische Trennung im strengen
+       Sinn ist es NICHT: LED-Kathode und Logik liegen auf derselben
+       Masse. Der Gewinn ist die Entkopplung des SIGNALWEGS, nicht die
+       Potentialtrennung -- ehrlich benannt.)
+
+    Die Schwellen, gegen die gerechnet wird, sind belegt: der Eingang von
+    U6 (SN74LVC1G06, Dok. SCES295AB, Abschnitt 5.3, Zeile "VCC = 3V to
+    3.6V") verlangt VIH >= 2,0 V und VIL <= 0,8 V; er ist ausserdem ein
+    Schmitt-Trigger (Abschnitt 1 "Features": "Schmitt trigger action on
+    all ports"), vertraegt also die traegen Flanken des Optokopplers
+    (tr/tf typ. 4/3 us, MAX 18 us -- SHARP D2-A03101EN,
+    "Electro-optical Characteristics").
+
+    **HIGH-Pegel, Nachweis.** Schleifenstrom im schlechtesten Fall
+    (24 V - 10 %, VF der LED beim MAX-Wert 1,4 V, beide Widerstaende
+    +1 %):
+
+        IF_min = (21,6 - 1,4) / (2 x 3300 x 1,01) = 3,03 mA
+
+    Damit SCHLEIFE_1 die 2,0 V erreicht, muss der Fototransistor durch
+    R20 treiben:
+
+        IC_noetig = 2,0 V / 4,7 kOhm = 0,426 mA   ->  CTR >= 14 %
+
+    Das Datenblatt garantiert IC >= 2,5 mA bei IF = 5 mA (SHARP
+    D2-A03101EN, "Electro-optical Characteristics"), also CTR >= 50 %;
+    das beschaffte PC817X1 traegt zusaetzlich Rangmarke A (IC 4,0 bis
+    8,0 mA bei 5 mA, "Model Line-up"), also CTR >= 80 %. **Ehrlich
+    vermerkt:** unser Arbeitspunkt liegt bei 3,0 bis 3,9 mA, nicht bei
+    den 5 mA der garantierten Zeile -- fuer 3 mA nennt das Datenblatt
+    keinen MIN-Wert, nur eine Kennlinie. Der Sicherheitsschluss haengt
+    aber nicht daran: **ein CTR-Mangel faellt in die sichere Richtung.**
+    Reicht der Strom nicht, bleibt SCHLEIFE_1 unter VIH, der Kanal meldet
+    "offen", die Anlage steht. Ein falsches "in Ordnung" kann daraus
+    nicht entstehen. Der unbelegte Bereich kostet Verfuegbarkeit, nie
+    Sicherheit.
+
+    **LOW-Pegel, Nachweis.** Bei offener Schleife fliesst durch R20 nur
+    noch der Dunkelstrom des Fototransistors (ICEO MAX 100 nA, SHARP
+    D2-A03101EN) und der Eingangsstrom von U6 (II MAX +-1 uA,
+    SCES295AB 5.5):
+
+        U(SCHLEIFE) <= (0,1 + 1,0) uA x 4,7 kOhm = 5,2 mV
+
+    gegen VIL = 0,8 V -- fast die volle Schwelle als Reserve. R20 ist
+    ausserdem bewusst NIEDEROHMIG genug, dass selbst ein
+    Firmware-Fehler die Kette nicht aushebelt: schaltete jemand den
+    internen Pullup des MCU-Pins ein (uebliche Groessenordnung 30 bis
+    50 kOhm -- NICHT aus DS13866 belegt, hier nur als Abschaetzung), laege
+    der Knoten bei 3,3 x 4,7/(4,7+30) = 0,45 V und damit immer noch unter
+    VIL. Mit einem 10-kOhm-Pulldown waere das nicht mehr sicher der Fall.
+
+    ## Warum nicht Pulldown + vorhandene Diode: die Einschaetzung stimmte nicht
+
+    Der Auftrag ging davon aus, die Aenderung sitze allein zwischen J3 und
+    dem lokalen Kanalknoten, und die vorhandene Schottky-Diode (D3/D4)
+    ziehe die Sammelleitung weiter mit herunter. An der Sammelleitung
+    selbst und an der Gatter-Verriegelung aendert sich tatsaechlich
+    nichts (s. `_notaus_verriegelung()` -- R15, U3, R9, U1_NSLEEP sind
+    unveraendert). Der KOPPELWEG auf den Bus muss aber trotzdem ersetzt
+    werden, und das ist eine Rechnung, keine Geschmacksfrage:
+
+    Der bisherige Kanalknoten wurde von einem SCHALTKONTAKT auf GND
+    gezogen -- praktisch 0 Ohm. Ein Pulldown ist das nicht. Der Bus
+    haengt im Auslegungsfall an zehn parallelen 10-kOhm-Pullups, also an
+    1 kOhm gegen 3,3 V; durch D3 flossen dann rund 2,9 mA. Dieselben
+    2,9 mA muessten durch den Pulldown, und der Knoten stuende bei
+
+        R20 = 4,7 kOhm ->  U = 3,3 V x 4,7/(1 + 4,7) = 2,7 V
+
+    -- der Bus wuerde ueberhaupt nicht heruntergezogen. Damit ein
+    Pulldown den Bus unter VIL = 0,8 V zoege, muesste er unter etwa
+    64 Ohm liegen; einen 64-Ohm-Pulldown wiederum kann kein Optokoppler
+    auf 2 V heben (das waeren 31 mA statt 0,43 mA). Pulldown und
+    Bustreiber sind in einem Bauteil nicht vereinbar. Genauer: das
+    Ruhestromprinzip verlangt, dass ABWESENHEIT von Strom eine AKTIVE
+    Aktion ausloest -- das kann kein passives Bauteil, dafuer braucht es
+    einen lokal gespeisten Treiber.
+
+    Der ist hier **U6/U7 (SN74LVC1G06, Inverter mit Open-Drain-Ausgang,
+    SOT-353 wie U3)**: Eingang SCHLEIFE_k, Ausgang direkt auf NOTAUS.
+    Schleife in Ordnung -> Eingang HIGH -> Ausgang hochohmig, der Bus
+    bleibt frei. Schleife offen -> Eingang LOW -> Ausgang zieht den Bus
+    auf VOL. Zwei Open-Drain-Ausgaenge duerfen auf denselben Bus
+    ("active-low wired-OR", SCES295AB Abschnitt 3 "Description"), die
+    zwei Kanaele bleiben also bis auf den Bus hinaus unabhaengig.
+
+    **D3/D4 entfallen dabei ersatzlos, und das ist kein Verlust, sondern
+    Gewinn.** Der gezogene Buspegel ist jetzt VOL statt einer
+    Diodenspannung:
+
+        I(Bus)  = 10 x (3,3 V - 0,4 V) / 10 kOhm = 2,9 mA
+        VOL     <= 0,4 V   (SCES295AB 5.5, MAX-Wert bereits bei
+                            IOL = 16 mA und VCC = 3 V; VOL steigt
+                            monoton mit IOL, bei 2,9 mA also erst recht)
+        Reserve gegen VIL(U3) = 0,8 V:  >= 0,4 V
+
+    -- zahlengleich mit der bisherigen Schottky-Rechnung, die
+    Pegelaussage aus Beleg 10 bleibt also unveraendert gueltig. Eine
+    Diode IN REIHE zum Open-Drain-Ausgang haette dagegen 0,4 V + 0,4 V =
+    0,8 V ergeben, also exakt die Schwelle und null Reserve -- der Grund,
+    aus dem D3/D4 nicht bleiben duerfen, sondern gehen muessen. Der
+    Ausgang haelt 24 mA (SCES295AB 5.3, VCC = 3 V), die 2,9 mA sind ein
+    Achtel davon; er vertraegt am Bus bis 5,5 V (Abschnitt 5.3, "VO 0 bis
+    5,5 V").
+
+    Im Ruhezustand (Bus HIGH) leckt jeder Ausgang hoechstens Ioff =
+    +-10 uA (SCES295AB 5.5). Zehn Module mit je zwei Ausgaengen und
+    einem Gattereingang (II <= 5 uA, SCES217AA 5.5) machen 250 uA gegen
+    den auf 1 kOhm parallelgeschalteten Pullup -- 0,25 V Absenkung, der
+    Bus bleibt bei 3,05 V und damit weit ueber VIH = 2,0 V.
+
+    **Eine Einschraenkung, die der alte Aufbau nicht hatte:** der
+    Schaltkontakt zog den Bus frueher rein passiv herunter, auch ohne
+    lokale 3,3 V. Jetzt braucht der Koppelweg die 3,3-V-Schiene dieses
+    Moduls. Faellt sie stapelweit aus, ist das folgenlos (dann stirbt
+    auch U3, und der interne 100-kOhm-Pulldown des DRV8876 legt den
+    Treiber schlafen). Faellt sie NUR auf diesem Modul aus -- ein
+    gebrochener 3V3-Pin am Stapelstecker --, dann schlaeft zwar dieses
+    Modul, aber der an ihm angeschlossene Not-Halt-Taster erreicht die
+    uebrigen Module nicht mehr. Das ist ein echter, wenn auch schmaler
+    Rueckschritt und steht so auch in hardware/bauteile-1b.md.
+
+    ## Punkt 2: Kurzschluss der Rueckleitung nach GND
+
+    Liegt J3.2 auf Masse, ist die LED ueberbrueckt: durch R18 fliesst
+    kein Strom mehr, IF = 0. SCHLEIFE_1 faellt auf die oben gerechneten
+    5,2 mV, U6 zieht den Bus, die Anlage steht -- **die sichere
+    Richtung**. Dasselbe gilt fuer einen Kurzschluss der HINLEITUNG
+    (J3.1) nach GND: dann liegt der Fusspunkt von R16 auf Masse, durch
+    R18/LED fliesst ebenfalls nichts. Der Strom in den Kurzschluss ist in
+    beiden Faellen durch R16 begrenzt (Rechnung unter Punkt 4), es
+    entsteht kein Schaden.
+
+    ## Punkt 3: Kurzschluss ZWISCHEN den Kanaelen -- was dann noch bleibt
+
+    Ehrlich: hier verliert die Zweikanaligkeit einen Teil ihres Sinns.
+    Die Faelle im Einzelnen (A = Hinleitung, B = Rueckleitung):
+
+    * **A1-A2** (beide Hinleitungen): folgenlos. Beide liegen ohnehin
+      ueber je 3,3 kOhm auf +24 V; jeder Kanal behaelt seinen eigenen
+      Kontakt im Weg.
+    * **B1-B2** (beide Rueckleitungen): die zwei LED-Zweige haengen am
+      selben Knoten. Ist EIN Kontakt offen und der andere geschlossen,
+      speist der geschlossene Kanal beide LEDs -- beide Kanaele melden
+      "in Ordnung", obwohl einer offen ist. **Dieser Kanal ist damit
+      blind.** Sind BEIDE Kontakte offen (der Normalfall: ein Not-Halt-
+      Taster oeffnet beide Kontakte gleichzeitig), faellt der Strom
+      trotzdem auf null und die Anlage steht. Der Fehler wirkt also nur
+      zusammen mit einem ZWEITEN Fehler (ein klebender Kontakt).
+    * **A1-B1, A2-B2** (Hin- auf Rueckleitung DESSELBEN Kanals): der
+      Kontakt ist ueberbrueckt, der Kanal meldet dauerhaft "in Ordnung".
+      Genau das ist auch die absichtliche Bruecke fuer einen unbenutzten
+      Kanal (Punkt 5) -- die Schaltung kann Absicht und Fehler nicht
+      unterscheiden.
+    * **A1-B2, A2-B1** (ueber Kreuz): der fremde Vorwiderstand speist die
+      LED des anderen Kanals an dessen Kontakt vorbei; dieser Kanal ist
+      blind, der andere bleibt heil.
+    * **Rueckleitung an +24 V** (kein Querschluss, aber dieselbe
+      Wirkung): ueberbrueckt den Kontakt dieses Kanals ebenfalls.
+
+    Was die Schaltung nach einem solchen Fehler noch leistet: **den
+    jeweils anderen Kanal.** Ein Querschluss macht hoechstens EINEN Kanal
+    blind; der zweite loest weiterhin aus. Was sie NICHT leistet: sie
+    ERKENNT den Querschluss nicht von sich aus. Dafuer braeuchte es
+    getaktete Pruefimpulse auf den zwei Kreisen (OSSD-Prinzip) oder ein
+    Sicherheitsrelais -- beides ist hier bewusst nicht gebaut. Was der
+    Aufbau dafuer moeglich macht: beide Kanaele haengen einzeln am
+    Modul-MCU (U100 Pin 3 und Pin 14). Die Firmware kann eine
+    Diskrepanzueberwachung fuehren -- melden zwei Kanaele laenger als
+    ein paar hundert Millisekunden Verschiedenes, ist einer defekt --
+    und den Betrieb sperren. Das ist Software, nicht Hardware, und es
+    steht hier als Auftrag an die Firmware, nicht als erledigt.
+
+    Konstruktiv abgemildert, nicht beseitigt: die zwei Kreise gehoeren in
+    getrennt gefuehrte Leitungen (nicht in dieselbe Ader eines
+    gemeinsamen Mantels), damit eine einzelne mechanische Beschaedigung
+    nicht beide trifft. Das ist eine Verlege-Auflage fuer den Aufbau im
+    Museum.
+
+    ## Punkt 4: Strombegrenzung nach aussen
+
+    Jede der vier herausgefuehrten Adern liegt hinter mindestens
+    3,3 kOhm. Der groesste Strom, den ein Kurzschluss von aussen
+    hervorrufen kann, ist damit
+
+        I_max = 26,4 V / 3,3 kOhm = **8,0 mA**
+
+    (26,4 V = 24 V + 10 %). Die groesste Verlustleistung in einem
+    einzelnen Widerstand betraegt dabei
+
+        P_max = 26,4 V^2 / 3,3 kOhm = **0,211 W**  (84 % von 0,25 W)
+
+    gegen die 250 mW des gewaehlten 1206-Typs (UNI-ROYAL
+    1206W4F3301T5E, LCSC C26032, Produktseite gesichtet). Im
+    Normalbetrieb sind es 3,3 kOhm x (3,9 mA)^2 = 0,050 W, also 20 %.
+    **Deshalb 1206 und nicht 0805:** ein 0805 (125 mW) waere im
+    Kurzschlussfall um 70 % ueberlastet. Auch die maximale
+    Arbeitsspannung des Typs (200 V) ist gegenueber 26,4 V unkritisch.
+    Die 84 % gelten fuer den Nennwert bei bis zu 70 C Umgebungstemperatur;
+    ein DAUERKURZSCHLUSS in einem heissen Gehaeuse muesste derated werden
+    -- deshalb ist der Wert genannt und nicht bloss "passt".
+
+    Beide Widerstaende eines Kanals sind absichtlich gleich gross: der
+    Kurzschluss einer beliebigen Ader gegen GND ODER gegen +24 V bleibt
+    dann in JEDEM Fall unter den 8,0 mA und unter der Nennleistung, und
+    der LED-Strom bleibt in jedem dieser Faelle unter 8 mA und damit weit
+    unter den 50 mA Grenzstrom des PC817 (SHARP D2-A03101EN, "Absolute
+    Maximum Ratings"). Der Preis dafuer: der Betriebsstrom von 3,0 bis
+    3,9 mA liegt unter den 5 mA der garantierten CTR-Zeile -- die
+    Abwaegung dazu steht oben unter Punkt 1.
+
+    ## Punkt 5: der unbenutzte Kanal
+
+    Wird nur EIN Not-Halt-Kreis angeschlossen, haengt der zweite Kanal
+    offen und meldet dauerhaft Notaus -- die Anlage laeuft nicht an. Das
+    ist die richtige Vorgabe (offen = sicher), aber der Nutzer muss
+    wissen, was zu tun ist:
+
+        **Unbenutzten Kanal am Stecker bruecken:
+         Kanal 1 = J3 Pin 1+2, Kanal 2 = J3 Pin 3+4.**
+
+    J3 ist eine 2,54-mm-Stiftleiste, die zwei Pins eines Kanals liegen
+    deshalb absichtlich NEBENEINANDER: eine handelsuebliche
+    Jumper-Bruecke genuegt. Der Hinweis steht als Text im Schaltplan
+    (s. unten) und als Bestueckungs-/Siebdruck-Auflage in
+    hardware/bauteile-1b.md; im Layout (Aufgabe 7) gehoert er auf den
+    Siebdruck neben J3.
+
+    ## J3: vier Pole -- und genau darin liegt eine Falle
+
+    Zwei Adern je Kanal, zwei Kanaele: **J3 bleibt vierpolig.** Er hatte
+    vorher auch vier Pole (zwei Signale, zwei GND) -- gleiche Bauform,
+    gleiche Polzahl, voellig andere Bedeutung. Ein altes Kabel passt
+    mechanisch weiterhin. Steckt man es, liegt der alte Schliesser
+    zwischen Pin 1 und Pin 2, also im Weg von Kanal 1: geoeffnet (der
+    Normalzustand des alten Tasters) heisst jetzt "Notaus", und
+    Kanal 2 haengt offen. Das Exponat stuende dauerhaft still --
+    unangenehm, aber sicher. Umgekehrt waere es gefaehrlich, und genau
+    das kann nicht passieren, weil der alte Kontakt im gedrueckten
+    Zustand schliesst und damit "in Ordnung" melden wuerde -- also die
+    verkehrte Richtung, die ein Nutzer sofort bemerkt (Anlage laeuft nur,
+    solange der Not-Halt gedrueckt ist). Trotzdem gilt: **die bestehende
+    Verkabelung des Peche-aux-Canards-Exponats MUSS beim Umstieg
+    umgeklemmt werden** (Oeffnerkontakt statt Schliesser, zwei Adern je
+    Kanal statt Signal+GND). Steht so in hardware/bauteile-1b.md.
+    """
+    sch.bauteil("J3", "Connector:Conn_01x04_Pin", (ox, oy),
+                "Notaus-Ruhestrom", FP_HDR_1X04, rot=180,
+                roff=(7.62, -10.16), voff=(7.62, -12.7))
+    sch.netz("J3", "1", "R", "KREIS1_A")   # Hinleitung Kanal 1
+    sch.netz("J3", "2", "R", "KREIS1_B")   # Rueckleitung Kanal 1
+    sch.netz("J3", "3", "R", "KREIS2_A")   # Hinleitung Kanal 2
+    sch.netz("J3", "4", "R", "KREIS2_B")   # Rueckleitung Kanal 2
+
+    sch.text(ox - 12.7, oy - 30.48,
+             "J3 = Notaus, Ruhestrom (OEFFNER): Kanal 1 = Pin 1+2, "
+             "Kanal 2 = Pin 3+4.", size=2.0, bold=True)
+    sch.text(ox - 12.7, oy - 25.4,
+             "UNBENUTZTEN KANAL BRUECKEN (Jumper 2,54 mm) -- sonst meldet "
+             "er dauerhaft Notaus.", size=2.0, bold=True)
+    sch.text(ox - 12.7, oy - 20.32,
+             "ALTE VERKABELUNG (Schliesser gegen GND) NICHT "
+             "weiterverwenden: umklemmen.", size=2.0, bold=True)
+
+    for kanal, (r_hin, r_rueck, opto, r_pd, inv, c_ab, dy) in enumerate((
+            ("R16", "R18", "U4", "R20", "U6", "C15", 25.4),
+            ("R17", "R19", "U5", "R21", "U7", "C16", -25.4)), start=1):
+        a = "KREIS%d_A" % kanal
+        b = "KREIS%d_B" % kanal
+        led = "%s_LED_A" % opto
+        knoten = "SCHLEIFE_%d" % kanal
+        y = oy + dy
+
+        # R16/R17: Vorwiderstand auf der HINLEITUNG. Er allein sieht den
+        # vollen Rail-Kurzschluss (s. Punkt 4) -- deshalb 1206.
+        sch.bauteil(r_hin, "Device:R", (ox + 25.4, y), R_SCHLEIFE_WERT,
+                    FP_R1206, rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
+        sch.netz(r_hin, "1", "U", "+24V")
+        sch.netz(r_hin, "2", "D", a)
+
+        # R18/R19: zweiter Vorwiderstand auf der RUECKLEITUNG, vor der
+        # LED. Gleich gross wie R16 -- damit auch ein Kurzschluss der
+        # Rueckleitung gegen +24V strombegrenzt bleibt.
+        sch.bauteil(r_rueck, "Device:R", (ox + 50.8, y), R_SCHLEIFE_WERT,
+                    FP_R1206, rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
+        sch.netz(r_rueck, "1", "U", b)
+        sch.netz(r_rueck, "2", "D", led)
+
+        # U4/U5: Optokoppler. Kollektor an 3V3, Emitter auf den
+        # Schleifenknoten -- Emitterfolger, nicht wie U2 (Sensoreingang)
+        # in Emitterschaltung: hier soll ein GESCHLOSSENER Kreis HIGH
+        # ergeben, kein LOW.
+        sch.bauteil(opto, "Isolator:PC817", (ox + 76.2, y), OPTO_WERT,
+                    FP_SOP4, rot=0, roff=(-7.62, 12.7), voff=(-7.62, 15.24))
+        sch.netz(opto, "1", "L", led)      # Anode
+        sch.netz(opto, "2", "L", "GND")    # Kathode
+        sch.netz(opto, "3", "R", knoten)   # Emitter -> Schleifenknoten
+        sch.netz(opto, "4", "R", "3V3")    # Kollektor
+
+        # R20/R21: der Pulldown, der aus "kein Strom" ein LOW macht.
+        sch.bauteil(r_pd, "Device:R", (ox + 101.6, y), R_PULLDOWN_WERT,
+                    FP_R0805, rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
+        sch.netz(r_pd, "1", "U", knoten)
+        sch.netz(r_pd, "2", "D", "GND")
+
+        # U6/U7: Inverter mit Open-Drain-Ausgang. Schleife offen (LOW)
+        # -> Ausgang zieht die Sammelleitung. Pin 1 (NC) fuehrt das
+        # Symbol nicht.
+        sch.bauteil(inv, "74xGxx:74LVC1G06", (ox + 127.0, y),
+                    INVERTER_WERT, FP_SOT353, rot=0,
+                    roff=(-15.24, 12.7), voff=(-15.24, 15.24))
+        sch.netz(inv, "2", "L", knoten)             # A
+        sch.netz(inv, "3", "D", "GND")
+        sch.netz(inv, "4", "R", netze["NOTAUS"])     # Y, open drain
+        sch.netz(inv, "5", "U", "3V3")
+
+        sch.bauteil(c_ab, "Device:C", (ox + 152.4, y), C_INV_WERT,
+                    FP_C0805, rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
+        sch.netz(c_ab, "1", "U", "3V3")
+        sch.netz(c_ab, "2", "D", "GND")
+
+
 def _notaus_verriegelung(sch, ox, oy, netze):
-    """Die Hardware-Verriegelung aus Punkt 4 des Auftrags, samt J3 (Notaus-
-    Stiftleiste, 4-polig, unveraendert aus dem Altprojekt uebernommen).
+    """Die Hardware-Verriegelung aus Punkt 4 des Auftrags: U3, C14, R15.
 
-    ZWEI unabhaengige Wege, einer je Richtung:
+    Diese Funktion ist von der Ruhestrom-Umstellung (Aufgabe 5d)
+    UNBERUEHRT geblieben -- absichtlich, und nachgeprueft: an der
+    Sammelleitung NOTAUS (wired-OR, Pullup R15, LOW = Notaus) und an der
+    Verriegelung selbst aendert sich kein Bauteil und keine Zahl. Was
+    sich geaendert hat, sitzt ausschliesslich davor, zwischen J3 und der
+    Sammelleitung -- s. `_notaus_schleifen()`. Dort steht auch, warum die
+    bisherigen Koppeldioden D3/D4 dabei ersatzlos entfallen und was an
+    die Stelle des frueheren Schaltkontakts tritt.
 
-    (a) J3 Pin 1/3 (Notaus_1/Notaus_2, je ein potentialfreier Schalter
-        gegen GND, wie im Altprojekt) erreichen JE EINEN eigenen
-        Modul-MCU-Eingang (fuer die Software-Diagnose: welcher der
-        zwei Kanaele ausgeloest hat -- diese Unterscheidung bleibt
-        erhalten, die beiden Kanaele werden NICHT lokal kurzgeschlossen)
-        UND je eine Schottky-Diode (D3 fuer Notaus_1, D4 fuer Notaus_2,
-        Device:D, Pin 1 = K, Pin 2 = A -- eigene Pruefung der
-        KiCad-Quelle) auf die globale Sammelleitung NOTAUS: Anode an
-        NOTAUS, Kathode an Notaus_1/2. Wird ein lokaler Schalter gegen GND geschlossen,
-        zieht das ueber die zugehoerige Diode auch NOTAUS herunter --
-        "jeder kann sie herunterziehen" (Design-Dok, Abschnitt
-        "Bus und Adressierung"), rein durch einen Schaltkontakt gegen
-        Masse, keine Software beteiligt. Ein bereits tiefgezogenes
-        NOTAUS speist NICHT in die andere Richtung zurueck in Notaus_1/2
-        (die Dioden sperren dann; jeder Kanal bleibt fuer die
-        MCU-Diagnose unabhaengig lesbar, auch wenn ein FREMDES Modul
-        NOTAUS gezogen hat).
+    U3 (SN74LVC1G08, UND-Gatter) bildet die eigentliche Verriegelung:
 
-    (b) U3 (SN74LVC1G08, UND-Gatter) bildet die eigentliche Verriegelung:
+        U1_NSLEEP (an U1 Pin 3) = NSLEEP_GATTER (vom MCU ueber R9)
+                                  UND  NOTAUS (Sammelleitung)
 
-            U1_NSLEEP (an U1 Pin 3) = NSLEEP_GATTER (vom MCU ueber R9)
-                                      UND  NOTAUS (Sammelleitung)
+    Der Gatterausgang ist eine Gegentaktstufe: er gibt VOL <= 0,1 V
+    bzw. VOH >= VCC-0,15 V ab (SCES217AA, Abschnitt 5.5, jeweils bei
+    100 uA Laststrom -- der DRV8876-nSLEEP-Pin zieht ueber seinen
+    internen 100-kOhm-Pulldown hoechstens 33 uA, liegt also mit
+    grossem Abstand innerhalb dieser Bedingung). Damit gilt:
 
-        Der Gatterausgang ist eine Gegentaktstufe: er gibt VOL <= 0,1 V
-        bzw. VOH >= VCC-0,15 V ab (SCES217AA, Abschnitt 5.5, jeweils bei
-        100 uA Laststrom -- der DRV8876-nSLEEP-Pin zieht ueber seinen
-        internen 100-kOhm-Pulldown hoechstens 33 uA, liegt also mit
-        grossem Abstand innerhalb dieser Bedingung). Damit gilt:
-
-          * NOTAUS gezogen -> U1 Pin 3 <= 0,1 V, VIL des DRV8876 waere
-            0,8 V (SLVSDS7B, Abschnitt 6.5): 0,7 V Reserve. Der Treiber
-            geht in "an ultra-low power mode" und legt alle Ausgaenge in
-            Hi-Z -- EGAL, was der Modul-MCU treibt oder ob er noch lebt.
-          * Normalbetrieb -> U1 Pin 3 >= 3,15 V, VIH waere 1,5 V:
-            1,65 V Reserve.
-          * MCU LOW -> Ausgang LOW: der MCU behaelt seine Schlafsteuerung.
-          * Der MCU-GPIO speist nichts mehr in die Verriegelung ein: ein
-            CMOS-Gattereingang zieht II <= +-5 uA (SCES217AA, 5.5).
+      * NOTAUS gezogen -> U1 Pin 3 <= 0,1 V, VIL des DRV8876 waere
+        0,8 V (SLVSDS7B, Abschnitt 6.5): 0,7 V Reserve. Der Treiber
+        geht in "an ultra-low power mode" und legt alle Ausgaenge in
+        Hi-Z -- EGAL, was der Modul-MCU treibt oder ob er noch lebt.
+      * Normalbetrieb -> U1 Pin 3 >= 3,15 V, VIH waere 1,5 V:
+        1,65 V Reserve.
+      * MCU LOW -> Ausgang LOW: der MCU behaelt seine Schlafsteuerung.
+      * Der MCU-GPIO speist nichts mehr in die Verriegelung ein: ein
+        CMOS-Gattereingang zieht II <= +-5 uA (SCES217AA, 5.5).
 
     ## Warum NICHT die urspruengliche Diodenklemme (D2 + R14)
 
-    Die erste Fassung dieser Datei loeste (b) mit einer Diode D2 von
-    NSLEEP nach NOTAUS und einem Vorwiderstand R14 (1 kOhm) davor. Sie
-    hat NICHT gewirkt, aus zwei voneinander unabhaengigen Gruenden --
-    beide sind reine Pegelrechnungen, beide sind in
+    Die erste Fassung dieser Datei loeste die Verriegelung mit einer
+    Diode D2 von NSLEEP nach NOTAUS und einem Vorwiderstand R14 (1 kOhm)
+    davor. Sie hat NICHT gewirkt, aus zwei voneinander unabhaengigen
+    Gruenden -- beide sind reine Pegelrechnungen, beide sind in
     tests/test_motormodul.py als Gegenprobe hinterlegt:
 
     1. **R14 macht aus der Klemme einen Spannungsteiler.** Der alte
@@ -543,34 +1018,21 @@ def _notaus_verriegelung(sch, ox, oy, netze):
        schlossen sich in dieser Anordnung aus.
 
     2. **Auch ohne R14 stehen ZWEI Diodenspannungen in Reihe.** Der Bus
-       geht nicht auf 0 V: er wird ueber D3/D4 gegen den Schaltkontakt
-       heruntergezogen, liegt also selbst eine Durchlassspannung ueber
-       Masse. Eine zweite Diode D2 vom NSLEEP-Pin auf diesen Bus haette
-       den Pin auf VF(D3) + VF(D2) gehoben -- mit 1N4148W rund 1,0 bis
-       1,3 V, also ebenfalls ueber VIL = 0,8 V. Selbst mit Schottky-
-       Dioden auf BEIDEN Wegen blieben im Grenzfall (2 x 400 mV bei
-       10 mA, Vishay 86408) genau 0,8 V uebrig -- null Reserve. Eine
-       passive Dioden-UND-Verknuepfung kann diese Schwelle in dieser
-       Topologie nicht sicher einhalten; ein Gatter kann es.
+       ging damals nicht auf 0 V: er wurde ueber D3/D4 gegen den
+       Schaltkontakt heruntergezogen, lag also selbst eine
+       Durchlassspannung ueber Masse. Eine zweite Diode D2 vom
+       nSLEEP-Pin auf diesen Bus haette den Pin auf VF(D3) + VF(D2)
+       gehoben -- mit 1N4148W rund 1,0 bis 1,3 V, also ebenfalls ueber
+       VIL = 0,8 V. Selbst mit Schottky-Dioden auf BEIDEN Wegen blieben
+       im Grenzfall (2 x 400 mV bei 10 mA, Vishay 86408) genau 0,8 V
+       uebrig -- null Reserve. Eine passive Dioden-UND-Verknuepfung kann
+       diese Schwelle in dieser Topologie nicht sicher einhalten; ein
+       Gatter kann es.
 
-    Der zweite Grund ist auch der Grund, warum D3/D4 jetzt SCHOTTKY-
-    Dioden (BAT54W) sind und keine 1N4148W mehr: der gezogene Ruhepegel
-    der Sammelleitung IST die Durchlassspannung dieser Dioden, und alles,
-    was am Bus haengt (das Gatter hier mit VIL = 0,8 V, der Pico auf der
-    Sockelplatine, kuenftige Module), muss diesen Pegel als LOW lesen.
-    Rechnung fuer den Auslegungsfall aus hardware/bauteile-1b.md,
-    Beleg 8 (zehn Module, jedes mit R15 = 10 kOhm gegen 3,3 V):
-
-        I(Bus)  = 10 x (3,3 V - 0,4 V) / 10 kOhm =~ 2,9 mA
-        VF(BAT54W) <= 400 mV  (Vishay 86408, MAX-Wert bei 10 mA, also
-                               erst recht bei 2,9 mA)
-        Reserve gegen VIL = 0,8 V: >= 0,4 V
-
-    Mit 1N4148W laege derselbe Pegel bei rund 0,6-0,65 V, und das
-    Datenblatt nennt fuer diese kleinen Stroeme ueberhaupt keinen
-    MAX-Wert -- fuer eine Sicherheitsfunktion nicht nachweisbar genug.
-    Der BAT54W ist in derselben Bauform (SOD-123) wie die bisherigen
-    Dioden; der Footprint bleibt unveraendert.
+    Beide Gegenproben bleiben im Test stehen, obwohl D3/D4 inzwischen
+    entfallen sind: sie beschreiben den Weg, den ein kuenftiges
+    Fremdmodul mit passiver Diodenkopplung gehen wuerde, und begruenden,
+    warum die Verriegelung ein Gatter bleiben muss.
 
     R15 (10k, NOTAUS -> 3V3) ist der Pullup, der der Sammelleitung
     ueberhaupt einen definierten Ruhepegel gibt -- ohne ihn waere HIGH
@@ -583,10 +1045,10 @@ def _notaus_verriegelung(sch, ox, oy, netze):
     einem wired-OR-Bus ueblich und schadet nicht, es erhoeht nur
     geringfuegig den Ruhestrom). 10 kOhm bleibt bewusst stehen und wird
     NICHT vergroessert: bei zehn Modulen parallel bleibt der Bus-Pullup
-    bei 1 kOhm, und die Leckstroeme aller Koppeldioden (BAT54W: IR <=
-    2 uA bei 25 V, Vishay 86408) und Gattereingaenge (<= 5 uA) heben den
-    Ruhepegel damit um weniger als 0,1 V an -- der Bus bleibt sicher
-    ueber VIH = 2,0 V.
+    bei 1 kOhm, und die Leckstroeme der Open-Drain-Ausgaenge (Ioff <=
+    10 uA, SCES295AB 5.5) und Gattereingaenge (<= 5 uA) senken den
+    Ruhepegel damit nur um 0,25 V -- der Bus bleibt sicher ueber
+    VIH = 2,0 V.
 
     Das DRV8876-nSLEEP-Pin traegt zusaetzlich einen eigenen internen
     Pulldown (SLVSDS7B, Abschnitt 6.5, "RPD Input pulldown resistance
@@ -594,28 +1056,6 @@ def _notaus_verriegelung(sch, ox, oy, netze):
     Gatterausgang mit, und der Treiber schlaeft von sich aus. Die
     Ausfallrichtung des Gatters ist damit die sichere.
     """
-    sch.bauteil("J3", "Connector:Conn_01x04_Pin", (ox, oy),
-                "Notaus-Stiftleiste", FP_HDR_1X04, rot=180,
-                roff=(7.62, -10.16), voff=(7.62, -12.7))
-    sch.netz("J3", "1", "R", "NOTAUS_1")
-    sch.netz("J3", "2", "R", "GND")
-    sch.netz("J3", "3", "R", "NOTAUS_2")
-    sch.netz("J3", "4", "R", "GND")
-
-    # ACHTUNG (per kicad-cli sch erc gefunden): Device:D hat Pin 1 (K)
-    # LINKS (x=-3,81) und Pin 2 (A) RECHTS (x=+3,81) -- die Stichleitung
-    # muss deshalb vom Koerper WEG zeigen (Pin 1 -> "L", Pin 2 -> "R"),
-    # sonst kreuzt sie den eigenen anderen Pin und verschmilzt beide
-    # Netze.
-    sch.bauteil("D3", "Device:D", (ox + 25.4, oy - 5.08), D_KOPPEL_WERT,
-                FP_SOD123, rot=0, roff=(0, 2.54), voff=(0, -2.54))
-    sch.netz("D3", "1", "L", "NOTAUS_1")          # Kathode
-    sch.netz("D3", "2", "R", netze["NOTAUS"])      # Anode
-    sch.bauteil("D4", "Device:D", (ox + 25.4, oy - 15.24), D_KOPPEL_WERT,
-                FP_SOD123, rot=0, roff=(0, 2.54), voff=(0, -2.54))
-    sch.netz("D4", "1", "L", "NOTAUS_2")          # Kathode
-    sch.netz("D4", "2", "R", netze["NOTAUS"])      # Anode
-
     # U3: das Verriegelungsgatter. A = NSLEEP_GATTER (vom Modul-MCU ueber
     # R9), B = NOTAUS (Sammelleitung), Y = U1_NSLEEP (an U1 Pin 3).
     # Pinbelegung wie U103 in modulsockel.py (1=A, 2=B, 3=GND, 4=Y,
@@ -653,8 +1093,14 @@ def bauen(sch, ox, oy):
     # tragen hier echte Aufgaben -- Pin "15" (PA8) bleibt frei/nc.
     netze = modulsockel.einbauen(sch, ox, oy, mit_flipflop=True, zusatz_pins={
         "2": "SENSOR_3V3",    # PC14 -- Optokoppler-Ausgang (U2 Pin 4)
-        "3": "NOTAUS_1",      # PC15 -- lokaler Notaus-Eingang 1 (J3 Pin 1)
-        "14": "NOTAUS_2",     # PA7  -- lokaler Notaus-Eingang 2 (J3 Pin 3)
+        # PC15/PA7: die zwei Schleifenknoten der Notaus-Kanaele. Seit der
+        # Ruhestrom-Umstellung (Aufgabe 5d) heissen sie SCHLEIFE_1/2 statt
+        # NOTAUS_1/2 -- die PEGELbedeutung ist dieselbe geblieben (LOW =
+        # dieser Kanal meldet Notaus), die KONTAKTbedeutung hat sich
+        # umgekehrt. Der neue Name zwingt jede alte Firmware- und
+        # Dokumentationsstelle, sich zu melden.
+        "3": "SCHLEIFE_1",    # PC15 -- Kanal 1 (J3 Pin 1/2)
+        "14": "SCHLEIFE_2",   # PA7  -- Kanal 2 (J3 Pin 3/4)
     })
     # modulsockel.NETZE_NACH_AUSSEN fuehrt SENSOR_3V3 nicht (das ist eine
     # Endstufen-eigene Zusatzleitung, kein Vertragsnetz) -- fuer die
@@ -685,6 +1131,12 @@ def bauen(sch, ox, oy):
     _sensor(sch, ox + 330.2, oy - 63.5, netze)
     _motor_out(sch, ox + 431.8, oy - 63.5)
     _notaus_verriegelung(sch, ox + 330.2, oy + 63.5, netze)
+    # Eigener, weit abgesetzter Streifen: der Ruhestrom-Eingang bringt
+    # zwoelf Bauteile mit, und die Stichleitungen der bestehenden Bloecke
+    # reichen bis y =~ 104 (U3/C14). y = 165,1 +- 25,4 liegt darueber und
+    # kollidiert mit nichts -- geprueft per kicad-cli sch erc (0 Fehler,
+    # 0 Warnungen), nicht bloss angenommen.
+    _notaus_schleifen(sch, ox + 330.2, oy + 165.1, netze)
 
 
 if __name__ == "__main__":

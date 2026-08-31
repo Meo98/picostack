@@ -198,6 +198,132 @@ check("Gegenprobe: die Diodenklemme ohne R14 haette den GPIO mit ueber "
       "20 mA belastet", _i_alt > 20e-3, True)
 
 
+# ------------------- Aufgabe 5d: der Notaus-EINGANG im Ruhestrom (Oeffner)
+# Bis Aufgabe 5c war der externe Kontakt ein SCHLIESSER: Schliessen hiess
+# Notaus, ein Kabelbruch sah aus wie "alles in Ordnung". Jetzt ist er ein
+# OEFFNER im Ruhestrom. Die folgenden Zusicherungen rechnen die Kette
+# nach, sie zaehlen nicht Bauteile. Alle Groessen stehen mit
+# Dokumentnummer und Abschnitt in tools/sch/motormodul.py.
+
+# --- der Schleifenstrom, aus dem alles Weitere folgt -------------------
+# Zwei gleiche Vorwiderstaende je Kanal, dazwischen der externe Oeffner.
+_R_SCHLEIFE_GES = 2 * M.R_SCHLEIFE_OHM
+_if_min = ((M.V_24V_MIN - M.OPTO_VF_MAX)
+           / (_R_SCHLEIFE_GES * (1 + M.R_SCHLEIFE_TOL)))
+_if_max = ((M.V_24V_MAX - M.OPTO_VF_TYP)
+           / (_R_SCHLEIFE_GES * (1 - M.R_SCHLEIFE_TOL)))
+check("Schleifenstrom bleibt im schlechtesten Fall ueber 3 mA "
+      "(Kontaktbenetzung)", _if_min > 3e-3, True)
+check("Schleifenstrom bleibt weit unter dem Grenzstrom der PC817-LED "
+      "(50 mA, SHARP D2-A03101EN, Absolute Maximum Ratings)",
+      _if_max < 0.2 * M.OPTO_IF_ABSMAX, True)
+
+# --- HIGH-Pegel bei geschlossener Schleife -----------------------------
+# Der Fototransistor muss den Pulldown ueber VIH des Inverters heben.
+_ic_noetig = M.INV_VIH_MIN / M.R_PULLDOWN_OHM
+_ctr_noetig = _ic_noetig / _if_min
+_ctr_garantiert = M.OPTO_IC_MIN_BEI_5MA / M.OPTO_IF_BEZUG
+check("noetige Stromuebertragung der Schleife bleibt unter dem "
+      "garantierten CTR-Minimum des PC817 (Faktor >= 3)",
+      _ctr_garantiert / _ctr_noetig >= 3.0, True)
+# Und die Ehrlichkeitsprobe dazu: reicht der Strom NICHT, faellt es in
+# die sichere Richtung -- der Knoten bleibt unter VIH, der Kanal meldet
+# "offen". Ein zu schwacher Optokoppler kann kein falsches "in Ordnung"
+# erzeugen. Das ist der Grund, warum der unbelegte Arbeitspunkt
+# (3,0 mA statt der garantierten 5 mA) vertretbar ist.
+check("ein CTR-Mangel kann nur 'offen' melden, nie 'in Ordnung' -- der "
+      "Knoten wird vom Optokoppler ausschliesslich nach OBEN getrieben",
+      M.R_PULLDOWN_OHM > 0, True)
+
+# --- LOW-Pegel bei offener Schleife (Kabelbruch) -----------------------
+# Ohne LED-Strom bleiben nur Dunkelstrom (PC817 ICEO) und der
+# Eingangsstrom des Inverters.
+_i_leck_knoten = M.OPTO_ICEO_MAX + M.INV_II_MAX
+_u_knoten_offen = _i_leck_knoten * M.R_PULLDOWN_OHM
+check("Kabelbruch: der Schleifenknoten faellt unter VIL des Inverters",
+      _u_knoten_offen < M.INV_VIL_MAX, True)
+check("Kabelbruch: mindestens 0,7 V Reserve gegen VIL",
+      (M.INV_VIL_MAX - _u_knoten_offen) >= 0.7, True)
+# Der Pulldown ist bewusst niederohmig genug, dass ein versehentlich in
+# der Firmware eingeschalteter interner Pullup des MCU-Pins die Kette
+# NICHT aushebelt. Der Pullup-Bereich ist eine Abschaetzung (30 kOhm als
+# unguenstigster Wert), kein DS13866-Zitat -- so steht es auch im
+# Kommentar in motormodul.py.
+_MCU_PULLUP_MIN_ANNAHME = 30e3
+_u_mit_firmware_pullup = (M.V_3V3 * M.R_PULLDOWN_OHM
+                          / (M.R_PULLDOWN_OHM + _MCU_PULLUP_MIN_ANNAHME))
+check("selbst ein irrtuemlich eingeschalteter MCU-Pullup laesst den "
+      "Knoten unter VIL", _u_mit_firmware_pullup < M.INV_VIL_MAX, True)
+
+# --- warum kein Pulldown+Diode auf den Bus (die Einschaetzung im Auftrag)
+# Der bisherige Weg war: Schaltkontakt zieht den Kanalknoten auf ~0 Ohm,
+# Schottky zieht den Bus mit. Ein PULLDOWN kann das nicht: er muss gegen
+# den parallelgeschalteten Buspullup arbeiten.
+_r_bus = M.R15_OHM / M.MODULE_IM_STAPEL
+_u_knoten_gegen_bus = (M.V_3V3 * M.R_PULLDOWN_OHM
+                       / (_r_bus + M.R_PULLDOWN_OHM))
+check("Gegenprobe: ein Pulldown allein zieht die Sammelleitung NICHT "
+      "unter VIL -- deshalb der Open-Drain-Treiber",
+      _u_knoten_gegen_bus > M.GATTER_VIL_MAX, True)
+# Und der Grenzwert, ab dem ein Pulldown es koennte -- unbaubar klein:
+_r_pd_noetig = (_r_bus * (M.GATTER_VIL_MAX - M.SCHOTTKY_VF_MAX_10MA)
+                / (M.V_3V3 - M.GATTER_VIL_MAX))
+check("ein wirksamer Pulldown muesste unter 200 Ohm liegen (er traegt "
+      "die Schwelle 0,8 V abzueglich der Diodenspannung bei 2,5 mA "
+      "Busstrom)", _r_pd_noetig < 200.0, True)
+_ic_bei_solchem_pulldown = M.INV_VIH_MIN / _r_pd_noetig
+check("...und der Optokoppler muesste ihn mit ueber 10 mA auf VIH "
+      "heben -- das Dreifache des ganzen Schleifenstroms",
+      _ic_bei_solchem_pulldown > 10e-3, True)
+check("...also mehr, als ueberhaupt durch die Schleife fliesst",
+      _ic_bei_solchem_pulldown > _if_max, True)
+
+# --- der Open-Drain-Treiber auf der Sammelleitung ----------------------
+_i_bus_od = (M.MODULE_IM_STAPEL
+             * (M.V_3V3 - M.INV_VOL_MAX_16MA) / M.R15_OHM)
+check("Busstrom bleibt unter dem Stuetzpunkt, fuer den VOL des Inverters "
+      "gilt (16 mA)", _i_bus_od <= M.INV_IOL_BEZUG_16MA, True)
+check("Busstrom bleibt weit unter dem zulaessigen IOL (24 mA)",
+      _i_bus_od < M.INV_IOL_MAX, True)
+check("gezogener NOTAUS-Bus liegt unter VIL des Verriegelungsgatters",
+      M.INV_VOL_MAX_16MA < M.GATTER_VIL_MAX, True)
+check("gezogener NOTAUS-Bus haelt mindestens 0,3 V Reserve gegen VIL",
+      (M.GATTER_VIL_MAX - M.INV_VOL_MAX_16MA) >= 0.3, True)
+# Gegenprobe: eine Diode IN REIHE zum Open-Drain-Ausgang (also D3/D4
+# stehengelassen) haette exakt die Schwelle erreicht -- null Reserve.
+# Genau deshalb entfallen D3/D4, statt bloss zu bleiben.
+check("Gegenprobe: Open-Drain PLUS Schottky in Reihe laesst keine "
+      "Reserve gegen VIL",
+      (M.INV_VOL_MAX_16MA + M.SCHOTTKY_VF_MAX_10MA) >= M.GATTER_VIL_MAX,
+      True)
+# Ruhepegel des Busses mit den Leckstroemen der neuen Treiber.
+_i_leck_bus = M.MODULE_IM_STAPEL * (2 * M.INV_IOFF_MAX + M.GATTER_II_MAX)
+_u_bus_high = M.V_3V3 - _i_leck_bus * _r_bus
+check("Ruhepegel des NOTAUS-Busses bleibt ueber VIH des Gatters",
+      _u_bus_high > M.GATTER_VIH_MIN, True)
+check("Ruhepegel haelt mindestens 1,0 V Reserve gegen VIH",
+      (_u_bus_high - M.GATTER_VIH_MIN) >= 1.0, True)
+
+# --- Punkt 4: Strombegrenzung nach aussen ------------------------------
+_i_kurzschluss = M.V_24V_MAX / M.R_SCHLEIFE_OHM
+_p_kurzschluss = M.V_24V_MAX ** 2 / M.R_SCHLEIFE_OHM
+check("Kurzschluss einer herausgefuehrten Ader begrenzt auf unter 10 mA",
+      _i_kurzschluss < 10e-3, True)
+check("...und der betroffene Widerstand bleibt unter seiner Nennleistung",
+      _p_kurzschluss < M.R1206_P_NENN, True)
+check("die Schleifenwiderstaende sind deshalb 1206, nicht 0805 "
+      "(ein 0805 mit 125 mW waere im Kurzschluss ueberlastet)",
+      _p_kurzschluss > 0.125, True)
+check("Betriebsspannung bleibt weit unter der zulaessigen "
+      "Arbeitsspannung des 1206-Typs (200 V)",
+      M.V_24V_MAX < 0.2 * M.R1206_U_MAX, True)
+# Auch der ungueenstigste Fall auf der Rueckleitung (Ader an +24V) haelt
+# den LED-Strom unter dem Grenzstrom des PC817.
+_if_bei_kurzschluss = (M.V_24V_MAX - M.OPTO_VF_TYP) / M.R_SCHLEIFE_OHM
+check("Ader gegen +24V: der LED-Strom bleibt unter dem PC817-Grenzstrom",
+      _if_bei_kurzschluss < M.OPTO_IF_ABSMAX, True)
+
+
 _KICAD_CLI = shutil.which("kicad-cli")
 if _KICAD_CLI is None:
     print("UEBERSPRUNGEN: kicad-cli nicht in PATH gefunden -- die "
@@ -243,10 +369,17 @@ else:
     # _notaus_verriegelung()); dafuer sind U3 (Verriegelungsgatter) und
     # C14 (dessen Abblockkondensator) dazugekommen. Wer R14/D2 wieder
     # einbaut, faellt hier auf.
-    _erwartet_endstufe = {"D1", "D3", "D4", "C9", "C10", "C11", "C12",
-                           "C13", "C14", "J2", "J3", "J5", "Q1", "R5", "R6",
+    # Aufgabe 5d: auch D3/D4 sind ENTFALLEN -- die Koppeldioden vom
+    # Schaltkontakt auf die Sammelleitung. An ihre Stelle tritt der
+    # Ruhestrom-Eingang: R16..R19 (Schleifenwiderstaende), U4/U5
+    # (Optokoppler), R20/R21 (Pulldown am Schleifenknoten), U6/U7
+    # (Inverter mit Open-Drain-Ausgang) und C15/C16 (deren Abblockung).
+    _erwartet_endstufe = {"D1", "C9", "C10", "C11", "C12",
+                           "C13", "C14", "C15", "C16",
+                           "J2", "J3", "J5", "Q1", "R5", "R6",
                            "R7", "R8", "R9", "R10", "R11", "R12", "R13",
-                           "R15", "U1", "U2", "U3"}
+                           "R15", "R16", "R17", "R18", "R19", "R20", "R21",
+                           "U1", "U2", "U3", "U4", "U5", "U6", "U7"}
     _erwartet_sockel = {"U100", "U101", "U102", "U103", "R100", "R101",
                          "R102", "R104", "R105", "C100", "C101",
                          "J100", "J101", "J102", "J103", "J104"}
@@ -304,34 +437,150 @@ else:
 
     # ----------------------------------------------------- Punkt 4: NOTAUS
     # Die Sammelleitung erreicht den Stapelstecker (global) UND die
-    # Hardware-Verriegelung (D2, wirkt auf U1_NSLEEP unabhaengig vom MCU)
-    # UND die beiden lokalen Notaus-Eingaenge (D3/D4, koppeln J3 auf die
-    # globale Leitung, OHNE die zwei Kanaele lokal kurzzuschliessen).
+    # Hardware-Verriegelung (U3, wirkt auf U1_NSLEEP unabhaengig vom MCU)
+    # UND die zwei Open-Drain-Treiber der Ruhestrom-Kanaele (U6/U7).
     _an_notaus = set(_netz_pins(_sch, _gen, modulsockel.NETZE_NACH_AUSSEN["NOTAUS"]))
     check("NOTAUS erreicht den Stapelstecker (J100 Pin 9)",
           ("J100", "9") in _an_notaus, True)
     check("NOTAUS erreicht U3 Pin 2 (Eingang B des Verriegelungsgatters)",
           ("U3", "2") in _an_notaus, True)
-    check("NOTAUS erreicht D3 (lokaler Notaus-Eingang 1)",
-          ("D3", "2") in _an_notaus, True)
-    check("NOTAUS erreicht D4 (lokaler Notaus-Eingang 2)",
-          ("D4", "2") in _an_notaus, True)
     check("NOTAUS traegt den Pullup R15", ("R15", "2") in _an_notaus, True)
-    check("NOTAUS erreicht NICHT direkt U1 (der Weg fuehrt ueber D2 + "
-          "U1_NSLEEP, nicht direkt auf den DRV8876)",
+    check("NOTAUS erreicht NICHT direkt U1 (der Weg fuehrt ueber das "
+          "Gatter und U1_NSLEEP, nicht direkt auf den DRV8876)",
           any(ref == "U1" for ref, _ in _an_notaus), False)
+    # Aufgabe 5d: der Bus wird von den zwei Open-Drain-Ausgaengen gezogen,
+    # nicht mehr von Koppeldioden an einem Schaltkontakt.
+    check("NOTAUS wird von U6 Pin 4 gezogen (Open-Drain, Kanal 1)",
+          ("U6", "4") in _an_notaus, True)
+    check("NOTAUS wird von U7 Pin 4 gezogen (Open-Drain, Kanal 2)",
+          ("U7", "4") in _an_notaus, True)
+    check("auf NOTAUS haengt nichts ausser Stecker, Pullup, "
+          "Verriegelungsgatter und den zwei Kanaltreibern",
+          _an_notaus, {("J100", "9"), ("R15", "2"), ("U3", "2"),
+                        ("U6", "4"), ("U7", "4")})
+    check("keine Koppeldiode mehr am Bus (D3/D4 entfallen -- eine Diode "
+          "in Reihe zum Open-Drain-Ausgang liesse null Reserve)",
+          any(ref in ("D3", "D4") for ref, _ in _an_notaus), False)
 
-    # Die zwei lokalen Kanaele bleiben elektrisch GETRENNT (nur ueber je
-    # eine Diode an NOTAUS gekoppelt) -- sonst waere die
-    # Software-Diagnose "welcher Kanal loeste aus" unmoeglich.
-    _an_notaus1 = set(_netz_pins(_sch, _gen, "NOTAUS_1"))
-    _an_notaus2 = set(_netz_pins(_sch, _gen, "NOTAUS_2"))
-    check("NOTAUS_1 und NOTAUS_2 sind verschiedene Netze (nicht lokal "
-          "kurzgeschlossen)", _an_notaus1.isdisjoint(_an_notaus2), True)
-    check("U100 Pin 3 (PC15) liest NOTAUS_1", ("U100", "3") in _an_notaus1, True)
-    check("U100 Pin 14 (PA7) liest NOTAUS_2", ("U100", "14") in _an_notaus2, True)
-    check("J3 Pin 1 traegt NOTAUS_1", ("J3", "1") in _an_notaus1, True)
-    check("J3 Pin 3 traegt NOTAUS_2", ("J3", "3") in _an_notaus2, True)
+    # ------------------------- Aufgabe 5d: der Ruhestromkreis an J3 ----
+    # Vier Pole, aber voellig andere Bedeutung als vorher: zwei Adern je
+    # Kanal statt Signal+GND. Der beste maschinelle Nachweis, dass der
+    # Eingang KEIN Schliesser gegen Masse mehr ist: an J3 haengt kein
+    # einziger GND-Pin.
+    _an_gnd = set(_netz_pins(_sch, _gen, "GND"))
+    check("J3 fuehrt keine Masse mehr nach aussen (der alte Schliesser "
+          "gegen GND ist weg)",
+          any(ref == "J3" for ref, _ in _an_gnd), False)
+    _j3_pins = set()
+    for _kanal in (1, 2):
+        for _seite, _nr in (("A", 2 * _kanal - 1), ("B", 2 * _kanal)):
+            _netzname = "KREIS%d_%s" % (_kanal, _seite)
+            _an_kreis = set(_netz_pins(_sch, _gen, _netzname))
+            check("%s liegt an J3 Pin %d" % (_netzname, _nr),
+                  ("J3", str(_nr)) in _an_kreis, True)
+            _j3_pins.add(("J3", str(_nr)))
+            check("%s traegt genau zwei Pins (Stecker und Vorwiderstand)"
+                  % _netzname, len(_an_kreis), 2)
+    check("J3 hat vier Pole -- zwei Adern je Kanal", len(_j3_pins), 4)
+
+    # Die zwei Kanaele bleiben elektrisch GETRENNT bis auf den Bus.
+    _an_schleife1 = set(_netz_pins(_sch, _gen, "SCHLEIFE_1"))
+    _an_schleife2 = set(_netz_pins(_sch, _gen, "SCHLEIFE_2"))
+    check("SCHLEIFE_1 und SCHLEIFE_2 sind verschiedene Netze",
+          _an_schleife1.isdisjoint(_an_schleife2), True)
+    check("U100 Pin 3 (PC15) liest Kanal 1", ("U100", "3") in _an_schleife1, True)
+    check("U100 Pin 14 (PA7) liest Kanal 2", ("U100", "14") in _an_schleife2, True)
+    for _kanal, (_pins, _opto, _rpd, _inv) in enumerate((
+            (_an_schleife1, "U4", "R20", "U6"),
+            (_an_schleife2, "U5", "R21", "U7")), start=1):
+        check("Kanal %d: der Optokoppler-EMITTER (Pin 3) treibt den "
+              "Schleifenknoten -- Emitterfolger, geschlossen = HIGH"
+              % _kanal, (_opto, "3") in _pins, True)
+        check("Kanal %d: der Pulldown haengt am Schleifenknoten" % _kanal,
+              (_rpd, "1") in _pins, True)
+        check("Kanal %d: der Open-Drain-Inverter liest den Schleifenknoten"
+              % _kanal, (_inv, "2") in _pins, True)
+        check("Kanal %d: am Schleifenknoten haengt sonst nichts" % _kanal,
+              _pins, {(_opto, "3"), (_rpd, "1"), (_inv, "2"),
+                       ("U100", "3" if _kanal == 1 else "14")})
+        check("Kanal %d: der Optokoppler-KOLLEKTOR (Pin 4) haengt an 3V3"
+              % _kanal, (_opto, "4") in set(_netz_pins(_sch, _gen, "3V3")), True)
+        check("Kanal %d: der Inverter ist versorgt (Pin 5 an 3V3)" % _kanal,
+              (_inv, "5") in set(_netz_pins(_sch, _gen, "3V3")), True)
+        check("Kanal %d: der Inverter liegt an GND (Pin 3)" % _kanal,
+              (_inv, "3") in _an_gnd, True)
+
+    # Die vier Schleifenwiderstaende MUESSEN 1206 sein -- ein 0805 waere
+    # im aeusseren Dauerkurzschluss ueberlastet (Rechnung oben).
+    _fp = {c[0]: c[5] for c in _sch.COMPS}
+    for _r in ("R16", "R17", "R18", "R19"):
+        check("%s traegt den 1206-Footprint (Kurzschlussfestigkeit)" % _r,
+              _fp.get(_r), motormodul.FP_R1206)
+    for _r in ("R20", "R21"):
+        check("%s (Pulldown, nur Kleinsignal) bleibt 0805" % _r,
+              _fp.get(_r), motormodul.FP_R0805)
+
+    # ---- DIE Zusicherung fuer den Kabelbruch: aus dem Schaltplan ------
+    def _knoten_bei_offener_schleife(kanal, r_pd):
+        """Spannung am Schleifenknoten bei GEBROCHENER Schleife --
+        hergeleitet aus dem, was laut Schaltplan am zweiten Ende des
+        Widerstands R20/R21 haengt.
+
+        Liegt es auf GND, ist es ein PULLDOWN: ohne LED-Strom bleibt nur
+        Leckstrom, der Knoten faellt praktisch auf Masse.
+        Liegt es auf 3V3, ist es ein PULLUP: dann steht der Knoten bei
+        offener Schleife HIGH -- der Kabelbruch bliebe unbemerkt.
+        Liegt es auf keinem von beiden, ist der Knoten unbestimmt; das
+        wird als schlechtester Fall (halbe Schiene) gewertet."""
+        an_gnd = (r_pd, "2") in set(_netz_pins(_sch, _gen, "GND"))
+        an_3v3 = (r_pd, "2") in set(_netz_pins(_sch, _gen, "3V3"))
+        leck = (M.OPTO_ICEO_MAX + M.INV_II_MAX) * M.R_PULLDOWN_OHM
+        if an_gnd and not an_3v3:
+            return leck
+        if an_3v3 and not an_gnd:
+            return M.V_3V3 - leck
+        return M.V_3V3 / 2.0
+
+    def _notaus_kette_bei_kabelbruch(kanal, r_pd):
+        """Die ganze Kette: Kabelbruch -> Schleifenknoten -> Inverter ->
+        Sammelleitung -> Verriegelungsgatter -> nSLEEP des DRV8876.
+        Liefert (u_knoten, u_bus, u_nsleep)."""
+        u_knoten = _knoten_bei_offener_schleife(kanal, r_pd)
+        if u_knoten <= M.INV_VIL_MAX:
+            # Der Inverter liest LOW und zieht die Sammelleitung: VOL,
+            # begrenzt durch den MAX-Wert bei 16 mA (SCES295AB 5.5).
+            u_bus = M.INV_VOL_MAX_16MA
+        else:
+            # Der Inverter laesst den Bus los; der Pullup haelt ihn HIGH.
+            u_bus = M.V_3V3
+        if u_bus <= M.GATTER_VIL_MAX:
+            u_nsleep = M.GATTER_VOL_MAX
+        else:
+            u_nsleep = M.GATTER_VOH_MIN
+        return u_knoten, u_bus, u_nsleep
+
+    for _kanal, _rpd in ((1, "R20"), (2, "R21")):
+        _uk, _ub, _un = _notaus_kette_bei_kabelbruch(_kanal, _rpd)
+        check("KABELBRUCH Kanal %d: der Schleifenknoten faellt unter VIL "
+              "des Inverters" % _kanal, _uk < M.INV_VIL_MAX, True)
+        check("KABELBRUCH Kanal %d: die Sammelleitung wird unter VIL des "
+              "Verriegelungsgatters gezogen" % _kanal,
+              _ub < M.GATTER_VIL_MAX, True)
+        check("KABELBRUCH Kanal %d: der DRV8876 liest an nSLEEP LOW und "
+              "schlaeft -- Notaus aktiv, ohne dass jemand einen Taster "
+              "gedrueckt hat" % _kanal, _un < M.DRV_VIL_MAX, True)
+
+    # Gegenprobe zur Gegenprobe: mit einem PULLUP statt des Pulldowns
+    # liefert dieselbe Kette "kein Notaus" -- genau dann wird die
+    # Zusicherung oben rot. (Hier bewusst als erwartetes Ergebnis
+    # formuliert, damit der Unterschied im Test sichtbar ist und nicht
+    # nur in einer Wegwerfkopie des Repos.)
+    _u_falsch = M.V_3V3 - (M.OPTO_ICEO_MAX + M.INV_II_MAX) * M.R_PULLDOWN_OHM
+    check("Gegenprobe: waere es ein Pullup, laege der Knoten bei "
+          "Kabelbruch HIGH", _u_falsch > M.INV_VIH_MIN, True)
+    check("Gegenprobe: dann bliebe die Sammelleitung HIGH und der "
+          "Treiber wach -- der Bruch bliebe unbemerkt",
+          M.GATTER_VOH_MIN > M.DRV_VIH_MIN, True)
 
     # Die Verriegelung sitzt IM Signalweg zwischen MCU und DRV8876: der
     # MCU erreicht den Treiber-nSLEEP-Pin nur noch ueber das Gatter.

@@ -35,8 +35,11 @@ Grundlage des neuen, eigenständigen Kettensteckers sind.
 | Klemme 2-polig | DB128L-5.08-2P-GN-S | THT, 5,08 mm | C395868 | ja | bereits geprüft in Etappe 1a / LED-Dimmer-Projekt — unverändert übernommen |
 | Klemme 3-polig | DB128L-5.08-3P-GN-S | THT, 5,08 mm | C395869 | ja | LCSC-Produktseite `lcsc.com/product-detail/C395869.html` (16 A, 300 V, M2-Schraube, 12–22 AWG); JLCPCB-Produktseite bestätigt (DORABO-Familie, SMT/Wave-Assembly, Economic/Standard PCBA) — selbe Farbe/Baureihe wie die bereits geprüfte 2-polige Klemme |
 | ~~Schaltdiode (Notaus-Verriegelung, Aufgabe 5)~~ — **verworfen, s. Nachtrag 2026-08-31 (Aufgabe-5-Fix-1): eine Si-Diode ist für den gezogenen Ruhepegel der NOTAUS-Sammelleitung zu hochohmig, s. Beleg 10** | 1N4148W (ST/Semtech) | SOD-123 | C81598 | ja (Bauform an sich geprüft, aber verworfen) | LCSC-Produktseite `lcsc.com/product-detail/Switching-Diode_ST-Semtech-1N4148W_C81598.html` (Rohdaten: Gehäuse „SOD-123", `Vf "1V@50mA"`); JLCPCB-Produktseite `jlcpcb.com/partdetail/ST-1N4148W/C81598` bestätigt SMT-Assembly („Economic and Standard" PCBA, MSL 3) |
-| **Koppeldiode NOTAUS-Sammelleitung (D3/D4, Aufgabe-5-Fix-1) — ersetzt die Zeile darüber** | BAT54W (YANGJIE), Schottky | SOD-123 (gleicher Footprint wie bisher) | C699107 | ja | LCSC-Produktseite `lcsc.com/product-detail/Schottky-Barrier-Diodes-SBD_Yangzhou-Yangjie-Elec-Tech-BAT54W_C699107.html` (Rohdaten: Hersteller „YANGJIE", Gehäuse „SOD-123", 30 V, 200 mA, Leckstrom „2µA@25V"; Bestand am Recherchetag 440 Stück — **wenig, vor der Bestellung prüfen**). Grenzwerte für die Pegelrechnung aus dem Vishay-Typdatenblatt `BAT54W`, Dok. **86408, Rev. 1.0 vom 20-Nov-2023**, Tabelle „ELECTRICAL CHARACTERISTICS" (T_amb = 25 °C): V_F ≤ 240 mV @ 0,1 mA, ≤ 320 mV @ 1 mA, ≤ 400 mV @ 10 mA, I_R ≤ 2 µA @ 25 V. **Ehrlich vermerkt:** das Yangjie-eigene PDF war über LCSC nicht als PDF abrufbar (die Datenblatt-URL liefert eine HTML-Seite); die zitierten Grenzwerte sind die des JEDEC-Typs BAT54W bei Vishay, nicht die von Yangjie selbst. Vor der Fertigung mit dem Yangjie-Datenblatt gegenprüfen |
+| ~~Koppeldiode NOTAUS-Sammelleitung (D3/D4, Aufgabe-5-Fix-1)~~ — **verworfen, s. Nachtrag 2026-08-31 (Aufgabe 5d): der Notaus-Eingang arbeitet jetzt im Ruhestrom, der Bus wird von einem Open-Drain-Ausgang gezogen; eine Diode IN REIHE dazu liesse null Reserve gegen V_IL, s. Beleg 11. Die Grenzwerte bleiben stehen, weil die Gegenproben im Test mit ihnen rechnen** | BAT54W (YANGJIE), Schottky | SOD-123 (gleicher Footprint wie bisher) | C699107 | ja | LCSC-Produktseite `lcsc.com/product-detail/Schottky-Barrier-Diodes-SBD_Yangzhou-Yangjie-Elec-Tech-BAT54W_C699107.html` (Rohdaten: Hersteller „YANGJIE", Gehäuse „SOD-123", 30 V, 200 mA, Leckstrom „2µA@25V"; Bestand am Recherchetag 440 Stück — **wenig, vor der Bestellung prüfen**). Grenzwerte für die Pegelrechnung aus dem Vishay-Typdatenblatt `BAT54W`, Dok. **86408, Rev. 1.0 vom 20-Nov-2023**, Tabelle „ELECTRICAL CHARACTERISTICS" (T_amb = 25 °C): V_F ≤ 240 mV @ 0,1 mA, ≤ 320 mV @ 1 mA, ≤ 400 mV @ 10 mA, I_R ≤ 2 µA @ 25 V. **Ehrlich vermerkt:** das Yangjie-eigene PDF war über LCSC nicht als PDF abrufbar (die Datenblatt-URL liefert eine HTML-Seite); die zitierten Grenzwerte sind die des JEDEC-Typs BAT54W bei Vishay, nicht die von Yangjie selbst. Vor der Fertigung mit dem Yangjie-Datenblatt gegenprüfen |
 | Verriegelungsgatter NOTAUS→nSLEEP (U3, Aufgabe-5-Fix-1) | SN74LVC1G08DCKR (TI) — **zweite Verwendung desselben Bauteils wie U103**, keine neue Nummer | SOT-353 (SC-70-5), 5 Pins | C7832 | ja | dieselbe geprüfte Produktseite wie die BOOT0-Zeile oben; Grenzwerte für die Pegelrechnung aus dem TI-Datenblatt `SN74LVC1G08`, Dok. **SCES217AA** (April 1999, revidiert August 2026), Abschnitt 5.3 „Recommended Operating Conditions" (V_IH ≥ 2,0 V, V_IL ≤ 0,8 V bei V_CC = 3–3,6 V) und Abschnitt 5.5 „Electrical Characteristics" (V_OH ≥ V_CC − 0,15 V bei −100 µA, V_OL ≤ 0,1 V bei 100 µA, I_I ≤ ±5 µA) |
+| **Kanaltreiber Notaus→NOTAUS (U6/U7, Aufgabe 5d)** — Inverter mit **Open-Drain**-Ausgang; ersetzt die verworfenen Koppeldioden D3/D4 | SN74LVC1G06DCKR (TI) | SOT-353 (SC-70-5), 5 Pins — **gleicher Footprint wie U3/U103** | C7828 | ja | LCSC-Produktseite `lcsc.com/product-detail/Inverters_Texas-Instruments-SN74LVC1G06DCKR_C7828.html` (Rohdaten: Gehäuse „SC-70-5“, Versorgung „1.65V~5.5V“, Ausgangstyp „Open-drain“, Eingang „Schmitt trigger“, „Output sink current 32mA max“, Ruhestrom „10µA max“, Bestand 3 600). Primärquelle TI-Datenblatt `SN74LVC1G06`, Dok. **SCES295AB** (JUNE 2000 – REVISED OCTOBER 2025), selbst geöffnet und gelesen: Abschnitt 5.3 „Recommended Operating Conditions“ (V_IH ≥ 2,0 V, V_IL ≤ 0,8 V bei V_CC = 3–3,6 V; I_OL ≤ 24 mA bei V_CC = 3 V), Abschnitt 5.5 „Electrical Characteristics“ (V_OL ≤ 0,1 V bei 100 µA, **≤ 0,4 V bei 16 mA / V_CC = 3 V**, ≤ 0,55 V bei 24 mA; I_I ≤ ±1 µA; I_off ≤ ±10 µA; I_CC ≤ 10 µA), Abschnitt 1 „Features“ („Schmitt trigger action on all ports“, „Ioff supports partial-power-down mode and back-drive protection“), Abschnitt 3 „Description“ (Ausgänge dürfen für „active-low wired-OR“ zusammengeschaltet werden) |
+| **Optokoppler Sensoreingang und Notaus-Schleifen (U2 sowie U4/U5, Aufgabe 5d)** — U2 war seit dem Altprojekt bestückt, stand aber **nie in dieser Tabelle**; hier nachgetragen | PC817X1CSP9F (SHARP), Rangmarke **A** | SMD-4P (SMT-Gullwing) | C97308 | ja | LCSC-Produktseite `lcsc.com/product-detail/Optocouplers_Sharp-Microelectronics-PC817X1CSP9F_C97308.html` (Rohdaten: Hersteller „SHARP“, Gehäuse „SMD-4P“, „Current Transfer Ratio 600%;50%“, „Forward Current (If) 50mA“, „Forward Voltage (Vf) 1.2V“, „VCE Saturation 200mV@20mA,1mA“, „Isolation Voltage 5kV“, Bestand 10 640). Primärquelle SHARP-Datenblatt „PC817X Series“, **Sheet No. D2-A03101EN, Date Sep. 30. 2003**, selbst gelesen: „Absolute Maximum Ratings“ (I_F 50 mA, I_C 50 mA, P_tot 200 mW, T_opr −30…+100 °C), „Electro-optical Characteristics“ (V_F TYP 1,2 V / MAX 1,4 V bei I_F = 20 mA; I_CEO MAX 100 nA; **I_C MIN 2,5 mA bei I_F = 5 mA, V_CE = 5 V** = CTR ≥ 50 %; V_CE(sat) MAX 0,2 V bei I_F = 20 mA, I_C = 1 mA; t_r/t_f TYP 4/3 µs, MAX 18 µs), „Model Line-up“ (Rangmarke A = I_C 4,0–8,0 mA bei I_F = 5 mA). **Footprint-Auflage:** die Gullwing-Bauform misst laut „Outline Dimensions“ 6,5 × 4,58 mm Körper bei 10,0 mm Anschlussspanne und 7,62 mm Reihenabstand — der eingetragene Platzhalter `Package_SO:SOP-4_3.8x4.1mm_P2.54mm` passt **nicht**, s. Beleg 12 |
+| **Schleifenwiderstände Notaus (R16–R19, Aufgabe 5d)** — 1206 statt 0805, weil sie einen äusseren Dauerkurzschluss aushalten müssen | 1206W4F3301T5E (UNI-ROYAL), 3,3 kΩ ±1 % | 1206, Dickschicht | C26032 | ja | LCSC-Produktseite `lcsc.com/product-detail/Chip-Resistor-Surface-Mount_Uniroyal-Elec-1206W4F3301T5E_C26032.html` (Rohdaten: Gehäuse „1206“, „3.3kΩ“, Toleranz „±1%“, Leistung „**250mW**“, max. Arbeitsspannung „200V“, TK „±100ppm/℃“, Bestand 164 200). Die 250 mW sind der Beleg für die Kurzschlussrechnung in Beleg 11 |
 
 Von den acht in der ersten Fassung neu recherchierten Nummern (nicht sieben, wie dort irrtümlich stand — Zählfehler korrigiert) sowie den drei in dieser Nachbesserung hinzugekommenen (Stapelstecker C35165, Kettenstecker C541849/C492401) wurde jede auf einer echten LCSC- oder
 JLCPCB-Produktseite gesichtet (Datenblatt-Zeichnung oder strukturierte
@@ -895,6 +898,205 @@ Kanaldiagnose verlässlich sein soll, gehören zwei 10-kΩ-Pullups dazu —
 bewusst nicht in dieser Nachbesserung ergänzt, weil sie am Auftrag
 (Verriegelung) vorbeigeht.
 
+> **Nachtrag 2026-08-31 (Aufgabe 5d): dieser offene Punkt ist erledigt.**
+> Die zwei Kanalknoten heissen jetzt `SCHLEIFE_1`/`SCHLEIFE_2` und tragen je
+> einen echten 4,7-kΩ-**Pulldown** (R20/R21). Ihr Pegel ist damit zu jeder
+> Zeit definiert — auch vor dem ersten Firmware-Lauf und unabhängig davon,
+> was die Firmware an den MCU-Pins einstellt. Kein Zusatzbauteil nötig: der
+> Pulldown ist ohnehin Teil des Ruhestrom-Eingangs (Beleg 11).
+
+## Beleg 11 — Notaus-Eingang auf Ruhestromprinzip umgebaut (Aufgabe 5d, 2026-08-31)
+
+**Der Befund.** Bis hierher war der externe Notaus-Kontakt ein **Schliesser**:
+J3 Pin 1 bzw. 3 lag über einen potentialfreien Kontakt an GND, Schliessen hiess
+Notaus. Ein Kabelbruch, ein abgezogener Stecker oder eine lose Klemme sehen
+damit aus wie „alles in Ordnung" — die Schutzfunktion verschwindet still. Das
+kam unverändert aus dem Altprojekt und stand als Bedenken 4 im
+Aufgabe-5-Fix-1-Bericht. Entscheidung des Auftraggebers: Umbau auf
+**Ruhestromprinzip (Öffner)**.
+
+**Was jetzt gilt.** Der Kontakt ist im Normalbetrieb geschlossen. Öffnen löst
+aus — und ebenso jeder Kabelbruch, jeder abgezogene Stecker, jede lose Klemme.
+
+```
++24V --R16(3k3,1206)-- J3.1 ==ÖFFNER== J3.2 --R18(3k3,1206)-- U4-LED -- GND
+
+3V3 --U4 Kollektor ... U4 Emitter --+-- SCHLEIFE_1 --> U100 Pin 3 (Diagnose)
+                                    |               \
+                                  R20 (4k7)          `-> U6 (Open-Drain) --> NOTAUS
+                                    |
+                                   GND
+```
+
+Kanal 2 ist Bauteil für Bauteil identisch (R17/R19/U5/R21/U7, J3 Pin 3+4,
+U100 Pin 14).
+
+**Warum 24 V nach draussen und nicht 3,3 V.** Museumskabel sind lang und liegen
+neben Motor- und Netzleitungen. Ein 3,3-V-Signal auf eine hochohmige Last wird
+von eingekoppelter Störspannung *und* von Kriechwegen (Feuchte, Staub in einer
+Klemme) in beide Richtungen verfälscht. Hier fliesst stattdessen ein
+definierter **Strom** von 3,0–3,9 mA; das ist zugleich ein brauchbarer
+Benetzungsstrom für einen mechanischen Kontakt. Die Rückwandlung macht ein
+Optokoppler, kein Spannungsteiler: kein Feldpotential erreicht die Logik. (Eine
+echte galvanische Trennung ist es **nicht** — LED-Kathode und Logik liegen auf
+derselben Masse; der Gewinn ist die Entkopplung des Signalwegs.)
+
+**Pegelnachweis.** Bindende Schwellen: der Inverter-Eingang U6/U7
+(SCES295AB 5.3, V_CC = 3–3,6 V) mit V_IH ≥ 2,0 V und V_IL ≤ 0,8 V; er ist
+Schmitt-Trigger und verträgt die trägen Optokopplerflanken (t_r/t_f MAX 18 µs,
+D2-A03101EN).
+
+| Zustand | Rechnung | Ergebnis | Schwelle | Reserve |
+|---|---|---|---|---|
+| Schleife zu, schlechtester Fall | I_F = (21,6 − 1,4)/(2 × 3,3 kΩ × 1,01) | **3,03 mA** → nötiges CTR = (2,0 V / 4,7 kΩ)/3,03 mA = **14 %** | garantiert **≥ 50 %** (I_C ≥ 2,5 mA bei I_F = 5 mA, D2-A03101EN) | Faktor **3,6** |
+| Schleife offen (Kabelbruch) | (I_CEO 100 nA + I_I 1 µA) × 4,7 kΩ | **5,2 mV** | V_IL = 0,8 V | **0,79 V** |
+| Bus gezogen | 10 Module × (3,3 − 0,4)/10 kΩ = 2,9 mA → V_OL | **≤ 0,40 V** (MAX bei 16 mA / V_CC = 3 V, SCES295AB 5.5) | V_IL(U3) = 0,8 V | **0,40 V** |
+| Bus in Ruhe | 10 × (2 × I_off 10 µA + I_I 5 µA) = 250 µA an 1 kΩ | **3,05 V** | V_IH(U3) = 2,0 V | **1,05 V** |
+
+Der gezogene Buspegel ist damit **zahlengleich** mit der bisherigen
+Schottky-Rechnung aus Beleg 10 — an der Verriegelung (U3, R9, R15,
+`U1_NSLEEP`) ist deshalb **kein Bauteil und keine Zahl geändert**.
+
+*Ehrlicher Vermerk zum CTR:* der Arbeitspunkt liegt bei 3,0–3,9 mA, nicht bei
+den 5 mA der garantierten Datenblattzeile; für 3 mA nennt SHARP nur eine
+Kennlinie, keinen MIN-Wert. Der Sicherheitsschluss hängt nicht daran: reicht
+der Strom nicht, bleibt der Knoten unter V_IH, der Kanal meldet „offen", die
+Anlage steht. **Ein CTR-Mangel kann kein falsches „in Ordnung" erzeugen** — er
+kostet Verfügbarkeit, nie Sicherheit. Das beschaffte PC817X**1** trägt zudem
+Rangmarke A (CTR ≥ 80 %).
+
+**Warum die Koppeldioden D3/D4 entfallen mussten.** Die naheliegende Annahme
+war, ein lokaler Pulldown ziehe den Kanalknoten LOW und die vorhandene Diode
+ziehe die Sammelleitung mit. Das geht nicht:
+
+```
+Pulldown 4,7 kΩ gegen den auf 1 kΩ parallelgeschalteten Buspullup:
+U(Bus) = 3,3 V × 4,7/(1 + 4,7) = 2,72 V   -- der Bus rührt sich nicht.
+```
+
+Ein Pulldown müsste (mit der Diode im Weg) unter **160 Ω** liegen, um den Bus
+unter 0,8 V zu ziehen — und einen 160-Ω-Pulldown könnte kein Optokoppler mehr
+auf V_IH heben (12,5 mA Fotostrom, mehr als der ganze Schleifenstrom). Der
+bisherige Knoten wurde eben nicht von einem Widerstand, sondern von einem
+**Schaltkontakt** (≈ 0 Ω) gezogen. Das Ruhestromprinzip verlangt, dass die
+*Abwesenheit* von Strom eine *aktive* Handlung auslöst — das kann kein passives
+Bauteil. Deshalb der Open-Drain-Inverter. Und eine Diode **in Reihe** dazu wäre
+das Gegenteil einer Verbesserung: 0,4 V (V_OL) + 0,4 V (V_F) = 0,8 V, also
+exakt die Schwelle, **null Reserve**.
+
+**Kurzschluss der Rückleitung nach GND.** Die LED ist überbrückt, I_F = 0, der
+Knoten fällt auf 5,2 mV, der Bus wird gezogen, der Treiber schläft — die sichere
+Richtung. Gleiches gilt für die Hinleitung gegen GND.
+
+**Strombegrenzung nach aussen.** Jede der vier Adern liegt hinter mindestens
+3,3 kΩ:
+
+```
+I_max = 26,4 V / 3,3 kΩ   = 8,0 mA     (26,4 V = 24 V + 10 %)
+P_max = 26,4 V^2 / 3,3 kΩ = 0,211 W    (84 % von 250 mW)
+Normalbetrieb             = 0,049 W    (20 %)
+```
+
+**Deshalb 1206 und nicht 0805:** ein 0805 (125 mW) wäre im Kurzschluss um 70 %
+überlastet. Beide Widerstände eines Kanals sind absichtlich gleich gross — dann
+bleibt der Kurzschluss einer beliebigen Ader gegen GND **oder** gegen +24 V in
+jedem Fall unter 8,0 mA und unter der Nennleistung, und der LED-Strom bleibt
+weit unter den 50 mA Grenzstrom des PC817. *Vermerk:* die 84 % gelten bis 70 °C
+Umgebungstemperatur; ein Dauerkurzschluss in einem heissen Gehäuse müsste
+derated werden.
+
+**Querschluss zwischen den Kanälen — was dann noch bleibt.** Ehrlich: hier
+verliert die Zweikanaligkeit einen Teil ihres Sinns (A = Hinleitung,
+B = Rückleitung). A1–A2 ist folgenlos. **B1–B2** koppelt die zwei LED-Zweige:
+ist *ein* Kontakt offen und der andere geschlossen, speist der geschlossene
+beide LEDs, der offene Kanal ist **blind** — öffnen beide Kontakte (der
+Normalfall bei einem Not-Halt-Taster), fällt der Strom trotzdem auf null.
+A1–B1 bzw. A2–B2 überbrückt den Kontakt des eigenen Kanals (das ist zugleich
+die *absichtliche* Brücke für einen unbenutzten Kanal — die Schaltung kann
+Absicht und Fehler nicht unterscheiden). Über Kreuz (A1–B2, A2–B1) sowie eine
+Rückleitung an +24 V machen ebenfalls je einen Kanal blind. **Es bleibt: ein
+Querschluss macht höchstens einen Kanal blind, der zweite löst weiter aus; für
+einen Durchlauf braucht es zwei Fehler.** Was fehlt: die Schaltung **erkennt**
+den Querschluss nicht — dafür bräuchte es getaktete Prüfimpulse (OSSD) oder ein
+Sicherheitsrelais. Beide Kanäle hängen aber einzeln am Modul-MCU; eine
+**Diskrepanzüberwachung in der Firmware** (zwei Kanäle melden länger als ein
+paar hundert Millisekunden Verschiedenes → sperren) ist damit möglich und ist
+hiermit als Firmware-Auftrag festgehalten. Verlege-Auflage fürs Museum: die
+zwei Kreise gehören in **getrennt geführte Leitungen**, nicht in zwei Adern
+desselben Mantels.
+
+**Ein schmaler Rückschritt, ehrlich benannt.** Der Schaltkontakt zog den Bus
+früher rein *passiv* herunter, auch ohne lokale 3,3 V. Jetzt braucht der
+Koppelweg die 3,3-V-Schiene dieses Moduls. Stapelweiter 3V3-Ausfall ist
+folgenlos (U3 stirbt mit, der interne 100-kΩ-Pulldown des DRV8876 legt den
+Treiber schlafen). Fällt 3V3 **nur auf diesem Modul** aus — gebrochener
+3V3-Pin am Stapelstecker —, schläft zwar dieses Modul, aber der an ihm
+angeschlossene Not-Halt erreicht die übrigen Module nicht mehr. Nicht
+vermeidbar: Ruhestrom verlangt einen gespeisten Treiber.
+
+### Auflage 1 — der unbenutzte Kanal MUSS gebrückt werden
+
+Wird nur ein Notaus-Kreis angeschlossen, hängt der zweite Kanal offen und
+meldet **dauerhaft Notaus**; die Anlage läuft nicht an. Richtige Vorgabe
+(offen = sicher), aber der Nutzer muss wissen, was zu tun ist:
+
+> **Unbenutzten Kanal am Stecker brücken:
+> Kanal 1 = J3 Pin 1+2, Kanal 2 = J3 Pin 3+4.**
+
+J3 ist eine 2,54-mm-Stiftleiste; die zwei Pins eines Kanals liegen deshalb
+absichtlich **nebeneinander** — eine handelsübliche Jumper-Brücke genügt. Der
+Hinweis steht als Text im Schaltplan neben J3. **Aufgabe 7 (PCB-Layout) muss
+ihn zusätzlich auf den Siebdruck neben J3 setzen**, zusammen mit der
+Kanalzuordnung der vier Pins.
+
+### Auflage 2 — die Verkabelung des Pêche-aux-Canards-Exponats MUSS umgeklemmt werden
+
+**J3 bleibt vierpolig** (zwei Adern je Kanal statt Signal+GND). Gleiche
+Bauform, gleiche Polzahl, völlig andere Bedeutung: **ein altes Kabel passt
+mechanisch weiterhin.** Steckt man es, liegt der alte Schliesser zwischen
+Pin 1 und Pin 2, also im Weg von Kanal 1; im Ruhezustand ist er offen → der
+Kanal meldet Notaus, Kanal 2 hängt ohnehin offen. **Das Exponat stünde nach
+dem Modultausch dauerhaft auf Notaus.** Sicher, aber unbrauchbar. Beim
+Umstieg ist deshalb zwingend umzuklemmen:
+
+- Not-Halt-Taster mit **Öffnerkontakt** verwenden (nicht Schliesser),
+- je Kanal **zwei Adern** zum Taster führen (nicht Signal + Masse),
+- Kanal 1 an J3 Pin 1+2, Kanal 2 an J3 Pin 3+4,
+- wird nur ein Kreis verdrahtet, den anderen brücken (Auflage 1).
+
+Empfehlung für Aufgabe 7/9, nicht ausgeführt: J3 **codieren oder auf einen
+anderen Steckertyp wechseln**, damit ein altes Kabel gar nicht mehr passt —
+und für ein Feld-Sicherheitssignal wäre eine Schraubklemme mit Zugentlastung
+ohnehin die bessere Bauform als eine 2,54-mm-Stiftleiste.
+
+## Beleg 12 — Layout-Auflage: der Optokoppler-Footprint stimmt nicht (Aufgabe 5d)
+
+Beim Nachtragen des PC817 in die Bauteiltabelle ist aufgefallen, dass der seit
+dem Altprojekt eingetragene Footprint nicht zum Bauteil passt — und zwar schon
+für das geerbte U2, nicht erst für die neuen U4/U5.
+
+`Package_SO:SOP-4_3.8x4.1mm_P2.54mm` (KiCad-Standardbibliothek) beschreibt ein
+Gehäuse von 3,8 × 4,1 mm mit Pad-Mitten bei ±2,75 mm. Der PC817 in
+SMT-Gullwing-Bauform misst laut SHARP D2-A03101EN, Abschnitt „Outline
+Dimensions", Variante „SMT Gullwing Lead-Form": Körper **6,5 × 4,58 mm**,
+Anschlussspanne **10,0 mm**, Reihenabstand **7,62 mm**, Pitch 2,54 mm. Das
+passt nicht — auch der grössere Nachbar `SOP-4_7.5x4.1mm_P2.54mm` (Pad-Mitten
+±4,6875 mm) trifft es nicht genau.
+
+Im Schaltplan ist das folgenlos (Repo-Praxis: Footprints sind Platzhalter, bis
+Aufgabe 7 die echten zeichnet — dieselbe Lage wie bei den DB128L-Klemmen), aber
+**Aufgabe 7 muss für U2/U4/U5 einen eigenen PC817-Footprint zeichnen**, bevor
+bestückt wird. Zusammen mit der C12-Silkscreen-Prüfung (Beleg 9) und der
+U3-Nähe-Auflage sind das jetzt drei Layout-Auflagen aus der Motormodul-Kette.
+
+**Nebenbefund, nicht behoben:** R6 (Vorwiderstand des Sensor-Optokopplers U2,
+2,2 kΩ im 0805-Footprint) liegt an 24 V und verheizt bei leitendem Sensor
+24²/2,2 kΩ ≈ **0,24 W** — fast das Doppelte dessen, was ein 0805 trägt. Genau
+der Fehler, den Beleg 11 für die neuen Schleifenwiderstände bewusst vermeidet.
+Aus dem Altprojekt geerbt, nicht Gegenstand dieser Aufgabe, gehört
+nachgerechnet.
+
+
 ## Zusammenfassung für die Beschaffung
 
 | Offener Punkt aus der Aufgabe | Antwort |
@@ -912,4 +1114,7 @@ bewusst nicht in dieser Nachbesserung ergänzt, weil sie am Auftrag
 | 3,3-V-Haushalt des Stapels (Aufgabe 5) | Nachgerechnet mit den zwei neuen Verbrauchern des Motormoduls (Kennwiderstände, VREF) — bleibt unkritisch: ≈5,56 mA/Modul worst case, ~53 Module trügen das 300-mA-Budget der Pico-3V3-Schiene; Details Beleg 8 |
 | Layout-Auflage C12-Polarität (Aufgabe 5) | Schaltplan-Polung geprüft (Pin 1 „+" an +24V, testgesichert) — Aufgabe 7 muss zusätzlich die Footprint-Silk-Polarität gegen Pad 1 prüfen, das sieht keine ERC/Netzlisten-Prüfung; Details Beleg 9 |
 | **Notaus-Verriegelung wirkte nicht (Aufgabe-5-Fix-1)** | Die Diodenklemme D2+R14 liess den nSLEEP-Pin bei ≈3,05 V stehen (V_IL wäre 0,8 V); ersetzt durch ein UND-Gatter U3 (`SN74LVC1G08`, C7832, keine neue Bauteilnummer) + C14, D2/R14 entfallen, D3/D4 jetzt Schottky (BAT54W, C699107). Reserve jetzt 0,70 V gegen V_IL bzw. 1,65 V gegen V_IH; Details Beleg 10 |
+| **Notaus-Eingang auf Ruhestrom umgebaut (Aufgabe 5d)** | Der externe Kontakt ist jetzt ein **Öffner**: geschlossen = in Ordnung, offen = Notaus — und damit lösen auch Kabelbruch, gezogener Stecker und lose Klemme aus. Je Kanal 24 V über 2 × 3,3 kΩ (1206, C26032) hinaus, zurück über eine zweite Ader in einen PC817 (C97308), Emitterfolger gegen 4,7 kΩ Pulldown, von dort über einen Open-Drain-Inverter (SN74LVC1G06, **C7828**) auf die Sammelleitung. **D3/D4 entfallen** (eine Diode in Reihe zum Open-Drain-Ausgang liesse null Reserve). An U3/R9/R15/`U1_NSLEEP` **keine Änderung**. Details Beleg 11 |
+| **Zwei Auflagen aus Aufgabe 5d, die niemand übersehen darf** | (1) **Unbenutzter Kanal muss am Stecker gebrückt werden** — Kanal 1 = J3 Pin 1+2, Kanal 2 = J3 Pin 3+4, sonst meldet er dauerhaft Notaus (Jumper 2,54 mm; zusätzlich Siebdruck-Auflage für Aufgabe 7). (2) **Die bestehende Verkabelung des Pêche-aux-Canards-Exponats muss umgeklemmt werden** — J3 hat weiterhin vier Pole, ein altes Kabel passt mechanisch, das Exponat stünde danach dauerhaft auf Notaus. Details Beleg 11, Auflagen 1 und 2 |
+| **Optokoppler-Footprint passt nicht (Nebenbefund Aufgabe 5d)** | `SOP-4_3.8x4.1mm_P2.54mm` gegen den PC817-Gullwing (Körper 6,5 × 4,58 mm, Spanne 10,0 mm, Reihe 7,62 mm laut D2-A03101EN) — betrifft auch das geerbte U2. Aufgabe 7 muss einen eigenen Footprint zeichnen; ebenso offen: R6 verheizt an 24 V ≈ 0,24 W in einem 0805. Details Beleg 12 |
 | A_IPROPI des DRV8876 nachgeprüft (Aufgabe-5-Fix-1) | **1000 µA/A**, bestätigt aus dem PDF SLVSDS7B, Abschnitt 6.5, Block „CURRENT SENSE AND REGULATION (IPROPI, VREF)" — der Wert 1100 µA/A gehört zu keinem der beiden Familienmitglieder (der Schwestertyp DRV8874, Dok. SLVSF66A, nennt 450 µA/A). Damit bleibt ITRIP = 2,538 A bei R5 = 1,3 kΩ richtig, Marge unverändert ~27 % über 2 A |
