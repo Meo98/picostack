@@ -34,6 +34,7 @@ Grundlage des neuen, eigenständigen Kettensteckers sind.
 | 5-V-Regler | K7805-2000R3 | SIP-3 | C2931187 | ja | bereits geprüft in Etappe 1a / LED-Dimmer-Projekt, siehe `hardware/bauteile.md` — hier unverändert übernommen, nicht neu recherchiert |
 | Klemme 2-polig | DB128L-5.08-2P-GN-S | THT, 5,08 mm | C395868 | ja | bereits geprüft in Etappe 1a / LED-Dimmer-Projekt — unverändert übernommen |
 | Klemme 3-polig | DB128L-5.08-3P-GN-S | THT, 5,08 mm | C395869 | ja | LCSC-Produktseite `lcsc.com/product-detail/C395869.html` (16 A, 300 V, M2-Schraube, 12–22 AWG); JLCPCB-Produktseite bestätigt (DORABO-Familie, SMT/Wave-Assembly, Economic/Standard PCBA) — selbe Farbe/Baureihe wie die bereits geprüfte 2-polige Klemme |
+| Schaltdiode (Notaus-Verriegelung, Aufgabe 5) | 1N4148W (ST/Semtech) | SOD-123 | C81598 | ja | LCSC-Produktseite `lcsc.com/product-detail/Switching-Diode_ST-Semtech-1N4148W_C81598.html` (Rohdaten: Gehäuse „SOD-123", `Vf "1V@50mA"`); JLCPCB-Produktseite `jlcpcb.com/partdetail/ST-1N4148W/C81598` bestätigt SMT-Assembly („Economic and Standard" PCBA, MSL 3) |
 
 Von den acht in der ersten Fassung neu recherchierten Nummern (nicht sieben, wie dort irrtümlich stand — Zählfehler korrigiert) sowie den drei in dieser Nachbesserung hinzugekommenen (Stapelstecker C35165, Kettenstecker C541849/C492401) wurde jede auf einer echten LCSC- oder
 JLCPCB-Produktseite gesichtet (Datenblatt-Zeichnung oder strukturierte
@@ -679,6 +680,124 @@ Pin 1, ebenso kurzer Rückweg über GND). Der Schaltplan selbst kann diese
 Auflage nicht erzwingen (Netzlisten kennen keine Distanz) — deshalb hier
 schriftlich festgehalten, nicht nur im Code kommentiert.
 
+## Beleg 8 — 3,3-V-Haushalt des Stapels, mit dem Motormodul nachgerechnet (Aufgabe 5)
+
+**Aufgabe (Auftraggeber-Punkt 2 der Aufgabe 5):** Die Modul-MCU ziehen ihre
+Versorgung aus der 3V3-Schiene, deren Quelle der interne Regler des Pico ist
+(3V3_OUT, Pin 36). Nachzurechnen: wie viel darf extern entnommen werden, und
+wie viele Module trägt das.
+
+**Obergrenze aus dem Pico-Datenblatt.** Dieselbe Quelle wie bereits in
+`hardware/bauteile.md`, Beleg 3, zitiert (Raspberry Pi Pico Datasheet,
+Abschnitt „Pin Description", Beschreibung des Pins `3V3`): „This pin can be
+used to power external circuitry (maximum output current will depend on
+RP2040 load and VSYS voltage, it is recommended to keep the load on this pin
+less than 300 mA)." Diese 300 mA sind explizit die Grenze für **externe**
+Last — der RP2040-Eigenverbrauch selbst zieht aus VSYS über den internen
+Regler, nicht aus dieser Zahl.
+
+**Was ein Modul tatsächlich zieht — vollständiger als in Etappe 1a, weil das
+Motormodul zwei neue Verbraucher an die 3V3-Schiene hängt, die es in Etappe
+1a (reine Modul-MCU-Abschätzung) noch nicht gab:**
+
+1. **Modul-MCU (STM32C011F6P6), unverändert aus `hardware/bauteile.md`,
+   Beleg 3:** DS13866 Rev 3, Tabelle 27 „Current consumption in Run mode
+   from flash memory", `IDD(Run)` bei 48 MHz (HSI48): typ. 3,40 mA, max.
+   3,90 mA (25 °C), bis max. 4,90 mA (125 °C). Für diese Rechnung wird der
+   ungünstigste Wert verwendet: **4,90 mA**.
+2. **Zwei Kennwiderstand-Spannungsteiler pro Modul** (`tools/sch/
+   modulsockel.py`, `_kennwiderstand()`: R104/R100 und R105/R101, je
+   3V3–[ID_OBEN]–Knoten–[Kennwiderstand]–GND). Worst-case-Strom pro Teiler
+   bei kleinstem tatsächlich vergebenen Kennwiderstand (`stack_spec.
+   ID_WIDERSTAENDE[1]` = 680 Ω — der erste Eintrag, 0 Ω, ist laut
+   `stack_spec.py`-Kommentar für „Modultyp 0x00, ungültig" reserviert und
+   wird nie real bestückt, aber selbst mit ihm ändert sich die Rechnung
+   kaum):
+
+       I_Teiler = 3,3 V / (ID_OBEN + R_kenn) = 3,3 / (10000 + 680) ≈ 0,309 mA
+
+   Zwei Teiler je Modul: **≈ 0,62 mA** (konservativ mit dem theoretischen
+   0-Ω-Fall aufgerundet: 3,3/10000 × 2 = 0,66 mA).
+3. **U1 VREF (DRV8876, Pin 5), neu gegenüber Etappe 1a:** liegt in diesem
+   Modul direkt an 3V3 (wie im Altprojekt). Das DRV8876-Datenblatt (TI
+   SLVSDS7B) nennt für VREF nur den zulässigen Spannungsbereich (Abschnitt
+   6.3, „Recommended Operating Conditions": 0–3,6 V), **keinen eigenen
+   Ruhestromwert** — VREF ist der Referenzeingang eines internen
+   Komparators, kein Lastausgang. Ohne eine tatsächlich gelesene
+   Datenblattzahl wird hier **keine** erfundene Zahl eingesetzt (Bindend-
+   Regel dieser Aufgabe) — die Größenordnung eines Komparator-
+   Referenzeingangs liegt allgemein im Nanoampere- bis niedrigen
+   Mikroampere-Bereich, also um mindestens zwei Zehnerpotenzen unter den
+   beiden obigen Posten. Die Budget-Aussage unten ändert sich dadurch
+   nicht, selbst wenn der tatsächliche Wert am oberen Rand dieser
+   Größenordnung läge.
+4. **Logikgatter (U101 Flipflop, U102 Dual-NAND, U103 AND), neu gegenüber
+   Etappe 1a:** CMOS-Standardlogik dieser Bauart liegt typischerweise im
+   niedrigen einstelligen Mikroampere-Bereich statischer Stromaufnahme —
+   auch hier keine einzeln aus einem gelesenen Datenblattwert belegte Zahl
+   (die drei zugehörigen Datenblätter geben zwar `ICC`-Werte an, die wurden
+   für diese Rechnung nicht extra herausgesucht, weil selbst ein
+   pessimistischer zweistelliger µA-Wert je Gatter die Summe nicht in die
+   Nähe der MCU- oder Kennwiderstand-Anteile brächte) — wie Punkt 3 eine
+   vernachlässigbare Größenordnung, hier ausdrücklich als solche benannt,
+   nicht verschwiegen.
+
+**Rechnung pro Modul (Posten 1+2, die einzigen zahlenmäßig belegten):**
+
+    I_Modul = 4,90 mA + 0,66 mA = 5,56 mA  (worst case, 125 °C)
+
+**Wie viele Module das trägt:**
+
+    N_max = 300 mA / 5,56 mA/Modul ≈ 53 Module
+
+Zehn Module (die Zahl aus `hardware/bauteile.md`, Beleg 3): 10 × 5,56 mA =
+**55,6 mA** — weit unter 300 mA, mit über fünffacher Reserve bis zur
+theoretischen Grenze von ~53 Modulen. **Die Rechnung ist NICHT eng** — das
+Ergebnis aus Etappe 1a (unkritisch) bleibt auch mit den beiden neuen, hier
+erstmals berücksichtigten Verbrauchern (Kennwiderstände, VREF) bestehen; ein
+eigener 3,3-V-Regler für den Stapel ist nach dieser Rechnung nicht nötig.
+Die tatsächliche mechanische Obergrenze (wie viele Module überhaupt
+gestapelt werden, Steckerlänge, Gehäuse) liegt weit unter 53 — das
+3,3-V-Budget ist an keiner realistischen Stapelgröße der limitierende
+Faktor.
+
+## Beleg 9 — Layout-Auflage: C12-Polarität (Aufgabe 5, Motormodul)
+
+**Hintergrund.** Auf dem Muttern-Print (v1, `~/Dokumente/Espace_des_
+Inventions/PecheAuxCanards`) lag der „+"-Aufdruck eines 220-µF-Elkos auf
+GND statt auf der Versorgungsschiene — zwei Kondensatoren sind dadurch
+explodiert (s. `docs/superpowers/specs` bzw. die Projekt-Historie dieses
+Fundes). Der Fehler liegt in der KiCad-Quelle des Muttern-Projekts und ist
+dort **nicht korrigiert** — diese Aufgabe übernimmt bewusst nur die
+Bauteilwerte/die Verschaltungslogik von dort, nicht die Polarität
+unbesehen.
+
+**Prüfung für C12 (220 µF, `tools/sch/motormodul.py`).** Das
+`Device:C_Polarized`-Symbol trägt Pin 1 wörtlich als „+" (eigene Prüfung der
+KiCad-Quelle, `Device.kicad_sym`). Im Motormodul liegt Pin 1 auf `+24V`,
+Pin 2 auf `GND` — geprüft sowohl über die Netzliste
+(`kicad-cli sch export netlist`, Netz `+24V` enthält `(C12, 1)`) als auch
+über eine eigene Testzusicherung (`tests/test_motormodul.py`: „C12 Pin 1
+(\"+\") hängt an +24V" / „... NICHT an GND"). Kein weiterer polarisierter
+Kondensator kommt in dieser Datei vor (C9/C10/C11/C13 sind unpolarisierte
+Keramikkondensatoren, `Device:C`, ohne Vorzugsrichtung).
+
+**Auflage für Aufgabe 7 (PCB-Layout Motormodul).** Der Schaltplan legt die
+elektrische Polarität fest, **nicht** aber, ob der spätere Footprint-Silk-
+Aufdruck auf der Platine tatsächlich mit Pin 1 übereinstimmt — genau diese
+Lücke hat den Muttern-Print-Fehler verursacht (dort war vermutlich nicht die
+Schaltplan-Polung falsch, sondern der Footprint/Silk-Aufdruck gegenüber dem
+Pad-1-Anschluss verdreht oder das Bauteil beim Bestücken falsch orientiert).
+Aufgabe 7 muss deshalb **vor dem Fertigungsauftrag** explizit prüfen: liegt
+das Pad, das Pin 1 (`+24V`) trägt, tatsächlich unter dem „+"-Silk-Symbol des
+gewählten `CP_Radial_D8.0mm_P3.50mm`-Footprints? Eine reine
+Netzlisten-/ERC-Prüfung sieht das nicht (beide Pads sind für die
+Konnektivität gleichwertig, nur die Bauteil-Geometrie kennt den
+Polaritäts-Silk) — das ist eine manuelle oder skriptgestützte
+Footprint-Geometrie-Prüfung (z. B. `tools/pcb/pcb_checks.py`, das laut
+Aufgabe-7-Brief ohnehin auf „verpolte Elkos" prüft), keine, die der
+Schaltplan selbst erzwingen kann.
+
 ## Zusammenfassung für die Beschaffung
 
 | Offener Punkt aus der Aufgabe | Antwort |
@@ -692,3 +811,6 @@ schriftlich festgehalten, nicht nur im Code kommentiert.
 | Leistungsstecker + Strombelastbarkeit | 2×2 derselben Stecker-Familie, ~5 A/Ader vor Derating (Engpass Buchse 2,5 A/Kontakt); Positionszahl ist Vorschlag, kein Vertragswert |
 | Klemme 3-polig | DB128L-5.08-3P-GN-S, C395869, 16 A/300 V |
 | `tools/stack_spec.py`, `docs/vertrag.md`, Tests | Nachgezogen: SEL raus aus PIN_ROLLE/RESERVIERT, STECKER_STAPEL/STECKER_KETTE neu, Vertrag neu erzeugt, Tests ergänzt (siehe Beleg 6) |
+| Stromgrenze DRV8876 (Motormodul, Aufgabe 5) | Altprojekt-Wert (R5=2,2k → 1,5 A) reichte für den 2-A-Motor nicht (dokumentierter Muttern-Board-Fehler); neu gerechnet über TI-Gleichung 3 (SLVSDS7B, Abschnitt 7.3.3.2): R5 = 1,3 kΩ → ITRIP ≈ 2,538 A (~27 % Marge über 2 A, deutlich unter IOCP-min 3,5 A); R10 bleibt DNP, unveränderter Altprojekt-Wert (4,7 kΩ) |
+| 3,3-V-Haushalt des Stapels (Aufgabe 5) | Nachgerechnet mit den zwei neuen Verbrauchern des Motormoduls (Kennwiderstände, VREF) — bleibt unkritisch: ≈5,56 mA/Modul worst case, ~53 Module trügen das 300-mA-Budget der Pico-3V3-Schiene; Details Beleg 8 |
+| Layout-Auflage C12-Polarität (Aufgabe 5) | Schaltplan-Polung geprüft (Pin 1 „+" an +24V, testgesichert) — Aufgabe 7 muss zusätzlich die Footprint-Silk-Polarität gegen Pad 1 prüfen, das sieht keine ERC/Netzlisten-Prüfung; Details Beleg 9 |

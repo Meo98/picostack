@@ -109,6 +109,7 @@ class Schaltplan:
         self.POWERS = []
         self.NOCONN = []
         self.TEXTS = []
+        self.DNP = set()        # Referenzen, die "Do Not Populate" tragen
         self._u = 0
 
     # --------------------------------------------------------- Bibliothek
@@ -167,10 +168,25 @@ class Schaltplan:
 
     # ---------------------------------------------------------- Bauteile
     def bauteil(self, ref, libid, pos, wert, footprint, rot=0, einheit=1,
-                roff=(0, 0), voff=(0, 0)):
+                roff=(0, 0), voff=(0, 0), dnp=False):
         """Platziert ein Bauteil. `einheit` waehlt bei Multi-Unit-Symbolen
         (siehe `lib(..., multiunit=True)`) die gezeichnete Teil-Einheit --
-        fuer alle anderen Bauteile bleibt sie bei ihrem Vorgabewert 1."""
+        fuer alle anderen Bauteile bleibt sie bei ihrem Vorgabewert 1.
+
+        `dnp=True` markiert das Bauteil als "Do Not Populate" (Aufgabe 5:
+        R10, die unbestueckte Stromgrenzen-Alternative zu R5). Bewusst ein
+        SEPARATES Set (`self.DNP`), nicht ein zehntes Feld im COMPS-Tupel
+        -- mehrere Stellen (gen.py selbst, UND die _netz_pins()-Helfer in
+        tests/test_sockelplatine.py und tests/test_modulsockel.py)
+        entpacken COMPS-Eintraege wortwoertlich als 9-Tupel; ein zehntes
+        Feld haette diese bereits abgenommenen Tests zerbrochen, ohne dass
+        diese Aufgabe sie anfassen sollte. Elektrisch bleibt ein
+        DNP-Bauteil normal verdrahtet (nur die Bestueckung entfaellt) --
+        das entspricht dem, was das Altprojekt fuer sein eigenes R10
+        tatsaechlich in der .kicad_sch stehen hat (eigene Pruefung:
+        `(dnp yes)` bei sonst unveraenderter Verdrahtung)."""
+        if dnp:
+            self.DNP.add(ref)
         self.COMPS.append((ref, libid, pos, rot, wert, footprint,
                             (pos[0] + roff[0], pos[1] + roff[1]),
                             (pos[0] + voff[0], pos[1] + voff[1]), einheit))
@@ -316,9 +332,11 @@ class Schaltplan:
               % (txt, x, y, size, size, "\t\t\t\t(bold yes)\n" if bold else "", self._uuid()))
 
         def sym(ref, libid, pos, rot, value, fp, rpos, vpos, einheit):
+            dnp_flag = "yes" if ref in self.DNP else "no"
             s = ['\t(symbol\n\t\t(lib_id "%s")\n\t\t(at %g %g %d)\n\t\t(unit %d)'
                  % (libid, pos[0], pos[1], rot, einheit),
-                 '\t\t(exclude_from_sim no)\n\t\t(in_bom yes)\n\t\t(on_board yes)\n\t\t(dnp no)',
+                 '\t\t(exclude_from_sim no)\n\t\t(in_bom yes)\n\t\t(on_board yes)\n\t\t(dnp %s)'
+                 % dnp_flag,
                  '\t\t(uuid "%s")' % self._uuid()]
             hidden = ref.startswith("#")
             for pname, pval, ppos, hide in (

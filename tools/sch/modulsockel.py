@@ -311,7 +311,25 @@ def _kennwiderstand(sch, ref_ober, ref_kenn, ox, oy, netz):
     sch.netz(ref_kenn, "2", "D", "GND")
 
 
-def einbauen(sch, ox, oy, mit_flipflop=True):
+#: U100 (STM32C011F6P6, TSSOP-20) hat 20 Pins; 15 davon vergibt einbauen()
+#: fest (Bus, Versorgung, Kette, Endstufen-Netze, Bootlader). Fuenf bleiben
+#: ohne modulspezifische Rolle -- PC14/PC15/PA7/PA8 sind echte, freie GPIO
+#: (Pin-Richtung hier vermerkt, aus der Symbolgeometrie ausgemessen:
+#: MCU_ST_STM32C0.kicad_sym, STM32C011F_4-6_Px, x=-17.78 -> "L",
+#: x=+17.78 -> "R"). PA13 (Pin 18) ist zugleich SWDIO und bleibt deshalb
+#: IMMER no_connect -- ein Modul, das den Debug-Pin fuer eigene Zwecke
+#: kapert, verliert die Moeglichkeit, es je wieder per SWD anzusprechen,
+#: falls die Firmware haengt. Aufgabe 5 (Motormodul) ist die erste
+#: Nutzerin: drei der vier Pins tragen dort SENSOR_3V3/NOTAUS_1/NOTAUS_2
+#: (der Optokoppler- und die zwei lokalen Notaus-Eingaenge muessen an den
+#: MCU, s. tools/sch/motormodul.py) -- ohne diese Konstante haette
+#: einbauen() sie unbedingt auf nc() gelegt, und ein nachtraeglicher
+#: netz()-Aufruf auf demselben Pin waere ein Widerspruch (no_connect UND
+#: Draht auf demselben Punkt).
+ZUSATZ_PIN_RICHTUNG = {"2": "L", "3": "L", "14": "R", "15": "R"}
+
+
+def einbauen(sch, ox, oy, mit_flipflop=True, zusatz_pins=None):
     """Baut den Modulsockel-Block bei (ox, oy) in `sch` ein.
 
     mit_flipflop=True (Vorgabe): voller Modul-Block -- MCU, Flipflop,
@@ -320,9 +338,21 @@ def einbauen(sch, ox, oy, mit_flipflop=True):
     Kennwiderstaende -- fuer die Sockelplatine (Aufgabe 4), die kein
     Modul ist und keinen eigenen Modultyp hat.
 
+    zusatz_pins: optionales dict {Pinnummer(str): Netzname} fuer die vier
+    freien U100-Pins aus ZUSATZ_PIN_RICHTUNG (PC14/PC15/PA7/PA8, Pins
+    "2"/"3"/"14"/"15"). Ein hier genannter Pin bekommt sch.netz(...) mit
+    dem gegebenen Namen statt sch.nc(...); nicht genannte Pins bleiben wie
+    bisher no_connect. Pin "18" (PA13/SWDIO) ist nicht waehlbar -- s.
+    ZUSATZ_PIN_RICHTUNG-Kommentar.
+
     Liefert ein dict mit den Netznamen, die die Endstufe braucht
     (== NETZE_NACH_AUSSEN).
     """
+    zusatz_pins = zusatz_pins or {}
+    unbekannt = set(zusatz_pins) - set(ZUSATZ_PIN_RICHTUNG)
+    if unbekannt:
+        raise ValueError("zusatz_pins kennt nur %s, nicht %s"
+                          % (sorted(ZUSATZ_PIN_RICHTUNG), sorted(unbekannt)))
     _load_libs(sch)
 
     # PWR_FLAG auf GND und 3V3: ohne einen "power_out"-Pin irgendwo im
@@ -348,8 +378,11 @@ def einbauen(sch, ox, oy, mit_flipflop=True):
                     "STM32C011F6P6", FP_TSSOP20, rot=0,
                     roff=(-17.78, 25.4), voff=(-17.78, 27.94))
         sch.netz("U100", "1", "L", "I2C_SDA")     # PB7
-        sch.nc("U100", "2")                        # PC14
-        sch.nc("U100", "3")                        # PC15
+        for _p in ("2", "3"):                       # PC14, PC15
+            if _p in zusatz_pins:
+                sch.netz("U100", _p, ZUSATZ_PIN_RICHTUNG[_p], zusatz_pins[_p])
+            else:
+                sch.nc("U100", _p)
         sch.netz("U100", "4", "U", "3V3")           # VDD
         sch.netz("U100", "5", "D", "GND")           # VSS
         # PF2-NRST, aktiv LOW. Kommt direkt von U102 Einheit 2 (NAND),
@@ -363,8 +396,11 @@ def einbauen(sch, ox, oy, mit_flipflop=True):
         sch.netz("U100", "11", "R", NETZE_NACH_AUSSEN["NSLEEP"])   # PA4
         sch.netz("U100", "12", "R", NETZE_NACH_AUSSEN["NFAULT"])   # PA5
         sch.netz("U100", "13", "R", NETZE_NACH_AUSSEN["IPROPI"])   # PA6
-        sch.nc("U100", "14")                        # PA7
-        sch.nc("U100", "15")                        # PA8
+        for _p in ("14", "15"):                      # PA7, PA8
+            if _p in zusatz_pins:
+                sch.netz("U100", _p, ZUSATZ_PIN_RICHTUNG[_p], zusatz_pins[_p])
+            else:
+                sch.nc("U100", _p)
         sch.netz("U100", "16", "R", "FLASH_RX")     # PA9/PA11 (TX des MCU)
         sch.netz("U100", "17", "R", "FLASH_TX")     # PA10/PA12 (RX des MCU)
         sch.nc("U100", "18")                        # PA13 (SWDIO, unbenutzt)

@@ -32,8 +32,16 @@ LIBDIR = _libdir()
 
 
 def extract(libfile, name):
-    """Liefert den kompletten (symbol "name" ...)-Block per Klammerzaehlung."""
-    txt = open(LIBDIR + libfile, encoding="utf-8").read()
+    """Liefert den kompletten (symbol "name" ...)-Block per Klammerzaehlung.
+
+    `libfile` ist normalerweise ein Dateiname relativ zu LIBDIR (der
+    System-Bibliothek). Aufgabe 5 (Motormodul) braucht zusaetzlich ein
+    projekteigenes Symbol (DRV8876PWPR, ein Snapeda-Export ohne
+    Gegenstueck in der System-Bibliothek) -- dafuer akzeptiert diese
+    Funktion auch einen absoluten Pfad und liest dann direkt von dort,
+    ohne LIBDIR voranzustellen."""
+    pfad = libfile if os.path.isabs(libfile) else LIBDIR + libfile
+    txt = open(pfad, encoding="utf-8").read()
     key = '(symbol "%s"' % name
     i = txt.find(key)
     if i < 0:
@@ -55,12 +63,19 @@ def extract(libfile, name):
 
 
 def pins(block):
-    """{Pinnummer: (x, y, rotation, name)} aus einem Symbolblock."""
+    """{Pinnummer: (x, y, rotation, name)} aus einem Symbolblock.
+
+    Die Rotation steht im Rasterformat normalerweise als blanke Ganzzahl
+    ("180"), im DRV8876PWPR-Symbol (Aufgabe 5, ein Snapeda-Export, kein
+    KiCad-eigenes Symbol) aber als Fliesskommazahl ("180.0") -- deshalb
+    `[-\\d.]+` statt `\\d+` und `int(float(...))` statt `int(...)`. Eigene
+    Pruefung: ohne diese Aenderung liess die Regex jeden Pin mit
+    "180.0" aus (7 von 16 Pins des DRV8876PWPR fehlten im Ergebnis)."""
     out = {}
     for m in re.finditer(
-            r'\(pin\s+\S+\s+\S+\s*\(at ([-\d.]+) ([-\d.]+) (\d+)\)'
+            r'\(pin\s+\S+\s+\S+\s*\(at ([-\d.]+) ([-\d.]+) ([-\d.]+)\)'
             r'.*?\(name "([^"]*)".*?\(number "([^"]*)"',
             block, re.S):
         x, y, rot, nm, num = m.groups()
-        out[num] = (float(x), float(y), int(rot), nm)
+        out[num] = (float(x), float(y), int(float(rot)), nm)
     return out
