@@ -8,7 +8,7 @@ Die Zusagen rund um das Flashen -- die Leitungen `FLASH_TX`, `FLASH_RX`, `SEL`, 
 
 ## Umriss
 
-64.0 x 60.0 mm, Ecken 3.0 mm gerundet, 15.0 mm zwischen den Platinen.
+64.0 x 60.0 mm, Ecken 3.0 mm gerundet, 13.0 mm zwischen den Platinen.
 
 | M3-Bohrung | x | y | Bohrdurchmesser |
 |---|---|---|---|

@@ -435,12 +435,109 @@ Buchse/Stift-Paar wie der alte 2×20-Stecker es war, mit demselben
   Pin 4 ist frei, und `STECKER_KETTE` traegt genau zwei Pins (`SEL` und
   `GND`).
 
+### Zweite Runde 2026-08-31 — `STAPEL_ABSTAND` sinkt von 15,0 auf 13,0 mm
+
+**Warum 15,0 mm nicht bleiben konnte.** Der obige Stand liess den
+Kettenstecker mit rechnerisch nur **1,1 mm Einstecktiefe** stehen (Beleg 1,
+Nachtrag) — an ihm haengt die ganze Auswahlkette. Zwei unabhaengige
+Suchen (LCSC-Katalog und JLCPCB-Bibliothek) nach einer laengeren
+einreihigen Stiftleiste blieben erfolglos: die gaengigen 2,54-mm-Serien
+bieten fuer Stiftleisten regelmaessig nur die 6,0/3,0-mm-Kombination, wie
+schon in Beleg 1 fuer den urspruenglichen Signalstecker festgestellt.
+Ohne laengeres Bauteil bleibt nur, den Spalt selbst zu verkleinern.
+
+**Warum 13,0 mm geht — mit belegten Zahlen, nicht geschaetzt.** Kleinerer
+Spalt heisst mehr Einstecktiefe fuer beide Stecker, aber weniger Platz
+fuer die Schraubklemmen, die den urspruenglichen 15-mm-Wert begruendet
+hatten (Design-Doc, Abschnitt „Mechanik“). Vor der Entscheidung wurden
+deshalb die tatsaechlichen Bauhoehen der drei infrage stehenden Bauteile
+aus ihren Datenblaettern gelesen, nicht aus der groben Vorabschaetzung
+„rund 10 mm“ uebernommen:
+
+- **DB128L-5.08-2P-GN-S (C395868) und DB128L-5.08-3P-GN-S (C395869):**
+  Datenblatt DORABO „DB128L-5.08-XXP-C-S“ (Zeichnungsdatum 2022.11.25,
+  gesichtet ueber den auf der jeweiligen LCSC-Produktseite verlinkten
+  `pdfUrl`, PDF-Hash `774f77501d8e260538e3ee59c3ecee93` — **dasselbe PDF
+  fuer beide Bauteile**, weil es ein generischer Zeichnungssatz „XXP“ fuer
+  alle Polzahlen dieser Baureihe ist). Seitenansicht, Bemassung **„10.10“**
+  — das ist die Gesamthoehe des Klemmenkoerpers ueber der Platine; sie
+  haengt in dieser Zeichnung nicht von der Polzahl ab (nur die Breite
+  waechst mit „N×5.08“). Die zusaetzlich in derselben Zeichnung bemasste
+  Breite „14.10“ (= (2−1)×5,08 mm + Randmass, stimmig fuer die 2-polige
+  Ausfuehrung) bestaetigt, dass die Zeichnung tatsaechlich zu dieser
+  Baureihe gehoert und nicht vertauscht wurde.
+  → **Bauhoehe 10,10 mm**, fuer beide Klemmen gleich.
+- **K7805-2000R3 (C2931187):** Datenblatt DEXU Electronics
+  „K78xx-2000R3“, Rev. A0-2018.12 (gesichtet ueber den `pdfUrl` der
+  LCSC-Produktseite, PDF-Hash `17983581d455f7b27113790e48e5474c`), Seite 2
+  („产品特性“ / Produkteigenschaften), Zeile „外观尺寸“ (Aussenmasse):
+  „长\*宽\*高 11.6\*7.5\*10.2mm“ (Laenge×Breite×**Hoehe**). Die separate
+  Massskizze auf Seite 5 zeigt zusaetzliche Zahlen (u. a. „17.50“ fuer die
+  Gesamthoehe inklusive der durchgesteckten Anschlussbeine unterhalb der
+  Platine) — fuer die hier gesuchte Frage (Bauhoehe **oberhalb** der
+  Platine, im Spalt) ist die explizite Textangabe „10.2mm“ eindeutig und
+  wird verwendet.
+  → **Bauhoehe 10,2 mm.**
+
+**Rechnung bei 13,0 mm:**
+
+    G = STAPEL_ABSTAND − PLATINE_DICKE = 13,0 − 1,6 = 11,4 mm
+
+    Kettenstecker : Einstecktiefe = 14,5 − 11,4 = 3,1 mm   (statt 1,1 mm bei 15,0 mm)
+    Stapelstecker : Einstecktiefe = 19,36 − 11,4 = 7,96 mm (statt 5,96 mm bei 15,0 mm)
+
+    Rest ueber der Klemme (10,10 mm)  : 11,4 − 10,10 = 1,3 mm
+    Rest ueber dem K7805  (10,2 mm)   : 11,4 − 10,2  = 1,2 mm
+
+Beide Klemmenhoehen (10,10 mm und 10,2 mm) liegen **unter** der
+11,0-mm-Reissleine, ab der der Auftraggeber die Entscheidung selbst
+haette treffen wollen — 13,0 mm haelt, mit rundem 1,2–1,3 mm Luft ueber
+der Klemme beziehungsweise dem K7805, und mit deutlich mehr Einstecktiefe
+an beiden Steckern als vorher. Der K7805 sitzt zwar tatsaechlich nur auf
+dem Sockel (oberste Platine, darueber kommt nichts mehr im Stapel), wurde
+aber als worst-case gepruemft, falls ein kuenftiges Modul denselben
+Regler in einem Spalt verwendet — auch dieser Fall passt.
+
+**Toleranzhinweis, unveraendert aus Beleg 1:** Beide Steckerbauteile
+tragen ±0,2 mm Fertigungstoleranz, die Platinendicke ±10 % (JLCPCB-
+Standard). Im ungünstigsten Fall schrumpft jede der obigen Reserven
+entsprechend — bei 1,2–1,3 mm Luft ueber den Klemmen und 3,1 mm
+Einstecktiefe am Kettenstecker ist das ein deutlich engerer Rand als beim
+Stapelstecker (7,96 mm), aber in allen vier Faellen bleibt die Reserve im
+ungünstigsten Toleranzstapel positiv.
+
+**Umgesetzt:**
+
+- `tools/stack_spec.py`: `STAPEL_ABSTAND = 13.0`, neuer Kommentar mit der
+  vollstaendigen Herleitung; neue Konstante `PLATINE_DICKE = 1.6`; neue
+  Konstanten `KLEMME_HOEHE_MM = 10.10` und `K7805_HOEHE_MM = 10.2` mit
+  Quellenangabe; `STECKER_KETTE` traegt jetzt `buchsenhoehe_mm` und
+  `stiftlaenge_mm` als Masse statt eines fest hinterlegten
+  `einstecktiefe_mm`-Werts; zwei neue Funktionen
+  `EINSTECKTIEFE_STAPEL()`/`EINSTECKTIEFE_KETTE()` berechnen die
+  Einstecktiefe aus `STAPEL_ABSTAND` und den Steckermassen, statt sie als
+  Zahl zu duplizieren.
+- `docs/vertrag.md` neu erzeugt mit `python3 tools/vertrag_doku.py` —
+  zeigt jetzt 13,0 mm.
+- `tests/test_stack_spec.py`: Wert auf 13,0 mm nachgezogen; zwei neue
+  Zusicherungen pruefen, dass `EINSTECKTIEFE_STAPEL()` und
+  `EINSTECKTIEFE_KETTE()` ueber einer Mindestschwelle liegen (2,0 mm,
+  konservativ unter dem knappsten belegten Fall), und zwei weitere, dass
+  ueber `KLEMME_HOEHE_MM` und `K7805_HOEHE_MM` noch Luft im Spalt bleibt
+  — nicht nur die Zahl 13,0 selbst.
+
+**Offen — ausdruecklich nicht in dieser Aufgabe erledigt:** Das Gehaeuse
+(Aufgabe 9 dieser Etappe) wurde gegen den alten Wert `STAPEL_ABSTAND =
+15,0 mm` entworfen bzw. ist dafuer vorgesehen und muss auf den neuen Wert
+13,0 mm nachgezogen werden, sobald diese Aufgabe angegangen wird.
+
 ## Zusammenfassung für die Beschaffung
 
 | Offener Punkt aus der Aufgabe | Antwort |
 |---|---|
 | Steckerhöhe vs. 15 mm, ursprüngliches Buchse/Stift-Paar | Passte rechnerisch, aber nur mit 1,1 mm Einstecktiefe — dünner Rand (Beleg 1) |
-| **Entscheidung 2026-08-31** | Stapelstecker (Buchse mit durchgehendem Stift, C35165) für 39 der 40 Leitungen; eigener Kettenstecker (C492401/C541849) nur für `SEL`. `STAPEL_ABSTAND` bleibt 15,0 mm — passt komfortabel zum Stapelstecker (5,96 mm Einstecktiefe), der Kettenstecker traegt weiterhin nur 1,1 mm (Beleg 1 Nachtrag, Beleg 6) |
+| **Entscheidung 2026-08-31 (erste Runde)** | Stapelstecker (Buchse mit durchgehendem Stift, C35165) für 39 der 40 Leitungen; eigener Kettenstecker (C492401/C541849) nur für `SEL`. `STAPEL_ABSTAND` zunächst bei 15,0 mm belassen — passte komfortabel zum Stapelstecker (5,96 mm Einstecktiefe), der Kettenstecker trug aber nur 1,1 mm (Beleg 1 Nachtrag, Beleg 6) |
+| **Entscheidung 2026-08-31 (zweite Runde)** | Keine passende längere Stiftleiste gefunden (zwei unabhängige Suchen) → `STAPEL_ABSTAND` auf **13,0 mm** gesenkt: Kettenstecker jetzt 3,1 mm Einstecktiefe, Stapelstecker 7,96 mm; Klemmenhöhe belegt (DB128L 10,10 mm, K7805 10,2 mm, beide Datenblätter gelesen) bleibt unter der 11,0-mm-Reissleine, 1,2–1,3 mm Luft im Spalt (Beleg 6, zweite Runde). Gehäuse (Aufgabe 9) noch auf 13,0 mm nachzuziehen |
 | D-Flipflop mit Löscheingang | Gefunden: SN74LVC1G175DCKR, C202238, SOT-363-6, JLCPCB-bestückbar; Primärquelle TI SCES560G; braucht neue Leitung ODER lokales RC-POR |
 | Gatter (NOT, 2× AND) | Beide JLCPCB-bestückbar: C8207 (SOT-353) und C548580 (XSON-8, deckt beide AND-Funktionen) |
 | Leistungsstecker + Strombelastbarkeit | 2×2 derselben Stecker-Familie, ~5 A/Ader vor Derating (Engpass Buchse 2,5 A/Kontakt); Positionszahl ist Vorschlag, kein Vertragswert |

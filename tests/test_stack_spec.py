@@ -27,7 +27,7 @@ check("Lochbild vollstaendig", sorted(S.M3_HOLES),
 # Masse, die die Spezifikation zusichert und die bisher niemand prueft.
 check("Eckenradius", S.CORNER_R, 3.0)
 check("M3-Bohrdurchmesser", S.M3_DRILL, 3.2)
-check("Stapelabstand", S.STAPEL_ABSTAND, 15.0)
+check("Stapelabstand", S.STAPEL_ABSTAND, 13.0)
 
 # --- Steckerbelegung ---
 check("40 Pins beschrieben", len(S.PIN_ROLLE), 40)
@@ -60,6 +60,27 @@ check("Kettenstecker traegt SEL",
       "SEL" in S.STECKER_KETTE["pins"].values(), True)
 check("Kettenstecker traegt GND",
       "GND" in S.STECKER_KETTE["pins"].values(), True)
+
+# Die Einstecktiefe wird aus STAPEL_ABSTAND und den Steckermassen
+# nachgerechnet (nicht nur die Zahl 13.0 abgefragt) -- das faengt den
+# naechsten Denkfehler ab: wer STAPEL_ABSTAND aendert, ohne die
+# Steckermasse mitzudenken, oder umgekehrt.
+MINDEST_EINSTECKTIEFE = 2.0  # mm, konservativ unter dem knappsten
+# belegten Fall (Kettenstecker, rechnerisch 3,1 mm bei 13,0 mm,
+# hardware/bauteile-1b.md Beleg 1/Beleg 6) -- faengt Rechen- oder
+# Bauteiländerungen ab, ohne die exakte Zahl selbst zu duplizieren.
+check("Stapelstecker-Einstecktiefe ueber Mindestschwelle",
+      S.EINSTECKTIEFE_STAPEL() > MINDEST_EINSTECKTIEFE, True)
+check("Kettenstecker-Einstecktiefe ueber Mindestschwelle",
+      S.EINSTECKTIEFE_KETTE() > MINDEST_EINSTECKTIEFE, True)
+
+# Ueber den Schraubklemmen (urspruenglicher Grund fuer den alten
+# 15,0-mm-Wert) und dem K7805 (hoechstes denkbares Bauteil im Spalt,
+# falls je ein Modul es nutzt) muss im Spalt noch Luft bleiben.
+check("Ueber der Klemme bleibt Luft im Spalt",
+      (S.STAPEL_ABSTAND - S.PLATINE_DICKE - S.KLEMME_HOEHE_MM) > 0, True)
+check("Ueber dem K7805 bleibt Luft im Spalt",
+      (S.STAPEL_ABSTAND - S.PLATINE_DICKE - S.K7805_HOEHE_MM) > 0, True)
 
 # --- Modultypen ---
 check("Motor hat Nummer", "Motor" in
