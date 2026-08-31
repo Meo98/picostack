@@ -89,7 +89,8 @@ Reserviert sind:
 |---|---|
 | I²C (Daten, Takt) | 2 |
 | UART zum Flashen (senden, empfangen) | 2 |
-| Auswahl-Token, von Modul zu Modul weitergereicht | 1 |
+| Auswahlkette, von Modul zu Modul weitergereicht | 1 |
+| Takt der Auswahlkette (`SEL_CLK`), global | 1 |
 | Flash-Modus, global | 1 |
 | Notaus, global, wired-OR | 1 |
 
@@ -111,21 +112,47 @@ so billig:
 
 1. sie hält alle unbeteiligten Module im Reset,
 2. sie wählt genau ein Modul zum Beschreiben aus,
-3. sie liefert die Adresse — der Sockel zählt mit, wie weit das Token
+3. sie liefert die Adresse — der Sockel zählt mit, wie weit die Auswahl
    gewandert ist.
 
 Modul Nummer drei ist schlicht das dritte, das geantwortet hat. Keine
 Lötbrücken, keine Schalter, und ein Ersatzmodul erbt die Position
 seines Vorgängers.
 
+Technisch ist die Kette ein **Schieberegister** über den ganzen
+Stapel. Jedes Modul trägt ein D-Flipflop:
+
+- `D` ist die Auswahlleitung vom Modul darüber (beim obersten vom
+  Sockel),
+- `Q` heisst „ich bin ausgewählt" und ist zugleich die Auswahlleitung
+  an das Modul darunter,
+- getaktet wird über eine gemeinsame Leitung `SEL_CLK` vom Sockel.
+
+Der Sockel legt eine 1 an und taktet einmal: Modul 1 ist ausgewählt.
+Dann legt er 0 an und taktet weiter; die 1 wandert je Takt genau eine
+Position tiefer, bis sie unten aus der Kette fällt. Weil im Register
+immer nur diese eine 1 steht, ist immer genau ein Modul ausgewählt —
+und weil der Sockel die Takte zählt, kennt er damit die Adressen.
+
+Ein Speicher ist dafür unverzichtbar: ohne Flipflop, also rein
+kombinatorisch, kann die Auswahl nicht wandern und nur das oberste
+Modul wäre je erreichbar.
+
 Dass die anderen im Reset liegen, löst nebenbei ein Problem, das sonst
 still zuschlägt: die Sendeleitung ist gemeinsam, und ein zweiter wacher
-MCU würde dazwischenfunken. Im Reset ist sein Ausgang hochohmig.
+MCU würde dazwischenfunken. Im Reset ist sein Ausgang hochohmig. Im
+Normalbetrieb, wenn alle Module gleichzeitig laufen, sichert das keine
+Hardware mehr ab — dort gilt die Auflage im Vertrag, dass Modulfirmware
+diese Leitung nicht treiben darf.
 
-Auf jedem Modul leitet ein kleines Gatter aus Auswahl-Token und
-Flash-Modus die beiden Signale ab, die der MCU braucht (Reset und die
-Bootlader-Auswahl). Liegt der Flash-Modus nicht an, laufen **alle**
-Module — unabhängig vom Token.
+Auf jedem Modul leitet ein kleines Gatter aus dem Flipflop-Ausgang und
+dem Flash-Modus die beiden Signale ab, die der MCU braucht (Reset und
+die Bootlader-Auswahl):
+
+    RESET = FLASH_MODE ∧ ¬Q        BOOT0 = FLASH_MODE ∧ Q
+
+Liegt der Flash-Modus nicht an, laufen **alle** Module — unabhängig
+davon, was im Schieberegister steht.
 
 ## Flashen
 
@@ -150,8 +177,8 @@ kein Laptop.
 Jedes Modul besteht aus zwei Teilen:
 
 **Modulsockel** (auf allen gleich): MCU, die zwei Steckerteile, der
-Leistungsstecker, zwei Kennwiderstände, Abblockung, das Gatter für
-Reset und Bootlader-Auswahl. Dieser Block ist das eigentliche Produkt —
+Leistungsstecker, zwei Kennwiderstände, Abblockung, das D-Flipflop der
+Auswahlkette und das Gatter für Reset und Bootlader-Auswahl. Dieser Block ist das eigentliche Produkt —
 wer ein eigenes Modul baut, kopiert ihn und entwirft nur seine
 Endstufe.
 
@@ -196,6 +223,10 @@ Mehraufwand pro Modul gegenüber einer nackten Endstufe: rund **1,40
 Franken** (MCU, zwei Steckerteile, Leistungsstecker, zwei
 Kennwiderstände, Gatter). Heute trägt stattdessen jede Funktionsplatine
 einen eigenen Pico für rund 5 Franken.
+
+Diese Schätzung stammt aus der Fassung vor dem Schieberegister; seither
+kommt je Modul ein weiteres Einzelgatter-Gehäuse (das D-Flipflop) dazu.
+Der Betrag ist nicht neu ausgerechnet.
 
 **Stapelbarkeit macht ein Modul also rund 3,60 Franken billiger, nicht
 teurer.** Der Sockel bleibt einmalig teurer — aber einmal pro Stapel
