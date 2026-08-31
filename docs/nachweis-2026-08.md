@@ -28,8 +28,9 @@ nachzuholen und dieses Dokument entsprechend zu ergaenzen.
   ausfuehrbar).
 - `firmware/modul/blink/README.md` — Beschreibung des Testprogramms
   fuers Modul; noch kein Quelltext, siehe dort.
-- `tools/kette.py` — Kettenlogik (`modul_zustand`), gegen die
-  Wahrheitstabelle geprueft (Aufgabe 3).
+- `tools/kette.py` — Kettenlogik: `modul_zustand()` (Gatter) gegen die
+  Wahrheitstabelle geprueft, `Modul`/`kette_takten()` (Schieberegister)
+  gegen eine Simulation aus drei Modulen (Aufgabe 3).
 
 ## Geplante Verdrahtung
 
@@ -37,8 +38,9 @@ nachzuholen und dieses Dokument entsprechend zu ergaenzen.
 zu Aufgabe 5 nennt "Pico Pin 4 -> BOOT0" und "Pico Pin 5 -> NRST". Das
 ist nach `tools/stack_spec.PIN_ROLLE` falsch benannt: Steckerpin 4
 heisst `SEL`, Steckerpin 5 heisst `FLASH_MODE`. Auf der fertigen
-Platine leitet ein Gatter aus SEL und FLASH_MODE erst die
-Reset-/Bootlader-Auswahl (RESET, BOOT0) ab (siehe
+Platine haelt ein D-Flipflop je Modul die Auswahl (`Q`, getaktet ueber
+`SEL_CLK`), und ein Gatter leitet daraus zusammen mit FLASH_MODE erst
+die Reset-/Bootlader-Auswahl (RESET, BOOT0) ab (siehe
 `hardware/bauteile.md`, Abschnitt zur Auswahlkette, und
 `tools/kette.py`). Dieses Gatter existiert auf dem Tischaufbau nicht —
 dort haengt nur der blanke MCU auf einem Adapterplaettchen. Die
@@ -46,8 +48,9 @@ Verdrahtung unten geht deshalb **direkt** an die rohen MCU-Pins BOOT0
 und NRST, nicht an SEL/FLASH_MODE. Damit der Aufbau trotzdem dieselbe
 Logik prueft, die spaeter das Gatter in Kupfer ausfuehrt, berechnet
 `nachweis.py::reset()` die Werte fuer BOOT0 und NRST ueber
-`kette.modul_zustand(flash_mode, sel_in)`, statt sie frei zu waehlen —
-siehe Docstring dort.
+`kette.modul_zustand(flash_mode, q)`, statt sie frei zu waehlen — `q`
+ist am Tisch von Hand gesetzt, weil es dort weder Flipflop noch zweites
+Modul gibt. Siehe Docstring dort.
 
 | Pico-Pin | Pico-GPIO | Rolle im Nachweis-Skript | MCU-Anschluss |
 |---|---|---|---|
@@ -66,12 +69,12 @@ jeder UART-Punkt-zu-Punkt-Verbindung.
 1. `blink.bin` liegt vor (aus dem Hersteller-Beispielprojekt uebersetzt,
    siehe `firmware/modul/blink/README.md`).
 2. `nachweis.aufspielen("blink.bin")` auf dem Pico ausfuehren:
-   - `reset(flash_mode=1, sel_in=1)` haelt den MCU kurz im Reset und
+   - `reset(flash_mode=1, q=1)` haelt den MCU kurz im Reset und
      gibt ihn dann mit BOOT0=1 frei -> ROM-Bootlader startet.
    - `Bootlader.sync()` synchronisiert die Schnittstelle.
    - `Bootlader.erase_all()` loescht den Flash vollstaendig.
    - Blockweises Schreiben (256 Byte je Block) ab `0x08000000`.
-   - `reset(flash_mode=0, sel_in=0)` gibt den MCU mit BOOT0=0 frei ->
+   - `reset(flash_mode=0, q=0)` gibt den MCU mit BOOT0=0 frei ->
      die Anwendung (blink) startet.
 3. Erwartet: ein Pin des MCU schaltet im Sekundentakt um (LED oder
    Multimeter am Pin zeigt es).
