@@ -84,9 +84,63 @@ def main():
                      [(p, r) for p, r in
                       sorted(S.STECKER_KETTE["pins"].items())]),
              "",
+             "## Wo die Stecker sitzen",
+             "",
+             "Alle Masse in mm, Ursprung linke obere Ecke, x nach "
+             "rechts, y nach unten. Diese Lage gilt fuer **jede** "
+             "Platine im Stapel -- der Stapelstecker der Sockelplatine "
+             "steht senkrecht ueber dem jedes Moduls, Ketten- und "
+             "Leistungsstecker ebenso. Wer sie verschiebt, macht alle "
+             "bereits gebauten Module unbrauchbar.",
+             "",
+             tabelle(["Stecker", "Zweck", "Mitte x", "Mitte y",
+                      "Drehung", "belegte Flaeche (x0 y0 x1 y1)"],
+                     [(name, S.STECKER_POS[name]["zweck"],
+                       S.STECKER_POS[name]["mitte"][0],
+                       S.STECKER_POS[name]["mitte"][1],
+                       "%d Grad" % S.STECKER_POS[name]["drehung"],
+                       " ".join("%.2f" % v
+                                for v in S.STECKER_POS[name]["flaeche"]))
+                      for name in ("stapel", "kette", "leistung")]),
+             "",
+             "Die belegte Flaeche ist der Hof (F.CrtYd) des Footprints "
+             "nach der Drehung. Ketten- und Leistungsstecker bestehen "
+             "auf jedem Modul aus zwei Haelften (Buchse oben, "
+             "Stiftleiste unten); beide Haelften belegen **denselben** "
+             "Platz, sonst treffen sie sich im Stapel nicht.",
+             "",
+             "Der Pico sitzt nur auf der Sockelplatine, mit Mitte "
+             "(%.2f | %.2f), Drehung %d Grad, Flaeche %s. Unter seiner "
+             "WLAN-Antenne liegt der Sperrbereich %s (%.1f x %.1f mm) "
+             "-- dort darf kein Kupfer und kein Bauteil liegen "
+             "(Raspberry Pi Pico W Datasheet, Release 7, Abschnitt "
+             "2.2.1 \"Keep-out area\": Ausschnitt 14 x 9 mm)." % (
+                 S.PICO_POS["mitte"][0], S.PICO_POS["mitte"][1],
+                 S.PICO_POS["drehung"],
+                 " ".join("%.2f" % v for v in S.PICO_POS["flaeche"]),
+                 " ".join("%.2f" % v for v in S.ANTENNE_SPERRBEREICH),
+                 S.ANTENNE_SPERRBEREICH[2] - S.ANTENNE_SPERRBEREICH[0],
+                 S.ANTENNE_SPERRBEREICH[3] - S.ANTENNE_SPERRBEREICH[1]),
+             "",
+             "Um jede M3-Bohrung bleibt ein Freihaltebereich von "
+             "%.1f mm Durchmesser fuer Schraubenkopf und "
+             "Abstandsbolzen frei." % S.M3_KEEPOUT,
+             "",
+             "Das Lochbild ist punktsymmetrisch -- ein Modul laesst "
+             "sich um 180 Grad verdreht anschrauben. Die Steckerlage "
+             "ist deshalb bewusst unsymmetrisch: verdreht liegt kein "
+             "Stift naeher als %.2f mm an einem Kontakt (halbes Raster "
+             "waeren %.2f mm), ein verdreht aufgesetztes Modul steckt "
+             "also nirgends und bleibt tot statt kaputt." % (
+                 S.VERDREHT_MINDESTABSTAND_MM, S.RASTER / 2.0),
+             "",
              "## Auflagen an die Modulfirmware",
              "",
              "\n\n".join("- " + a for a in S.AUFLAGEN),
+             "",
+             "## Auflagen an das Modul-Layout",
+             "",
+             "\n\n".join("- " + a for a in S.LAYOUT_AUFLAGEN),
              "",
              "## Modultypen",
              "",

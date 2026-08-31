@@ -1,8 +1,10 @@
 """Prueft den Vertrag. Ohne KiCad, ohne Hardware."""
 import os, sys
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                "..", "tools"))
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, "..", "tools"))
+sys.path.insert(0, os.path.join(HERE, "..", "tools", "pcb"))
 import stack_spec as S
+import geometry          # nur Geometrie, kein KiCad -- s. dortiger Docstring
 
 fails = []
 
@@ -110,6 +112,169 @@ check("16 Stufen", len(stufen), 16)
 verhaeltnisse = [S.ID_ANTEIL(r) for r in stufen]
 abstaende = [b - a for a, b in zip(verhaeltnisse, verhaeltnisse[1:])]
 check("Stufen mindestens 3 % auseinander", min(abstaende) > 0.03, True)
+
+# --- Steckerkoordinaten (seit 2026-08-31, Aufgabe 5c) ----------------
+# Der Vertrag legte bisher Rollen und Bauhoehen fest, aber nicht, WO
+# die Stecker sitzen. Zwei unabhaengig entstehende Layouts passen damit
+# nicht zusammen. Diese Pruefungen sind die Bremse dagegen: sie
+# schlagen an, sobald jemand einen Stecker verschiebt, ohne die Folgen
+# nachzurechnen.
+
+STECKER = ["stapel", "kette", "leistung"]
+check("drei Vertragsstecker", sorted(S.STECKER_POS), sorted(STECKER))
+
+# Jede eingetragene Flaeche wird aus Footprint-Hof, Pin-1-Lage und
+# Drehung nachgerechnet -- ein Zahlendreher in "flaeche" faellt damit
+# auf, statt still ein Layout zu vergiften.
+for name in STECKER + ["pico"]:
+    e = S.STECKER_POS[name] if name in S.STECKER_POS else S.PICO_POS
+    check("%s: Flaeche stimmt mit Footprint+Pin1+Drehung" % name,
+          e["flaeche"], S.HOF(e["footprint"], e["pin1"], e["drehung"]))
+    check("%s: Mitte stimmt mit der Flaeche" % name,
+          e["mitte"], S.MITTE(e["flaeche"]))
+    check("%s: Drehung ist ein rechter Winkel" % name,
+          e["drehung"] in (0, 90, 180, 270), True)
+
+# Der Antennen-Sperrbereich wird ebenso aus dem Pico-eigenen Mass
+# gedreht statt abgeschrieben.
+check("Antennen-Sperrbereich aus PICO_POS gerechnet",
+      S.ANTENNE_SPERRBEREICH,
+      S.LAGE(S.PICO_ANTENNE_HOF, S.PICO_POS["pin1"], S.PICO_POS["drehung"]))
+# 14,2 x 9,0 mm, um 90 Grad gedreht also 9,0 x 14,2.
+_a = S.ANTENNE_SPERRBEREICH
+check("Antennen-Sperrbereich ist 9,0 x 14,2 mm",
+      (round(_a[2] - _a[0], 2), round(_a[3] - _a[1], 2)), (9.0, 14.2))
+
+
+def _ueberlappt(a, b, luft=0.0):
+    return (a[0] < b[2] + luft and b[0] < a[2] + luft and
+            a[1] < b[3] + luft and b[1] < a[3] + luft)
+
+
+LUFT = 0.6   # COURTYARD_GAP, Vorgabe von tools/pcb/geometry.py
+
+# 1. Die drei Stecker untereinander -- und gegen den Pico, denn auf der
+#    Sockelplatine liegen alle vier auf derselben Platine.
+_flaechen = {n: S.STECKER_POS[n]["flaeche"] for n in STECKER}
+_flaechen["pico"] = S.PICO_POS["flaeche"]
+_namen = sorted(_flaechen)
+for i in range(len(_namen)):
+    for j in range(i + 1, len(_namen)):
+        a, b = _namen[i], _namen[j]
+        check("kein Ueberlapp %s / %s" % (a, b),
+              _ueberlappt(_flaechen[a], _flaechen[b], LUFT), False)
+
+# 2. Der Antennen-Sperrbereich gegen die drei Stecker. Gegen den Pico
+#    NICHT: er liegt naturgemaess innerhalb von dessen Hof.
+for n in STECKER:
+    check("Antenne kollidiert nicht mit %s" % n,
+          _ueberlappt(S.ANTENNE_SPERRBEREICH, _flaechen[n], LUFT), False)
+check("Antennen-Sperrbereich liegt im Hof des Pico",
+      _ueberlappt(S.ANTENNE_SPERRBEREICH, S.PICO_POS["flaeche"]), True)
+
+# 3. Freihaltebereiche der M3-Bohrungen. Das ist der Platz fuer
+#    Schraubenkopf und Abstandsbolzen -- ein Stecker darin liesse sich
+#    nicht verschrauben.
+_r = S.M3_KEEPOUT / 2.0
+for n in list(_flaechen) + ["antenne"]:
+    q = S.ANTENNE_SPERRBEREICH if n == "antenne" else _flaechen[n]
+    for hx, hy in S.M3_HOLES:
+        check("%s frei von M3 (%s|%s)" % (n, hx, hy),
+              q[0] - _r < hx < q[2] + _r and q[1] - _r < hy < q[3] + _r,
+              False)
+
+# 4. Platinenrand. 0,5 mm Randabstand, dieselbe Vorgabe wie in
+#    tools/pcb/geometry.py.
+RAND = 0.5
+for n in list(_flaechen) + ["antenne"]:
+    q = S.ANTENNE_SPERRBEREICH if n == "antenne" else _flaechen[n]
+    check("%s bleibt auf der Platine" % n,
+          (q[0] >= RAND and q[1] >= RAND and
+           q[2] <= S.BOARD_W - RAND and q[3] <= S.BOARD_H - RAND), True)
+
+# --- Die Footprints, aus denen die Masse stammen, sind noch dieselben -
+# FOOTPRINT_HOF traegt die Hoefe von PLATZHALTER-Footprints (die
+# KiCad-Standard-Stiftleisten). Die echten Bauteile -- der
+# PC104-Stapelstecker und die XFCN-Paarung -- brauchen eigene
+# .kicad_mod und koennen breiter bauen. Wer den Footprint austauscht,
+# muss die Lage neu nachrechnen; dieser Test zwingt ihn dazu.
+_ms = open(os.path.join(HERE, "..", "tools", "sch", "modulsockel.py"),
+           encoding="utf-8").read()
+for name, konstante in (("stapel", "FP_HDR_2X20"),
+                        ("kette", "FP_HDR_1X02"),
+                        ("leistung", "FP_HDR_2X02")):
+    check("%s: Footprint wie in modulsockel.%s" % (name, konstante),
+          '%s = "%s"' % (konstante, S.STECKER_POS[name]["footprint"]) in _ms,
+          True)
+    check("%s: Hof des Footprints ist bekannt" % name,
+          S.STECKER_POS[name]["footprint"] in S.FOOTPRINT_HOF, True)
+_sp = open(os.path.join(HERE, "..", "tools", "sch", "sockelplatine.py"),
+           encoding="utf-8").read()
+check("Pico: Footprint wie in sockelplatine.FP_PICO",
+      'FP_PICO = "%s"' % S.PICO_POS["footprint"] in _sp, True)
+
+# --- Es bleibt noch Platz --------------------------------------------
+# Die Untergrenze ist hergeleitet, nicht gesetzt: Hofsumme des
+# anspruchsvollsten Moduls geteilt durch den auf einer wirklich
+# gebauten Platine gemessenen Belegungsgrad (s. Kommentar im Vertrag).
+_bedarf_modul = S.MODUL_HOF_SUMME_MM2 / S.BELEGUNGSGRAD_ERPROBT
+check("Untergrenze passt zu ihrer eigenen Herleitung",
+      S.FREIE_FLAECHE_MINDEST >= _bedarf_modul, True)
+
+_modul, _modul_rechteck = geometry.freie_flaeche(
+    S, [S.STECKER_POS[n]["flaeche"] for n in STECKER])
+check("Modul: freie Flaeche am Stueck ueber der Untergrenze",
+      _modul > S.FREIE_FLAECHE_MINDEST, True)
+# Nicht nur die Summe, sondern auch ein Stueck am Stueck: eine Flaeche,
+# die nur ueber einen schmalen Hals zusammenhaengt, ist keine
+# Bauflaeche. Das groesste freie Rechteck muss die Hofsumme des
+# Motormoduls selbst tragen koennen.
+check("Modul: groesstes freies Rechteck traegt die Hofsumme",
+      _modul_rechteck > S.MODUL_HOF_SUMME_MM2, True)
+
+_sockel, _sockel_rechteck = geometry.freie_flaeche(
+    S, [S.STECKER_POS[n]["flaeche"] for n in STECKER]
+       + [S.PICO_POS["flaeche"], S.ANTENNE_SPERRBEREICH])
+check("Sockel: freie Flaeche traegt die eigenen Bauteile",
+      _sockel > S.SOCKEL_HOF_SUMME_MM2 / S.BELEGUNGSGRAD_ERPROBT, True)
+check("Sockel: groesstes freies Rechteck traegt die eigene Hofsumme",
+      _sockel_rechteck > S.SOCKEL_HOF_SUMME_MM2, True)
+
+# --- Verdreht aufgesteckt --------------------------------------------
+# Das Lochbild ist punktsymmetrisch, ein Modul laesst sich also um
+# 180 Grad verdreht anschrauben. Dann laege Pin 1 auf Pin 40 -- VBUS
+# auf FLASH_TX. Verhindert wird das nicht durch die Mechanik, sondern
+# durch die bewusst unsymmetrische Steckerlage: kein Stift darf einen
+# Buchsenkontakt treffen. Entscheidend ist der Pad-Abstand, nicht die
+# Flaeche (die Flaeche des verdrehten Leistungssteckers ueberdeckt
+# durchaus die des Stapelsteckers -- nur eben zwischen dessen
+# Rasterloechern).
+_pads = []
+for n in STECKER:
+    e = S.STECKER_POS[n]
+    _lagen = S.PAD_LAGEN(e["footprint"], e["pin1"], e["drehung"])
+    _pads.extend(_lagen.values())
+_naechster = min(
+    ((S.BOARD_W - x - x2) ** 2 + (S.BOARD_H - y - y2) ** 2) ** 0.5
+    for x, y in _pads for x2, y2 in _pads)
+# Mehr als das halbe Raster (1,27 mm) -- darunter faende ein Stift in
+# einen Kontakt. Die 2,5 mm sind die Reissleine, der gerechnete Wert
+# liegt bei 2,881 mm (VERDREHT_MINDESTABSTAND_MM).
+check("verdreht trifft kein Stift einen Kontakt",
+      _naechster > 2.5, True)
+check("der eingetragene Mindestabstand stimmt",
+      round(_naechster, 3), S.VERDREHT_MINDESTABSTAND_MM)
+check("Mindestabstand ueber dem halben Raster",
+      S.VERDREHT_MINDESTABSTAND_MM > S.RASTER / 2.0, True)
+
+# Die Layout-Auflage dazu steht im Vertrag und muss dort bleiben.
+check("Layout-Auflage zur Verdreh-Kennzeichnung steht im Vertrag",
+      any("180 Grad verdreht" in a for a in S.LAYOUT_AUFLAGEN), True)
+# Sie gehoert NICHT unter die Firmware-Auflagen -- das eine gilt der
+# Software, das andere dem Kupfer.
+check("Firmware-Auflagen bleiben Firmware",
+      any("Bestueckungsdruck" in a for a in S.AUFLAGEN), False)
+
 
 if fails:
     print("FEHLGESCHLAGEN:")

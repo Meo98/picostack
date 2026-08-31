@@ -161,6 +161,96 @@ def check_all(placement, beschreibung):
     return bad
 
 
+
+def freie_flaeche(beschreibung, hindernisse, raster=0.1):
+    """Wieviel Platz eine Platine noch hergibt, in mm2.
+
+    Rueckgabe: (groesste zusammenhaengende freie Flaeche, groesstes
+    freies achsparalleles Rechteck). Die erste Zahl sagt, wieviel
+    ueberhaupt uebrig ist, die zweite, wieviel davon man am Stueck
+    bebauen kann -- eine Flaeche, die nur ueber einen 1 mm breiten Hals
+    zusammenhaengt, ist keine 2000 mm2 Bauflaeche.
+
+    `hindernisse` sind Rechtecke (x0, y0, x1, y1) in
+    Platinenkoordinaten -- typischerweise die Stecker aus
+    stack_spec.STECKER_POS. Zusaetzlich gesperrt sind, ohne dass sie
+    genannt werden muessen: der Randstreifen (EDGE_CLEARANCE), die
+    Freihaltekreise der M3-Bohrungen (M3_KEEPOUT) und ein Ring von
+    COURTYARD_GAP um jedes Hindernis -- dieselben drei Regeln, gegen
+    die check_all() oben prueft.
+
+    Gerastert statt analytisch: die M3-Freihaltung ist ein Kreis, und
+    ein exakter Polygonschnitt waere fuer die Frage "passt ein Modul
+    noch drauf" mehr Maschinerie als Nutzen. Bei raster=0,1 mm ist der
+    Fehler kleiner als die Fertigungstoleranz der Platine.
+    """
+    import collections
+
+    gap = getattr(beschreibung, "COURTYARD_GAP", 0.6)
+    m3 = getattr(beschreibung, "M3_KEEPOUT", 7.0) / 2.0
+    rand = getattr(beschreibung, "EDGE_CLEARANCE", 0.5)
+    bw, bh = beschreibung.BOARD_W, beschreibung.BOARD_H
+    nx, ny = int(bw / raster), int(bh / raster)
+
+    frei = [[True] * nx for _ in range(ny)]
+    for iy in range(ny):
+        cy = (iy + 0.5) * raster
+        for ix in range(nx):
+            cx = (ix + 0.5) * raster
+            if cx < rand or cy < rand or cx > bw - rand or cy > bh - rand:
+                frei[iy][ix] = False
+                continue
+            for hx, hy in beschreibung.M3_HOLES:
+                if (cx - hx) ** 2 + (cy - hy) ** 2 < m3 * m3:
+                    frei[iy][ix] = False
+                    break
+            else:
+                for x0, y0, x1, y1 in hindernisse:
+                    if (x0 - gap < cx < x1 + gap and
+                            y0 - gap < cy < y1 + gap):
+                        frei[iy][ix] = False
+                        break
+
+    gesehen = [[False] * nx for _ in range(ny)]
+    groesste = 0
+    for iy in range(ny):
+        for ix in range(nx):
+            if not frei[iy][ix] or gesehen[iy][ix]:
+                continue
+            stapel = collections.deque([(iy, ix)])
+            gesehen[iy][ix] = True
+            n = 0
+            while stapel:
+                y, x = stapel.popleft()
+                n += 1
+                for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    yy, xx = y + dy, x + dx
+                    if (0 <= yy < ny and 0 <= xx < nx and frei[yy][xx]
+                            and not gesehen[yy][xx]):
+                        gesehen[yy][xx] = True
+                        stapel.append((yy, xx))
+            groesste = max(groesste, n)
+
+    # Groesstes Rechteck: Standard-Histogrammverfahren, Zeile fuer Zeile.
+    hoehe = [0] * nx
+    bestes = 0
+    for iy in range(ny):
+        for ix in range(nx):
+            hoehe[ix] = hoehe[ix] + 1 if frei[iy][ix] else 0
+        keller = []
+        for ix in range(nx + 1):
+            aktuell = hoehe[ix] if ix < nx else 0
+            start = ix
+            while keller and keller[-1][1] > aktuell:
+                s, h = keller.pop()
+                bestes = max(bestes, h * (ix - s))
+                start = s
+            keller.append((start, aktuell))
+
+    q = raster * raster
+    return (round(groesste * q, 1), round(bestes * q, 1))
+
+
 if __name__ == "__main__":
     import importlib
 

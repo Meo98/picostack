@@ -35,7 +35,9 @@ Die Zusagen rund um das Flashen -- die Leitungen `FLASH_TX`, `FLASH_RX`, `SEL`, 
 | 18 | GND |
 | 23 | GND |
 | 28 | GND |
+| 30 | RUN |
 | 33 | GND |
+| 35 | ADC_VREF |
 | 36 | 3V3 |
 | 37 | 3V3_EN |
 | 38 | GND |
@@ -55,9 +57,31 @@ Einzige Ausnahme ist die Auswahlkette (`SEL`): sie muss von Modul zu Modul aufge
 | 1 | SEL |
 | 2 | GND |
 
+## Wo die Stecker sitzen
+
+Alle Masse in mm, Ursprung linke obere Ecke, x nach rechts, y nach unten. Diese Lage gilt fuer **jede** Platine im Stapel -- der Stapelstecker der Sockelplatine steht senkrecht ueber dem jedes Moduls, Ketten- und Leistungsstecker ebenso. Wer sie verschiebt, macht alle bereits gebauten Module unbrauchbar.
+
+| Stecker | Zweck | Mitte x | Mitte y | Drehung | belegte Flaeche (x0 y0 x1 y1) |
+|---|---|---|---|---|---|
+| stapel | 2x20-Stapelstecker, Pico-Pinbild (PIN_ROLLE) | 32.125 | 11.725 | 90 Grad | 6.22 8.68 58.03 14.77 |
+| kette | zweipoliger Kettenstecker, SEL + GND (STECKER_KETTE) | 12.5 | 4.025 | 0 Grad | 10.73 0.98 14.27 7.07 |
+| leistung | 2x2-Leistungsstecker, 24 V und GND je doppelt | 58.775 | 43.275 | 0 Grad | 55.73 40.23 61.82 46.32 |
+
+Die belegte Flaeche ist der Hof (F.CrtYd) des Footprints nach der Drehung. Ketten- und Leistungsstecker bestehen auf jedem Modul aus zwei Haelften (Buchse oben, Stiftleiste unten); beide Haelften belegen **denselben** Platz, sonst treffen sie sich im Stapel nicht.
+
+Der Pico sitzt nur auf der Sockelplatine, mit Mitte (27.55 | 27.11), Drehung 90 Grad, Flaeche 0.63 15.57 54.48 38.65. Unter seiner WLAN-Antenne liegt der Sperrbereich 44.43 20.01 53.43 34.21 (9.0 x 14.2 mm) -- dort darf kein Kupfer und kein Bauteil liegen (Raspberry Pi Pico W Datasheet, Release 7, Abschnitt 2.2.1 "Keep-out area": Ausschnitt 14 x 9 mm).
+
+Um jede M3-Bohrung bleibt ein Freihaltebereich von 7.0 mm Durchmesser fuer Schraubenkopf und Abstandsbolzen frei.
+
+Das Lochbild ist punktsymmetrisch -- ein Modul laesst sich um 180 Grad verdreht anschrauben. Die Steckerlage ist deshalb bewusst unsymmetrisch: verdreht liegt kein Stift naeher als 2.88 mm an einem Kontakt (halbes Raster waeren 1.27 mm), ein verdreht aufgesetztes Modul steckt also nirgends und bleibt tot statt kaputt.
+
 ## Auflagen an die Modulfirmware
 
 - Ausserhalb des Flash-Modus darf ein Modul die Leitung FLASH_RX nicht treiben. FLASH_RX ist der Empfangspin des Pico und damit die gemeinsame Sendeleitung aller Module. Im Normalbetrieb sind alle Module gleichzeitig wach; treibt mehr als eines diese Leitung, fallen sie einander ins Wort und koennen einander im Gegentakt beschaedigen. Senden darf ein Modul nur, solange es ueber die Auswahlkette ausgewaehlt ist (FLASH_MODE = 1 und das eigene Flipflop Q = 1). Sonst bleibt der Pin hochohmig.
+
+## Auflagen an das Modul-Layout
+
+- Jede Platine traegt neben Pin 1 des Stapelsteckers eine Kennzeichnung im Bestueckungsdruck (Dreieck plus Text "1") und an der Klemmenkante (untere Kante, y = BOARD_H) die Beschriftung "KLEMMEN". Grund: das M3-Lochbild ist punktsymmetrisch, ein Modul laesst sich also um 180 Grad verdreht anschrauben. Die Steckerlage (STECKER_POS) ist bewusst so unsymmetrisch, dass dann kein einziger Stift in einen Buchsenkontakt findet -- das verhindert den Schaden, macht den Fehler aber nicht sichtbar. Ausserdem darf in den drei Flaechen VERDREHT(STECKER_POS[...]["flaeche"]) kein freiliegendes Kupfer liegen (keine Testpunkte, keine offenen Pads): dort setzen die Stifte eines verdreht aufgesteckten Moduls auf.
 
 ## Modultypen
 
