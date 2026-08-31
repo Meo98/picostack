@@ -128,6 +128,18 @@ PIN_ROLLE.update({
     7:  "I2C_SCL",      # GP5
     9:  "NOTAUS",       # GP6
     10: "SEL_CLK",      # GP7
+    # Pin 30 (RUN) und 35 (ADC_VREF) sind KEINE GPIO, obwohl die
+    # Voreinstellung oben sie mangels eigener Rolle als "frei" fuehrte.
+    # Das ist dieselbe Luecke wie bei Pin 4 (Befund 2 der Aufgabe-4-Fix-1-
+    # Runde), nur eine Stufe weiter: ein Modulautor, der sich auf
+    # PIN_ROLLE verlaesst, haelt einen Pin fuer benutzbar, der es nicht
+    # ist. RUN ist der Reset des RP2040, aktiv-LOW mit eigenem Pullup
+    # (Pico Datasheet Release 21, Abschnitt 2.1, S. 7) -- ein Modul, das
+    # ihn als GPIO treibt, setzt den Pico zurueck. ADC_VREF ist die
+    # analoge Referenz, kein Digitalanschluss. Beide bleiben deshalb vom
+    # Stapelstecker getrennt (s. _stapelstecker in tools/sch/modulsockel.py).
+    30: "RUN",
+    35: "ADC_VREF",
 })
 
 # --- Stapelstecker und Kettenstecker ---------------------------------

@@ -129,8 +129,14 @@ FP_HDR_2X02 = "Connector_PinHeader_2.54mm:PinHeader_2x02_P2.54mm_Vertical"
 # stack_spec.py). Sie bleibt deshalb hier aussen vor, genau wie "frei";
 # _stapelstecker() behandelt beide gleich als no_connect (Modulseite)
 # bzw. Sonderfall (Sockelseite, s. dort).
+# Drei Vertragsrollen sind absichtlich KEINE Netze dieses Steckers:
+# "SEL_OUT" laeuft ueber den Kettenstecker, "RUN" und "ADC_VREF" sind
+# gar keine Busleitungen, sondern Pico-eigene Anschluesse, die kein
+# Modul sehen darf (Begruendung bei PIN_GPIO_NAME unten).
+NICHT_AM_STAPELSTECKER = ("frei", "SEL_OUT", "RUN", "ADC_VREF")
+
 STECKER_NETZE = {rolle: rolle for rolle in set(S.PIN_ROLLE.values())
-                  if rolle not in ("frei", "SEL_OUT")}
+                  if rolle not in NICHT_AM_STAPELSTECKER}
 
 # Physische Pico-Pins mit Vertragsrolle "frei" (stack_spec.PIN_ROLLE),
 # die tatsaechlich echte GPIO sind -- ihre Bezeichnung aus dem Pico-
@@ -246,7 +252,7 @@ def _stapelstecker(sch, ref, ox, oy, frei_durchreichen=False):
                 sch.netz(ref, str(pin), richtung, PIN_GPIO_NAME[pin])
             else:
                 sch.nc(ref, str(pin))
-        elif rolle in ("3V3_EN", "VSYS", "VBUS"):
+        elif rolle in ("3V3_EN", "VSYS", "VBUS", "RUN", "ADC_VREF"):
             sch.nc(ref, str(pin))
         else:
             sch.netz(ref, str(pin), richtung, STECKER_NETZE[rolle])

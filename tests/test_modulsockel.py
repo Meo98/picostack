@@ -195,6 +195,23 @@ else:
     finally:
         shutil.rmtree(_tmp, ignore_errors=True)
 
+# --- "frei" im Vertrag heisst wirklich frei ---------------------------
+# Dreimal in dieser Etappe hiess ein Pin in PIN_ROLLE "frei", war es aber
+# nicht: Pin 4 trieb lokal die Auswahlkette (Befund 2, Fix-1-Runde), Pin
+# 30 ist der Reset des RP2040 und Pin 35 die analoge Referenz. Jedes Mal
+# haette ein Modulautor, der sich auf den Vertrag verlaesst, etwas
+# beschaedigt oder blockiert. Diese Pruefung schliesst die Klasse ab,
+# statt den naechsten Einzelfall abzuwarten: die Menge der als "frei"
+# gefuehrten Pins und die Menge der tatsaechlich durchgereichten GPIO
+# muessen deckungsgleich sein. Wer kuenftig einen Pin fuer eine Sonder-
+# aufgabe abzweigt, muss ihm hier eine Rolle geben -- oder der Test
+# faellt.
+_frei = {p for p, r in S.PIN_ROLLE.items() if r == "frei"}
+check("als 'frei' gefuehrte Pins ohne durchgereichten GPIO",
+      sorted(_frei - set(modulsockel.PIN_GPIO_NAME)), [])
+check("durchgereichte GPIO, die der Vertrag nicht 'frei' nennt",
+      sorted(set(modulsockel.PIN_GPIO_NAME) - _frei), [])
+
 if fails:
     print("FEHLGESCHLAGEN:")
     for f in fails:
