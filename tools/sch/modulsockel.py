@@ -31,11 +31,33 @@ Inhalt (mit_flipflop=True, der Normalfall fuer ein Modul):
         Entscheidung des Auftraggebers vom 2026-08-31 (Weg 2 aus
         hardware/bauteile-1b.md, Beleg 2). Zeitkonstante siehe unten
         bei RC_TAU_S.
-  U102  SN74LVC1G04 (SOT-353-5), invertiert Q -> NQ fuer das RESET-Gatter.
-  U103  74LVC2G08GT,115 (XSON-8, Dual-AND) -- BEIDE AND-Funktionen der
-        Kette in einem Bauteil: Einheit 1 bildet
-        RESET = FLASH_MODE ∧ ¬Q, Einheit 2 bildet BOOT0 = FLASH_MODE ∧ Q
-        (tools/kette.py::modul_zustand). Einheit 3 traegt nur GND/VCC.
+  U102  SN74LVC1G04 (SOT-353-5), invertiert Q -> NQ fuer das NRST-Gatter.
+  U103  SN74LVC1G00 (SOT-353-5, NAND) -- NRST = ¬(FLASH_MODE ∧ ¬Q), direkt
+        an PF2-NRST des MCU (Pin 6). WARUM NAND UND NICHT AND, obwohl
+        tools/kette.py::modul_zustand() die Grosse "RESET" nennt und mit
+        UND beschreibt (RESET = flash_mode ∧ ¬q): kette.py modelliert die
+        LOGISCHE Aussage "im Reset gehalten" (1 = ja), nicht die
+        Hardware-Polung. Der tatsaechliche Reset-Eingang des STM32C011
+        heisst NRST und ist aktiv LOW (0 = im Reset) -- ein AND-Gatter
+        direkt auf NRST verpolt das Modul (laeuft, wenn es stehen soll,
+        und umgekehrt). Ein NAND liefert exakt die fehlende Invertierung
+        in derselben Rechnung, ohne ein zusaetzliches Gatter: NAND(a,b) =
+        ¬(a∧b) = ¬RESET = NRST. Bauteil und Footprint sind wortgleich mit
+        dem AND-Gatter U104 austauschbar (SN74LVC1G08 -> SN74LVC1G00,
+        gleiches SOT-353-5-Gehaeuse, gleiche Pinbelegung -- siehe
+        hardware/bauteile-1b.md, Beleg 3, Nachtrag). NICHT auf AND
+        zurueckstellen, auch wenn kette.py "AND" nahelegt.
+  U104  SN74LVC1G08 (SOT-353-5, AND) -- BOOT0 = FLASH_MODE ∧ Q, unveraendert
+        eine reine UND-Funktion (der Bootloader-Pin des STM32 ist aktiv
+        HIGH, keine Verpolung dort).
+        U103 und U104 ersetzen das fruehere Dual-AND-Bauteil
+        74LVC2G08GT,115 (XSON-8): eine Einheit muss jetzt NAND sein, die
+        andere bleibt AND -- ein homogenes Dual-Gatter kann nicht beides
+        zugleich sein (jede "2G"-Familie ist zwei Gatter DERSELBEN
+        Funktion). Deshalb zwei Einzel-Gatter-ICs statt eines
+        Doppel-Gatter-ICs; die Gatterzahl (Kettenlogik) bleibt trotzdem
+        bei drei Funktionen: 1x NOT, 1x NAND, 1x AND
+        (tools/kette.py::modul_zustand).
   R104/R100, R105/R101  zwei Kennwiderstand-Spannungsteiler gegen den
         festen Oberwiderstand ID_OBEN (stack_spec.ID_OBEN): R104/R105
         sind der feste Oberwiderstand (immer ID_OBEN), R100/R101 die
@@ -73,10 +95,6 @@ FP_C0805 = "Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder"
 FP_TSSOP20 = "Package_SO:TSSOP-20_4.4x6.5mm_P0.65mm"
 FP_SOT363 = "Package_TO_SOT_SMD:SOT-363_SC-70-6"
 FP_SOT353 = "Package_TO_SOT_SMD:SOT-353_SC-70-5"
-# 74LVC2G08GT,115 kommt im XSON-8-Gehaeuse (bauteile-1b.md, Beleg 3); ein
-# Standard-KiCad-Footprint dafuer existiert nicht -- eigenes .kicad_mod
-# ist Sache der spaeteren PCB-Layout-Aufgabe, hier bewusst leer gelassen.
-FP_XSON8 = ""
 FP_HDR_2X20 = "Connector_PinHeader_2.54mm:PinHeader_2x20_P2.54mm_Vertical"
 FP_HDR_1X02 = "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
 FP_HDR_2X02 = "Connector_PinHeader_2.54mm:PinHeader_2x02_P2.54mm_Vertical"
@@ -130,7 +148,8 @@ def _load_libs(sch):
                      "STM32C011F_4-6_Px", "STM32C011F6Px")
     sch.lib("74xGxx:74LVC1G175", "74xGxx.kicad_sym", "74LVC1G175")
     sch.lib("74xGxx:74LVC1G04", "74xGxx.kicad_sym", "74LVC1G04")
-    sch.lib("74xGxx:74LVC2G08", "74xGxx.kicad_sym", "74LVC2G08", multiunit=True)
+    sch.lib("74xGxx:74LVC1G00", "74xGxx.kicad_sym", "74LVC1G00")
+    sch.lib("74xGxx:74LVC1G08", "74xGxx.kicad_sym", "74LVC1G08")
     sch.lib("Connector_Generic:Conn_02x20_Odd_Even", "Connector_Generic.kicad_sym",
             "Conn_02x20_Odd_Even")
     sch.lib("Connector_Generic:Conn_01x02", "Connector_Generic.kicad_sym", "Conn_01x02")
@@ -246,15 +265,10 @@ def einbauen(sch, ox, oy, mit_flipflop=True):
         sch.nc("U100", "3")                        # PC15
         sch.netz("U100", "4", "U", "3V3")           # VDD
         sch.netz("U100", "5", "D", "GND")           # VSS
-        # PF2-NRST. ACHTUNG (ungeloest, siehe Bericht dieser Aufgabe):
-        # RESET kommt direkt vom AND-Gatter (aktiv HIGH, 1 = "im Reset
-        # halten", tools/kette.py). NRST ist am STM32 aktiv LOW. Direkt
-        # verdrahtet ist das genau verkehrt gepolt -- ein Inverter fehlt
-        # im festgelegten Bauteilbudget (1x NOT ist schon fuer NQ
-        # verbraucht, 2x AND schon fuer RESET/BOOT0). So verdrahtet wie
-        # hier ist es wortgetreu zur Gleichung aus kette.py, aber
-        # elektrisch (mutmasslich) falsch -- vor der Fertigung pruefen.
-        sch.netz("U100", "6", "L", "RESET")
+        # PF2-NRST, aktiv LOW. Kommt direkt vom NAND-Gatter U103, das
+        # bereits die Invertierung liefert (NRST = ¬(FLASH_MODE ∧ ¬Q) --
+        # siehe Moduldoku oben bei U103, warum NAND und nicht AND).
+        sch.netz("U100", "6", "L", "NRST")
         sch.netz("U100", "7", "R", "ID0")           # PA0
         sch.netz("U100", "8", "R", "ID1")           # PA1
         sch.netz("U100", "9", "R", NETZE_NACH_AUSSEN["IN1"])       # PA2
@@ -309,27 +323,31 @@ def einbauen(sch, ox, oy, mit_flipflop=True):
         sch.netz("U102", "4", "R", "NQ")        # Y = ¬Q
         sch.netz("U102", "5", "U", "3V3")       # VCC
 
-        # -------------------------------------------------- U103 Dual-AND
-        # Einheit 1: RESET = FLASH_MODE ∧ ¬Q (Pins 1,2,7)
-        sch.bauteil("U103", "74xGxx:74LVC2G08", (ox + 175.26, oy - 5.08),
-                    "74LVC2G08GT,115", FP_XSON8, rot=0, einheit=1,
-                    roff=(-15.24, 10.16), voff=(-15.24, 12.7))
-        sch.netz("U103", "1", "L", "FLASH_MODE")
-        sch.netz("U103", "2", "L", "NQ")
-        sch.netz("U103", "7", "R", "RESET")
-        # Einheit 2: BOOT0 = FLASH_MODE ∧ Q (Pins 3,5,6)
-        sch.bauteil("U103", "74xGxx:74LVC2G08", (ox + 175.26, oy - 20.32),
-                    "74LVC2G08GT,115", FP_XSON8, rot=0, einheit=2,
-                    roff=(-15.24, -5.08), voff=(-15.24, -2.54))
-        sch.netz("U103", "5", "L", "FLASH_MODE")
-        sch.netz("U103", "6", "L", "SEL_OUT")
-        sch.netz("U103", "3", "R", "BOOT0")
-        # Einheit 3: gemeinsame Versorgung (Pins 4,8)
-        sch.bauteil("U103", "74xGxx:74LVC2G08", (ox + 200.66, oy - 12.7),
-                    "74LVC2G08GT,115", FP_XSON8, rot=0, einheit=3,
-                    roff=(-5.08, -12.7), voff=(-5.08, -10.16))
-        sch.netz("U103", "4", "D", "GND")
-        sch.netz("U103", "8", "U", "3V3")
+        # -------------------------------------------------------- U103 NAND
+        # NRST = ¬(FLASH_MODE ∧ ¬Q) -- die Invertierung, die dem
+        # frueheren AND-Gatter fehlte (siehe Moduldoku oben bei U103,
+        # warum NAND und nicht AND). Pinbelegung wie U102: 1,2 Eingaenge,
+        # 3 GND, 4 Ausgang, 5 VCC.
+        sch.bauteil("U103", "74xGxx:74LVC1G00", (ox + 175.26, oy - 5.08),
+                    "SN74LVC1G00", FP_SOT353, rot=0,
+                    roff=(-7.62, 12.7), voff=(-7.62, 15.24))
+        sch.netz("U103", "1", "L", "FLASH_MODE")  # A
+        sch.netz("U103", "2", "L", "NQ")           # B = ¬Q
+        sch.netz("U103", "3", "D", "GND")
+        sch.netz("U103", "4", "R", "NRST")         # Y = ¬(FLASH_MODE ∧ ¬Q)
+        sch.netz("U103", "5", "U", "3V3")
+
+        # --------------------------------------------------------- U104 AND
+        # BOOT0 = FLASH_MODE ∧ Q, unveraendert eine reine UND-Funktion
+        # (siehe Moduldoku oben bei U104).
+        sch.bauteil("U104", "74xGxx:74LVC1G08", (ox + 175.26, oy - 20.32),
+                    "SN74LVC1G08", FP_SOT353, rot=0,
+                    roff=(-7.62, 12.7), voff=(-7.62, 15.24))
+        sch.netz("U104", "1", "L", "FLASH_MODE")  # A
+        sch.netz("U104", "2", "L", "SEL_OUT")      # B = Q
+        sch.netz("U104", "3", "D", "GND")
+        sch.netz("U104", "4", "R", "BOOT0")        # Y = FLASH_MODE ∧ Q
+        sch.netz("U104", "5", "U", "3V3")
 
         # -------------------------------------------- R100/R101/R104/R105
         _kennwiderstand(sch, "R104", "R100", ox + 20.32, oy - 30.48, "ID0")

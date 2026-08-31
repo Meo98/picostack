@@ -49,6 +49,20 @@ def modul_zustand(flash_mode, q):
 
     q ist der Ausgang des Flipflops, nicht der Eingang der Kette --
     das Weiterreichen erledigt der Takt, nicht ein Gatter.
+
+    RESET=1 heisst hier "wird im Reset gehalten" -- das ist die logisch
+    richtige Aussage ueber das Modul, unabhaengig von der Polung eines
+    bestimmten Bauteil-Pins, und bleibt deshalb absichtlich so (Tests
+    haengen daran). In der Hardware (tools/sch/modulsockel.py, U100)
+    heisst der Reset-Eingang des STM32C011 aber `NRST` und ist AKTIV
+    LOW (0 = im Reset). Das Gatter, das RESET bildet, muss die Zeile
+    oben deshalb beim Verdrahten invertieren -- ein NAND statt eines
+    AND liefert direkt NRST = ¬RESET = ¬(flash_mode ∧ ¬q). Genau an
+    dieser Stelle -- Modell sagt "AND", Hardware braucht "NAND" -- ist
+    der Verpolungsfehler entstanden, den Aufgabe 3 dieser Etappe
+    behoben hat (siehe modulsockel.py, Moduldoku bei U103). Wer hier
+    ein AND liest und daraus ein AND-Gatter auf NRST verdrahtet, baut
+    denselben Fehler erneut.
     """
     q = 1 if q else 0
     if not flash_mode:

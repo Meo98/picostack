@@ -27,7 +27,9 @@ Grundlage des neuen, eigenständigen Kettensteckers sind.
 | Leistungsstecker, Stift (unten, 2×2) | gleiche BOOMELE-Familie, 2,54 mm | THT, 6,0/3,0 mm, 3 A/Kontakt | C66690 | ja | LCSC-Produktseite `lcsc.com/product-detail/Male-Header_Double-Rows2-2p-pitch2-54mm_C66690.html` (Rohdaten: „3A", „6mm"/„3mm") |
 | D-Flipflop, asynchroner Löscheingang | SN74LVC1G175DCKR (TI) | SOT-363-6 (SC-70-6), 6 Pins | C202238 | ja | LCSC-Produktseite `lcsc.com/product-detail/74-Series_TI_SN74LVC1G175DCKR_SN74LVC1G175DCKR_C202238.html`; JLCPCB-Produktseite `jlcpcb.com/partdetail/TexasInstruments-SN74LVC1G175DCKR/C202238` (SMT Assembly, Economic/Standard PCBA, MSL 1); Primärquelle TI-Datenblatt `SN74LVC1G175`, Dok. SCES560G (März 2004, revidiert Juni 2015), Abschnitt 3 „Description" und Abschnitt 5 „Pin Configuration and Functions" (Gehäuse „DCK Package, 6-Pin SC70", Pin 6 = `CLR`) |
 | Gatter NOT (Invertierung Q) | SN74LVC1G04DCKR (TI) | SOT-353 (SC-70-5), 5 Pins | C8207 | ja | LCSC-Produktseite `lcsc.com/product-detail/C8207.html`; JLCPCB-Produktseite `jlcpcb.com/partdetail/TexasInstruments-SN74LVC1G04DCKR/C8207` (SMT Assembly, Economic/Standard PCBA, MSL 1) |
-| Gatter Dual-AND (RESET, BOOT0) | 74LVC2G08GT,115 (Nexperia) | XSON-8 (1×2 mm), 8 Pins | C548580 | ja | JLCPCB-Produktseite `jlcpcb.com/partdetail/Nexperia-74LVC2G08GT115/C548580` (SMT Assembly, Economic/Standard PCBA, MSL 1) |
+| Gatter NAND (NRST) — **ersetzt eines der beiden AND, s. Nachtrag 2026-08-31** | SN74LVC1G00DCKR (TI) | SOT-353 (SC-70-5), 5 Pins | C8185 | ja | LCSC-Produktseite `lcsc.com/product-detail/C8185.html` (Rohdaten: „SOT-353“, „ultra-small DPW package… 0.8 mm × 0.8 mm“); TI-Datenblatt `SN74LVC1G00`, „Single 2-Input Positive-NAND Gate“ |
+| Gatter AND (BOOT0) | SN74LVC1G08DCKR (TI) | SOT-353 (SC-70-5), 5 Pins | C7832 | ja | LCSC-Produktseite `lcsc.com/product-detail/C7832.html` (Rohdaten: „SC-70-5“, „ultra-small DPW package… 0.8 mm × 0.8 mm“); TI-Datenblatt `SN74LVC1G08`, „Single 2-Input Positive-AND Gate“ |
+| ~~Gatter Dual-AND (RESET, BOOT0) — **verworfen, s. Nachtrag 2026-08-31**~~ | 74LVC2G08GT,115 (Nexperia) | XSON-8 (1×2 mm), 8 Pins | C548580 | ja (Bauform an sich geprüft, aber verworfen) | JLCPCB-Produktseite `jlcpcb.com/partdetail/Nexperia-74LVC2G08GT115/C548580` (SMT Assembly, Economic/Standard PCBA, MSL 1) |
 | 5-V-Regler | K7805-2000R3 | SIP-3 | C2931187 | ja | bereits geprüft in Etappe 1a / LED-Dimmer-Projekt, siehe `hardware/bauteile.md` — hier unverändert übernommen, nicht neu recherchiert |
 | Klemme 2-polig | DB128L-5.08-2P-GN-S | THT, 5,08 mm | C395868 | ja | bereits geprüft in Etappe 1a / LED-Dimmer-Projekt — unverändert übernommen |
 | Klemme 3-polig | DB128L-5.08-3P-GN-S | THT, 5,08 mm | C395869 | ja | LCSC-Produktseite `lcsc.com/product-detail/C395869.html` (16 A, 300 V, M2-Schraube, 12–22 AWG); JLCPCB-Produktseite bestätigt (DORABO-Familie, SMT/Wave-Assembly, Economic/Standard PCBA) — selbe Farbe/Baureihe wie die bereits geprüfte 2-polige Klemme |
@@ -329,6 +331,65 @@ an die möglicherweise veraltete Zahl in der Aufgabenstellung — das sollte
 beim Lesen auffallen, falls die „2×/3×"-Angabe woanders noch eine Rolle
 spielt.
 
+### Nachtrag 2026-08-31 — RESET-Gatter verpolt: aus dem AND wird ein NAND
+
+**Befund (gemeldeter Fehler dieser Aufgabe):** `tools/kette.py` modelliert
+`RESET = flash_mode ∧ ¬q` als **aktiv HIGH** ("1 = im Reset gehalten").
+Der Reset-Eingang des STM32C011F6P6 heisst aber `NRST` (PF2-NRST) und ist
+laut Datenblatt **aktiv LOW**. Im Stand vor dieser Korrektur trieb das
+UND-Gatter oben (Einheit 1 von `74LVC2G08GT,115`, C548580) sein Ergebnis
+direkt auf `NRST` — verpolt: das Modul liefe genau dann, wenn es im Reset
+stehen soll, und umgekehrt.
+
+**Auflösung:** Aus dem UND-Gatter für `NRST` wird ein NAND —
+`NRST = ¬(FLASH_MODE ∧ ¬Q)` — das ist exakt die fehlende Invertierung,
+ohne ein zusätzliches Gatter im Signalweg. `BOOT0 = FLASH_MODE ∧ Q` bleibt
+unverändert ein AND (der Bootloader-Pin des STM32 ist aktiv HIGH, dort
+liegt keine Verpolung vor).
+
+**Warum jetzt zwei Einzel-Gatter-ICs statt eines Dual-Gatter-ICs.** Der
+bisherige Dual-AND (`74LVC2G08GT,115`, XSON-8, C548580) bildete beide
+AND-Funktionen in einem Bauteil. Ein homogenes „2G"-Dual-Gatter kann aber
+nur **eine** Funktion für beide Einheiten liefern (2× AND oder 2× NAND,
+nicht gemischt) — ein Bauteil mit einer AND- und einer NAND-Einheit in
+einem Gehäuse wurde bei LCSC/JLCPCB nicht gefunden. Da `NRST` jetzt NAND
+und `BOOT0` weiterhin AND braucht, ersetzen zwei Einzel-Gatter-ICs den
+einen Dual-Gatter-IC:
+
+- **NRST-Gatter:** `SN74LVC1G00DCKR` (TI), LCSC C8185, SOT-353 (SC-70-5).
+- **BOOT0-Gatter:** `SN74LVC1G08DCKR` (TI), LCSC C7832, SOT-353 (SC-70-5).
+
+Beide auf ihren LCSC-Produktseiten gesichtet (nicht aus dem Gedächtnis):
+`lcsc.com/product-detail/C8185.html` nennt das Gehäuse „SOT-353“,
+`lcsc.com/product-detail/C7832.html` „SC-70-5“ — dieselbe Bauform unter
+zwei gängigen Namen, mit identischer Pinbelegung (1,2 Eingänge, 3 GND,
+4 Ausgang, 5 VCC — selbst aus der KiCad-Symbolgeometrie nachgemessen,
+`tools/sch/symlib.py`), also 1:1 austauschbar mit dem bereits im Entwurf
+verwendeten NOT-Gatter U102 (`SN74LVC1G04DCKR`, C8207, ebenfalls
+SOT-353) — exakt „gleiches Gehäuse, gleicher Platz".
+
+**Bauteilzahl, ehrlich benannt:** Die Gatter-**logik** bleibt bei drei
+Funktionen (1× NOT, 1× NAND, 1× AND — unverändert gegenüber der
+Aufgabenzählung), aber die **physische** IC-Zahl steigt von einem
+Dual-Gatter-Bauteil auf zwei Einzel-Gatter-Bauteile (ein IC mehr auf der
+Stückliste als unmittelbar zuvor). Das ist keine stillschweigende
+Abweichung: ein gemischtes AND/NAND-Dual-Gatter wurde gesucht und nicht
+gefunden: mangels passendem Bauteil ist das der einzige gangbare Weg, ohne
+einen vierten Gattertyp (einen zusätzlichen Inverter) einzuführen.
+
+**Umgesetzt:**
+
+- `tools/sch/modulsockel.py`: `U103` ist jetzt der NAND-Einzelgatter-IC
+  (treibt `NRST` direkt), `U104` neu als AND-Einzelgatter-IC (treibt
+  weiterhin `BOOT0`); das Netz an MCU-Pin 6 heisst jetzt `NRST` statt
+  `RESET`, um die Aktiv-LOW-Polung im Netznamen sichtbar zu machen.
+- `tools/kette.py`: Modellfunktion `modul_zustand()` unverändert (der
+  Test hängt an der Aussage "RESET=1 heisst im Reset gehalten"), Docstring
+  ergänzt um den Hinweis auf die Hardware-Invertierung.
+- `tests/test_modulsockel.py`: neue Zusicherung, dass das an `NRST`
+  angeschlossene Gatter invertierend (NAND) ist, nicht nur eine
+  Gatterzahl-Prüfung.
+
 ## Beleg 4 — Leistungsstecker: Bauform gewählt, Strombelastbarkeit belegt
 
 **Bauform:** dieselbe 2,54-mm-Stift-/Buchsenleisten-Familie wie der
@@ -539,7 +600,7 @@ ungünstigsten Toleranzstapel positiv.
 | **Entscheidung 2026-08-31 (erste Runde)** | Stapelstecker (Buchse mit durchgehendem Stift, C35165) für 39 der 40 Leitungen; eigener Kettenstecker (C492401/C541849) nur für `SEL`. `STAPEL_ABSTAND` zunächst bei 15,0 mm belassen — passte komfortabel zum Stapelstecker (5,96 mm Einstecktiefe), der Kettenstecker trug aber nur 1,1 mm (Beleg 1 Nachtrag, Beleg 6) |
 | **Entscheidung 2026-08-31 (zweite Runde)** | Keine passende längere Stiftleiste gefunden (zwei unabhängige Suchen) → `STAPEL_ABSTAND` auf **13,0 mm** gesenkt: Kettenstecker jetzt 3,1 mm Einstecktiefe, Stapelstecker 7,96 mm; Klemmenhöhe belegt (DB128L 10,10 mm, K7805 10,2 mm, beide Datenblätter gelesen) bleibt unter der 11,0-mm-Reissleine, 1,2–1,3 mm Luft im Spalt (Beleg 6, zweite Runde). Gehäuse (Aufgabe 9) noch auf 13,0 mm nachzuziehen |
 | D-Flipflop mit Löscheingang | Gefunden: SN74LVC1G175DCKR, C202238, SOT-363-6, JLCPCB-bestückbar; Primärquelle TI SCES560G; braucht neue Leitung ODER lokales RC-POR |
-| Gatter (NOT, 2× AND) | Beide JLCPCB-bestückbar: C8207 (SOT-353) und C548580 (XSON-8, deckt beide AND-Funktionen) |
+| Gatter (NOT, 2× AND) | ~~Beide JLCPCB-bestückbar: C8207 (SOT-353) und C548580 (XSON-8, deckt beide AND-Funktionen)~~ — **überholt, s. Nachtrag 2026-08-31:** `NRST` war verpolt (AND statt NAND auf einen aktiv-LOW-Pin); jetzt 1× NOT (C8207), 1× NAND (C8185), 1× AND (C7832), alle SOT-353 |
 | Leistungsstecker + Strombelastbarkeit | 2×2 derselben Stecker-Familie, ~5 A/Ader vor Derating (Engpass Buchse 2,5 A/Kontakt); Positionszahl ist Vorschlag, kein Vertragswert |
 | Klemme 3-polig | DB128L-5.08-3P-GN-S, C395869, 16 A/300 V |
 | `tools/stack_spec.py`, `docs/vertrag.md`, Tests | Nachgezogen: SEL raus aus PIN_ROLLE/RESERVIERT, STECKER_STAPEL/STECKER_KETTE neu, Vertrag neu erzeugt, Tests ergänzt (siehe Beleg 6) |
