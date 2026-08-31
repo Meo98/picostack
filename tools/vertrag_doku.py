@@ -73,16 +73,39 @@ def main():
              "von Modul zu Modul aufgetrennt werden (Schieberegister, "
              "`tools/kette.py`) und ist deshalb kein Pin des "
              "Stapelsteckers mehr. Sie laeuft ueber einen eigenen, "
-             "zweipoligen **Kettenstecker** (%s): %s. Buchse LCSC "
-             "`%s`, Stiftleiste LCSC `%s`. Quelle: %s." % (
-                 S.STECKER_KETTE["typ"], S.STECKER_KETTE["zweck"],
-                 S.STECKER_KETTE["buchse_lcsc"],
-                 S.STECKER_KETTE["stift_lcsc"],
-                 S.STECKER_KETTE["quelle"]),
+             "zweipoligen **Kettenstecker** (%s): %s." % (
+                 S.STECKER_KETTE["typ"], S.STECKER_KETTE["zweck"]),
              "",
              tabelle(["Pin (Kettenstecker)", "Rolle"],
                      [(p, r) for p, r in
                       sorted(S.STECKER_KETTE["pins"].items())]),
+             "",
+             "Ketten- und Leistungsstecker sind seit 2026-08-31 "
+             "**SMD-Paare**: Buchse auf der Oberseite, Stiftleiste auf "
+             "der Unterseite, am selben Ort. Zwei bedrahtete Haelften "
+             "am selben Ort brauchten dieselben Bohrungen -- und "
+             "dieselbe Bohrung ist derselbe Leiter, was beim "
+             "Kettenstecker `SEL_IN` und `SEL_OUT` kurzschliessen "
+             "wuerde. Einstecktiefe je %.2f mm, Luft zwischen "
+             "Stiftkoerper und Buchsenoberkante %.2f mm." % (
+                 S.EINSTECKTIEFE_KETTE(),
+                 S.LUFT_STIFTKOERPER(S.STECKER_KETTE)),
+             "",
+             tabelle(["Stecker", "Bauart", "oben", "unten",
+                      "Buchse LCSC", "Stift LCSC"],
+                     [(name, st["typ"], st["montage_oben"],
+                       st["montage_unten"],
+                       "`%s`" % st["buchse_lcsc"] if st["buchse_lcsc"]
+                       else "offen: " + st.get("buchse_spec", ""),
+                       "`%s`" % st["stift_lcsc"] if st["stift_lcsc"]
+                       else "offen: " + st.get("stift_spec", ""))
+                      for name, st in (("stapel", S.STECKER_STAPEL),
+                                       ("kette", S.STECKER_KETTE),
+                                       ("leistung", S.STECKER_LEISTUNG))]),
+             "",
+             "Quellen: %s / %s / %s." % (S.STECKER_STAPEL["quelle"],
+                                         S.STECKER_KETTE["quelle"],
+                                         S.STECKER_LEISTUNG["quelle"]),
              "",
              "## Wo die Stecker sitzen",
              "",
@@ -103,11 +126,13 @@ def main():
                                 for v in S.STECKER_POS[name]["flaeche"]))
                       for name in ("stapel", "kette", "leistung")]),
              "",
-             "Die belegte Flaeche ist der Hof (F.CrtYd) des Footprints "
-             "nach der Drehung. Ketten- und Leistungsstecker bestehen "
-             "auf jedem Modul aus zwei Haelften (Buchse oben, "
-             "Stiftleiste unten); beide Haelften belegen **denselben** "
-             "Platz, sonst treffen sie sich im Stapel nicht.",
+             "Die belegte Flaeche ist die Vereinigung der Hoefe "
+             "(F.CrtYd) aller Footprints an diesem Platz, nach der "
+             "Drehung. Ketten- und Leistungsstecker bestehen "
+             "auf jedem Modul aus zwei Haelften (SMD-Buchse oben, "
+             "SMD-Stiftleiste unten); beide Haelften belegen "
+             "**denselben** Platz, sonst treffen sie sich im Stapel "
+             "nicht.",
              "",
              "Der Pico sitzt nur auf der Sockelplatine, mit Mitte "
              "(%.2f | %.2f), Drehung %d Grad, Flaeche %s. Unter seiner "

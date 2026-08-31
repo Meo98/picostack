@@ -75,18 +75,92 @@ check("Kettenstecker traegt SEL",
 check("Kettenstecker traegt GND",
       "GND" in S.STECKER_KETTE["pins"].values(), True)
 
+# --- Kein Steckerpaar mit zwei bedrahteten Haelften ------------------
+# Der Konstruktionsfehler, den Aufgabe 5e behoben hat, und der Grund,
+# warum es diese Pruefung gibt:
+#
+#   Ketten- und Leistungsstecker bestehen aus ZWEI Bauteilen (Buchse
+#   oben, Stiftleiste unten). Beide muessen am SELBEN Ort sitzen, sonst
+#   trifft der Stift an der Unterseite von Modul N die Buchse an der
+#   Oberseite von Modul N+1 nicht -- alle Platinen sind gleich, und
+#   eine Verschiebung hebt sich zwischen zwei gleichen Platinen nicht
+#   auf. Zwei BEDRAHTETE Bauteile am selben Ort brauchten aber
+#   dieselben Bohrungen, und dieselbe Bohrung ist derselbe Leiter.
+#   Das ist entweder unbaubar (zwei Bauteile, ein Loch) oder, wenn man
+#   es doch verbindet, ein durchgehender Kontakt -- und der macht beim
+#   Kettenstecker SEL_IN und SEL_OUT zu einem Netz und das
+#   Schieberegister aus tools/kette.py sinnlos.
+#
+# Bis zum 2026-08-31 stand genau das im Vertrag: beide Stecker
+# "Buchse oben / Stiftleiste unten", beide bedrahtet, je eine
+# gemeinsame Flaeche. Diese Pruefung haette das rot gemeldet.
+for _name, _st in (("Stapelstecker", S.STECKER_STAPEL),
+                   ("Kettenstecker", S.STECKER_KETTE),
+                   ("Leistungsstecker", S.STECKER_LEISTUNG)):
+    # Jeder Stecker sagt maschinenlesbar, was er ist.
+    for _feld in ("durchgehend", "montage_oben", "montage_unten",
+                  "haelften_gleiche_netze"):
+        check("%s: Feld %s vorhanden" % (_name, _feld), _feld in _st, True)
+    check("%s: Montage oben ist THT oder SMD" % _name,
+          _st["montage_oben"] in ("THT", "SMD"), True)
+    check("%s: Montage unten ist THT oder SMD" % _name,
+          _st["montage_unten"] in ("THT", "SMD"), True)
+    if _st["durchgehend"]:
+        # EIN Bauteil, ein Leiter durch beide Ebenen: dann MUESSEN
+        # beide Seiten dasselbe Netz fuehren. Sonst waere die
+        # Verbindung, die das Bauteil herstellt, ein Kurzschluss.
+        check("%s: durchgehend nur bei gleichen Netzen" % _name,
+              _st["haelften_gleiche_netze"], True)
+    else:
+        # Zwei Bauteile am selben Ort -> hoechstens eines darf
+        # bedrahtet sein, und weil die Bohrungen des bedrahteten genau
+        # dort laegen, wo die Kontakte des anderen liegen muessen:
+        # gar keines.
+        check("%s: kein Paar mit zwei bedrahteten Haelften" % _name,
+              (_st["montage_oben"], _st["montage_unten"]) == ("THT", "THT"),
+              False)
+        check("%s: beide Haelften oberflaechenmontiert" % _name,
+              (_st["montage_oben"], _st["montage_unten"]) == ("SMD", "SMD"),
+              True)
+
+# Die Kette darf NIE ein durchgehender Kontakt werden -- das ist die
+# inhaltliche Aussage hinter der Bauform, und sie steht hier noch
+# einmal fuer sich, damit sie nicht mit der Bauteilwahl verschwindet.
+check("Kettenstecker ist nicht durchgehend",
+      S.STECKER_KETTE["durchgehend"], False)
+check("Kettenstecker fuehrt oben und unten verschiedene Netze",
+      S.STECKER_KETTE["haelften_gleiche_netze"], False)
+
 # Die Einstecktiefe wird aus STAPEL_ABSTAND und den Steckermassen
 # nachgerechnet (nicht nur die Zahl 13.0 abgefragt) -- das faengt den
 # naechsten Denkfehler ab: wer STAPEL_ABSTAND aendert, ohne die
 # Steckermasse mitzudenken, oder umgekehrt.
 MINDEST_EINSTECKTIEFE = 2.0  # mm, konservativ unter dem knappsten
-# belegten Fall (Kettenstecker, rechnerisch 3,1 mm bei 13,0 mm,
-# hardware/bauteile-1b.md Beleg 1/Beleg 6) -- faengt Rechen- oder
-# Bauteiländerungen ab, ohne die exakte Zahl selbst zu duplizieren.
+# belegten Fall (Ketten- und Leistungsstecker, rechnerisch je 5,6 mm
+# bei 13,0 mm, hardware/bauteile-1b.md Beleg 13) -- faengt Rechen-
+# oder Bauteiländerungen ab, ohne die exakte Zahl selbst zu
+# duplizieren. Die Schwelle bleibt bei 2,0 mm, obwohl der Ist-Wert
+# gestiegen ist: sie ist die Reissleine, nicht die Messlatte.
 check("Stapelstecker-Einstecktiefe ueber Mindestschwelle",
       S.EINSTECKTIEFE_STAPEL() > MINDEST_EINSTECKTIEFE, True)
 check("Kettenstecker-Einstecktiefe ueber Mindestschwelle",
       S.EINSTECKTIEFE_KETTE() > MINDEST_EINSTECKTIEFE, True)
+check("Leistungsstecker-Einstecktiefe ueber Mindestschwelle",
+      S.EINSTECKTIEFE_LEISTUNG() > MINDEST_EINSTECKTIEFE, True)
+
+# Ein Stift kann nicht tiefer stecken als er lang ist -- eine
+# Einstecktiefe groesser als die freie Steckstiftlaenge waere eine
+# Rechnung, die sich selbst nicht mehr glaubt.
+for _n, _st in (("Kette", S.STECKER_KETTE), ("Leistung", S.STECKER_LEISTUNG)):
+    check("%s: Einstecktiefe nicht groesser als der Stift" % _n,
+          S.EINSTECKTIEFE_SMD_PAAR(_st) <= _st["stiftlaenge_mm"], True)
+    # Und der Isolierkoerper des Stifts muss ueber der Buchsenoberkante
+    # bleiben, sonst stossen die Kunststoffe aneinander, bevor die
+    # Abstandsbolzen sitzen -- die Platinen liessen sich dann nicht
+    # mehr flach verschrauben. Das ist heute der engste Punkt (0,40 mm)
+    # und der Grund, warum STAPEL_ABSTAND nicht unter 12,6 mm darf.
+    check("%s: Luft zwischen Stiftkoerper und Buchse" % _n,
+          S.LUFT_STIFTKOERPER(_st) > 0, True)
 
 # Ueber den Schraubklemmen (urspruenglicher Grund fuer den alten
 # 15,0-mm-Wert) und dem K7805 (hoechstes denkbares Bauteil im Spalt,
@@ -129,7 +203,7 @@ check("drei Vertragsstecker", sorted(S.STECKER_POS), sorted(STECKER))
 for name in STECKER + ["pico"]:
     e = S.STECKER_POS[name] if name in S.STECKER_POS else S.PICO_POS
     check("%s: Flaeche stimmt mit Footprint+Pin1+Drehung" % name,
-          e["flaeche"], S.HOF(e["footprint"], e["pin1"], e["drehung"]))
+          e["flaeche"], S.HOEFE(e["footprints"], e["pin1"], e["drehung"]))
     check("%s: Mitte stimmt mit der Flaeche" % name,
           e["mitte"], S.MITTE(e["flaeche"]))
     check("%s: Drehung ist ein rechter Winkel" % name,
@@ -198,20 +272,26 @@ for n in list(_flaechen) + ["antenne"]:
 # PC104-Stapelstecker und die XFCN-Paarung -- brauchen eigene
 # .kicad_mod und koennen breiter bauen. Wer den Footprint austauscht,
 # muss die Lage neu nachrechnen; dieser Test zwingt ihn dazu.
-_ms = open(os.path.join(HERE, "..", "tools", "sch", "modulsockel.py"),
-           encoding="utf-8").read()
-for name, konstante in (("stapel", "FP_HDR_2X20"),
-                        ("kette", "FP_HDR_1X02"),
-                        ("leistung", "FP_HDR_2X02")):
-    check("%s: Footprint wie in modulsockel.%s" % (name, konstante),
-          '%s = "%s"' % (konstante, S.STECKER_POS[name]["footprint"]) in _ms,
-          True)
-    check("%s: Hof des Footprints ist bekannt" % name,
-          S.STECKER_POS[name]["footprint"] in S.FOOTPRINT_HOF, True)
-_sp = open(os.path.join(HERE, "..", "tools", "sch", "sockelplatine.py"),
-           encoding="utf-8").read()
+sys.path.insert(0, os.path.join(HERE, "..", "tools", "sch"))
+import modulsockel      # zieht kein KiCad nach, nur stack_spec
+import sockelplatine
+# Jeder Steckerplatz nennt jetzt ALLE Footprints, die dort sitzen --
+# bei den SMD-Paaren zwei (Buchse oben, Stiftleiste unten). Wuerde nur
+# einer genannt, verschwaende die andere Haelfte stillschweigend aus
+# der Flaechenrechnung; genau so ist der Fehler von Aufgabe 5c
+# entstanden.
+for name, konstanten in (("stapel", ("FP_HDR_2X20",)),
+                         ("kette", ("FP_SKT_1X02", "FP_HDR_1X02")),
+                         ("leistung", ("FP_SKT_2X02", "FP_HDR_2X02"))):
+    check("%s: Footprints wie in modulsockel.%s"
+          % (name, "/".join(konstanten)),
+          tuple(S.STECKER_POS[name]["footprints"]),
+          tuple(getattr(modulsockel, k) for k in konstanten))
+    for fp in S.STECKER_POS[name]["footprints"]:
+        check("%s: Hof von %s ist bekannt" % (name, fp.split(":")[-1]),
+              fp in S.FOOTPRINT_HOF, True)
 check("Pico: Footprint wie in sockelplatine.FP_PICO",
-      'FP_PICO = "%s"' % S.PICO_POS["footprint"] in _sp, True)
+      (sockelplatine.FP_PICO,), tuple(S.PICO_POS["footprints"]))
 
 # --- Es bleibt noch Platz --------------------------------------------
 # Die Untergrenze ist hergeleitet, nicht gesetzt: Hofsumme des
@@ -252,14 +332,14 @@ check("Sockel: groesstes freies Rechteck traegt die eigene Hofsumme",
 _pads = []
 for n in STECKER:
     e = S.STECKER_POS[n]
-    _lagen = S.PAD_LAGEN(e["footprint"], e["pin1"], e["drehung"])
+    _lagen = S.PAD_LAGEN(e["footprints"][0], e["pin1"], e["drehung"])
     _pads.extend(_lagen.values())
 _naechster = min(
     ((S.BOARD_W - x - x2) ** 2 + (S.BOARD_H - y - y2) ** 2) ** 0.5
     for x, y in _pads for x2, y2 in _pads)
 # Mehr als das halbe Raster (1,27 mm) -- darunter faende ein Stift in
 # einen Kontakt. Die 2,5 mm sind die Reissleine, der gerechnete Wert
-# liegt bei 2,881 mm (VERDREHT_MINDESTABSTAND_MM).
+# liegt bei 2,755 mm (VERDREHT_MINDESTABSTAND_MM).
 check("verdreht trifft kein Stift einen Kontakt",
       _naechster > 2.5, True)
 check("der eingetragene Mindestabstand stimmt",

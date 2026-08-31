@@ -50,12 +50,22 @@ Alle nicht aufgefuehrten Pins gehen unveraendert durch und stehen Modulen frei z
 
 Der 2x20-Signalstecker (Steckerbelegung oben) ist ein **Stapelstecker**: Buchse mit durchgehendem Stift (Stapelstecker), 2x20, 2,54 mm. Bauteil: LCSC `C35165`, Gehaeusehoehe 8.50 mm, Stiftlaenge unterhalb des Gehaeuses 12.46 mm. Quelle: hardware/bauteile-1b.md, Beleg 1 (Fassung 2026-08-31).
 
-Einzige Ausnahme ist die Auswahlkette (`SEL`): sie muss von Modul zu Modul aufgetrennt werden (Schieberegister, `tools/kette.py`) und ist deshalb kein Pin des Stapelsteckers mehr. Sie laeuft ueber einen eigenen, zweipoligen **Kettenstecker** (Buchse oben / Stiftleiste unten (auftrennbar), 1x2, 2,54 mm): traegt SEL (Auswahlkette) und eine GND daneben. Buchse LCSC `C541849`, Stiftleiste LCSC `C492401`. Quelle: hardware/bauteile-1b.md, Beleg 1 (Fassung 2026-08-31).
+Einzige Ausnahme ist die Auswahlkette (`SEL`): sie muss von Modul zu Modul aufgetrennt werden (Schieberegister, `tools/kette.py`) und ist deshalb kein Pin des Stapelsteckers mehr. Sie laeuft ueber einen eigenen, zweipoligen **Kettenstecker** (SMD-Buchse oben / SMD-Stiftleiste unten (auftrennbar), 1x2, 2,54 mm): traegt SEL (Auswahlkette) und eine GND daneben.
 
 | Pin (Kettenstecker) | Rolle |
 |---|---|
 | 1 | SEL |
 | 2 | GND |
+
+Ketten- und Leistungsstecker sind seit 2026-08-31 **SMD-Paare**: Buchse auf der Oberseite, Stiftleiste auf der Unterseite, am selben Ort. Zwei bedrahtete Haelften am selben Ort brauchten dieselben Bohrungen -- und dieselbe Bohrung ist derselbe Leiter, was beim Kettenstecker `SEL_IN` und `SEL_OUT` kurzschliessen wuerde. Einstecktiefe je 5.60 mm, Luft zwischen Stiftkoerper und Buchsenoberkante 0.40 mm.
+
+| Stecker | Bauart | oben | unten | Buchse LCSC | Stift LCSC |
+|---|---|---|---|---|---|
+| stapel | Buchse mit durchgehendem Stift (Stapelstecker), 2x20, 2,54 mm | THT | THT | `C35165` | `C35165` |
+| kette | SMD-Buchse oben / SMD-Stiftleiste unten (auftrennbar), 1x2, 2,54 mm | SMD | SMD | offen: Buchsenleiste 1x2, 2,54 mm, SMD senkrecht, Isolationshoehe 8,5 mm, >= 1 A | offen: Stiftleiste 1x2, 2,54 mm, SMD senkrecht, Isolierkoerper <= 2,5 mm, Steckstift 6,0 mm |
+| leistung | SMD-Buchse oben / SMD-Stiftleiste unten, 2x2, 2,54 mm | SMD | SMD | offen: Buchsenleiste 2x2, 2,54 mm, SMD senkrecht, Isolationshoehe 8,5 mm, >= 2,5 A je Kontakt | `C919361` |
+
+Quellen: hardware/bauteile-1b.md, Beleg 1 (Fassung 2026-08-31) / hardware/bauteile-1b.md, Beleg 13 (2026-08-31) / hardware/bauteile-1b.md, Beleg 4 und Beleg 13.
 
 ## Wo die Stecker sitzen
 
@@ -64,16 +74,16 @@ Alle Masse in mm, Ursprung linke obere Ecke, x nach rechts, y nach unten. Diese 
 | Stecker | Zweck | Mitte x | Mitte y | Drehung | belegte Flaeche (x0 y0 x1 y1) |
 |---|---|---|---|---|---|
 | stapel | 2x20-Stapelstecker, Pico-Pinbild (PIN_ROLLE) | 32.125 | 11.725 | 90 Grad | 6.22 8.68 58.03 14.77 |
-| kette | zweipoliger Kettenstecker, SEL + GND (STECKER_KETTE) | 12.5 | 4.025 | 0 Grad | 10.73 0.98 14.27 7.07 |
-| leistung | 2x2-Leistungsstecker, 24 V und GND je doppelt | 58.775 | 43.275 | 0 Grad | 55.73 40.23 61.82 46.32 |
+| kette | zweipoliger Kettenstecker, SEL + GND (STECKER_KETTE) | 12.5 | 4.02 | 0 Grad | 9.09 0.87 15.91 7.17 |
+| leistung | 2x2-Leistungsstecker, 24 V und GND je doppelt | 55.97 | 43.27 | 0 Grad | 50.10 40.22 61.84 46.32 |
 
-Die belegte Flaeche ist der Hof (F.CrtYd) des Footprints nach der Drehung. Ketten- und Leistungsstecker bestehen auf jedem Modul aus zwei Haelften (Buchse oben, Stiftleiste unten); beide Haelften belegen **denselben** Platz, sonst treffen sie sich im Stapel nicht.
+Die belegte Flaeche ist die Vereinigung der Hoefe (F.CrtYd) aller Footprints an diesem Platz, nach der Drehung. Ketten- und Leistungsstecker bestehen auf jedem Modul aus zwei Haelften (SMD-Buchse oben, SMD-Stiftleiste unten); beide Haelften belegen **denselben** Platz, sonst treffen sie sich im Stapel nicht.
 
 Der Pico sitzt nur auf der Sockelplatine, mit Mitte (27.55 | 27.11), Drehung 90 Grad, Flaeche 0.63 15.57 54.48 38.65. Unter seiner WLAN-Antenne liegt der Sperrbereich 44.43 20.01 53.43 34.21 (9.0 x 14.2 mm) -- dort darf kein Kupfer und kein Bauteil liegen (Raspberry Pi Pico W Datasheet, Release 7, Abschnitt 2.2.1 "Keep-out area": Ausschnitt 14 x 9 mm).
 
 Um jede M3-Bohrung bleibt ein Freihaltebereich von 7.0 mm Durchmesser fuer Schraubenkopf und Abstandsbolzen frei.
 
-Das Lochbild ist punktsymmetrisch -- ein Modul laesst sich um 180 Grad verdreht anschrauben. Die Steckerlage ist deshalb bewusst unsymmetrisch: verdreht liegt kein Stift naeher als 2.88 mm an einem Kontakt (halbes Raster waeren 1.27 mm), ein verdreht aufgesetztes Modul steckt also nirgends und bleibt tot statt kaputt.
+Das Lochbild ist punktsymmetrisch -- ein Modul laesst sich um 180 Grad verdreht anschrauben. Die Steckerlage ist deshalb bewusst unsymmetrisch: verdreht liegt kein Stift naeher als 2.75 mm an einem Kontakt (halbes Raster waeren 1.27 mm), ein verdreht aufgesetztes Modul steckt also nirgends und bleibt tot statt kaputt.
 
 ## Auflagen an die Modulfirmware
 
@@ -82,6 +92,10 @@ Das Lochbild ist punktsymmetrisch -- ein Modul laesst sich um 180 Grad verdreht 
 ## Auflagen an das Modul-Layout
 
 - Jede Platine traegt neben Pin 1 des Stapelsteckers eine Kennzeichnung im Bestueckungsdruck (Dreieck plus Text "1") und an der Klemmenkante (untere Kante, y = BOARD_H) die Beschriftung "KLEMMEN". Grund: das M3-Lochbild ist punktsymmetrisch, ein Modul laesst sich also um 180 Grad verdreht anschrauben. Die Steckerlage (STECKER_POS) ist bewusst so unsymmetrisch, dass dann kein einziger Stift in einen Buchsenkontakt findet -- das verhindert den Schaden, macht den Fehler aber nicht sichtbar. Ausserdem darf in den drei Flaechen VERDREHT(STECKER_POS[...]["flaeche"]) kein freiliegendes Kupfer liegen (keine Testpunkte, keine offenen Pads): dort setzen die Stifte eines verdreht aufgesteckten Moduls auf.
+
+- Ketten- und Leistungsstecker sind SMD-Paare: Buchse auf der Oberseite, Stiftleiste auf der Unterseite, auf demselben Kontaktraster und OHNE Durchkontaktierung zwischen den beiden Kontaktflaechen. Beim Kettenstecker ist die fehlende Durchkontaktierung die eigentliche Funktion: oben liegt SEL_IN, unten SEL_OUT: waeren sie verbunden, waere die Auswahlkette kurzgeschlossen und das Schieberegister (tools/kette.py) wirkungslos. Beim Leistungsstecker fuehren beide Seiten dasselbe Netz; dort ist die Verbindung erlaubt, aber sie gehoert dann in eine eigene Durchkontaktierung neben dem Pad, nicht in das SMD-Pad selbst.
+
+- Beide SMD-Steckerpaare brauchen eine Zugentlastung: die Steckkraft eines ganzen Stapels darf nicht an den Loetstellen haengen. Zulaessig sind zwei zusaetzliche, mechanisch verschraubte oder verklebte Befestigungspunkte je Stecker, oder ein Fuegeverfahren, bei dem die Platinen ERST gesteckt und DANN auf die Abstandsbolzen geschraubt werden. Welches von beiden, entscheidet die Layout-Aufgabe -- aber nicht keines von beiden. Bedrahtete Stecker haetten das nicht gebraucht; sie sind hier aber ausgeschlossen (s. Block bei STECKER_KETTE).
 
 ## Modultypen
 

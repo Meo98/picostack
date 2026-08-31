@@ -116,8 +116,8 @@ import modulsockel      # noqa: E402  (Footprint-Konstanten + _stapelstecker)
 # .kicad_mod-Footprints, Sache der PCB-Layout-Aufgaben).
 FP_R0805 = modulsockel.FP_R0805
 FP_C0805 = modulsockel.FP_C0805
-FP_HDR_1X02 = modulsockel.FP_HDR_1X02
-FP_HDR_2X02 = modulsockel.FP_HDR_2X02
+FP_HDR_1X02 = modulsockel.FP_HDR_1X02   # SMD-Stiftleiste, s. dort
+FP_HDR_2X02 = modulsockel.FP_HDR_2X02   # SMD-Stiftleiste, s. dort
 
 FP_PICO = "Module:RaspberryPi_Pico_Common_THT"      # Aufgabenbrief, woertlich
 FP_CP_RADIAL = "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm"   # Aufgabenbrief, woertlich
@@ -260,7 +260,7 @@ def bauen(sch, ox, oy):
     # Funktion immer BEIDE Haelften gemeinsam anlegt.
     j4x, j4y = ox + 20.32, oy - 33.02
     sch.bauteil("J4", "Connector_Generic:Conn_02x02_Odd_Even", (j4x, j4y),
-                "Leistungsstecker, Stift (24V in den Stapel)", FP_HDR_2X02, rot=0,
+                "Leistungsstecker, Stift SMD (24V in den Stapel)", FP_HDR_2X02, rot=0,
                 roff=(-5.08, 3.81), voff=(-5.08, 6.35))
     for pin, name in {"1": "PWR24V", "2": "GND", "3": "PWR24V", "4": "GND"}.items():
         sch.netz("J4", pin, "L" if pin in ("1", "3") else "R", name)
@@ -277,7 +277,7 @@ def bauen(sch, ox, oy):
     # (zwei Ausgaenge auf einem Netz, sobald ein Modul GP8 selbst nutzt).
     j3x, j3y = ox + 76.2, oy - 55.88
     sch.bauteil("J3", "Connector_Generic:Conn_01x02", (j3x, j3y),
-                "Kettenstecker, Stift (treibt SEL)", FP_HDR_1X02, rot=0,
+                "Kettenstecker, Stift SMD (treibt SEL)", FP_HDR_1X02, rot=0,
                 roff=(-5.08, 3.81), voff=(-5.08, 6.35))
     sch.netz("J3", "1", "L", "SEL_OUT")
     sch.netz("J3", "2", "L", "GND")
