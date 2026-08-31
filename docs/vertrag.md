@@ -8,7 +8,7 @@ Die Zusagen rund um das Flashen -- die Leitungen `FLASH_TX`, `FLASH_RX`, `SEL`, 
 
 ## Umriss
 
-64.0 x 60.0 mm, Ecken 3.0 mm gerundet, 13.0 mm zwischen den Platinen.
+64.0 x 60.0 mm, Ecken 3.0 mm gerundet, 13.5 mm zwischen den Platinen.
 
 | M3-Bohrung | x | y | Bohrdurchmesser |
 |---|---|---|---|
@@ -57,15 +57,17 @@ Einzige Ausnahme ist die Auswahlkette (`SEL`): sie muss von Modul zu Modul aufge
 | 1 | SEL |
 | 2 | GND |
 
-Ketten- und Leistungsstecker sind seit 2026-08-31 **SMD-Paare**: Buchse auf der Oberseite, Stiftleiste auf der Unterseite, am selben Ort. Zwei bedrahtete Haelften am selben Ort brauchten dieselben Bohrungen -- und dieselbe Bohrung ist derselbe Leiter, was beim Kettenstecker `SEL_IN` und `SEL_OUT` kurzschliessen wuerde. Einstecktiefe je 5.60 mm, Luft zwischen Stiftkoerper und Buchsenoberkante 0.40 mm.
+Ketten- und Leistungsstecker sind seit 2026-08-31 **SMD-Paare**: Buchse auf der Oberseite, Stiftleiste auf der Unterseite, am selben Ort. Zwei bedrahtete Haelften am selben Ort brauchten dieselben Bohrungen -- und dieselbe Bohrung ist derselbe Leiter, was beim Kettenstecker `SEL_IN` und `SEL_OUT` kurzschliessen wuerde. Einstecktiefe je 5.10 mm, Luft zwischen Stiftkoerper und Buchsenoberkante 0.90 mm.
 
-| Stecker | Bauart | oben | unten | Buchse LCSC | Stift LCSC |
-|---|---|---|---|---|---|
-| stapel | Buchse mit durchgehendem Stift (Stapelstecker), 2x20, 2,54 mm | THT | THT | `C35165` | `C35165` |
-| kette | SMD-Buchse oben / SMD-Stiftleiste unten (auftrennbar), 1x2, 2,54 mm | SMD | SMD | offen: Buchsenleiste 1x2, 2,54 mm, SMD senkrecht, Isolationshoehe 8,5 mm, >= 1 A | offen: Stiftleiste 1x2, 2,54 mm, SMD senkrecht, Isolierkoerper <= 2,5 mm, Steckstift 6,0 mm |
-| leistung | SMD-Buchse oben / SMD-Stiftleiste unten, 2x2, 2,54 mm | SMD | SMD | offen: Buchsenleiste 2x2, 2,54 mm, SMD senkrecht, Isolationshoehe 8,5 mm, >= 2,5 A je Kontakt | `C919361` |
+| Stecker | Bauart | oben | unten | Buchse LCSC | Buchse Typ | Stift LCSC | Stift Typ |
+|---|---|---|---|---|---|---|---|
+| stapel | Buchse mit durchgehendem Stift (Stapelstecker), 2x20, 2,54 mm | THT | THT | `C35165` | BOOMELE 2.54-2*20PPC104 | `C35165` | BOOMELE 2.54-2*20PPC104 |
+| kette | SMD-Buchse oben / SMD-Stiftleiste unten (auftrennbar), 1x2, 2,54 mm | SMD | SMD | `C46635838` | hanxia HX PM2.54-1x2P TP H8.5-YQ | `C41417359` | hanxia HX PZ2.54-1x2P TP-YQ |
+| leistung | SMD-Buchse oben / SMD-Stiftleiste unten, 2x2, 2,54 mm | SMD | SMD | `C3975147` | HCTL PM254-2-02-S-8.5 | `C919361` | BOOMELE 2.54-2*2P |
 
-Quellen: hardware/bauteile-1b.md, Beleg 1 (Fassung 2026-08-31) / hardware/bauteile-1b.md, Beleg 13 (2026-08-31) / hardware/bauteile-1b.md, Beleg 4 und Beleg 13.
+Alle sechs Steckerhaelften tragen seit 2026-08-31 eine Bauteilnummer von einer gesehenen LCSC-Produktseite; alle sind in der JLCPCB-Bestueckungsbibliothek gefuehrt. Damit sind Sockelplatine und Module bestueckt bestellbar -- ein einziges leeres Feld haette das verhindert.
+
+Quellen: hardware/bauteile-1b.md, Beleg 1 (Fassung 2026-08-31) / hardware/bauteile-1b.md, Beleg 13 und 14 (2026-08-31) / hardware/bauteile-1b.md, Beleg 4, 13 und 14.
 
 ## Wo die Stecker sitzen
 

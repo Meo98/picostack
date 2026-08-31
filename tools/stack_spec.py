@@ -21,52 +21,76 @@ PLATINE_DICKE = 1.6      # mm, Standard-PCB-Dicke (JLCPCB); auch Grundlage
 M3_DRILL = 3.2
 M3_HOLES = [(4.0, 4.0), (4.0, 56.0), (60.0, 4.0), (60.0, 56.0)]
 
-STAPEL_ABSTAND = 13.0     # mm zwischen zwei Platinen (Platinenoberkante
-# zu Platinenoberkante). Zweite Runde, 2026-08-31 -- ersetzt den
-# urspruenglichen Wert 15,0 mm. Herleitung, siehe hardware/bauteile-1b.md,
-# Beleg 6, zweite Runde, und Beleg 1:
+STAPEL_ABSTAND = 13.5     # mm zwischen zwei Platinen (Platinenoberkante
+# zu Platinenoberkante). Dritte Runde, 2026-08-31 (Aufgabe 5g) --
+# ersetzt 13,0 mm, das seinerseits die urspruenglichen 15,0 mm ersetzt
+# hatte. Herleitung, siehe hardware/bauteile-1b.md, Beleg 6 (zweite
+# Runde), Beleg 13.5 und Beleg 14:
 #
-# Der Kettenstecker (STECKER_KETTE, nicht durchgehend, weil er die
-# Auswahlkette SEL auftrennen muss) trug bei 15,0 mm nur 1,1 mm
-# Einstecktiefe -- ein zu duenner Rand, und eine laengere einreihige
-# BEDRAHTETE Stiftleiste gibt es bei LCSC/JLCPCB nicht (zwei
-# unabhaengige Suchen bestaetigt). Deshalb sinkt STAPEL_ABSTAND, bis
-# beide Stecker UND die Schraubklemmen (der urspruengliche Grund fuer
-# 15,0 mm) noch passen:
+#   Spalt G = STAPEL_ABSTAND - PLATINE_DICKE = 13,5 - 1,6 = 11,90 mm
+#   Kettenstecker  : Einstecktiefe = 17,00 - 11,90 = 5,10 mm (EINSTECKTIEFE_KETTE())
+#   Leistungsstecker: dieselbe Rechnung             = 5,10 mm (EINSTECKTIEFE_LEISTUNG())
+#   Stapelstecker  : Einstecktiefe = 19,36 - 11,90 = 7,46 mm (EINSTECKTIEFE_STAPEL())
+#   Luft Stiftkoerper/Buchsenoberkante = 11,90 - 8,50 - 2,50
+#                                                   = 0,90 mm (LUFT_STIFTKOERPER())
 #
-#   Spalt G = STAPEL_ABSTAND - PLATINE_DICKE = 13,0 - 1,6 = 11,4 mm
-#   Kettenstecker : Einstecktiefe = 17,0 - 11,4 = 5,6 mm  (EINSTECKTIEFE_KETTE())
-#   Stapelstecker : Einstecktiefe = 19,36 - 11,4 = 7,96 mm (EINSTECKTIEFE_STAPEL())
+# WARUM 13,5 UND NICHT 13,0. Die 0,40 mm Luft, die 13,0 mm liess, waren
+# der engste Punkt des ganzen Stapels: der Isolierkoerper der SMD-
+# Stiftleiste kann nicht in die Buchse eintauchen, er muss ueber deren
+# Oberkante bleiben. Im unguenstigen Toleranzstapel (+-0,2 mm je
+# Bauteil, +-10 % Platinendicke) faellt er auf null, und dann stossen
+# die beiden Kunststoffe aneinander, BEVOR die Abstandsbolzen sitzen --
+# die Platinen liessen sich nicht mehr flach verschrauben. Bei 13,5 mm
+# sind es 0,90 mm; derselbe Toleranzstapel laesst davon noch etwa die
+# Haelfte uebrig.
 #
-# Die 5,6 mm sind der Stand nach Aufgabe 5e (2026-08-31): Ketten- und
-# Leistungsstecker sind seither SMD-Paare (Begruendung im Block bei
-# STECKER_KETTE), und ein SMD-Stift verliert keine 3,0 mm an einen
-# Loetschwanz -- bei 13,0 mm ergibt das 5,6 statt 3,1 mm. Der WERT
-# 13,0 mm bleibt davon unberuehrt, aber die Richtung der Enge dreht
-# sich: nach OBEN begrenzt jetzt nichts mehr ernsthaft (mehr Abstand =
-# mehr Platz fuer die Klemmen, weniger Einstecktiefe -- erst ab 16,6 mm
-# faellt sie unter 2,0 mm), nach UNTEN begrenzt neuerdings die Luft
-# ueber der SMD-Buchse: G >= 8,5 + 2,5 = 11,0 mm, also
-# STAPEL_ABSTAND >= 12,6 mm (LUFT_STIFTKOERPER(), heute 0,40 mm). Das
-# ist eine engere Untergrenze als die Klemmen (11,7 mm).
+# WAS DAS KOSTET, vollstaendig aufgezaehlt (nur zwei Werte sinken,
+# beide um genau 0,50 mm, beide bleiben weit ueber ihrer Reissleine):
+#   Einstecktiefe SMD-Paar   5,60 -> 5,10 mm  (Reissleine 2,0 mm)
+#   Einstecktiefe Stapel     7,96 -> 7,46 mm  (Reissleine 2,0 mm)
+# Alles andere waechst:
+#   Luft ueber der Buchse    0,40 -> 0,90 mm
+#   Luft ueber der Klemme    1,30 -> 1,80 mm  (KLEMME_HOEHE_MM 10,10)
+#   Luft ueber dem K7805     1,20 -> 1,70 mm  (K7805_HOEHE_MM 10,2)
+#   Rest im Stapelstecker vor dem Anschlagen des Stifts am Buchsengrund
+#     (Buchse 8,5 mm tief)   0,54 -> 1,04 mm
+#   Rest der Steckstiftlaenge des SMD-Paars (Stift 6,0 mm frei)
+#                            0,40 -> 0,90 mm
+# In der Ebene aendert sich NICHTS: STECKER_POS, die Hoefe, die freien
+# Flaechen und VERDREHT_MINDESTABSTAND_MM haengen nicht am Abstand.
+#
+# Der gueltige Bereich, in dem STAPEL_ABSTAND ueberhaupt liegen darf:
+#   nach UNTEN begrenzt die Luft ueber der Buchse -- G >= 8,5 + 2,5 =
+#     11,0 mm, also STAPEL_ABSTAND >= 12,6 mm. Das ist enger als die
+#     Klemmen (G >= 10,10 mm, also >= 11,7 mm).
+#   nach OBEN begrenzt die Einstecktiefe -- erst ab 16,6 mm faellt sie
+#     unter die 2,0-mm-Reissleine des Tests.
+# 13,5 mm liegt damit 0,9 mm ueber der unteren und 3,1 mm unter der
+# oberen Grenze -- ungefaehr mittig, statt wie 13,0 mm dicht am Rand.
 #
 # Klemmenhoehe belegt (nicht geschaetzt) gegen genau diesen Spalt:
 #   DB128L-5.08-2P/-3P (C395868/C395869): 10,10 mm -- Datenblatt DORABO
 #     "DB128L-5.08-XXP-C-S" (Zeichnung datiert 2022.11.25, Bemassung
 #     "10.10" in der Seitenansicht; ein Zeichnungssatz fuer alle
 #     Polzahlen, Hoehe unabhaengig von XX). -> Rest ueber der Klemme:
-#     11,4 - 10,10 = 1,3 mm.
+#     11,90 - 10,10 = 1,80 mm.
 #   K7805-2000R3 (C2931187), SIP-3, als hoechstes denkbares Bauteil
 #     falls ein Modul es je verwendet: 10,2 mm -- Datenblatt DEXU
 #     Electronics "K78xx-2000R3", Rev. A0-2018.12, S. 2 (Tabelle
 #     "外观尺寸" / Aussenmasse), "长*宽*高 11.6*7.5*10.2mm". Rest:
-#     11,4 - 10,2 = 1,2 mm.
-# Beide unter der 11,0-mm-Reissleine -- 13,0 mm haelt fuer beide
-# Stecker und fuer die Klemmen. Siehe KLEMME_HOEHE_MM / K7805_HOEHE_MM
-# unten fuer die maschinenlesbaren Werte.
+#     11,90 - 10,2 = 1,70 mm.
+# Siehe KLEMME_HOEHE_MM / K7805_HOEHE_MM unten fuer die maschinen-
+# lesbaren Werte.
 #
-# ACHTUNG: das Gehaeuse (Aufgabe 9 dieser Etappe) wurde gegen den alten
-# Wert 15,0 mm entworfen und muss auf 13,0 mm nachgezogen werden.
+# ACHTUNG, zwei offene Punkte, die nicht in diesem Modul stehen koennen:
+#   1. Das Gehaeuse (Aufgabe 9 dieser Etappe) wurde gegen den alten Wert
+#      15,0 mm entworfen und muss auf 13,5 mm nachgezogen werden. Es
+#      existiert in diesem Repo noch nicht -- die Aenderung kostet
+#      deshalb heute nichts.
+#   2. Der Spalt G IST die Bauhoehe der Abstandsbolzen: 11,90 mm ist
+#      kein Katalogmass (ueblich sind 10, 11, 12, 15 mm). Das war schon
+#      bei 13,0 mm so (11,40 mm) und wird hier nicht schlechter, aber
+#      es bleibt zu entscheiden -- s. Bericht zu Aufgabe 5g, Bedenken 1.
 
 # --- Steckerbelegung ------------------------------------------------
 # Pico-Pins 1..40. Die Nummern folgen dem Pico-Datenblatt, nicht der
@@ -217,6 +241,8 @@ STECKER_STAPEL = {
     "haelften_gleiche_netze": True,
     "buchse_lcsc": "C35165",       # BOOMELE "2.54-2*20PPC104"
     "stift_lcsc": "C35165",        # dasselbe Bauteil
+    "buchse_mpn": "BOOMELE 2.54-2*20PPC104",
+    "stift_mpn": "BOOMELE 2.54-2*20PPC104",
     "strom_pro_kontakt_a": 3.0,    # LCSC-Produktseite C35165,
                                    # "Current Rating: 3A"
     "gehaeusehoehe_mm": 8.5,       # Datenblatt, Masszeichnung "8.5+-0.2"
@@ -235,44 +261,70 @@ STECKER_STAPEL = {
 #      bedrahteten Stift, dessen Loetschwanz 3,0 mm kostet, und anders
 #      als beim Stapelstecker, dessen Stift erst durch die eigene
 #      Platine muss.)
-#   G = STAPEL_ABSTAND - PLATINE_DICKE                       = 11,40 mm
+#   G = STAPEL_ABSTAND - PLATINE_DICKE                       = 11,90 mm
 #
-#   Einstecktiefe   = (M + F) - G = 17,00 - 11,40 = 5,60 mm
+#   Einstecktiefe   = (M + F) - G = 17,00 - 11,90 = 5,10 mm
 #   Luft ueber der Buchse (Stift-Isolierkoerper gegen Buchsenoberkante)
-#                   = G - F - Isolierkoerper = 11,40 - 8,50 - 2,50
-#                   = 0,40 mm
+#                   = G - F - Isolierkoerper = 11,90 - 8,50 - 2,50
+#                   = 0,90 mm
 #
-# Die 5,60 mm sind fast das Doppelte der 3,1 mm, die das alte
-# bedrahtete Paar hatte -- weil der Loetschwanz wegfaellt. Die 0,40 mm
-# dagegen sind der neue enge Punkt: bei ungueltigem Toleranzstapel
-# (+-0,2 mm je Bauteil, +-10 % Platinendicke) koennen die beiden
-# Isolierkoerper aneinanderstossen, bevor die Abstandsbolzen sitzen.
-# LUFT_STIFTKOERPER() rechnet den Wert nach, der Test haelt ihn > 0.
-# Zwei belegte Auswege stehen im Bericht zu Aufgabe 5e: ein SMD-Stift
-# mit 2,0 mm Isolierkoerper (dieselbe Bauform, belegt an den Ckmtw-
-# Teilen C124390/C124391) macht daraus 0,90 mm, oder STAPEL_ABSTAND
-# steigt auf 13,5 mm (dann 0,90 mm, und alle anderen Reserven wachsen
-# mit). Beides ist eine Entscheidung des Auftraggebers, keine dieser
-# Aufgabe.
+# Die 5,10 mm sind immer noch deutlich mehr als die 3,1 mm, die das
+# alte bedrahtete Paar hatte -- weil der Loetschwanz wegfaellt. Die
+# 0,90 mm sind das Ergebnis der Aufgabe 5g: bei STAPEL_ABSTAND = 13,0 mm
+# waren es nur 0,40 mm, und die konnten im unguenstigen Toleranzstapel
+# (+-0,2 mm je Bauteil, +-10 % Platinendicke) auf null fallen -- dann
+# stossen die beiden Isolierkoerper aneinander, bevor die Abstands-
+# bolzen sitzen. Deshalb ist STAPEL_ABSTAND auf 13,5 mm gestiegen
+# (Herleitung im Block dort). LUFT_STIFTKOERPER() rechnet den Wert
+# nach, der Test haelt ihn > 0.
 #
-# Bauteilbelege (LCSC-Produktseiten, gesehen 2026-08-31 -- Einzelheiten
-# in hardware/bauteile-1b.md, Beleg 13):
-#   Buchse, SMD senkrecht, 2,54 mm, Isolationshoehe 8,5 mm, 2,5 A:
-#     C261072 (BOOMELE "2.54-2*5P", 2x5) und C52611 (BOOMELE
-#     "2.54-2*25P", 2x25). Die Bauform ist damit belegt -- in 1x2 und
-#     2x2 aber auf KEINER Produktseite gesehen. Die LCSC-Nummern der
-#     Buchsen bleiben deshalb LEER, mit genauer Spezifikation daneben.
-#   Stift, SMD senkrecht, 2,54 mm, Isolierkoerper 2,5 mm, Steckstift
-#     6,0 mm, 3 A: C919361 (BOOMELE "2.54-2*2P", 2x2, 28460 auf Lager)
-#     -- das ist genau der Leistungsstecker. In 1x2 ebenfalls nicht
-#     gesehen; die Bauform in anderen Polzahlen: C192300 (2x4, 2,5/6,0,
-#     3 A), C124390/C124391 (Ckmtw, 2x3/2x5, 2,0/6,0).
-BUCHSE_SMD_HOEHE_MM = 8.5      # LCSC C261072/C52611, "Insulation
-                               # Height: 8.5mm" / "H=8.5mm"
-STIFT_SMD_KOERPER_MM = 2.5     # LCSC C919361/C192300, "Insulation
+# Bauteilbelege: alle vier Steckerhaelften haben seit Aufgabe 5g
+# (2026-08-31) eine LCSC-Nummer von einer tatsaechlich geoeffneten
+# Produktseite -- Einzelheiten in hardware/bauteile-1b.md, Beleg 14.
+# Damit sind beide Platinen bestueckt bestellbar; alle vier Teile sind
+# ausserdem in der JLCPCB-Bestueckungsbibliothek gefuehrt (Abfrage der
+# JLCPCB-SMT-Bauteilsuche, componentLibraryType "expand" = Extended
+# Part, allowPostFlag true).
+#
+#   Buchse 1x2 (Kette)    C46635838  hanxia "HX PM2.54-1x2P TP H8.5-YQ"
+#     "Mounting Type: Surface Mount, Vertical", "Holes Structure: 1x2P",
+#     "Insulation Height: 8.5mm", "Current Rating: 3A", Messing
+#     vergoldet, "Packaging: SMD, P=2.54mm (Staggered Pins)".
+#   Stift  1x2 (Kette)    C41417359  hanxia "HX PZ2.54-1x2P TP-YQ"
+#     "Mounting Type: Surface Mount, Vertical", "Pin Structure: 1x2P",
+#     "Insulation Height: 2.5mm", "Length of Mating Pin: 6mm",
+#     "Current Rating: 3A", Messing vergoldet.
+#   Buchse 2x2 (Leistung) C3975147   HCTL "PM254-2-02-S-8.5"
+#     "Mounting Type: Surface Mount, Vertical", "Holes Structure: 2x2P",
+#     "Row Spacing: 2.54mm", "Insulation Height: 8.5mm",
+#     "Current Rating: 3A", Kupferlegierung.
+#   Stift  2x2 (Leistung) C919361    BOOMELE "2.54-2*2P"
+#     "Mounting Type: Surface Mount, Vertical", "Pin Structure: 2x2P",
+#     "Insulation Height: 2.5mm", "Length of Mating Pin: 6mm",
+#     "Current Rating: 3A".
+#
+# Alle vier bestaetigen genau die drei Masse, mit denen dieser Vertrag
+# rechnet (8,50 / 2,50 / 6,00 mm) -- die Geometrie oben ist damit nicht
+# mehr nur an einer Bauform belegt, sondern an den wirklich bestellten
+# Teilen.
+#
+# Belegte Ersatztypen, falls einer ausgeht (dieselbe Bauform, dieselben
+# Masse, ebenfalls Produktseiten gesehen):
+#   Buchse 1x2: C55218893 (SHOU HAN "PM2.54-1x2PLT-H8.5-R", 8,5 mm, 3 A)
+#               und C48641753 (hanxia "HX PM2.54-1x2P TP H8.5-ZQ").
+#   Buchse 2x2: kein zweiter Typ mit geoeffneter Produktseite. Die
+#               JLCPCB-Bauteilsuche zeigt zwar weitere 2x2-Buchsen in
+#               "立贴" (SMD senkrecht) mit 8,5 mm, deren Produktseiten
+#               sind aber NICHT geoeffnet worden -- sie stehen deshalb
+#               hier bewusst nicht mit Nummer.
+#   Stift 2x2:  C192300 (BOOMELE 2.54-2*4P, 2x4) belegt dieselbe
+#               Bauform in anderer Polzahl.
+BUCHSE_SMD_HOEHE_MM = 8.5      # LCSC C46635838/C3975147, "Insulation
+                               # Height: 8.5mm"
+STIFT_SMD_KOERPER_MM = 2.5     # LCSC C41417359/C919361, "Insulation
                                # Height: 2.5mm"
-STIFT_SMD_STECKLAENGE_MM = 6.0  # LCSC C919361/C192300, "Mating Pin
-                               # Length: 6mm"
+STIFT_SMD_STECKLAENGE_MM = 6.0  # LCSC C41417359/C919361, "Length of
+                               # Mating Pin: 6mm"
 
 STECKER_KETTE = {
     "typ": "SMD-Buchse oben / SMD-Stiftleiste unten (auftrennbar), "
@@ -282,17 +334,26 @@ STECKER_KETTE = {
     "montage_oben": "SMD",
     "montage_unten": "SMD",
     "haelften_gleiche_netze": False,   # oben SEL_IN, unten SEL_OUT
-    "buchse_lcsc": "",             # offen, s. Block oben
+    "buchse_lcsc": "C46635838",    # hanxia "HX PM2.54-1x2P TP H8.5-YQ",
+                                   # SMD senkrecht, 1x2, Isolations-
+                                   # hoehe 8,5 mm, 3 A, Messing
+                                   # vergoldet -- Produktseite gesehen
+                                   # (2026-08-31), s. Block oben
     "buchse_spec": "Buchsenleiste 1x2, 2,54 mm, SMD senkrecht, "
                    "Isolationshoehe 8,5 mm, >= 1 A",
-    "stift_lcsc": "",              # offen, s. Block oben
+    "stift_lcsc": "C41417359",     # hanxia "HX PZ2.54-1x2P TP-YQ",
+                                   # SMD senkrecht, 1x2, Isolier-
+                                   # koerper 2,5 mm, Steckstift 6,0 mm,
+                                   # 3 A -- Produktseite gesehen
     "stift_spec": "Stiftleiste 1x2, 2,54 mm, SMD senkrecht, "
                   "Isolierkoerper <= 2,5 mm, Steckstift 6,0 mm",
+    "buchse_mpn": "hanxia HX PM2.54-1x2P TP H8.5-YQ",
+    "stift_mpn": "hanxia HX PZ2.54-1x2P TP-YQ",
     "pins": {1: "SEL", 2: "GND"},
     "buchsenhoehe_mm": BUCHSE_SMD_HOEHE_MM,
     "stiftkoerper_mm": STIFT_SMD_KOERPER_MM,
     "stiftlaenge_mm": STIFT_SMD_STECKLAENGE_MM,
-    "quelle": "hardware/bauteile-1b.md, Beleg 13 (2026-08-31)",
+    "quelle": "hardware/bauteile-1b.md, Beleg 13 und 14 (2026-08-31)",
 }
 
 # Der Leistungsstecker stand bisher nur in hardware/bauteile-1b.md
@@ -308,7 +369,7 @@ STECKER_KETTE = {
 # naechstliegende "langbeinige" Teil, C72555 (BOOMELE 2.54-2*8P3.8,
 # "Heightened, Pins are long 3.8mm"), ueberbrueckt den Spalt nicht
 # einmal: M = 3,8 - 1,6 = 2,2 mm, M + F = 2,2 + 8,5 = 10,7 mm < G =
-# 11,4 mm.
+# 11,9 mm (und lag auch bei den frueheren 11,4 mm darunter).
 #
 # Und warum die Leistung nicht ueber Kontakte des vorhandenen
 # 2x20-Stapelsteckers laeuft: dort ist kein Kontakt frei. Alle 40
@@ -327,7 +388,11 @@ STECKER_LEISTUNG = {
     "montage_oben": "SMD",
     "montage_unten": "SMD",
     "haelften_gleiche_netze": True,    # oben wie unten PWR24V/GND
-    "buchse_lcsc": "",             # offen, s. Block oben
+    "buchse_lcsc": "C3975147",     # HCTL "PM254-2-02-S-8.5", SMD
+                                   # senkrecht, 2x2, Reihenabstand
+                                   # 2,54 mm, Isolationshoehe 8,5 mm,
+                                   # 3 A, Kupferlegierung --
+                                   # Produktseite gesehen (2026-08-31)
     "buchse_spec": "Buchsenleiste 2x2, 2,54 mm, SMD senkrecht, "
                    "Isolationshoehe 8,5 mm, >= 2,5 A je Kontakt",
     "stift_lcsc": "C919361",       # BOOMELE "2.54-2*2P", SMD
@@ -336,21 +401,28 @@ STECKER_LEISTUNG = {
                                    # auf der LCSC-Produktseite
     "stift_spec": "Stiftleiste 2x2, 2,54 mm, SMD senkrecht, "
                   "Isolierkoerper <= 2,5 mm, Steckstift 6,0 mm",
+    "buchse_mpn": "HCTL PM254-2-02-S-8.5",
+    "stift_mpn": "BOOMELE 2.54-2*2P",
     "pins": {1: "PWR24V", 2: "GND", 3: "PWR24V", 4: "GND"},
     "buchsenhoehe_mm": BUCHSE_SMD_HOEHE_MM,
     "stiftkoerper_mm": STIFT_SMD_KOERPER_MM,
     "stiftlaenge_mm": STIFT_SMD_STECKLAENGE_MM,
-    # Engpass ist die Buchse mit 2,5 A je Kontakt (LCSC C261072,
-    # "Current Rating: 2.5A"); der Stift kann 3 A. Zwei Kontakte je
-    # Ader ergeben rechnerisch 5,0 A vor Derating -- dieselbe Vorsicht
-    # wie in hardware/bauteile-1b.md, Beleg 4: eine Parallel-Summe von
-    # Einzelkontakt-Nennwerten, keine Herstelleraussage ueber den
-    # Parallelbetrieb. Der DRV8876 des Motormoduls zieht ueber 2,5 A;
-    # EIN Motormodul passt damit mit Faktor 2, mehrere gleichzeitig
-    # unter Volllast nicht mehr.
-    "strom_pro_kontakt_a": 2.5,
+    # Beide Haelften tragen 3 A je Kontakt: Buchse C3975147 ("Current
+    # Rating: 3A") und Stift C919361 ("Current Rating: 3A"). Bis
+    # Aufgabe 5g stand hier 2,5 A -- das war der Wert der damals
+    # ersatzweise herangezogenen 2x5-Buchse C261072, nicht der eines
+    # Teils in der gebrauchten Polzahl. Seit die 2x2-Buchse belegt ist,
+    # ist der Engpass verschwunden.
+    # Zwei Kontakte je Ader ergeben rechnerisch 6,0 A vor Derating --
+    # dieselbe Vorsicht wie in hardware/bauteile-1b.md, Beleg 4: eine
+    # Parallel-Summe von Einzelkontakt-Nennwerten, keine Hersteller-
+    # aussage ueber den Parallelbetrieb bei ungleichen Kontakt-
+    # widerstaenden. Der DRV8876 des Motormoduls zieht ueber 2,5 A; EIN
+    # Motormodul passt damit mit Faktor 2,4, mehrere gleichzeitig unter
+    # Volllast weiterhin nicht.
+    "strom_pro_kontakt_a": 3.0,
     "kontakte_je_ader": 2,
-    "quelle": "hardware/bauteile-1b.md, Beleg 4 und Beleg 13",
+    "quelle": "hardware/bauteile-1b.md, Beleg 4, 13 und 14",
 }
 
 

@@ -36,10 +36,10 @@ nachgereicht, 2026-08-31):
    durchgehendem Stift) wie bei jedem Modul, obwohl seine obere
    Buchsenoeffnung nie bestueckt wird (der Sockel sitzt zuoberst im
    Stapel, darueber kommt nichts). Eine gewoehnliche Stiftleiste mit
-   6,0 mm Stift gaebe bei STAPEL_ABSTAND=13,0 mm nur 2,9 mm
-   Einstecktiefe (6,0 mm Stift + 8,5 mm Buchsenhoehe - 11,4 mm Spalt,
+   6,0 mm Stift gaebe bei STAPEL_ABSTAND=13,5 mm nur 2,6 mm
+   Einstecktiefe (6,0 mm Stift + 8,5 mm Buchsenhoehe - 11,9 mm Spalt,
    siehe stack_spec.EINSTECKTIEFE_KETTE()-Rechnung fuer das analoge
-   Bauteil); der Stapelstecker gibt an dieser Stelle 7,96 mm
+   Bauteil); der Stapelstecker gibt an dieser Stelle 7,46 mm
    (stack_spec.EINSTECKTIEFE_STAPEL()) -- UND die Geometrie ist so fuer
    die ganze Platinenfamilie identisch, was Lager und Layout
    vereinfacht. Absicht, kein Versehen: die ungenutzte obere

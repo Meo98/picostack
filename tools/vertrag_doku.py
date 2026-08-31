@@ -21,6 +21,21 @@ def tabelle(kopf, zeilen):
     return "\n".join(aus)
 
 
+def teil(stecker, seite):
+    """LCSC-Nummer einer Steckerhaelfte -- oder die Spezifikation.
+
+    Ein leeres Feld ist erlaubt (dann steht die Spezifikation da),
+    aber es bedeutet: diese Platine ist NICHT bestueckt bestellbar.
+    Deshalb wird es als "offen" ausgewiesen und nicht als leere
+    Backticks verschwiegen. Seit 2026-08-31 ist kein Feld mehr leer;
+    der Zweig bleibt, damit ein kuenftiges Loch wieder sichtbar wird.
+    """
+    nummer = stecker[seite + "_lcsc"]
+    if nummer:
+        return "`%s`" % nummer
+    return "offen: " + stecker.get(seite + "_spec", "")
+
+
 def main():
     teile = ["# PicoStack — der Vertrag",
              "",
@@ -92,16 +107,21 @@ def main():
                  S.LUFT_STIFTKOERPER(S.STECKER_KETTE)),
              "",
              tabelle(["Stecker", "Bauart", "oben", "unten",
-                      "Buchse LCSC", "Stift LCSC"],
+                      "Buchse LCSC", "Buchse Typ",
+                      "Stift LCSC", "Stift Typ"],
                      [(name, st["typ"], st["montage_oben"],
                        st["montage_unten"],
-                       "`%s`" % st["buchse_lcsc"] if st["buchse_lcsc"]
-                       else "offen: " + st.get("buchse_spec", ""),
-                       "`%s`" % st["stift_lcsc"] if st["stift_lcsc"]
-                       else "offen: " + st.get("stift_spec", ""))
+                       teil(st, "buchse"), st.get("buchse_mpn", ""),
+                       teil(st, "stift"), st.get("stift_mpn", ""))
                       for name, st in (("stapel", S.STECKER_STAPEL),
                                        ("kette", S.STECKER_KETTE),
                                        ("leistung", S.STECKER_LEISTUNG))]),
+             "",
+             "Alle sechs Steckerhaelften tragen seit 2026-08-31 eine "
+             "Bauteilnummer von einer gesehenen LCSC-Produktseite; alle "
+             "sind in der JLCPCB-Bestueckungsbibliothek gefuehrt. Damit "
+             "sind Sockelplatine und Module bestueckt bestellbar -- ein "
+             "einziges leeres Feld haette das verhindert.",
              "",
              "Quellen: %s / %s / %s." % (S.STECKER_STAPEL["quelle"],
                                          S.STECKER_KETTE["quelle"],

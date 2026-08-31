@@ -29,7 +29,7 @@ check("Lochbild vollstaendig", sorted(S.M3_HOLES),
 # Masse, die die Spezifikation zusichert und die bisher niemand prueft.
 check("Eckenradius", S.CORNER_R, 3.0)
 check("M3-Bohrdurchmesser", S.M3_DRILL, 3.2)
-check("Stapelabstand", S.STAPEL_ABSTAND, 13.0)
+check("Stapelabstand", S.STAPEL_ABSTAND, 13.5)
 
 # --- Steckerbelegung ---
 check("40 Pins beschrieben", len(S.PIN_ROLLE), 40)
@@ -131,16 +131,44 @@ check("Kettenstecker ist nicht durchgehend",
 check("Kettenstecker fuehrt oben und unten verschiedene Netze",
       S.STECKER_KETTE["haelften_gleiche_netze"], False)
 
+# --- Jede Steckerhaelfte hat eine Bauteilnummer ----------------------
+# "Beide Platinen bestueckt bestellbar" ist ein erklaertes Ziel des
+# Projekts (docs/superpowers/specs/2026-08-28-picostack-design.md). Es
+# scheitert an EINEM leeren Feld: wer eine Haelfte nicht bestellen
+# kann, kann die Platine nicht bestueckt bestellen. Bis Aufgabe 5g
+# waren drei der sechs Felder leer (Buchse 1x2, Stift 1x2, Buchse 2x2)
+# -- diese Pruefung haelt fest, dass sie es nicht wieder werden.
+#
+# Sie prueft absichtlich NUR "nicht leer" und "sieht aus wie eine
+# LCSC-Nummer", nicht die konkrete Nummer: welches Teil es ist, darf
+# sich aendern (Abkuendigung, Lagerbestand), dass es EINES gibt, nicht.
+for _name, _st in (("Stapelstecker", S.STECKER_STAPEL),
+                   ("Kettenstecker", S.STECKER_KETTE),
+                   ("Leistungsstecker", S.STECKER_LEISTUNG)):
+    for _seite in ("buchse_lcsc", "stift_lcsc"):
+        _nr = _st[_seite]
+        check("%s: %s ist belegt" % (_name, _seite), bool(_nr), True)
+        check("%s: %s sieht aus wie eine LCSC-Nummer" % (_name, _seite),
+              _nr.startswith("C") and _nr[1:].isdigit(), True)
+
+# Der Leistungsstecker traegt Motorstrom. Sein Nennstrom je Kontakt
+# muss mindestens so gross sein wie der der Buchse des Signalsteckers
+# -- sonst waere ausgerechnet der Leistungspfad der schwaechere.
+check("Leistungsstecker nicht schwaecher als der Signalstecker",
+      S.STECKER_LEISTUNG["strom_pro_kontakt_a"]
+      >= S.STECKER_STAPEL["strom_pro_kontakt_a"], True)
+
 # Die Einstecktiefe wird aus STAPEL_ABSTAND und den Steckermassen
 # nachgerechnet (nicht nur die Zahl 13.0 abgefragt) -- das faengt den
 # naechsten Denkfehler ab: wer STAPEL_ABSTAND aendert, ohne die
 # Steckermasse mitzudenken, oder umgekehrt.
 MINDEST_EINSTECKTIEFE = 2.0  # mm, konservativ unter dem knappsten
-# belegten Fall (Ketten- und Leistungsstecker, rechnerisch je 5,6 mm
-# bei 13,0 mm, hardware/bauteile-1b.md Beleg 13) -- faengt Rechen-
+# belegten Fall (Ketten- und Leistungsstecker, rechnerisch je 5,10 mm
+# bei 13,5 mm, hardware/bauteile-1b.md Beleg 13/14) -- faengt Rechen-
 # oder Bauteiländerungen ab, ohne die exakte Zahl selbst zu
 # duplizieren. Die Schwelle bleibt bei 2,0 mm, obwohl der Ist-Wert
-# gestiegen ist: sie ist die Reissleine, nicht die Messlatte.
+# sich zweimal geaendert hat (3,1 -> 5,60 -> 5,10 mm): sie ist die
+# Reissleine, nicht die Messlatte.
 check("Stapelstecker-Einstecktiefe ueber Mindestschwelle",
       S.EINSTECKTIEFE_STAPEL() > MINDEST_EINSTECKTIEFE, True)
 check("Kettenstecker-Einstecktiefe ueber Mindestschwelle",
@@ -157,14 +185,26 @@ for _n, _st in (("Kette", S.STECKER_KETTE), ("Leistung", S.STECKER_LEISTUNG)):
     # Und der Isolierkoerper des Stifts muss ueber der Buchsenoberkante
     # bleiben, sonst stossen die Kunststoffe aneinander, bevor die
     # Abstandsbolzen sitzen -- die Platinen liessen sich dann nicht
-    # mehr flach verschrauben. Das ist heute der engste Punkt (0,40 mm)
-    # und der Grund, warum STAPEL_ABSTAND nicht unter 12,6 mm darf.
+    # mehr flach verschrauben. Das ist der engste Punkt des Stapels und
+    # der Grund, warum STAPEL_ABSTAND nicht unter 12,6 mm darf. Seit
+    # Aufgabe 5g (STAPEL_ABSTAND 13,0 -> 13,5 mm) sind es 0,90 statt
+    # 0,40 mm; die Pruefung bleibt trotzdem "> 0" und nicht "> 0,9" --
+    # sie soll den Vorzeichenwechsel fangen, nicht den heutigen Wert
+    # festschreiben.
     check("%s: Luft zwischen Stiftkoerper und Buchse" % _n,
           S.LUFT_STIFTKOERPER(_st) > 0, True)
 
 # Ueber den Schraubklemmen (urspruenglicher Grund fuer den alten
 # 15,0-mm-Wert) und dem K7805 (hoechstes denkbares Bauteil im Spalt,
 # falls je ein Modul es nutzt) muss im Spalt noch Luft bleiben.
+# Der Stift des Stapelsteckers darf nicht am Grund seiner Buchse
+# anschlagen, bevor die Platinen auf Abstand sind: seine Einstecktiefe
+# muss kleiner bleiben als die Buchse tief ist. Das ist die Reserve,
+# die beim SENKEN von STAPEL_ABSTAND als erste verschwaende (bei
+# 13,5 mm: 8,50 - 7,46 = 1,04 mm).
+check("Stapelstift schlaegt nicht am Buchsengrund an",
+      S.EINSTECKTIEFE_STAPEL() < S.STECKER_STAPEL["gehaeusehoehe_mm"], True)
+
 check("Ueber der Klemme bleibt Luft im Spalt",
       (S.STAPEL_ABSTAND - S.PLATINE_DICKE - S.KLEMME_HOEHE_MM) > 0, True)
 check("Ueber dem K7805 bleibt Luft im Spalt",

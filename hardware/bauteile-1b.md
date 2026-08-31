@@ -1236,6 +1236,11 @@ Auftraggebers:**
    (1,80 statt 1,30 mm). Verbessert jede einzelne Reserve; nicht getan, weil
    `STAPEL_ABSTAND` nicht Teil der Aufgabe war und am Gehäuse (Aufgabe 9) hängt.
 
+> **Erledigt seit 2026-08-31 (Aufgabe 5g), s. Beleg 14:** Weg 2 ist gewählt,
+> `STAPEL_ABSTAND = 13,5 mm`. Die Zahlen dieses Abschnitts (11,40 / 5,60 /
+> 0,40 mm) sind damit **überholt**; es gelten 11,90 / 5,10 / 0,90 mm.
+> Ebenso überholt ist 13.4: die drei dort offenen LCSC-Felder sind belegt.
+
 Damit dreht sich die Richtung der Enge um: `STAPEL_ABSTAND` wird jetzt **nach
 unten** von der Buchsenluft begrenzt (G ≥ 8,5 + 2,5 = 11,0 mm, also
 ≥ 12,6 mm) — enger als die Klemmen (11,7 mm) — und nach oben praktisch von
@@ -1308,6 +1313,165 @@ durch — `STECKER_LEISTUNG` existierte dort nicht. Dass die Bauart des
 Leistungssteckers nirgends maschinenlesbar stand, ist Teil des Befunds.
 
 
+## Beleg 14 — Die drei fehlenden Steckerhälften, und warum 13,5 mm (Aufgabe 5g, 2026-08-31)
+
+Zwei Punkte in einem Beleg, weil sie dieselbe Rechnung teilen: der
+Stapelabstand steigt auf 13,5 mm, **und** alle drei bis dahin offenen
+Bauteilnummern sind gefunden — in der gebrauchten Polzahl.
+
+### 14.1 `STAPEL_ABSTAND` 13,0 → 13,5 mm
+
+    G = STAPEL_ABSTAND − PLATINE_DICKE = 13,5 − 1,6 = 11,90 mm
+    F = Isolationshöhe der Buchse                   =  8,50 mm
+    M = Isolierkörper 2,50 + Steckstift 6,00        =  8,50 mm
+
+    Einstecktiefe SMD-Paar   = (M + F) − G = 17,00 − 11,90 =  5,10 mm
+    Einstecktiefe Stapel     = 19,36 − 11,90               =  7,46 mm
+    Luft Stiftkörper/Buchse  = 11,90 − 8,50 − 2,50         =  0,90 mm
+
+**Grund:** die 0,40 mm Luft bei 13,0 mm waren der engste Punkt des ganzen
+Stapels (Beleg 13.5) und konnten im ungünstigen Toleranzstapel (± 0,2 mm je
+Bauteil, ± 10 % Platinendicke) auf null fallen. Dann stossen die beiden
+Isolierkörper aneinander, **bevor** die Abstandsbolzen sitzen — die Platinen
+liessen sich nicht mehr flach verschrauben.
+
+**Was das kostet, vollständig:** genau zwei Werte sinken, beide um exakt
+0,50 mm, beides Einstecktiefen. Alles andere wächst.
+
+| Grösse | 13,0 mm | 13,5 mm |
+|---|---|---|
+| Luft Stift-Isolierkörper / Buchsenoberkante | 0,40 | **0,90** |
+| Einstecktiefe Ketten-/Leistungsstecker | 5,60 | **5,10** |
+| Einstecktiefe Stapelstecker | 7,96 | **7,46** |
+| Luft über der Klemme (DB128L, 10,10 mm) | 1,30 | **1,80** |
+| Luft über dem K7805 (10,2 mm) | 1,20 | **1,70** |
+| Rest der freien Steckstiftlänge (Stift 6,0 mm) | 0,40 | **0,90** |
+| Rest bis zum Buchsengrund des Stapelsteckers (8,5 mm tief) | 0,54 | **1,04** |
+
+Die einzige begründete Untergrenze im Projekt ist `MINDEST_EINSTECKTIEFE =
+2,0 mm`; 5,10 mm liegt Faktor 2,55, 7,46 mm Faktor 3,73 darüber. **Keine
+Reserve fällt unter eine begründete Grenze.**
+
+Der gültige Bereich bleibt unverändert — nach unten begrenzt die Buchsenluft
+(G ≥ 11,0 mm, also `STAPEL_ABSTAND` ≥ 12,6 mm, enger als die Klemmen mit
+≥ 11,7 mm), nach oben die Einstecktiefe (erst ab 16,6 mm unter 2,0 mm). Neu
+ist nur die Lage darin: 13,0 mm lag 0,4 mm über der Untergrenze, 13,5 mm liegt
+0,9 mm darüber und 3,1 mm unter der Obergrenze.
+
+In der Ebene ändert sich **nichts**: Steckerkoordinaten, Höfe, freie Flächen
+und der Verdreh-Mindestabstand (2,755 mm) hängen nicht am Stapelabstand.
+
+**Offen, und ausdrücklich nicht mitentschieden:** der Spalt G *ist* die
+Bauhöhe des Abstandsbolzens. 11,90 mm ist kein Katalogmass (üblich sind 10,
+11, 12, 15 mm) — 11,40 mm bei 13,0 mm war es allerdings genauso wenig, das
+Problem ist geerbt, nicht neu. `STAPEL_ABSTAND = 13,6 mm` ergäbe genau
+12,00 mm Bolzen bei 1,00 mm Luft, 5,00 / 7,36 mm Einstecktiefe und 1,90 mm
+über der Klemme. Das gehört vor Aufgabe 9 (Gehäuse) entschieden, wo der
+Bolzen zum ersten Mal ein zu kaufendes Teil wird.
+
+### 14.2 Die drei fehlenden Nummern — gefunden, in der richtigen Polzahl
+
+Beleg 13.4 liess drei von vier Steckerhälften ohne Nummer, weil die Bauform
+zwar belegt war, aber nicht in 1×2 bzw. 2×2. Damit war **keine** der beiden
+Platinen bestückt bestellbar — gegen ein erklärtes Projektziel.
+
+**Was diesmal anders gesucht wurde:** zusätzlich zur LCSC-Suche die
+**JLCPCB-SMT-Bauteilsuche** selbst (derselbe Dienst, der entscheidet, ob JLC
+ein Teil bestückt), und über Serien**präfixe** statt über Beschreibungen. Damit
+wurde der Aufbau der Typenschlüssel sichtbar:
+
+    PM254 - <Reihen> - <Pole je Reihe> - <Montage> - <Isolationshöhe>
+                                          Z = 直插  bedrahtet, gerade
+                                          W = 弯插  bedrahtet, gewinkelt
+                                          S = 立贴  SMD senkrecht   ← gesucht
+
+Die in Beleg 13.4 gesehenen Buchsen gehören zu einer Reihe, deren kleine
+Polzahlen nur bedrahtet geführt werden. Die HCTL-Reihe `PM254-2-xx-S-8.5`
+dagegen läuft lückenlos von 2×2 bis 2×20. Beim einreihigen Gegenstück gibt es
+diese Reihe nicht; dort liefern hanxia und SHOU HAN das 1×2 in derselben
+Bauform.
+
+**Alle Angaben von tatsächlich geöffneten LCSC-Produktseiten, 2026-08-31:**
+
+| Rolle | LCSC | Hersteller / Typ | Wörtliche Attribute |
+|---|---|---|---|
+| Buchse Kette 1×2 | **`C46635838`** | hanxia „HX PM2.54-1x2P TP H8.5-YQ" | „Mounting Type: Surface Mount, Vertical", „Holes Structure: 1x2P", „Pitch: 2.54mm", **„Insulation Height: 8.5mm"**, „Current Rating: 3A", „Contact Material: Brass", „Contact Plating: Gold", „Packaging: SMD, P=2.54mm (Staggered Pins)"; 1 280 auf Lager |
+| Stift Kette 1×2 | **`C41417359`** | hanxia „HX PZ2.54-1x2P TP-YQ" | „Mounting Type: Surface Mount, Vertical", „Pin Structure: 1x2P", „Pitch: 2.54mm", **„Insulation Height: 2.5mm"**, **„Length of Mating Pin: 6mm"**, „Current Rating: 3A", „Contact Material: Brass", „Contact Plating: Gold", „Voltage Rating (Max): 1kV"; 10 940 auf Lager |
+| Buchse Leistung 2×2 | **`C3975147`** | HCTL „PM254-2-02-S-8.5" | „Mounting Type: Surface Mount, Vertical", „Holes Structure: 2x2P", „Number of Rows: 2", „Pitch: 2.54mm", „Row Spacing: 2.54mm", **„Insulation Height: 8.5mm"**, **„Current Rating: 3A"**, „Contact Material: Copper alloy", „Operating Temperature: −40℃~+105℃"; 5 075 auf Lager. Datenblatt bei LCSC: `2306091018_HCTL-PM254-2-02-S-8-5_C3975147.pdf` |
+| Stift Leistung 2×2 | `C919361` | BOOMELE „2.54-2\*2P" | unverändert; Produktseite neu geöffnet: „Surface Mount, Vertical", „Pin Structure: 2x2P", „Insulation Height: 2.5mm", „Length of Mating Pin: 6mm", „Current Rating: 3A"; 28 460 auf Lager |
+
+**Belegte Ersatztypen für die 1×2-Buchse** (Produktseiten ebenfalls geöffnet,
+beide „Surface Mount, Vertical", „1x2P", „Insulation Height: 8.5mm",
+„Current Rating: 3A"): `C55218893` (SHOU HAN „PM2.54-1x2PLT-H8.5-R", 815 auf
+Lager) und `C48641753` (hanxia „HX PM2.54-1x2P TP H8.5-ZQ", 130 auf Lager).
+Für die 2×2-Buchse gibt es **keinen** zweiten Typ mit geöffneter Produktseite;
+die Bauteilsuche zeigt weitere Kandidaten, ungesehene Nummern gehören aber
+nicht in den Vertrag.
+
+**Masse gegen die Geometrie geprüft:** der Vertrag rechnet mit 8,50 mm
+Buchsenhöhe, 2,50 mm Isolierkörper und 6,00 mm freiem Steckstift. Alle vier
+Teile bestätigen genau diese drei Zahlen. Die Höhenrechnung aus 14.1 steht
+damit nicht mehr nur auf einer *Bauform*, sondern auf den bestellten Teilen.
+
+**Der Strom-Engpass ist verschwunden.** Beleg 13.6 führte 2,5 A je Kontakt —
+das war der Wert der ersatzweise herangezogenen 2×5-Buchse `C261072`, also
+eines Teils in der *falschen* Polzahl. Die richtige 2×2-Buchse `C3975147` kann
+3 A, der Stift `C919361` ebenfalls. `strom_pro_kontakt_a` steht deshalb auf
+**3,0**; zwei Kontakte je Ader ergeben rechnerisch **6,0 A vor Derating** —
+weiterhin eine Parallel-Summe von Einzelkontakt-Nennwerten und **keine**
+Herstelleraussage über Parallelbetrieb bei ungleichen Kontaktwiderständen
+(dieselbe Vorsicht wie in Beleg 4). Ein Motormodul (ITRIP ≈ 2,538 A) passt
+damit mit Faktor 2,4; mehrere gleichzeitig unter Volllast weiterhin nicht.
+
+### 14.3 Bestückt JLCPCB die Teile?
+
+Ausdrücklich geprüft, weil Lagerbestand bei LCSC das nicht beantwortet. Die
+JLCPCB-SMT-Bauteilsuche liefert alle vier Teile mit
+`componentLibraryType: "expand"` (Extended Part, wird bestückt) und
+`allowPostFlag: true`:
+
+| LCSC | JLC-Bibliothek | Lager (JLC) | Mindest-Bestückung |
+|---|---|---|---|
+| `C46635838` | expand | 1 294 | 5 |
+| `C41417359` | expand | 11 529 | 5 |
+| `C3975147` | expand | 6 485 | 2 |
+| `C919361` | expand | 28 463 | 2 |
+
+Keines ist „Basic"/„Preferred" — das kostet die übliche Rüstgebühr je Extended
+Part und Auftrag. Der knappste Bestand ist die 1×2-Buchse mit ~1 300 Stück;
+dafür stehen die beiden Ersatztypen aus 14.2 bereit.
+
+### 14.4 Was nicht getan wurde, und warum
+
+* **Die Polzahl bleibt 1×2 und 2×2.** Der in Beleg 13.4 vorgeschlagene
+  2×5-Ersatz (`C261072` + `C124391`) wird nicht gebraucht; er hätte
+  `STECKER_KETTE["pins"]`, `tools/sch/modulsockel.py`, die Koordinaten aus
+  Aufgabe 5c und die Kollisions- wie Verdreh-Rechnung geändert — und wäre
+  sofort wieder zurückzubauen gewesen.
+* **Keine Handbestückung.** Alle vier Teile werden von JLCPCB bestückt.
+* **Die 2,5-mm-Reissleine der Verdreh-Probe** wurde nicht gesenkt und nicht
+  berührt; der gerechnete Wert bleibt 2,755 mm.
+
+### 14.5 Was der Test seither festhält
+
+`tests/test_stack_spec.py` prüft neu drei Dinge:
+
+1. **Jede der sechs Steckerhälften trägt eine Bauteilnummer**, die wie eine
+   LCSC-Nummer aussieht — absichtlich nicht *welche*: das Teil darf sich
+   ändern (Abkündigung, Lagerbestand), das leere Feld nicht. Auf einer
+   Wegwerfkopie mit den drei Feldern wieder leer meldet er sechs Zusicherungen
+   rot.
+2. **Der Leistungsstecker darf nicht schwächer sein als der Signalstecker**
+   (3,0 ≥ 3,0 A). Auf 2,5 A zurückgedreht: rot.
+3. **Der Stift des Stapelsteckers darf nicht am Buchsengrund anschlagen**
+   (7,46 < 8,50 mm) — die Reserve, die beim *Senken* von `STAPEL_ABSTAND` als
+   erste verschwände. Bei 12,0 mm meldet sie sich allein.
+
+Punkt 3 ist der einzige der drei, der keinen vergangenen Fehler festhält,
+sondern einen künftigen: er begrenzt `STAPEL_ABSTAND` nach unten aus einer
+zweiten, von der Buchsenluft unabhängigen Richtung.
+
+
 ## Zusammenfassung für die Beschaffung
 
 | Offener Punkt aus der Aufgabe | Antwort |
@@ -1318,7 +1482,7 @@ Leistungssteckers nirgends maschinenlesbar stand, ist Teil des Befunds.
 | **Entscheidung 2026-08-31 (zweite Runde)** | Keine passende längere Stiftleiste gefunden (zwei unabhängige Suchen) → `STAPEL_ABSTAND` auf **13,0 mm** gesenkt: Kettenstecker jetzt 3,1 mm Einstecktiefe, Stapelstecker 7,96 mm; Klemmenhöhe belegt (DB128L 10,10 mm, K7805 10,2 mm, beide Datenblätter gelesen) bleibt unter der 11,0-mm-Reissleine, 1,2–1,3 mm Luft im Spalt (Beleg 6, zweite Runde). Gehäuse (Aufgabe 9) noch auf 13,0 mm nachzuziehen |
 | D-Flipflop mit Löscheingang | Gefunden: SN74LVC1G175DCKR, C202238, SOT-363-6, JLCPCB-bestückbar; Primärquelle TI SCES560G; braucht neue Leitung ODER lokales RC-POR |
 | Gatter (NOT, 2× AND) | ~~Beide JLCPCB-bestückbar: C8207 (SOT-353) und C548580 (XSON-8, deckt beide AND-Funktionen)~~ — **überholt, s. Nachtrag 2026-08-31 (2. Runde):** `NRST` war verpolt (AND statt NAND auf einen aktiv-LOW-Pin); jetzt 1× Dual-NAND `SN74LVC2G00DCUR` (C206109, VSSOP-8 — NICHT SOT-363, s. Anmerkung) deckt NOT (via NAND(Q,Q)) UND das NRST-Gatter ab, plus 1× Einzel-AND `SN74LVC1G08DCKR` (C7832, SOT-353) für BOOT0 — **zwei physische Gatter-ICs statt drei** |
-| Leistungsstecker + Strombelastbarkeit | 2×2 derselben Stecker-Familie, ~5 A/Ader vor Derating (Engpass Buchse 2,5 A/Kontakt); Positionszahl ist Vorschlag, kein Vertragswert |
+| Leistungsstecker + Strombelastbarkeit | 2×2 derselben Stecker-Familie; ~~~5 A/Ader (Engpass Buchse 2,5 A/Kontakt)~~ — **überholt seit Beleg 14:** beide Hälften 3 A/Kontakt (`C3975147` + `C919361`), also ~6 A/Ader vor Derating; Positionszahl ist Vorschlag, kein Vertragswert |
 | Klemme 3-polig | DB128L-5.08-3P-GN-S, C395869, 16 A/300 V |
 | `tools/stack_spec.py`, `docs/vertrag.md`, Tests | Nachgezogen: SEL raus aus PIN_ROLLE/RESERVIERT, STECKER_STAPEL/STECKER_KETTE neu, Vertrag neu erzeugt, Tests ergänzt (siehe Beleg 6) |
 | Stromgrenze DRV8876 (Motormodul, Aufgabe 5) | Altprojekt-Wert (R5=2,2k → 1,5 A) reichte für den 2-A-Motor nicht (dokumentierter Muttern-Board-Fehler); neu gerechnet über TI-Gleichung 3 (SLVSDS7B, Abschnitt 7.3.3.2): R5 = 1,3 kΩ → ITRIP ≈ 2,538 A (~27 % Marge über 2 A, deutlich unter IOCP-min 3,5 A); R10 bleibt DNP, unveränderter Altprojekt-Wert (4,7 kΩ) |
@@ -1330,3 +1494,5 @@ Leistungssteckers nirgends maschinenlesbar stand, ist Teil des Befunds.
 | **Optokoppler-Footprint passt nicht (Nebenbefund Aufgabe 5d)** | `SOP-4_3.8x4.1mm_P2.54mm` gegen den PC817-Gullwing (Körper 6,5 × 4,58 mm, Spanne 10,0 mm, Reihe 7,62 mm laut D2-A03101EN) — betrifft auch das geerbte U2. Aufgabe 7 muss einen eigenen Footprint zeichnen; ebenso offen: R6 verheizt an 24 V ≈ 0,24 W in einem 0805. Details Beleg 12 |
 | A_IPROPI des DRV8876 nachgeprüft (Aufgabe-5-Fix-1) | **1000 µA/A**, bestätigt aus dem PDF SLVSDS7B, Abschnitt 6.5, Block „CURRENT SENSE AND REGULATION (IPROPI, VREF)" — der Wert 1100 µA/A gehört zu keinem der beiden Familienmitglieder (der Schwestertyp DRV8874, Dok. SLVSF66A, nennt 450 µA/A). Damit bleibt ITRIP = 2,538 A bei R5 = 1,3 kΩ richtig, Marge unverändert ~27 % über 2 A |
 | **Ketten- und Leistungsstecker waren nicht baubar (Aufgabe 5e)** | Beide waren Paare aus **bedrahteter** Buchse oben und **bedrahteter** Stiftleiste unten am selben Ort — zwei bedrahtete Bauteile können sich aber keine Bohrungen teilen. Jetzt **SMD-Paare** (Buchse oben, Stiftleiste unten, gleicher Ort, keine Durchkontaktierung dazwischen); Einstecktiefe 5,60 statt 3,1 mm. Ein 2×2-**Stapelstecker** existiert bei LCSC nicht (nur 2×20/2×40), und über den vorhandenen 2×20 lässt sich die Leistung nicht führen (kein freier Kontakt, alle 40 sind Pico-Pins). Belegte Nummer: **C919361** (Stift 2×2). Buchsen 1×2/2×2 und Stift 1×2: **Nummer offen**, Spezifikation in Beleg 13.4; vollständig belegtes Ersatzpaar in 2×5: C261072 + C124391. Enger Punkt: 0,40 mm Luft über der Buchse (Beleg 13.5) |
+| **Stapelabstand 13,5 mm (Aufgabe 5g)** | `STAPEL_ABSTAND` von 13,0 auf **13,5 mm**: die Luft zwischen Stift-Isolierkörper und Buchsenoberkante steigt von 0,40 auf **0,90 mm** (der engste Punkt des Stapels, im Toleranzstapel bisher bis auf null). Genau zwei Werte sinken, beide um 0,50 mm — Einstecktiefe SMD-Paar 5,60 → **5,10 mm**, Stapelstecker 7,96 → **7,46 mm**, beide weit über der 2,0-mm-Reissleine. Alle anderen Reserven wachsen (Klemme 1,80 mm, K7805 1,70 mm). In der Ebene ändert sich nichts. Gehäuse (Aufgabe 9) auf 13,5 mm nachzuziehen; offen bleibt die Bolzenlänge — 11,90 mm ist kein Katalogmass (Beleg 14.1) |
+| **Alle Steckerhälften haben jetzt eine Nummer (Aufgabe 5g)** | Die drei offenen Felder aus Beleg 13.4 sind belegt, **in der gebrauchten Polzahl**: Buchse Kette 1×2 **`C46635838`**, Stift Kette 1×2 **`C41417359`**, Buchse Leistung 2×2 **`C3975147`** (Stift Leistung unverändert `C919361`). Alle vier bestätigen genau die Vertragsmasse 8,50 / 2,50 / 6,00 mm und sind bei JLCPCB als Extended Part bestückbar — damit sind **beide Platinen bestückt bestellbar**. Der 2×5-Ersatz und die Handbestückung entfallen; Polzahl, `modulsockel.py` und die Koordinaten aus 5c bleiben unverändert (Beleg 14.2–14.4) |
