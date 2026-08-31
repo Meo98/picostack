@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.join(HERE, "..", "tools", "pcb"))
 sys.path.insert(0, os.path.join(HERE, "..", "tools", "sch"))
 
 import kicadlibs, symlib
-import geometry, netclasses
+import geometry, netclasses, fertigung
 import stack_spec
 
 fails = []
@@ -94,9 +94,29 @@ check("autoroute.py haengt nicht mehr an build.BOARD",
       "build.BOARD" in autoroute_src, False)
 
 
-# --- tools/stack_spec.py traegt jetzt die vertraglichen Bahnbreiten ---
-check("Signalbreite aus dem Vertrag", stack_spec.TRACK_SIGNAL, 0.25)
-check("Leistungsbreite aus dem Vertrag", stack_spec.TRACK_POWER, 1.00)
+# --- Bahnbreiten: Fertigungsentscheidung, nicht Teil des Vertrags. ---
+# Befund aus der Pruefung: sie standen zunaechst in tools/stack_spec.py,
+# das tools/vertrag_doku.py aber nie zeigte -- derselbe Fehler wie
+# zuvor, nur zwischen Modul und Doku statt zwischen netclasses.py und
+# autoroute.py. tools/pcb/fertigung.py ist jetzt die einzige Quelle;
+# stack_spec.py darf diese Felder nicht mehr tragen, sonst schiebt sie
+# irgendwann jemand aus Bequemlichkeit wieder in den Vertrag.
+check("stack_spec traegt keine Signalbreite mehr",
+      hasattr(stack_spec, "TRACK_SIGNAL"), False)
+check("stack_spec traegt keine Leistungsbreite mehr",
+      hasattr(stack_spec, "TRACK_POWER"), False)
+check("fertigung traegt die Signalbreite", fertigung.TRACK_SIGNAL, 0.25)
+check("fertigung traegt die Leistungsbreite", fertigung.TRACK_POWER, 1.00)
+check("fertigung traegt VIA_PAD", fertigung.VIA_PAD, 0.60)
+check("fertigung traegt VIA_DRILL", fertigung.VIA_DRILL, 0.30)
+
+# docs/vertrag.md wird aus stack_spec.py erzeugt (tools/vertrag_doku.py)
+# und hat die Bahnbreiten nie gezeigt -- das darf so bleiben, sonst
+# waeren sie doch wieder Teil des Vertrags.
+_vertrag = open(os.path.join(HERE, "..", "docs", "vertrag.md"),
+                encoding="utf-8").read()
+check("docs/vertrag.md erwaehnt keine Bahnbreite",
+      "0.25" in _vertrag or "0,25" in _vertrag or "TRACK_" in _vertrag, False)
 
 
 # --- geometry.check_all: zwei verschiedene Platinen im selben Lauf, ---
@@ -171,10 +191,10 @@ with tempfile.TemporaryDirectory() as tmp:
 
     for d, name in ((d_sockel, "Sockel"), (d_motor, "Motor")):
         klassen = {c["name"]: c for c in d["net_settings"]["classes"]}
-        check("%s: Default-Breite aus dem Vertrag" % name,
-              klassen["Default"]["track_width"], stack_spec.TRACK_SIGNAL)
-        check("%s: Leistungsbreite aus dem Vertrag" % name,
-              klassen["Leistung"]["track_width"], stack_spec.TRACK_POWER)
+        check("%s: Default-Breite aus fertigung.py" % name,
+              klassen["Default"]["track_width"], fertigung.TRACK_SIGNAL)
+        check("%s: Leistungsbreite aus fertigung.py" % name,
+              klassen["Leistung"]["track_width"], fertigung.TRACK_POWER)
 
 
 if fails:

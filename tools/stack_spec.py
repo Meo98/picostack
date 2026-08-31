@@ -20,21 +20,6 @@ M3_HOLES = [(4.0, 4.0), (4.0, 56.0), (60.0, 4.0), (60.0, 56.0)]
 
 STAPEL_ABSTAND = 15.0     # mm zwischen zwei Platinen
 
-# --- Bahnbreiten ------------------------------------------------------
-# Wortwoertlich aus den globalen Rahmenbedingungen jeder Aufgabe. Einzige
-# Quelle fuer beide Platinenwerkzeuge (tools/pcb/netclasses.py traegt sie
-# ins KiCad-Projekt ein, tools/pcb/autoroute.py schreibt dieselbe Zahl in
-# die an freerouting uebergebene DSN) -- zwei getrennte Kopien dieser
-# Werte waren im Vorlaeuferprojekt der Fehler, der das Muttern-Redesign
-# noetig machte: eine frisch erzeugte pcbnew.BOARD() kennt die
-# Netzklassen des Projekts nicht, autoroute.py muss sie darum selbst
-# setzen, und tat das dort mit einem eigenen, nicht mit netclasses.py
-# geteilten Wert. Ergebnis war eine sauber verlegte Platine mit
-# durchgehend 0,20 mm statt der vorgesehenen 1,00 mm auf den
-# Leistungsbahnen.
-TRACK_SIGNAL = 0.25       # mm
-TRACK_POWER = 1.00        # mm
-
 # --- Steckerbelegung ------------------------------------------------
 # Pico-Pins 1..40. Die Nummern folgen dem Pico-Datenblatt, nicht der
 # GPIO-Nummer: der Stecker traegt Pins, nicht GPIO.

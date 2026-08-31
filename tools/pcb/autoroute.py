@@ -19,15 +19,18 @@ der jeweiligen Platine, z.B. spec_sockel.POWER_NETS). build.mm(v) bleibt
 weiterhin die Quelle fuer Millimeter-Umrechnung -- dafuer wird "build"
 noch importiert, aber nicht mehr fuer die alte Pfad-Konstante.
 
-Die Bahnbreiten stehen NICHT hier, sondern in tools/stack_spec.py
-(TRACK_SIGNAL/TRACK_POWER) und werden zusammen mit netclasses.VIA_PAD/
-VIA_DRILL wiederverwendet -- dieselbe Quelle wie tools/pcb/netclasses.py,
-das dieselben Zahlen ins KiCad-Projekt eintraegt. Zwei getrennte Kopien
-waren im Vorlaeuferprojekt der Fehler: freerouting liest die Breiten aus
-der DSN, und eine frisch erzeugte pcbnew.BOARD() (siehe build.new_board)
-kennt die Netzklassen des Projekts nicht -- ohne diese Datei haette jedes
-Netz die Default-Breite bekommen. dsn_netzklassen() teilt die
-Leistungsnetze deshalb direkt in der DSN in eine eigene Klasse.
+Die Bahnbreiten stehen NICHT hier, sondern in tools/pcb/fertigung.py
+(TRACK_SIGNAL/TRACK_POWER/VIA_PAD/VIA_DRILL) -- dieselbe Quelle wie
+tools/pcb/netclasses.py, das dieselben Zahlen ins KiCad-Projekt
+eintraegt. NICHT in tools/stack_spec.py: das ist die Zusage an fremde
+Modulbauer, eine Bahnbreite ist dagegen eine Fertigungsentscheidung
+dieser konkreten Platinen (Begruendung in fertigung.py). Zwei getrennte
+Kopien der Zahlen waren im Vorlaeuferprojekt der Fehler: freerouting
+liest die Breiten aus der DSN, und eine frisch erzeugte pcbnew.BOARD()
+(siehe build.new_board) kennt die Netzklassen des Projekts nicht --
+ohne diese Datei haette jedes Netz die Default-Breite bekommen.
+dsn_netzklassen() teilt die Leistungsnetze deshalb direkt in der DSN in
+eine eigene Klasse.
 
 Die Breitenangabe ist in der DSN in Mikrometern: 200 stand im
 Vorlaeuferprojekt drin und ergab 0,20-mm-Bahnen -- das ist gemessen,
@@ -46,12 +49,10 @@ import glob, os, re, shutil, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-sys.path.insert(0, os.path.join(HERE, ".."))
 
 import pcbnew
-import stack_spec
+import fertigung
 import build          # nur fuer build.mm(v)
-import netclasses     # nur fuer VIA_PAD/VIA_DRILL, dieselbe Quelle wie das Projekt
 
 DURCHGAENGE = 30
 _HALTEN = []          # gegen die Zeiger-Fallen der Bindings
@@ -120,8 +121,8 @@ def dsn_netzklassen(pfad, leistungsnetze):
         return ("\n".join(zeilen) + "\n      " + rest.rstrip()[:-1].rstrip()
                 .replace("(width 200)", "(width %d)" % breite) + "\n    )")
 
-    neu = (klasse("kicad_default", signal, int(stack_spec.TRACK_SIGNAL * 1000)) +
-           "\n" + klasse("Leistung", leistung, int(stack_spec.TRACK_POWER * 1000)))
+    neu = (klasse("kicad_default", signal, int(fertigung.TRACK_SIGNAL * 1000)) +
+           "\n" + klasse("Leistung", leistung, int(fertigung.TRACK_POWER * 1000)))
     open(pfad, "w", encoding="utf-8").write(s[:i] + neu + s[j:])
     return [entpackt(n) for n in leistung]
 
@@ -180,8 +181,8 @@ def auf_platine(board, bahnen, vias):
             continue
         v = pcbnew.PCB_VIA(board)
         v.SetPosition(pcbnew.VECTOR2I(int(round(x)), int(round(y))))
-        v.SetWidth(build.mm(netclasses.VIA_PAD))
-        v.SetDrill(build.mm(netclasses.VIA_DRILL))
+        v.SetWidth(build.mm(fertigung.VIA_PAD))
+        v.SetDrill(build.mm(fertigung.VIA_DRILL))
         v.SetNetCode(code)
         board.Add(v)
         _HALTEN.append(v)
@@ -206,7 +207,7 @@ def verlegen(board_pfad, leistungsnetze):
         raise SystemExit("DSN-Export fehlgeschlagen")
     leistung = dsn_netzklassen(dsn, leistungsnetze)
     print("Leistungsklasse %.2f mm fuer: %s"
-          % (stack_spec.TRACK_POWER, ", ".join(sorted(leistung))))
+          % (fertigung.TRACK_POWER, ", ".join(sorted(leistung))))
 
     if os.path.exists(ses):
         os.remove(ses)
