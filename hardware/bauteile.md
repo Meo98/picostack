@@ -57,7 +57,7 @@ PA11/PA12 also die Standardbelegung.
 
 Aktiviert wird der Bootlader über **Pattern 11** (Tabelle 2, AN2606
 Abschnitt 4.1): über den BOOT0-Pin oder wahlweise über die Optionsbytes
-`nBOOT0` zusammen mit `nBOOT0_SEL`/`BOOT_LOCK` (Boot0-Signalquelle
+`nBOOT0` zusammen mit `nBOOT_SEL`/`BOOT_LOCK` (Boot0-Signalquelle
 umschaltbar, RM0490 Abschnitt 2.5 „Boot configuration", Tabelle 4). Die
 Bit-Definitionen selbst liegen in zwei verschiedenen Registern, einzeln
 geprüft: `nBOOT_SEL` (Bit 24), `nBOOT0` (Bit 26) und `nBOOT1` (Bit 25)
@@ -160,59 +160,91 @@ DRV8876PWPR (C575551) ist als Extended Part bei JLCPCB gelistet und mit
   **PA12 = USART1_RX** (intern remapped von PA9/PA10).
 - Beide Pins stehen nach Reset auf Analog/hochohmig — die gemeinsame
   Sendeleitung ist sicher.
-- BOOT0 ist physisch **PA14**, zugleich SWCLK, mit ~40-kΩ-Pull-down nach
-  Reset aktiv, sobald das Modul die SWD-Funktion nicht per Optionsbyte
-  freigegeben hat (`USE_BOOT0_OPT`). Für die globale Flash-Modus-Leitung
-  einplanen, kein Blocker.
+- BOOT0 ist physisch **PA14**, zugleich SWCLK; nach Reset liegt dort der
+  interne Pull-down von typ. 40 kΩ (Beleg 2, RM0490 §6.3.1 und §6.4.4,
+  Widerstandswert DS13866 Tabelle 49). Für die globale
+  Flash-Modus-Leitung einplanen, kein Blocker.
 - Kein `PY32F002A`-Rückfall nötig — STM32C011F6P6 ist bestückbar.
 
-## Beleg 4 — Auswahlkette und Gatter (Aufgabe 3)
+## Beleg 4 — Auswahlkette: Flipflop und Gatter (Aufgabe 3)
 
-**Quelle:** `tools/kette.py`, Wahrheitstabelle als Modul-Zustandslogik.
+**Quelle:** `tools/kette.py` und `tests/test_kette.py`. Die Kette ist ein
+**Schieberegister** über den ganzen Stapel: jedes Modul trägt ein
+D-Flipflop, alle hängen an derselben Taktleitung `SEL_CLK` vom Sockel.
 
-Die Auswahlkette wird durch drei Boolesche Gleichungen beschrieben:
+| Signal | Bedeutung |
+|---|---|
+| `SEL_IN` | D des Flipflops — Ausgang des Moduls darüber (oberstes Modul: vom Sockel) |
+| `SEL_CLK` | Takt, global vom Sockel; alle Flipflops übernehmen gleichzeitig |
+| `Q` | „dieses Modul ist ausgewählt"; zugleich `SEL_OUT` an das Modul darunter |
+| `FLASH_MODE` | global vom Sockel |
+
+Die Ausgänge an den Modul-MCU:
 
 | Ausgang | Gleichung |
 |---|---|
-| RESET | `flash_mode AND (NOT sel_in)` |
-| BOOT0 | `flash_mode AND sel_in` |
-| SEL_OUT | `(NOT flash_mode) AND sel_in` |
+| RESET | `flash_mode AND (NOT Q)` |
+| BOOT0 | `flash_mode AND Q` |
+| SEL_OUT | `Q` (der Flipflop-Ausgang selbst, ohne Gatter) |
 
-Diese Logik setzt sich aus fünf elementaren Gatteroperationen zusammen:
+Damit bleiben neben dem Flipflop nur drei Gatterfunktionen:
 
-1. **Invertierung flash_mode** → 1× NOT-Gatter (für SEL_OUT)
-2. **Invertierung sel_in** → 1× NOT-Gatter (für RESET)
-3. **RESET = flash_mode ∧ ¬sel_in** → 1× 2-Input AND-Gatter
-4. **BOOT0 = flash_mode ∧ sel_in** → 1× 2-Input AND-Gatter
-5. **SEL_OUT = ¬flash_mode ∧ sel_in** → 1× 2-Input AND-Gatter
+1. **Invertierung Q** → 1× NOT-Gatter (für RESET)
+2. **RESET = flash_mode ∧ ¬Q** → 1× 2-Input AND-Gatter
+3. **BOOT0 = flash_mode ∧ Q** → 1× 2-Input AND-Gatter
 
-**Bauteilwahl — Einzelgatter statt Multi-Gate-ICs:** Fünf Gatterfunktionen in zwei grossen
-SOIC-14-Gehäusen (8,7 × 3,9 mm je IC) bedeuten 50 % Verschnitt bei einer Platine mit
-Kleinheit-Anspruch. Die empfohlene Lösung nutzt Einzelgatter und Doppelgatter aus der
-CMOS-Familie 74LVC1G/74LVC2G in miniaturisierten SMD-Gehäusen (SC-70 oder SOT-363,
-rund 2 × 1,25 mm je IC):
+`SEL_OUT` braucht kein eigenes Gatter mehr: es ist der Flipflop-Ausgang.
+Die frühere Fassung hatte dafür ein AND (`¬flash_mode ∧ sel_in`) — und
+genau das machte die Kette unbrauchbar, weil `SEL_OUT` im Flash-Modus
+immer 0 war.
 
-| IC | Typ | Gatteranzahl | Gehäuse | LCSC | Funktion |
-|---|---|---|---|---|---|
-| IC1 | Doppel-Inverter (2× 1-Input NOT) | 74LVC2G04 | SC-70 oder SOT-363 | — | Invertiert flash_mode und sel_in |
-| IC2 | Doppel-AND-Gatter (2× 2-Input AND) | 74LVC2G08 | SC-70 oder SOT-363 | — | Realisiert RESET und BOOT0 |
-| IC3 | Einzel-AND-Gatter (1× 2-Input AND) | 74LVC1G08 | SC-70 oder SOT-363 | — | Realisiert SEL_OUT |
+**Bauteilwahl — Einzelgatter statt Multi-Gate-ICs:** Vier
+Funktionsblöcke in grossen SOIC-14-Gehäusen bedeuten viel Verschnitt auf
+einer Platine mit Kleinheit-Anspruch. Die empfohlene Lösung nutzt
+Einzel- und Doppelgatter aus der CMOS-Familie 74LVC1G/74LVC2G in
+kleinen SMD-Gehäusen (SC-70, SOT-353, SOT-363 — welches genau, sagt
+erst das Datenblatt des gewählten Typs).
+
+| IC | Funktion | Typ (Kandidat) | LCSC | Aufgabe |
+|---|---|---|---|---|
+| IC1 | D-Flipflop, flankengetaktet | 74LVC1G175 oder 74LVC1G80 | — | hält `Q`; D = `SEL_IN`, Takt = `SEL_CLK` |
+| IC2 | Doppel-AND-Gatter (2× 2-Input) | 74LVC2G08 | — | RESET und BOOT0 |
+| IC3 | Einzel-Inverter (1-Input NOT) | 74LVC1G04 | — | invertiert `Q` für RESET |
 
 **Spezifikation:**
-- IC1: CMOS Doppel-NOT-Gatter, Typ 74LVC2G04 oder baugleiches IC aus der 74LVC-Familie
-- IC2: CMOS Doppel-AND-Gatter (2-Input), Typ 74LVC2G08 oder baugleiches IC aus der 74LVC-Familie
-- IC3: CMOS Einzel-AND-Gatter (2-Input), Typ 74LVC1G08 oder baugliches IC aus der 74LVC-Familie
-- Alle in Gehäusen SC-70 oder SOT-363 (max. 2 × 1,25 mm je IC)
-- Betriebsspannung: 1,65–5,5 V (kompatibel mit 3,3-V-Betrieb)
-- Stromverbrauch: CMOS (picoampere static, nanoampere dynamic)
+- IC1: CMOS-Einzel-D-Flipflop mit Flankentakt aus der 74LVC-Familie
+- IC2: CMOS-Doppel-AND-Gatter (2-Input) aus der 74LVC-Familie
+- IC3: CMOS-Einzel-Inverter aus der 74LVC-Familie
+- Alle drei als Einzelgatter-Gehäuse derselben Familie, damit Pegel und
+  Versorgung zusammenpassen
 
-**Verfügbarkeit:** LCSC und JLCPCB führen die 74LVC1G und 74LVC2G Serien als Standard-Logik.
-Eine konkrete Nummernvergabe wird bei nächster Beschaffungs-Phase recherchiert (Constraint: keine
-LCSC-Nummer ohne Produktseiten-Nachweis). Die drei Gehäuse beanspruchen zusammen eine
-Platinenfläche ungefähr ein Zehntel der früheren Zwei-SOIC-14-Lösung.
+**Was hier bewusst NICHT steht:** keine LCSC-Nummer, kein Gehäusemass,
+keine Betriebsspannung, kein Strombedarf. Für keinen dieser drei Typen
+lag beim Schreiben ein Datenblatt oder eine Produktseite vor; auch die
+Typennummern sind Kandidaten aus der Familie, nicht geprüfte
+Bestellnummern. Diese Angaben gehören in die Beschaffungsphase, aus dem
+Datenblatt und der Produktseite — nicht aus dem Gedächtnis. (Der Satz
+„picoampere static, nanoampere dynamic" stand hier früher und war
+zusätzlich sachlich verdreht: der dynamische Strom eines CMOS-Gatters
+liegt über dem statischen, nicht darunter.)
+
+**Zwei Punkte fürs Datenblatt-Studium in der Beschaffungsphase:**
+
+- Bringt das Flipflop einen **invertierten Ausgang `Q̄`** mit, entfällt
+  IC3 — der Inverter ist dann schon im Gehäuse.
+- Bringt es einen **asynchronen Reset**, kann der Sockel das ganze
+  Schieberegister mit einer Leitung leeren, statt es leerzutakten. Ohne
+  Reset muss er nach dem Durchzählen so oft mit 0 takten, wie der Stapel
+  hoch ist, damit keine 1 im Register stehen bleibt. Beides funktioniert;
+  der Reset wäre nur eine Leitung wert, wenn ein Typ ihn ohnehin hat.
+
+**Verfügbarkeit:** LCSC und JLCPCB führen die Serien 74LVC1G und 74LVC2G
+als Standard-Logik. Eine konkrete Nummernvergabe wird bei der nächsten
+Beschaffungs-Phase recherchiert (Constraint: keine LCSC-Nummer ohne
+Produktseiten-Nachweis).
 
 **Alternative: Decoder-Struktur (erwogen, nicht weiter verfolgt):** RESET und BOOT0 bilden
-zusammen einen 1-aus-2-Decoder mit Freigabe (`flash_mode` als Freigabesignal, `sel_in` als
+zusammen einen 1-aus-2-Decoder mit Freigabe (`flash_mode` als Freigabesignal, `Q` als
 Adresseingabe). Ein spezialisierter Decoder-IC (z.B. 74LVC138 als 3-aus-8-Decoder) wäre für
 zwei Ausgänge zu mächtig. Der Decoder-Ansatz wurde zugunsten der einfachen Einzelgatter-Lösung
 nicht weiter verfolgt.
@@ -224,15 +256,29 @@ BOOT0-Eingänge des MCU mit definierten High- und Low-Pegeln. Nur die GPIO-Pins 
 gehaltenen MCU sind hochohmig, weil der MCU keinen Taktgenerator hat und keine Ausgänge aktiv
 treibt.
 
-**Token-Durchleitungslogik:** Das Token (SEL_OUT) wird unter zwei Bedingungen weitergeleitet:
+**Wie die Auswahl wandert:** `SEL_OUT` ist immer `Q` — es wird nichts
+angehalten und nichts blockiert. Weitergereicht wird ausschliesslich
+durch den Takt:
 
-- **Im Normalbetrieb (FLASH_MODE = 0):** SEL_OUT folgt sel_in direkt; das Token wandert
-  ungehindert durch die Kette weiter, unabhängig von der bisherigen Auswahl.
-- **Im Flash-Modus (FLASH_MODE = 1) bei Nichtauswahl (sel_in = 0):** SEL_OUT = 0; das Token
-  wird hier blockiert und wandert nicht weiter.
+1. Der Sockel legt `FLASH_MODE = 1` und eine **1** an `SEL_IN` des
+   obersten Moduls und gibt einen Takt auf `SEL_CLK`. Modul 1 hat jetzt
+   `Q = 1`: es ist wach und im Bootlader, alle anderen liegen im Reset.
+2. Der Sockel legt **0** an und taktet erneut. Die 1 rückt in Modul 2;
+   Modul 1 fällt zurück in den Reset. Es ist immer genau ein Modul
+   ausgewählt, weil im Register immer genau eine 1 steht.
+3. Nach so vielen Takten, wie der Stapel hoch ist, fällt die 1 unten
+   heraus und niemand ist mehr ausgewählt. Daran erkennt der Sockel das
+   Ende des Stapels — und weil er mitgezählt hat, kennt er zugleich die
+   Adressen.
 
-Im Ruhezustand eines unbeteiligten Moduls (FLASH_MODE = 0) wird das Token normalerweise
-weitergereicht (SEL_OUT = sel_in). Blockiert wird das Token nur durch eine bewusste Aktion:
-der Sockel setzt FLASH_MODE = 1, was die Schaltung in den Programmiermode versetzt, und
-die Auswahl (sel_in = 0 für alle außer dem gewählten) sorgt dafür, dass nur das ausgewählte
-Modul das Token nicht weitergeben darf.
+Der entscheidende Fall, den die frühere Beschreibung ausliess: **ein
+ausgewähltes Modul reicht seine 1 sehr wohl weiter** — an das D des
+Moduls darunter. Wach wird das darunterliegende Modul davon nicht,
+denn D wirkt erst mit der nächsten Taktflanke, und dann ist das obere
+Modul nicht mehr ausgewählt. Zwei gleichzeitig wache MCU auf der
+gemeinsamen Sendeleitung kann es dadurch nicht geben, solange der
+Sockel nur eine einzige 1 einschiebt.
+
+Ausserhalb des Flash-Modus (`FLASH_MODE = 0`) sind RESET und BOOT0 beide
+0: **alle** Module laufen, unabhängig davon, was im Schieberegister
+steht. Das ist der Normalbetrieb und der häufigste Fall.
