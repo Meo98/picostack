@@ -57,6 +57,34 @@ import build          # nur fuer build.mm(v)
 DURCHGAENGE = 30
 _HALTEN = []          # gegen die Zeiger-Fallen der Bindings
 
+# freerouting MUSS ohne Oberflaeche laufen, sonst schreibt es nie.
+#
+# Gefunden am 2026-09-01 (Aufgabe 6), nachdem der erste Lauf 30 Minuten
+# lang in den Timeout lief. Die Ursache ist keine schwierige Platine:
+# der Router war nach 5,8 Sekunden fertig (18 Durchgaenge, Abbruch weil
+# sich die Bewertung nicht mehr besserte). Danach hing der Prozess und
+# verbrannte weiter eine gute Kernlast.
+#
+# freerouting 2.2.4 fragt beim Start java.awt.Toolkit nach der
+# Bildschirmaufloesung. Bekommt es eine -- also auf JEDEM Rechner mit
+# laufender Sitzung, und dieses Projekt wird auf einem solchen gebaut --,
+# startet es seine Oberflaeche, verlegt die Platine und WARTET dann
+# darauf, dass jemand das Fenster schliesst. Die SES-Datei entsteht
+# erst dabei (SesWriter haengt am GuiManager). Kopfloses Arbeiten war
+# also nie kopflos; es sah nur so aus, weil kein Fenster sichtbar wurde.
+#
+# Ausgeschlossen, nicht vermutet: der Hang bleibt auch bei
+# abgeschaltetem Optimierer, abgeschaltetem API-Server, einem einzigen
+# Thread, gesetztem dialog_confirmation_timeout -- UND er bleibt, wenn
+# die Platine restlos verlegt ist (mit einer DSN ohne die eine
+# unverlegbare Verbindung gepruet). Erst gui.enabled=false beendet den
+# Lauf: 10 Sekunden, Rueckgabewert 0, Datei geschrieben.
+#
+# Die Einstellung geht als Umgebungsvariable, weil freerouting seine
+# Einstellungen aus FREEROUTING__<PFAD>-Variablen liest (GlobalSettings)
+# -- als Befehlszeilenschalter gibt es sie nicht.
+UMGEBUNG = {"FREEROUTING__GUI__ENABLED": "false"}
+
 
 def freerouting_befehl():
     p = shutil.which("freerouting")
@@ -174,19 +202,51 @@ def auf_platine(board, bahnen, vias):
             board.Add(t)
             _HALTEN.append(t)
             n_seg += 1
+    # Vias, die die Platine schon hat, NICHT ein zweites Mal setzen.
+    #
+    # build.stitching_vias() setzt die GND-Naehvias vor dem Verlegen --
+    # absichtlich, damit der Router sie als Hindernis kennt. Genau
+    # deshalb stehen sie aber auch in der DSN, kommen in der SES zurueck
+    # und wuerden hier ein zweites Mal angelegt: sechs uebereinander
+    # liegende Bohrungen, die die DRC als "holes co-located" meldet und
+    # die der Fertiger zweimal bohrt. Aufgefallen am 2026-09-01, als die
+    # Naehvias neu dazukamen.
+    # Nicht auf den Nanometer vergleichen: freerouting rechnet die
+    # DSN-Koordinaten in sein eigenes Raster und liefert dieselbe Lage
+    # um Bruchteile eines Mikrometers verschoben zurueck. Ein exakter
+    # Vergleich liess deshalb genau EINES von acht Naehvias durch --
+    # und die DRC meldete prompt zwei Bohrungen aufeinander.
+    NAH = build.mm(0.05)
+    vorhanden = [(t.GetPosition().x, t.GetPosition().y)
+                 for t in board.Tracks() if t.Type() == pcbnew.PCB_VIA_T]
+
+    def schon_da(px, py):
+        return any(abs(px - qx) <= NAH and abs(py - qy) <= NAH
+                   for qx, qy in vorhanden)
+
+    n_via, n_doppelt = 0, 0
     for x, y, netz in vias:
         code = board.GetNetcodeFromNetname(netz)
         if code < 0:
             unbekannt.add(netz)
             continue
+        pos = (int(round(x)), int(round(y)))
+        if schon_da(*pos):
+            n_doppelt += 1
+            continue
         v = pcbnew.PCB_VIA(board)
-        v.SetPosition(pcbnew.VECTOR2I(int(round(x)), int(round(y))))
+        v.SetPosition(pcbnew.VECTOR2I(*pos))
         v.SetWidth(build.mm(fertigung.VIA_PAD))
         v.SetDrill(build.mm(fertigung.VIA_DRILL))
         v.SetNetCode(code)
         board.Add(v)
         _HALTEN.append(v)
-    return n_seg, len(vias), unbekannt
+        vorhanden.append(pos)
+        n_via += 1
+    if n_doppelt:
+        print("  %d Vias waren schon gesetzt (Naehvias) und nicht doppelt "
+              "angelegt" % n_doppelt)
+    return n_seg, n_via, unbekannt
 
 
 def verlegen(board_pfad, leistungsnetze):
@@ -211,13 +271,29 @@ def verlegen(board_pfad, leistungsnetze):
 
     if os.path.exists(ses):
         os.remove(ses)
+    umgebung = dict(os.environ)
+    umgebung.update(UMGEBUNG)          # s. Kommentar bei UMGEBUNG oben
+    # 300 s statt 1800: ohne Oberflaeche ist der Lauf in Sekunden fertig.
+    # Die alte halbe Stunde war die Wartezeit auf ein Fenster, das nie
+    # jemand schloss -- sie wieder hochzusetzen wuerde denselben Fehler
+    # nur wieder verstecken.
     lauf = subprocess.run(
         freerouting_befehl() + ["-de", dsn, "-do", ses,
                                 "-mp", str(DURCHGAENGE)],
-        capture_output=True, text=True, timeout=1800)
+        capture_output=True, text=True, timeout=300, env=umgebung)
+    offen = []
     for zeile in lauf.stdout.splitlines():
         if "session completed" in zeile or "ERROR" in zeile:
             print("  " + zeile.split("INFO")[-1].strip())
+        # Die Liste der nicht verlegbaren Verbindungen steht ohne
+        # Log-Praefix im Text und ginge sonst unter -- sie ist aber die
+        # einzige Stelle, an der freerouting sagt, WELCHE Verbindung
+        # fehlt.
+        if zeile.strip().startswith("- ") and "->" in zeile:
+            offen.append(zeile.strip()[2:])
+    if offen:
+        print("  ! %d Verbindung(en) nicht verlegt: %s"
+              % (len(offen), ", ".join(offen)))
     if not os.path.exists(ses):
         print(lauf.stdout[-1500:], lauf.stderr[-800:])
         raise SystemExit("freerouting hat keine SES-Datei geschrieben")

@@ -27,11 +27,20 @@ gesetzt:
 Nur noetig, wenn die Platine selbst einen gesockelten Pico traegt (in
 PicoStack bisher nur der Sockel, das Motormodul hat stattdessen einen
 Modul-MCU ohne diese Bauform-Eigenheiten):
-    PICO_PAD_X, PICO_ROW_TOP, PICO_ROW_BOTTOM, SMD_CORRIDOR, ANTENNA_SLOT
+    PICO_REF, PICO_PAD_X, PICO_ROW_TOP, PICO_ROW_BOTTOM, SMD_CORRIDOR,
+    ANTENNA_SLOT
 
-Fehlen diese fuenf (oder auch nur ANTENNA_SLOT / SMD_CORRIDOR einzeln),
-werden die zugehoerigen Pruefungen einfach uebersprungen, statt mit
-AttributeError abzubrechen.
+Fehlen diese sechs (oder auch nur ANTENNA_SLOT / SMD_CORRIDOR / PICO_REF
+einzeln), werden die zugehoerigen Pruefungen einfach uebersprungen,
+statt mit AttributeError abzubrechen.
+
+SMD_CORRIDOR ist bewusst getrennt von den Pad-Reihen zu setzen: die
+Korridor-Pruefung schlaegt bei JEDEM SMD-Teil an, dessen x-Bereich den
+des Pico ueberlappt -- also auch bei Teilen weit oberhalb oder
+unterhalb von ihm. Sie ist nur dann richtig, wenn wirklich der Bereich
+UNTER dem Pico gemeint ist und dort ueberhaupt etwas liegt. Wo nichts
+darunterliegt, gehoert SMD_CORRIDOR auf None (Sockelplatine, Stand
+Aufgabe 6), sonst meldet sie jedes gewoehnlich platzierte SMD-Teil.
 """
 import os
 import sys
@@ -69,10 +78,18 @@ def check_all(placement, beschreibung):
                          and pico_row_bottom is not None)
 
     bad = []
-    # "U3" ist die Referenz des gesockelten Pico im Vorlaeuferprojekt.
-    # Traegt eine Platine keinen (z.B. das Motormodul), ist pico einfach
-    # None und alle Sonderfaelle dafuer bleiben aus.
-    pico = placement.get("U3")
+    # Welches Bauteil der gesockelte Pico ist, sagt die Beschreibung.
+    # Im Vorlaeuferprojekt hiess er "U3", auf der PicoStack-Sockelplatine
+    # heisst er "U1" -- der Name stand hier bis 2026-09-01 (Aufgabe 6)
+    # fest eingetragen und war damit ein weiterer Rest des globalen
+    # "spec"-Imports, den Aufgabe 1 sonst ueberall entfernt hat. Folge
+    # waere kein Fehlalarm gewesen, sondern das Gegenteil: die Ausnahme
+    # "SMD darf unter dem gesockelten Pico liegen" haette stillschweigend
+    # nie gegriffen, und die Pruefung auf den Pad-Reihen haette den Pico
+    # selbst als Verstoss gegen sich gemeldet, sobald ihn jemand
+    # ausnutzt. Traegt eine Platine keinen Pico (z.B. das Motormodul),
+    # bleibt PICO_REF ungesetzt und alle Sonderfaelle bleiben aus.
+    pico = placement.get(getattr(b, "PICO_REF", None))
     refs = sorted(placement)
 
     for i in range(len(refs)):

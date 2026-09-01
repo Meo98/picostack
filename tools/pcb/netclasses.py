@@ -35,6 +35,44 @@ sys.path.insert(0, HERE)
 import fertigung
 
 
+# Die Vorgabe-Netzklasse, wie KiCad 10.0.5 sie selbst schreibt.
+#
+# Warum sie hier steht (2026-09-01, Aufgabe 6). Eine frisch angelegte
+# .kicad_pro traegt "net_settings": {} -- ohne jede Klasse. KiCad
+# ergaenzt die Vorgaben erst, wenn es das Projekt einmal geoeffnet hat;
+# in dieser Werkzeugkette passiert das beiläufig beim Netzlisten-Export
+# in build.read_netlist(). Der Aufgabenbrief schreibt aber die
+# Reihenfolge netclasses -> build vor, und in DIESER Reihenfolge brach
+# netclasses.py ab. Wer die Meldung uebersieht (oder sie in einem
+# Skript verschluckt), verlegt anschliessend mit der KiCad-Vorgabe
+# 0,20 mm -- genau der Fehler, dessentwegen der Muttern-Print neu
+# entstehen musste. Beide PicoStack-Projekte hatten das leere Feld,
+# Aufgabe 7 waere in dieselbe Falle gelaufen.
+#
+# Die Werte sind die von KiCad selbst erzeugten (aus einer von
+# kicad-cli angefassten .kicad_pro uebernommen), NICHT geraten -- die
+# vier, auf die es ankommt, werden unten ohnehin ueberschrieben.
+_KICAD_DEFAULT = {
+    "bus_width": 12,
+    "clearance": 0.2,
+    "diff_pair_gap": 0.25,
+    "diff_pair_via_gap": 0.25,
+    "diff_pair_width": 0.2,
+    "line_style": 0,
+    "microvia_diameter": 0.3,
+    "microvia_drill": 0.1,
+    "name": "Default",
+    "pcb_color": "rgba(0, 0, 0, 0.000)",
+    "priority": 2147483647,
+    "schematic_color": "rgba(0, 0, 0, 0.000)",
+    "track_width": 0.2,
+    "tuning_profile": "",
+    "via_diameter": 0.6,
+    "via_drill": 0.3,
+    "wire_width": 6,
+}
+
+
 def main(pro, leistungsnetze):
     d = json.load(open(pro, encoding="utf-8"))
     ns = d.setdefault("net_settings", {})
@@ -44,7 +82,10 @@ def main(pro, leistungsnetze):
         if c.get("name") == "Default":
             vorlage = c
     if vorlage is None:
-        raise SystemExit("keine Default-Netzklasse im Projekt")
+        # Anlegen statt abbrechen -- s. Begruendung bei _KICAD_DEFAULT.
+        vorlage = dict(_KICAD_DEFAULT)
+        ns.setdefault("classes", []).append(vorlage)
+        print("keine Default-Netzklasse im Projekt -- angelegt")
 
     vorlage["track_width"] = fertigung.TRACK_SIGNAL
     vorlage["clearance"] = 0.2

@@ -1,4 +1,7 @@
-"""Prueft, dass jede eingecheckte .kicad_sch zu ihrem Generator passt.
+"""Prueft, dass jede erzeugte Datei im Repo zu ihrem Generator passt.
+
+Betroffen sind die beiden Schaltplaene und docs/vertrag.md -- alles,
+was ein Werkzeug schreibt und trotzdem eingecheckt ist.
 
 WARUM ES DIESEN TEST GIBT (2026-09-01, vor Aufgabe 6 gefunden).
 Der Sockelschaltplan im Repo war veraltet: er trug an J3/J4 noch die
@@ -40,12 +43,25 @@ sys.path.insert(0, os.path.join(HERE, "..", "tools", "sch"))
 
 import motormodul
 import sockelplatine
+import vertrag_doku
 
 fails = []
 
-# Jeder Generator, der eine Datei im Repo erzeugt. Neue Module gehoeren
-# hierher -- sonst gilt fuer sie wieder, was oben schiefging.
-GENERATOREN = (sockelplatine, motormodul)
+# Jeder Generator, der eine Datei im Repo erzeugt: (Modul, Aufruf zum
+# Beheben). Neue Module gehoeren hierher -- sonst gilt fuer sie wieder,
+# was oben schiefging.
+#
+# docs/vertrag.md steht bewusst mit in dieser Liste, obwohl der
+# gefundene Fall ein Schaltplan war: es ist dieselbe Gattung -- ein
+# Erzeugnis im Repo, das von seiner Quelle (tools/stack_spec.py)
+# abweichen kann, ohne dass es jemandem auffaellt. Und es ist das
+# Dokument, das fremde Modulbauer lesen; eine veraltete Fassung davon
+# ist teurer als ein veralteter Schaltplan.
+GENERATOREN = (
+    (sockelplatine, "python3 tools/sch/sockelplatine.py"),
+    (motormodul, "python3 tools/sch/motormodul.py"),
+    (vertrag_doku, "python3 tools/vertrag_doku.py"),
+)
 
 _UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-"
                    r"[0-9a-f]{4}-[0-9a-f]{12}")
@@ -55,7 +71,7 @@ def ohne_uuids(text):
     return _UUID.sub("UUID", text)
 
 
-for modul in GENERATOREN:
+for modul, behebe in GENERATOREN:
     name = modul.__name__
 
     # Die Angaben stehen als Modulkonstanten und werden hier NICHT
@@ -66,7 +82,8 @@ for modul in GENERATOREN:
         continue
 
     with tempfile.TemporaryDirectory() as tmp:
-        frisch = modul.erzeugen(os.path.join(tmp, "frisch.kicad_sch"))
+        frisch = modul.erzeugen(
+            os.path.join(tmp, os.path.basename(modul.ZIEL)))
         neu = ohne_uuids(open(frisch, encoding="utf-8").read())
     alt = ohne_uuids(open(modul.ZIEL, encoding="utf-8").read())
 
@@ -86,10 +103,10 @@ for modul in GENERATOREN:
                 "erste Abweichung Zeile {}:\n"
                 "      eingecheckt: {}\n"
                 "      erzeugt:     {}\n"
-                "      Beheben mit: python3 tools/sch/{}.py"
+                "      Beheben mit: {}"
                 .format(name, os.path.relpath(modul.ZIEL,
                                               os.path.join(HERE, "..")),
-                        i + 1, za.strip(), zb.strip(), name))
+                        i + 1, za.strip(), zb.strip(), behebe))
             break
 
 if fails:
@@ -97,5 +114,5 @@ if fails:
     for f in fails:
         print("  -", f)
     raise SystemExit(1)
-print("%d erzeugte Schaltplaene auf dem Stand ihrer Generatoren -- "
+print("%d erzeugte Dateien auf dem Stand ihrer Generatoren -- "
       "alle Pruefungen bestanden" % len(GENERATOREN))

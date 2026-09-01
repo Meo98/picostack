@@ -3,3 +3,9 @@ __pycache__/
 
 # KiCad-Sperrdateien einer offenen GUI-Sitzung (gehoeren keinem Commit)
 ~*.lck
+
+# Zwischendateien des Routers: bei jedem Lauf neu erzeugt, Inhalt
+# haengt am Lauf (freerouting ist nicht deterministisch). Die Platine
+# selbst (.kicad_pcb) gehoert ins Repo, der Weg dorthin nicht.
+*.dsn
+*.ses

@@ -36,7 +36,16 @@ def teil(stecker, seite):
     return "offen: " + stecker.get(seite + "_spec", "")
 
 
-def main():
+def erzeugen(ziel=None):
+    """Schreibt das Vertragsdokument nach `ziel` (Vorgabe: ZIEL).
+
+    Der Parameter existiert fuer tests/test_erzeugte_dateien.py: der
+    Test muss das Dokument neu erzeugen koennen, ohne die
+    eingecheckte Datei anzufassen. docs/vertrag.md gehoert zu
+    derselben Gattung wie die erzeugten Schaltplaene -- ein Erzeugnis
+    im Repo, das von seiner Quelle abweichen kann, ohne dass es
+    jemandem auffaellt.
+    """
     teile = ["# PicoStack — der Vertrag",
              "",
              "Erzeugt aus `tools/stack_spec.py`. Nicht von Hand aendern.",
@@ -201,10 +210,11 @@ def main():
                      [(i, "%.0f" % r, "%.3f" % S.ID_ANTEIL(r))
                       for i, r in enumerate(S.ID_WIDERSTAENDE)]),
              ""]
-    with open(ZIEL, "w", encoding="utf-8") as f:
+    pfad = ZIEL if ziel is None else ziel
+    with open(pfad, "w", encoding="utf-8") as f:
         f.write("\n".join(teile))
-    print("geschrieben:", ZIEL)
+    return pfad
 
 
 if __name__ == "__main__":
-    main()
+    print("geschrieben:", erzeugen())

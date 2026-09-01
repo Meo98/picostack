@@ -23,13 +23,13 @@ Aufruf ueber den kipy-Starter:
   ~/.claude/skills/kicad-pcbnew-scripting/scripts/kipy tools/pcb/build.py \\
       <spec_modul, z.B. spec_sockel> <board.kicad_pcb> <schaltplan.kicad_sch>
 """
-import os, re, subprocess, sys
+import math, os, re, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import pcbnew
-import geometry, kicadlibs
+import fertigung, geometry, kicadlibs
 
 
 def mm(v):
@@ -96,6 +96,57 @@ def new_board(path):
     return board
 
 
+def bogenmitte(mittelpunkt, start, ende):
+    """Der Punkt AUF dem Bogen zwischen Start und Ende, als VECTOR2I-Paar.
+
+    WARUM ES DIESE FUNKTION GIBT (2026-09-01, Aufgabe 6, am Rendering
+    gesehen und danach nachgemessen).
+
+    pcbnew.PCB_SHAPE.SetArcGeometry(start, mitte, ende) erwartet DREI
+    PUNKTE AUF DEM BOGEN. Das uebernommene draw_outline() uebergab als
+    zweites Argument den MITTELPUNKT des Kreises. KiCad legt daraufhin
+    den Umkreis durch die drei Punkte -- und der ist ein ganz anderer
+    Kreis:
+
+        gewollt: Bogen von (0|3) nach (3|0) um (3|3), Radius 3,00
+        gebaut : Umkreis von (3|0), (3|3), (0|3)
+                 -> Mittelpunkt (1,5|1,5), Radius 2,121, DURCH (3|3)
+
+    Der Bogen rundet die Ecke dadurch nicht, sondern schneidet in die
+    Platine hinein. Zwei Folgen, beide an der gebauten Datei gemessen:
+
+      * Die Ecken sind keine 3-mm-Radien. Das Gehaeuse (Aufgabe 9) wird
+        gegen den Vertragswert CORNER_R konstruiert und passte nicht.
+      * Die M3-Bohrungen bei (4|4) und (4|56) liegen nur noch 1,414 mm
+        von der Kante entfernt, bei 1,60 mm Bohrungsradius: der
+        Ausschnitt BRICHT IN DIE BOHRUNG DURCH (-0,186 mm Steg). Eine
+        Schraube haette dort keinen geschlossenen Rand mehr.
+
+    Dasselbe galt fuer die vier Ecken des Antennenschlitzes: statt des
+    Fraeserradius 1,00 mm entstanden 0,707 mm -- kleiner als der
+    Fraeser, also gar nicht herstellbar.
+
+    Keine bestehende Pruefung hat das gesehen: DRC prueft in diesem
+    Projekt keinen Loch-Kanten-Abstand, und der Umriss stimmt in der
+    Bounding Box (64 x 60 mm) weiterhin genau. Sichtbar wurde es erst
+    auf dem 3D-Rendering -- der Schritt "Hinsehen" aus dem Aufgabenbrief.
+
+    Herkunft: build.py stammt aus PecheAuxCanards. Dort ist derselbe
+    Aufruf, und dort wurde eine Platine tatsaechlich gefertigt.
+    """
+    cx, cy = mittelpunkt
+    r = math.hypot(start[0] - cx, start[1] - cy)
+    # Richtung vom Mittelpunkt zur Sehnenmitte: dorthin zeigt der
+    # kurze Bogen. Bei einem Viertelkreis ist das die Winkelhalbierende.
+    sx = (start[0] + ende[0]) / 2.0 - cx
+    sy = (start[1] + ende[1]) / 2.0 - cy
+    L = math.hypot(sx, sy)
+    if L == 0:
+        raise ValueError("Start und Ende liegen sich diametral gegenueber -- "
+                         "der kurze Bogen ist dann nicht bestimmt")
+    return (mm(cx + r * sx / L), mm(cy + r * sy / L))
+
+
 def draw_outline(board, beschreibung):
     """Rechteck mit abgerundeten Ecken auf Edge.Cuts."""
     w, h, r = beschreibung.BOARD_W, beschreibung.BOARD_H, beschreibung.CORNER_R
@@ -118,7 +169,8 @@ def draw_outline(board, beschreibung):
         s = pcbnew.PCB_SHAPE(board)
         s.SetShape(pcbnew.SHAPE_T_ARC)
         s.SetArcGeometry(pcbnew.VECTOR2I(mm(x0), mm(y0)),
-                         pcbnew.VECTOR2I(mm(cx), mm(cy)),
+                         pcbnew.VECTOR2I(*bogenmitte((cx, cy), (x0, y0),
+                                                     (x1, y1))),
                          pcbnew.VECTOR2I(mm(x1), mm(y1)))
         s.SetLayer(pcbnew.Edge_Cuts)
         s.SetWidth(mm(0.05))
@@ -202,13 +254,31 @@ def add_zones(board, beschreibung):
     w, h = beschreibung.BOARD_W, beschreibung.BOARD_H
     full = [(e, e), (w - e, e), (w - e, h - e), (e, h - e)]
     zs = []
+    # Nachtrag 2026-09-01 (Aufgabe 6): F.Cu bekommt jetzt EBENFALLS
+    # volle Anbindung. Die urspruengliche Waermefalle auf F.Cu war fuer
+    # die Handloetbarkeit gedacht; auf der fertig verlegten Sockelplatine
+    # brachte sie das Gegenteil. Unter dem Stapelstecker laufen vierzig
+    # Bahnen, die die F.Cu-Flaeche dort in schmale Streifen zerschneiden.
+    # Sieben GND-Pads bekamen deshalb statt der geforderten zwei Speichen
+    # nur eine, zwei davon zu einer abgeschnittenen Insel -- also weder
+    # gute Loetbarkeit noch gute Leitfaehigkeit.
+    # Entscheidend fuer die Loetbarkeit ist ohnehin nicht F.Cu: es sind
+    # durchkontaktierte Pads, und auf B.Cu liegt seit jeher die VOLLE
+    # Flaeche. Die Waerme laeuft durch die Huelse in diese Flaeche,
+    # gleichgueltig was F.Cu tut. Die Waermefalle auf der Oberseite
+    # kostete also nur Verbindung.
     for lay, conn, name in (
-            (pcbnew.F_Cu, pcbnew.ZONE_CONNECTION_THERMAL, "GND F.Cu"),
+            (pcbnew.F_Cu, pcbnew.ZONE_CONNECTION_FULL, "GND F.Cu"),
             (pcbnew.B_Cu, pcbnew.ZONE_CONNECTION_FULL, "GND B.Cu")):
         ls = pcbnew.LSET()
         ls.addLayer(lay)
         z = _zone(board, "GND", ls, full, name)
         z.SetPadConnection(conn)
+        # Abgeschnittene Kupferinseln entfernen statt stehen lassen.
+        # Eine Insel ohne Anbindung ist keine Masse, sondern ein Stueck
+        # Blech, das mitschwingt -- und die DRC meldet sie zu Recht als
+        # fehlende Verbindung der Flaeche mit sich selbst.
+        z.SetIslandRemovalMode(pcbnew.ISLAND_REMOVAL_MODE_ALWAYS)
         zs.append(z)
     return zs
 
@@ -243,16 +313,91 @@ def antenna_slot(board, beschreibung):
             ((x0 + r, y1 - r), (x0 + r, y1), (x0, y1 - r))]:
         sh = pcbnew.PCB_SHAPE(board)
         sh.SetShape(pcbnew.SHAPE_T_ARC)
+        # Punkt AUF dem Bogen, nicht der Mittelpunkt -- s. bogenmitte().
+        # Hier waren aus dem Fraeserradius 1,00 mm sonst 0,707 mm
+        # geworden: enger als der Fraeser, also nicht herstellbar.
         sh.SetArcGeometry(pcbnew.VECTOR2I(mm(sx), mm(sy)),
-                          pcbnew.VECTOR2I(mm(cx), mm(cy)),
+                          pcbnew.VECTOR2I(*bogenmitte((cx, cy), (sx, sy),
+                                                      (ex, ey))),
                           pcbnew.VECTOR2I(mm(ex), mm(ey)))
         sh.SetLayer(pcbnew.Edge_Cuts)
         sh.SetWidth(mm(0.05))
         board.Add(sh)
 
 
+def antenna_slot_keepout(board, beschreibung):
+    """Sperrflaeche um den Antennenschlitz, um die Kantenabstandsregel.
+
+    Der Schlitz ist ein Innenausschnitt in Edge.Cuts. pcbnew exportiert
+    ihn in die DSN als Sperrflaeche mit GENAU seinem Umriss -- freerouting
+    haelt daran nur seinen eigenen Bahnabstand (0,2 mm) ein, nicht die
+    Kantenabstandsregel der Platine (0,5 mm). Ergebnis waren vier
+    DRC-Fehler: zwei Bahnen liefen auf 0,34 bzw. 0,44 mm an die
+    Fraeskante heran. An einer gefraesten Kante ist das kein
+    Schoenheitsfehler -- der Fraeser hat Spiel, und eine angeschnittene
+    Bahn ist ein offener Stromkreis.
+    Diese Regelflaeche sagt es dem Router ausdruecklich.
+    """
+    x0, y0, x1, y1 = beschreibung.ANTENNA_SLOT
+    e = getattr(beschreibung, "EDGE_CLEARANCE", 0.5)
+    pts = [(x0 - e, y0 - e), (x1 + e, y0 - e), (x1 + e, y1 + e), (x0 - e, y1 + e)]
+    z = pcbnew.ZONE(board)
+    z.SetIsRuleArea(True)
+    z.SetDoNotAllowTracks(True)
+    z.SetDoNotAllowVias(True)
+    z.SetDoNotAllowZoneFills(True)
+    ls = pcbnew.LSET()
+    ls.addLayer(pcbnew.F_Cu)
+    ls.addLayer(pcbnew.B_Cu)
+    z.SetLayerSet(ls)
+    z.SetOutline(_outline(pts))
+    z.SetZoneName("Antennenschlitz Kantenabstand")
+    board.Add(z)
+    return z
+
+
+def stitching_vias(board, beschreibung):
+    """GND-Vias, die die beiden Masseflaechen miteinander vernaehen.
+
+    Ohne sie meldete die DRC "Missing connection" zwischen der
+    F.Cu- und der B.Cu-Massflaeche: die bedrahteten GND-Pads verbinden
+    zwar beide Lagen, ihre Waermefallen auf F.Cu zerfielen aber in
+    Inseln, von denen eine keinen Weg zum Rest hatte. Die Vias stehen in
+    der Beschreibung (STITCH_VIAS) und nicht hier, weil ihre Lage von
+    der freien Flaeche der jeweiligen Platine abhaengt; sie werden VOR
+    dem Verlegen gesetzt, damit der Router sie als Hindernis kennt statt
+    hinterher darueber zu stolpern.
+    """
+    stellen = getattr(beschreibung, "STITCH_VIAS", ())
+    code = board.GetNetcodeFromNetname("GND")
+    if not stellen or code < 0:
+        return 0
+    for x, y in stellen:
+        v = pcbnew.PCB_VIA(board)
+        v.SetPosition(pcbnew.VECTOR2I(mm(x), mm(y)))
+        v.SetWidth(mm(fertigung.VIA_PAD))
+        v.SetDrill(mm(fertigung.VIA_DRILL))
+        v.SetViaType(pcbnew.VIATYPE_THROUGH)
+        v.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu)
+        v.SetNetCode(code)
+        board.Add(v)
+    return len(stellen)
+
+
 def courtyard_bbox(fp):
-    """Hof-Rechteck des platzierten Bauteils in mm (links, oben, rechts, unten)."""
+    """Hof-Rechteck des platzierten Bauteils in mm (links, oben, rechts, unten).
+
+    Um fertigung.HOF_STRICH geschrumpft, damit dieses Rechteck DASSELBE
+    ist, das tools/stack_spec.py (FOOTPRINT_HOF, STECKER_POS) aus der
+    .kicad_mod-Datei liest: pcbnew liefert den mit der Strichbreite
+    gestrichelten Umriss und rundet nach aussen, der Vertrag die rohen
+    Polygonkoordinaten. Ohne das Schrumpfen laege jeder Stecker
+    0,045 mm neben seiner Vertragskoordinate -- s. die Herleitung bei
+    fertigung.HOF_STRICH. Hier und nicht in den einzelnen
+    Platinenbeschreibungen, weil sonst jede kuenftige Beschreibung die
+    Korrektur erneut von Hand mitbringen muesste (Aufgabe 7 waere die
+    erste, die es vergessen koennte).
+    """
     box = None
     for lay in (pcbnew.F_CrtYd, pcbnew.B_CrtYd):
         poly = fp.GetCourtyard(lay)
@@ -262,7 +407,10 @@ def courtyard_bbox(fp):
         cur = (bb.GetLeft(), bb.GetTop(), bb.GetRight(), bb.GetBottom())
         box = cur if box is None else (min(box[0], cur[0]), min(box[1], cur[1]),
                                        max(box[2], cur[2]), max(box[3], cur[3]))
-    return box
+    if box is None:
+        return None
+    s = mm(fertigung.HOF_STRICH)
+    return (box[0] + s, box[1] + s, box[2] - s, box[3] - s)
 
 
 def place(board, comps, beschreibung, kicad_dir):
@@ -321,8 +469,30 @@ def tidy_silkscreen(board, beschreibung):
     waeren sie ohnehin oft verdeckt, gebraucht werden sie nur beim
     Bestuecken, und dafuer ist die Zeichnung da.
     """
-    klein = pcbnew.VECTOR2I(mm(0.7), mm(0.7))
+    klein = pcbnew.VECTOR2I(mm(fertigung.SILK_TEXT), mm(fertigung.SILK_TEXT))
+    hoehe = fertigung.SILK_TEXT
+
+    # Die Hoefe aller Bauteile, gegen die eine Beschriftung nicht stossen
+    # darf. Aus der Beschreibung statt aus der Platine, weil der Text
+    # gesetzt wird, bevor die Konnektivitaet steht.
+    hoefe = [(q.x, q.y, q.x + q.w, q.y + q.h)
+             for q in beschreibung.PLACEMENT.values()]
+
+    def frei(x0, y0, x1, y1, eigener):
+        """Passt ein Textkasten dorthin, ohne fremde Hoefe oder die Kante?"""
+        e = getattr(beschreibung, "EDGE_CLEARANCE", 0.5)
+        if (x0 < e or y0 < e or x1 > beschreibung.BOARD_W - e
+                or y1 > beschreibung.BOARD_H - e):
+            return False
+        for k, h in enumerate(hoefe):
+            if k == eigener:
+                continue
+            if x0 < h[2] and h[0] < x1 and y0 < h[3] and h[1] < y1:
+                return False
+        return True
+
     n_fab = 0
+    refs = list(beschreibung.PLACEMENT)
     for fp in board.GetFootprints():
         ref = fp.GetReference()
         p = beschreibung.PLACEMENT.get(ref)
@@ -333,19 +503,42 @@ def tidy_silkscreen(board, beschreibung):
 
         r = fp.Reference()
         r.SetTextSize(klein)
-        r.SetTextThickness(mm(0.12))
+        r.SetTextThickness(mm(fertigung.SILK_DICKE))
         if p is not None and not p.tht:
             r.SetLayer(pcbnew.F_Fab)
             n_fab += 1
         elif ref.startswith("H"):
             r.SetVisible(False)
+        elif p is None:
+            r.SetLayer(pcbnew.F_SilkS)
         else:
             r.SetLayer(pcbnew.F_SilkS)
-            # ueber das Bauteil setzen, dort ist am ehesten Platz
-            box = courtyard_bbox(fp)
-            if box is not None:
-                r.SetPosition(pcbnew.VECTOR2I(
-                    (box[0] + box[2]) // 2, box[1] - mm(0.9)))
+            # Ueber das Bauteil setzen -- aber nur, wenn dort wirklich
+            # Platz ist. Beim Pico (53,85 mm breit, direkt unter dem
+            # Stapelstecker) landete die Beschriftung sonst mitten auf
+            # dessen Silkscreen und ueber einem seiner Pads: zwei
+            # DRC-Fehler, die erst am gerouteten Board auffielen.
+            # Faellt der Platz darueber weg, wandert der Text in den
+            # eigenen Hof -- der gehoert dem Bauteil ohnehin.
+            breite = 0.75 * hoehe * max(2, len(ref))   # grob, reicht hier
+            mitte_x = p.x + p.w / 2.0
+            eigener = refs.index(ref)
+            oben = (mitte_x - breite / 2, p.y - 0.9 - hoehe / 2,
+                    mitte_x + breite / 2, p.y - 0.9 + hoehe / 2)
+            if frei(*oben, eigener):
+                r.SetPosition(pcbnew.VECTOR2I(mm(mitte_x), mm(p.y - 0.9)))
+            else:
+                # Kein Platz daneben: dann gehoert die Kennung auf die
+                # Bestueckungszeichnung, nicht mit Gewalt auf den Druck.
+                # In den eigenen Hof zu schieben half nicht -- dort liegt
+                # der Silkscreen-Umriss des Bauteils selbst (bei der
+                # Klemme J1 nachgewiesen), und ein Text ueber dem eigenen
+                # Umriss ist genauso unlesbar wie einer ueber dem
+                # fremden.
+                r.SetLayer(pcbnew.F_Fab)
+                r.SetPosition(pcbnew.VECTOR2I(mm(mitte_x),
+                                              mm(p.y + p.h / 2)))
+                n_fab += 1
     return n_fab
 
 
@@ -489,6 +682,8 @@ def bauen(beschreibung, board_pfad, sch_pfad, kicad_dir=None,
         mark_version(board, versionstext, beschreibung, hinweise)
     if getattr(beschreibung, "ANTENNA_SLOT", None) is not None:
         antenna_slot(board, beschreibung)
+        antenna_slot_keepout(board, beschreibung)
+    n_stich = stitching_vias(board, beschreibung)
     add_zones(board, beschreibung)
     board.BuildListOfNets()
     board.BuildConnectivity()
@@ -508,6 +703,8 @@ def bauen(beschreibung, board_pfad, sch_pfad, kicad_dir=None,
         problems.append("Pad %s traegt ein Netz und faellt trotzdem weg" % x)
     print("Beschriftung: %d SMD-Referenzen auf F.Fab, Werte ausgeblendet"
           % n_fab)
+    if n_stich:
+        print("%d GND-Vias zum Vernaehen der Masseflaechen gesetzt" % n_stich)
     if n_bekannt:
         print("%d bekannte Pins ohne Pad uebergangen" % n_bekannt)
     if ohne:
