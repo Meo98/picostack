@@ -169,7 +169,10 @@ PLACEMENT = {
     # sitzen: NUR so liegt ihr Kontaktfeld auf demselben Mittelpunkt wie
     # das der Buchsenhaelfte eines Moduls (nachgerechnet: Buchse 55,97,
     # Stift mit HOF 55,97, Stift mit gespiegeltem Anker 53,43). Der
-    # gespiegelte Anker war ein Irrweg -- s. OFFENE FRAGE am Dateiende.
+    # gespiegelte Anker war ein Irrweg. Welche NUMMER dabei wo landet,
+    # regelt stack_spec.SPALTEN_GESPIEGELT (Kontakt 1 der 2x02-Paare
+    # liegt rechts, nicht auf dem Anker); die Steckerprobe misst es an
+    # der gebauten Platine nach.
     "J3": _aus_vertrag("J3", S.HOF(FP_HDR_1X02_SMD,
                                    _S["kette"]["pin1"],
                                    _S["kette"]["drehung"]),

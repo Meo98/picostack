@@ -698,14 +698,10 @@ def HOEFE(footprints, pin1, drehung):
 RASTER = 2.54      # mm Rastermass aller drei Stecker (2,54 mm / 0,1")
 
 # Footprint -> (Spalten, Reihen). Zusammen mit RASTER ergibt das die
-# KONTAKT-Lagen; die Nummerierung ist die von KiCad fuer die
-# Conn_0NxNN_Odd_Even-Familie: Kontakt 1 links oben, danach zeilenweise
-# (Pin 1 und 2 nebeneinander, Pin 3 und 4 die naechste Reihe). An den
-# echten .kicad_mod-Dateien nachgesehen, nicht angenommen -- bei
-# PinHeader_2x20 liegt Pad 1 bei (0|0), Pad 2 bei (2,54|0), Pad 3 bei
-# (0|2,54). Bei den SMD-Footprints liegen die Loetpads seitlich, die
-# KONTAKTE aber weiterhin genau auf diesem Raster -- und nur die
-# zaehlen fuer die Frage, ob ein Stift einen Kontakt trifft.
+# KONTAKT-Lagen. `pin1` in STECKER_POS ist dabei der RASTER-ANKER: der
+# linke obere Punkt des Kontaktgitters -- NICHT zwingend die Lage von
+# Kontakt 1 (s. SPALTEN_GESPIEGELT unten). FOOTPRINT_HOF und HOF()
+# beziehen sich auf denselben Anker.
 FOOTPRINT_RASTER = {
     "Connector_PinHeader_2.54mm:PinHeader_2x20_P2.54mm_Vertical": (2, 20),
     "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical_SMD_Pin1Left":
@@ -716,21 +712,67 @@ FOOTPRINT_RASTER = {
     "Connector_PinSocket_2.54mm:PinSocket_2x02_P2.54mm_Vertical_SMD": (2, 2),
 }
 
+# Footprints, deren Kontaktnummerierung in Platinenkoordinaten von
+# RECHTS nach links laeuft -- Kontakt 1 sitzt in der RECHTEN Spalte des
+# Gitters, nicht auf dem Anker.
+#
+# RULING (2026-09-01, nach Aufgabe 6 an der gebauten Platine gemessen).
+# Die alte Fassung dieses Blocks behauptete "Kontakt 1 links oben,
+# zeilenweise, an den echten .kicad_mod-Dateien nachgesehen" -- wirklich
+# nachgesehen war das nur beim 2x20-THT. Beim 2x02-SMD-Paar ist es
+# falsch, und zwar fuer BEIDE Haelften:
+#
+#   * Die Buchse (PinSocket_2x02_SMD) hat Pad 1 RECHTS (+2,520 im
+#     Footprint) -- ihr Kontakt 1 liegt in der rechten Gitterspalte.
+#   * Die Stiftleiste (PinHeader_2x02_SMD) hat Pad 1 links (-2,525),
+#     aber sie sitzt laut diesem Vertrag GESPIEGELT auf der UNTERSEITE
+#     ("Buchse oben, Stiftleiste unten") -- in Platinenkoordinaten
+#     landet ihr Kontakt 1 damit ebenfalls rechts. Die Bibliothek
+#     zeichnet die Haelften absichtlich gespiegelt zueinander, damit
+#     sie am selben Anker zusammenpassen.
+#
+# An der gebauten Sockelplatine bestaetigt (J4, Stifthaelfte auf B.Cu):
+# Pad 1 traegt /PWR24V und sein Kontakt liegt bei x = 57,24 -- die alte
+# PAD_LAGEN-Fassung veroeffentlichte fuer Kontakt 1 aber x = 54,70.
+# Exakt spiegelverkehrt, und STECKER_LEISTUNG legt auf die Spalten
+# VERSCHIEDENE Netze (Kontakt 1/3 = PWR24V, 2/4 = GND): wer nach der
+# alten Koordinate einen eigenen Footprint zeichnete, setzte 24 V
+# dorthin, wo der Stapel GND fuehrt.
+#
+# Fuer Platinen, die die KiCad-Standardfootprints benutzen, aendert
+# dieses Ruling NICHTS am Kupfer -- nur die veroeffentlichte Zuordnung
+# Nummer -> Ort wird der Wirklichkeit angepasst. Die 1x02-Paare sind
+# nicht betroffen (eine Spalte, Nummerierung laeuft ueber die Reihen;
+# an der gebauten Platine gegengeprueft: J3 Kontakt 1 liegt auf dem
+# Anker). Der 2x20-THT ist nicht betroffen (Pad 1 wirklich links oben).
+SPALTEN_GESPIEGELT = frozenset((
+    "Connector_PinHeader_2.54mm:PinHeader_2x02_P2.54mm_Vertical_SMD",
+    "Connector_PinSocket_2.54mm:PinSocket_2x02_P2.54mm_Vertical_SMD",
+))
+
 
 def PAD_LAGEN(footprint, pin1, drehung):
     """Kontakt-Nummer -> (x, y) in Platinenkoordinaten.
 
-    Gebraucht fuer die Verdreh-Probe: ob ein um 180 Grad verdreht
+    Gebraucht fuer die Verdreh-Probe (ob ein um 180 Grad verdreht
     aufgesetztes Modul steckt, entscheidet nicht die Flaeche, sondern
-    ob ein Stift einen Kontakt trifft.
+    ob ein Stift einen Kontakt trifft) und fuer die Steckerprobe an
+    der gebauten Platine (liegt Kontakt k wirklich dort, wo dieser
+    Vertrag es sagt).
+
+    Die MENGE der Punkte ist bei gespiegelter Nummerierung dieselbe --
+    die Verdreh-Probe haengt an dieser Korrektur deshalb nicht. Die
+    ZUORDNUNG Nummer -> Ort tut es: s. SPALTEN_GESPIEGELT.
     """
     spalten, reihen = FOOTPRINT_RASTER[footprint]
+    gespiegelt = footprint in SPALTEN_GESPIEGELT
     aus = {}
     for reihe in range(reihen):
         for spalte in range(spalten):
             pin = reihe * spalten + spalte + 1
-            ecke = LAGE((spalte * RASTER, reihe * RASTER,
-                         spalte * RASTER, reihe * RASTER), pin1, drehung)
+            sp = (spalten - 1 - spalte) if gespiegelt else spalte
+            ecke = LAGE((sp * RASTER, reihe * RASTER,
+                         sp * RASTER, reihe * RASTER), pin1, drehung)
             aus[pin] = (ecke[0], ecke[1])
     return aus
 

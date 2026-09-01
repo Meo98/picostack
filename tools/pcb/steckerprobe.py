@@ -60,30 +60,42 @@ def mitte(punkte):
     return ((min(xs) + max(xs)) / 2.0, (min(ys) + max(ys)) / 2.0)
 
 
-# OFFENE FRAGE, am 2026-09-01 gefunden und BEWUSST NICHT hier
-# stillschweigend geloest -- s. gleichnamiger Abschnitt in
-# tools/pcb/spec_sockel.py:
-#
-# stack_spec.PAD_LAGEN() nimmt an, Kontakt 1 liege auf "pin1" und die
-# weiteren Kontakte waechsen nach rechts und unten. Fuer die
-# bedrahteten Stecker stimmt das. Fuer die SMD-Paare nicht: KiCads
-# Buchse hat Pad 1 rechts (+2,520), die Stiftleiste links (-2,525) --
-# die Bibliothek zeichnet das Paar bereits gespiegelt, damit es am
-# selben Ursprung zusammenpasst. Physisch liegt Kontakt 1 beider
-# Haelften deshalb in der RECHTEN Spalte des Kontaktfeldes, waehrend
-# "pin1" die linke bezeichnet.
-#
-# Fuer den Stapel ist das folgenlos, solange alle Platinen dieselben
-# Footprints benutzen -- die Haelften decken sich (nachgerechnet:
-# Kontaktfeldmitte 55,97 mm bei beiden). Falsch ist die veroeffentlichte
-# KOORDINATE: wer gegen sie einen eigenen Footprint zeichnet, setzt
-# Pin 1 in die falsche Spalte, und beim Leistungsstecker traefe damit
-# 24 V auf GND.
-#
-# Eine Pruefung dagegen steht hier bewusst NICHT: sie muesste gegen ein
-# Modell messen, von dem gerade gezeigt ist, dass es die Wirklichkeit
-# nicht trifft. Erst wird der Vertrag entschieden, dann die Pruefung
-# gebaut.
+def kontaktprobe(ref, name, pads, soll_raster):
+    """Liegt KONTAKT k dort, wo der Vertrag ihn haben will?
+
+    Nicht der Schwerpunkt, sondern die Zuordnung Nummer -> Ort: der
+    Schwerpunkt ist spiegelinvariant, die Nummerierung nicht. Genau an
+    dieser Luecke ist am 2026-09-01 aufgefallen, dass der Vertrag die
+    Kontaktnummern des 2x02-SMD-Paars spiegelverkehrt veroeffentlichte
+    (s. stack_spec.SPALTEN_GESPIEGELT) -- diese Probe stand deshalb
+    einen Commit lang bewusst NICHT im Baum: sie haette gegen ein
+    nachweislich falsches Modell gemessen. Erst wurde der Vertrag
+    entschieden, jetzt misst sie gegen die korrigierte Fassung.
+
+    Zuordnung ueber den naechsten Sollkontakt. Das geht auf, weil der
+    seitliche Versatz zwischen Loetpad und Kontakt bei jedem der fuenf
+    Steckerfootprints kleiner ist als der Abstand zum NAECHSTEN fremden
+    Kontakt: 2x02 SMD 1,255 mm eigener gegen 3,795 mm fremder Kontakt,
+    1x02 SMD 1,655 gegen 3,03, THT 0 gegen 2,54. Nachgemessen an den
+    .kicad_mod-Dateien, nicht angenommen.
+    """
+    fails = []
+    for num, pos in sorted(pads.items(), key=lambda kv: int(kv[0])):
+        n = int(num)
+        if n not in soll_raster:
+            continue
+        nah = min(soll_raster,
+                  key=lambda k: (soll_raster[k][0] - pos[0]) ** 2
+                  + (soll_raster[k][1] - pos[1]) ** 2)
+        if nah != n:
+            fails.append(
+                "%s (%s): Pad %s liegt am Ort von Kontakt %d "
+                "(%.2f|%.2f), gehoert aber zu Kontakt %d (%.2f|%.2f) -- "
+                "Nummerierung verdreht oder gespiegelt"
+                % (ref, name, num, nah, soll_raster[nah][0],
+                   soll_raster[nah][1], n, soll_raster[n][0],
+                   soll_raster[n][1]))
+    return fails[:2]        # zwei Beispiele genuegen, der Rest folgt daraus
 
 
 def _abstand_zu_kante(punkt, kanten):
@@ -218,7 +230,10 @@ def pruefen(beschreibung, board_pfad):
                     "(%.4f|%.4f) -- Versatz (%+.4f|%+.4f) mm"
                     % (ref, name, ist[0], ist[1], soll[0], soll[1], dx, dy))
 
-            # 1b. Die richtige Platinenseite. Der Vertrag sagt "Buchse
+            # 1b. WELCHER Kontakt wo liegt -- s. kontaktprobe().
+            fails += kontaktprobe(ref, name, pads, soll_raster)
+
+            # 1c. Die richtige Platinenseite. Der Vertrag sagt "Buchse
             # oben, Stiftleiste unten"; welche Haelfte dieses Bauteil
             # ist, steht im Footprintnamen.
             ist_unten = fp.IsFlipped()

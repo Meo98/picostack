@@ -377,6 +377,40 @@ check("Sockel: freie Flaeche traegt die eigenen Bauteile",
 check("Sockel: groesstes freies Rechteck traegt die eigene Hofsumme",
       _sockel_rechteck > S.SOCKEL_HOF_SUMME_MM2, True)
 
+# --- Kontaktnummerierung der SMD-Paare -------------------------------
+# Kontakt 1 des 2x02-Leistungssteckers liegt in der RECHTEN Spalte des
+# Gitters (SPALTEN_GESPIEGELT): die Buchse hat Pad 1 rechts, und die
+# Stiftleiste sitzt laut Vertrag gespiegelt auf der Unterseite -- in
+# Platinenkoordinaten landet ihr Kontakt 1 damit ebenfalls rechts. An
+# der gebauten Sockelplatine gemessen (J4 Pad 1 = /PWR24V bei x=57,24),
+# nicht aus der Bibliothek abgeleitet. Die alte Fassung veroeffentlichte
+# das spiegelverkehrt; wer danach einen eigenen Footprint zeichnete,
+# haette 24 V auf GND gesetzt.
+_L = S.STECKER_POS["leistung"]
+for _fp in _L["footprints"]:
+    _lag = S.PAD_LAGEN(_fp, _L["pin1"], _L["drehung"])
+    check("Kontakt 1 (%s) rechte Spalte" % _fp.split(":")[1][:9],
+          _lag[1], (57.24, 42.0))
+    check("Kontakt 2 (%s) linke Spalte" % _fp.split(":")[1][:9],
+          _lag[2], (54.7, 42.0))
+    check("Kontakt 3 unter Kontakt 1 (%s)" % _fp.split(":")[1][:9],
+          _lag[3], (57.24, 44.54))
+# Beide Haelften muessen DIESELBE Zuordnung liefern -- sonst traefe im
+# Stapel Kontakt k auf Kontakt j.
+check("beide Leistungs-Haelften nummerieren gleich",
+      S.PAD_LAGEN(_L["footprints"][0], _L["pin1"], _L["drehung"]),
+      S.PAD_LAGEN(_L["footprints"][1], _L["pin1"], _L["drehung"]))
+# Der Kettenstecker (eine Spalte) ist NICHT gespiegelt: Kontakt 1 auf
+# dem Anker, an der gebauten Platine gegengeprueft (J3 Pad 1 = SEL_OUT).
+_K = S.STECKER_POS["kette"]
+for _fp in _K["footprints"]:
+    check("Kette: Kontakt 1 auf dem Anker (%s)" % _fp.split(":")[1][:9],
+          S.PAD_LAGEN(_fp, _K["pin1"], _K["drehung"])[1], (12.5, 2.75))
+# Und der 2x20-THT auch nicht (Pad 1 wirklich links oben).
+check("Stapelstecker nicht gespiegelt",
+      S.STECKER_POS["stapel"]["footprints"][0] in S.SPALTEN_GESPIEGELT,
+      False)
+
 # --- Verdreht aufgesteckt --------------------------------------------
 # Das Lochbild ist punktsymmetrisch, ein Modul laesst sich also um
 # 180 Grad verdreht anschrauben. Dann laege Pin 1 auf Pin 40 -- VBUS
