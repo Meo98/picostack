@@ -363,6 +363,38 @@ def antenna_slot_keepout(board, beschreibung):
     return z
 
 
+def pre_tracks(board, beschreibung):
+    """Vorverdrahtung aus der Beschreibung (PRE_TRACKS) auf die Platine.
+
+    Eintraege: (netzname, lagenname, [(x, y), ...]). Gelegt VOR dem
+    Verlegen, damit freerouting sie als Hindernis kennt und die
+    Signalbahnen darum herum fuehrt -- genau wie die Naehvias.
+
+    Gebraucht fuer die GND-Stummel der Sockelplatine: unter dem
+    Stapelstecker zerschneiden vierzig Bahnen den Masseguss auf beiden
+    Lagen, und ohne garantierten Weg strandete in jedem Router-Lauf ein
+    anderer Massepin auf seiner eigenen Insel (Herleitung bei
+    spec_sockel.PRE_TRACKS).
+    """
+    eintraege = getattr(beschreibung, "PRE_TRACKS", ())
+    lagen = {"F.Cu": pcbnew.F_Cu, "B.Cu": pcbnew.B_Cu}
+    n = 0
+    for netz, lage, punkte in eintraege:
+        code = board.GetNetcodeFromNetname(netz)
+        if code < 0:
+            raise ValueError("PRE_TRACKS: Netz %r gibt es nicht" % netz)
+        for a, b in zip(punkte, punkte[1:]):
+            t = pcbnew.PCB_TRACK(board)
+            t.SetStart(pcbnew.VECTOR2I(mm(a[0]), mm(a[1])))
+            t.SetEnd(pcbnew.VECTOR2I(mm(b[0]), mm(b[1])))
+            t.SetWidth(mm(fertigung.TRACK_SIGNAL))
+            t.SetLayer(lagen[lage])
+            t.SetNetCode(code)
+            board.Add(t)
+            n += 1
+    return n
+
+
 def stitching_vias(board, beschreibung):
     """GND-Vias, die die beiden Masseflaechen miteinander vernaehen.
 
@@ -709,6 +741,7 @@ def bauen(beschreibung, board_pfad, sch_pfad, kicad_dir=None,
         antenna_slot(board, beschreibung)
         antenna_slot_keepout(board, beschreibung)
     n_stich = stitching_vias(board, beschreibung)
+    n_vor = pre_tracks(board, beschreibung)
     add_zones(board, beschreibung)
     board.BuildListOfNets()
     board.BuildConnectivity()
@@ -730,6 +763,8 @@ def bauen(beschreibung, board_pfad, sch_pfad, kicad_dir=None,
           % n_fab)
     if n_stich:
         print("%d GND-Vias zum Vernaehen der Masseflaechen gesetzt" % n_stich)
+    if n_vor:
+        print("%d Segmente Vorverdrahtung gelegt" % n_vor)
     if n_bekannt:
         print("%d bekannte Pins ohne Pad uebergangen" % n_bekannt)
     if ohne:

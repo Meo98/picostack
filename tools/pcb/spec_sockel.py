@@ -299,6 +299,56 @@ def _naehte():
 
 STITCH_VIAS = _naehte()
 
+# --- GND-Vorverdrahtung ----------------------------------------------
+# Kurze GND-Stummel von jedem Massepin des Stapelsteckers in den freien
+# Streifen darueber, VOR dem Verlegen gelegt.
+#
+# Warum (2026-09-01, letzter offener DRC-Punkt von Aufgabe 6). Unter dem
+# Stapelstecker laufen vierzig Bahnen nebeneinander und zerschneiden den
+# Masseguss auf BEIDEN Lagen in eingeschlossene Inseln; in drei
+# Router-Laeufen hing jedes Mal ein anderer J2-Massepin an seiner
+# eigenen Insel (zuletzt Pin 28: 3 angeschlossene Elemente statt 62).
+# Naehvias helfen dort nicht (die Insel auf der Gegenlage ist ebenso
+# eingeschlossen), ein kleinerer Gussabstand auch nicht -- beides
+# gemessen. Ein vorab gelegter Stummel dagegen ist fuer freerouting ein
+# Hindernis: die Signalbahnen weichen ihm aus, und der Pin hat einen
+# garantierten Weg in den oberen Streifen, dessen Flaeche ueber die
+# Naehvia-Reihe bei y = 7,5 an der Masse beider Lagen haengt.
+#
+# ALLE acht Massepins, nicht nur der zuletzt gestrandete: welcher Pin
+# strandet, wechselt mit jedem Router-Lauf -- das ist eine Klasse, kein
+# Einzelfall.
+#
+# Geometrie, nachgerechnet (tests/test_spec_sockel.py haelt sie fest):
+#   * obere Padreihe (y = 10,46): senkrecht nach oben, frei.
+#   * untere Padreihe (y = 13,00): direkt darueber sitzt ein Pad der
+#     oberen Reihe (gleiche Spalte). Deshalb ein 45-Grad-Knick auf
+#     x + 1,27 -- die Mitte zwischen zwei Spalten -- und dann senkrecht.
+#     Luft an den Nachbarpads: 1,27 - 0,85 (Padradius) = 0,42 mm gegen
+#     benoetigte 0,125 + 0,2 = 0,325 mm.
+#   * Ende bei y = 6,5: hinter der Naehvia-Reihe (y = 7,5), vor J3
+#     (dessen Pads liegen auf B.Cu -- F.Cu ist dort frei) und neben
+#     R1/R2 (x 17,5..21,2; keine Senkrechte laeuft dort hinein).
+_J2_LAGEN = S.PAD_LAGEN(_S["stapel"]["footprints"][0],
+                        _S["stapel"]["pin1"], _S["stapel"]["drehung"])
+_STUMMEL_ENDE_Y = 6.5
+
+
+def _gnd_stummel():
+    aus = []
+    for pin in sorted(p for p, r in S.PIN_ROLLE.items() if r == "GND"):
+        x, y = _J2_LAGEN[pin]
+        if abs(y - 10.46) < 0.01:          # obere Reihe: gerade hoch
+            punkte = [(x, y), (x, _STUMMEL_ENDE_Y)]
+        else:                               # untere Reihe: Knick auf x+1,27
+            punkte = [(x, y), (x + 1.27, y - 1.27),
+                      (x + 1.27, _STUMMEL_ENDE_Y)]
+        aus.append(("GND", "F.Cu", punkte))
+    return tuple(aus)
+
+
+PRE_TRACKS = _gnd_stummel()
+
 # --- Netzklassen -----------------------------------------------------
 # Netznamen wie in der von KiCad exportierten Netzliste (mit Blatt-
 # Praefix). autoroute.dsn_netzklassen() bricht ab, wenn eines davon in

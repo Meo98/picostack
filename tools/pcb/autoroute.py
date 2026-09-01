@@ -185,6 +185,26 @@ def ses_lesen(pfad):
 def auf_platine(board, bahnen, vias):
     lagen = {"F.Cu": pcbnew.F_Cu, "B.Cu": pcbnew.B_Cu}
     unbekannt, n_seg = set(), 0
+
+    # Segmente, die die Platine schon traegt, nicht doppelt anlegen --
+    # dieselbe Falle wie bei den Naehvias, seit build.pre_tracks() vor
+    # dem Verlegen GND-Stummel legt: sie stehen in der DSN, kommen in
+    # der SES zurueck und laegen sonst doppelt im Kupfer. Verglichen
+    # mit Toleranz, weil freerouting in sein eigenes Raster rundet.
+    NAHT = build.mm(0.05)
+
+    def _key(p):
+        return (round(p[0] / NAHT), round(p[1] / NAHT))
+
+    seg_da = set()
+    for t in board.Tracks():
+        if t.Type() == pcbnew.PCB_TRACE_T:
+            a = (t.GetStart().x, t.GetStart().y)
+            b = (t.GetEnd().x, t.GetEnd().y)
+            seg_da.add((_key(a), _key(b)))
+            seg_da.add((_key(b), _key(a)))
+
+    n_seg_doppelt = 0
     for lage, breite, punkte, netz in bahnen:
         code = board.GetNetcodeFromNetname(netz)
         if code < 0:
@@ -192,6 +212,9 @@ def auf_platine(board, bahnen, vias):
             continue
         for a, b in zip(punkte, punkte[1:]):
             if a == b:
+                continue
+            if (_key(a), _key(b)) in seg_da:
+                n_seg_doppelt += 1
                 continue
             t = pcbnew.PCB_TRACK(board)
             t.SetStart(pcbnew.VECTOR2I(int(round(a[0])), int(round(a[1]))))
@@ -202,6 +225,9 @@ def auf_platine(board, bahnen, vias):
             board.Add(t)
             _HALTEN.append(t)
             n_seg += 1
+    if n_seg_doppelt:
+        print("  %d Segmente waren schon gelegt (Vorverdrahtung) und nicht "
+              "doppelt angelegt" % n_seg_doppelt)
     # Vias, die die Platine schon hat, NICHT ein zweites Mal setzen.
     #
     # build.stitching_vias() setzt die GND-Naehvias vor dem Verlegen --
