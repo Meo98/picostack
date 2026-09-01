@@ -1,2 +1,5 @@
 __pycache__/
 *.pyc
+
+# KiCad-Sperrdateien einer offenen GUI-Sitzung (gehoeren keinem Commit)
+~*.lck

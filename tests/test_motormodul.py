@@ -1043,9 +1043,15 @@ else:
             if ("_%s_" % _code) in _name:
                 _chip = _code
         _gh = M.GEHAEUSE.get(_wert)
-        check("%s: das Gehaeuse des gewaehlten Teils ist belegt "
+        check("%s: das Gehaeuse des gewaehlten Teils ('%s') ist belegt "
               "(GEHAEUSE-Eintrag oder Chipbauform im Footprintnamen)"
-              % _ref, (_gh is not None) or (_chip is not None), True)
+              % (_ref, _wert), (_gh is not None) or (_chip is not None), True)
+        if _gh is None and _chip is None:
+            # Ohne Beleg kann hier nichts nachgemessen werden -- die
+            # Zusicherung oben ist bereits rot, der Rest wuerde nur
+            # einen Traceback statt einer Meldung liefern.
+            _ohne_mass.append((_ref, "Gehaeuse nicht belegt", "alles"))
+            continue
 
         _xs = [(p[2] - p[4] / 2.0, p[2] + p[4] / 2.0) for p in _pl if p[0] in _pinnr]
         # Rastermass = kleinster Abstand zweier Pad-Mitten entlang

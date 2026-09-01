@@ -37,13 +37,15 @@ Grundlage des neuen, eigenständigen Kettensteckers sind.
 | ~~Gatter Dual-AND (RESET, BOOT0) — **verworfen, s. Nachtrag 2026-08-31**~~ | 74LVC2G08GT,115 (Nexperia) | XSON-8 (1×2 mm), 8 Pins | C548580 | ja (Bauform an sich geprüft, aber verworfen) | JLCPCB-Produktseite `jlcpcb.com/partdetail/Nexperia-74LVC2G08GT115/C548580` (SMT Assembly, Economic/Standard PCBA, MSL 1) |
 | 5-V-Regler | K7805-2000R3 | SIP-3 | C2931187 | ja | bereits geprüft in Etappe 1a / LED-Dimmer-Projekt, siehe `hardware/bauteile.md` — hier unverändert übernommen, nicht neu recherchiert |
 | Klemme 2-polig | DB128L-5.08-2P-GN-S | THT, 5,08 mm | C395868 | ja | bereits geprüft in Etappe 1a / LED-Dimmer-Projekt — unverändert übernommen |
-| Klemme 3-polig | DB128L-5.08-3P-GN-S | THT, 5,08 mm | C395869 | ja | LCSC-Produktseite `lcsc.com/product-detail/C395869.html` (16 A, 300 V, M2-Schraube, 12–22 AWG); JLCPCB-Produktseite bestätigt (DORABO-Familie, SMT/Wave-Assembly, Economic/Standard PCBA) — selbe Farbe/Baureihe wie die bereits geprüfte 2-polige Klemme |
+| Klemme 3-polig — **seit Aufgabe 5f von keinem Modul mehr gebraucht** (sie trug die Sensorklemme J2 des Motormoduls; der Sensoreingang ist entfallen, s. Beleg 12, Nachtrag). Zeile bleibt stehen, weil die Nummer geprüft ist und ein künftiges Modul sie brauchen kann | DB128L-5.08-3P-GN-S | THT, 5,08 mm | C395869 | ja | LCSC-Produktseite `lcsc.com/product-detail/C395869.html` (16 A, 300 V, M2-Schraube, 12–22 AWG); JLCPCB-Produktseite bestätigt (DORABO-Familie, SMT/Wave-Assembly, Economic/Standard PCBA) — selbe Farbe/Baureihe wie die bereits geprüfte 2-polige Klemme |
 | ~~Schaltdiode (Notaus-Verriegelung, Aufgabe 5)~~ — **verworfen, s. Nachtrag 2026-08-31 (Aufgabe-5-Fix-1): eine Si-Diode ist für den gezogenen Ruhepegel der NOTAUS-Sammelleitung zu hochohmig, s. Beleg 10** | 1N4148W (ST/Semtech) | SOD-123 | C81598 | ja (Bauform an sich geprüft, aber verworfen) | LCSC-Produktseite `lcsc.com/product-detail/Switching-Diode_ST-Semtech-1N4148W_C81598.html` (Rohdaten: Gehäuse „SOD-123", `Vf "1V@50mA"`); JLCPCB-Produktseite `jlcpcb.com/partdetail/ST-1N4148W/C81598` bestätigt SMT-Assembly („Economic and Standard" PCBA, MSL 3) |
 | ~~Koppeldiode NOTAUS-Sammelleitung (D3/D4, Aufgabe-5-Fix-1)~~ — **verworfen, s. Nachtrag 2026-08-31 (Aufgabe 5d): der Notaus-Eingang arbeitet jetzt im Ruhestrom, der Bus wird von einem Open-Drain-Ausgang gezogen; eine Diode IN REIHE dazu liesse null Reserve gegen V_IL, s. Beleg 11. Die Grenzwerte bleiben stehen, weil die Gegenproben im Test mit ihnen rechnen** | BAT54W (YANGJIE), Schottky | SOD-123 (gleicher Footprint wie bisher) | C699107 | ja | LCSC-Produktseite `lcsc.com/product-detail/Schottky-Barrier-Diodes-SBD_Yangzhou-Yangjie-Elec-Tech-BAT54W_C699107.html` (Rohdaten: Hersteller „YANGJIE", Gehäuse „SOD-123", 30 V, 200 mA, Leckstrom „2µA@25V"; Bestand am Recherchetag 440 Stück — **wenig, vor der Bestellung prüfen**). Grenzwerte für die Pegelrechnung aus dem Vishay-Typdatenblatt `BAT54W`, Dok. **86408, Rev. 1.0 vom 20-Nov-2023**, Tabelle „ELECTRICAL CHARACTERISTICS" (T_amb = 25 °C): V_F ≤ 240 mV @ 0,1 mA, ≤ 320 mV @ 1 mA, ≤ 400 mV @ 10 mA, I_R ≤ 2 µA @ 25 V. **Ehrlich vermerkt:** das Yangjie-eigene PDF war über LCSC nicht als PDF abrufbar (die Datenblatt-URL liefert eine HTML-Seite); die zitierten Grenzwerte sind die des JEDEC-Typs BAT54W bei Vishay, nicht die von Yangjie selbst. Vor der Fertigung mit dem Yangjie-Datenblatt gegenprüfen |
 | Verriegelungsgatter NOTAUS→nSLEEP (U3, Aufgabe-5-Fix-1) | SN74LVC1G08DCKR (TI) — **zweite Verwendung desselben Bauteils wie U103**, keine neue Nummer | SOT-353 (SC-70-5), 5 Pins | C7832 | ja | dieselbe geprüfte Produktseite wie die BOOT0-Zeile oben; Grenzwerte für die Pegelrechnung aus dem TI-Datenblatt `SN74LVC1G08`, Dok. **SCES217AA** (April 1999, revidiert August 2026), Abschnitt 5.3 „Recommended Operating Conditions" (V_IH ≥ 2,0 V, V_IL ≤ 0,8 V bei V_CC = 3–3,6 V) und Abschnitt 5.5 „Electrical Characteristics" (V_OH ≥ V_CC − 0,15 V bei −100 µA, V_OL ≤ 0,1 V bei 100 µA, I_I ≤ ±5 µA) |
 | **Kanaltreiber Notaus→NOTAUS (U6/U7, Aufgabe 5d)** — Inverter mit **Open-Drain**-Ausgang; ersetzt die verworfenen Koppeldioden D3/D4 | SN74LVC1G06DCKR (TI) | SOT-353 (SC-70-5), 5 Pins — **gleicher Footprint wie U3/U103** | C7828 | ja | LCSC-Produktseite `lcsc.com/product-detail/Inverters_Texas-Instruments-SN74LVC1G06DCKR_C7828.html` (Rohdaten: Gehäuse „SC-70-5“, Versorgung „1.65V~5.5V“, Ausgangstyp „Open-drain“, Eingang „Schmitt trigger“, „Output sink current 32mA max“, Ruhestrom „10µA max“, Bestand 3 600). Primärquelle TI-Datenblatt `SN74LVC1G06`, Dok. **SCES295AB** (JUNE 2000 – REVISED OCTOBER 2025), selbst geöffnet und gelesen: Abschnitt 5.3 „Recommended Operating Conditions“ (V_IH ≥ 2,0 V, V_IL ≤ 0,8 V bei V_CC = 3–3,6 V; I_OL ≤ 24 mA bei V_CC = 3 V), Abschnitt 5.5 „Electrical Characteristics“ (V_OL ≤ 0,1 V bei 100 µA, **≤ 0,4 V bei 16 mA / V_CC = 3 V**, ≤ 0,55 V bei 24 mA; I_I ≤ ±1 µA; I_off ≤ ±10 µA; I_CC ≤ 10 µA), Abschnitt 1 „Features“ („Schmitt trigger action on all ports“, „Ioff supports partial-power-down mode and back-drive protection“), Abschnitt 3 „Description“ (Ausgänge dürfen für „active-low wired-OR“ zusammengeschaltet werden) |
-| **Optokoppler Sensoreingang und Notaus-Schleifen (U2 sowie U4/U5, Aufgabe 5d)** — U2 war seit dem Altprojekt bestückt, stand aber **nie in dieser Tabelle**; hier nachgetragen | PC817X1CSP9F (SHARP), Rangmarke **A** | SMD-4P (SMT-Gullwing) | C97308 | ja | LCSC-Produktseite `lcsc.com/product-detail/Optocouplers_Sharp-Microelectronics-PC817X1CSP9F_C97308.html` (Rohdaten: Hersteller „SHARP“, Gehäuse „SMD-4P“, „Current Transfer Ratio 600%;50%“, „Forward Current (If) 50mA“, „Forward Voltage (Vf) 1.2V“, „VCE Saturation 200mV@20mA,1mA“, „Isolation Voltage 5kV“, Bestand 10 640). Primärquelle SHARP-Datenblatt „PC817X Series“, **Sheet No. D2-A03101EN, Date Sep. 30. 2003**, selbst gelesen: „Absolute Maximum Ratings“ (I_F 50 mA, I_C 50 mA, P_tot 200 mW, T_opr −30…+100 °C), „Electro-optical Characteristics“ (V_F TYP 1,2 V / MAX 1,4 V bei I_F = 20 mA; I_CEO MAX 100 nA; **I_C MIN 2,5 mA bei I_F = 5 mA, V_CE = 5 V** = CTR ≥ 50 %; V_CE(sat) MAX 0,2 V bei I_F = 20 mA, I_C = 1 mA; t_r/t_f TYP 4/3 µs, MAX 18 µs), „Model Line-up“ (Rangmarke A = I_C 4,0–8,0 mA bei I_F = 5 mA). **Footprint-Auflage:** die Gullwing-Bauform misst laut „Outline Dimensions“ 6,5 × 4,58 mm Körper bei 10,0 mm Anschlussspanne und 7,62 mm Reihenabstand — der eingetragene Platzhalter `Package_SO:SOP-4_3.8x4.1mm_P2.54mm` passt **nicht**, s. Beleg 12 |
+| **Optokoppler Sensoreingang und Notaus-Schleifen (U2 sowie U4/U5, Aufgabe 5d)** — U2 war seit dem Altprojekt bestückt, stand aber **nie in dieser Tabelle**; hier nachgetragen | PC817X1CSP9F (SHARP), Rangmarke **A** | SMD-4P (SMT-Gullwing) | C97308 | ja | LCSC-Produktseite `lcsc.com/product-detail/Optocouplers_Sharp-Microelectronics-PC817X1CSP9F_C97308.html` (Rohdaten: Hersteller „SHARP“, Gehäuse „SMD-4P“, „Current Transfer Ratio 600%;50%“, „Forward Current (If) 50mA“, „Forward Voltage (Vf) 1.2V“, „VCE Saturation 200mV@20mA,1mA“, „Isolation Voltage 5kV“, Bestand 10 640). Primärquelle SHARP-Datenblatt „PC817X Series“, **Sheet No. D2-A03101EN, Date Sep. 30. 2003**, selbst gelesen: „Absolute Maximum Ratings“ (I_F 50 mA, I_C 50 mA, P_tot 200 mW, T_opr −30…+100 °C), „Electro-optical Characteristics“ (V_F TYP 1,2 V / MAX 1,4 V bei I_F = 20 mA; I_CEO MAX 100 nA; **I_C MIN 2,5 mA bei I_F = 5 mA, V_CE = 5 V** = CTR ≥ 50 %; V_CE(sat) MAX 0,2 V bei I_F = 20 mA, I_C = 1 mA; t_r/t_f TYP 4/3 µs, MAX 18 µs), „Model Line-up“ (Rangmarke A = I_C 4,0–8,0 mA bei I_F = 5 mA). **Footprint — ERLEDIGT (Aufgabe 5f):** die Gullwing-Bauform misst laut „Outline Dimensions“, Zeichnung 2 „SMT Gullwing Lead-Form“, 6,5 × 4,58 mm Körper bei **10,0 +0/−0,5 mm** Anschlussspanne und 7,62 mm Reihenabstand; der Platzhalter `Package_SO:SOP-4_3.8x4.1mm_P2.54mm` (Pads bis 3,48 mm vom Mittelpunkt) lag **vollständig neben** den Anschlüssen. Ersetzt durch einen projekteigenen Footprint, Pad für Pad aus „Design Considerations“ → „Recommended Foot Print (reference)“, Zeile „SMT Gullwing Lead-form“ (Reihenabstand **8,2 mm**, Pad **2,2 × 1,7 mm**, Raster 2,54 mm): `hardware/kicad/components/footprints/Optocoupler_PC817.pretty/PC817_SMT_Gullwing.kicad_mod`. U2 gibt es nicht mehr (Sensoreingang entfallen), U4/U5 tragen ihn. Details Beleg 12, Nachtrag |
 | **Schleifenwiderstände Notaus (R16–R19, Aufgabe 5d)** — 1206 statt 0805, weil sie einen äusseren Dauerkurzschluss aushalten müssen | 1206W4F3301T5E (UNI-ROYAL), 3,3 kΩ ±1 % | 1206, Dickschicht | C26032 | ja | LCSC-Produktseite `lcsc.com/product-detail/Chip-Resistor-Surface-Mount_Uniroyal-Elec-1206W4F3301T5E_C26032.html` (Rohdaten: Gehäuse „1206“, „3.3kΩ“, Toleranz „±1%“, Leistung „**250mW**“, max. Arbeitsspannung „200V“, TK „±100ppm/℃“, Bestand 164 200). Die 250 mW sind der Beleg für die Kurzschlussrechnung in Beleg 11 |
+| **Widerstände 0805, ganze Baureihe (Aufgabe 5f)** — die Belastbarkeit war bis dahin nirgends belegt, obwohl 20 Widerstände darauf beruhen | 0805W8F…T5E (UNI-ROYAL), Dickschicht, ±1 %; als Beleg geöffnet: 0805W8F1002T5E (10 kΩ) | 0805 | C17414 | ja | LCSC-Produktseite `lcsc.com/product-detail/Chip-Resistor-Surface-Mount_Uniroyal-Elec-0805W8F1002T5E_C17414.html` (Rohdaten: Gehäuse „0805“, „10kΩ“, Toleranz „±1%“, Leistung „**125mW**“, max. Arbeitsspannung „**150V**“, TK „±100ppm/℃“, Bestand 21 700 400). Diese 125 mW sind die Rechengrundlage der neuen Leistungsprüfung (`motormodul.P_NENN_JE_BAUFORM`) — s. Beleg 12, Nachtrag |
+| **Verpolungsschutz Q1 (Aufgabe 5f)** — **ersetzt den geerbten „IRF4905“**, den es in TO-252 gar nicht gibt (s. Beleg 12, Nachtrag) | IRFR5305PbF (Infineon/International Rectifier), P-Kanal, −55 V, −31 A, 65 mΩ | **D-Pak (TO-252AA)** | C2624 | ja | LCSC-Produktseite `lcsc.com/product-detail/mosfets_infineon-technologies-irfr5305trpbf_C2624.html` (Rohdaten: „P-Channel MOSFET“, Gehäuse „**DPAK (TO-252AA)**“, „55V“, „31A“, „65mΩ @ 10V“, „110W“, Gate-Schwelle „4V“, Bestand 17 854, 0,23 $ ab 100 St.). Primärquelle Infineon/IR-Datenblatt **PD-95025A (12/13/04)**, selbst gelesen: Titelzeile „IRFR5305PbF … Surface Mount (IRFR5305) … V_DSS = −55V, R_DS(on) = 0.065 Ω, I_D = −31A“, „Absolute Maximum Ratings“ (V_GS ±20 V, P_D 110 W), „Electrical Characteristics“ (V_GS(th) −2,0…−4,0 V; I_GSS ±100 nA bei ±20 V), Abschnitt „D-Pak (TO-252AA) Package Outline“. **Gegenprobe zum alten Typ:** IRF4905 gibt es bei LCSC nur als TO-220 (C2564 Infineon, C18207551 UMW) und als TO-263/D2Pak (C5337969) |
 
 Von den acht in der ersten Fassung neu recherchierten Nummern (nicht sieben, wie dort irrtümlich stand — Zählfehler korrigiert) sowie den drei in dieser Nachbesserung hinzugekommenen (Stapelstecker C35165, Kettenstecker C541849/C492401) wurde jede auf einer echten LCSC- oder
 JLCPCB-Produktseite gesichtet (Datenblatt-Zeichnung oder strukturierte
@@ -1097,12 +1099,99 @@ Aufgabe 7 die echten zeichnet — dieselbe Lage wie bei den DB128L-Klemmen), abe
 bestückt wird. Zusammen mit der C12-Silkscreen-Prüfung (Beleg 9) und der
 U3-Nähe-Auflage sind das jetzt drei Layout-Auflagen aus der Motormodul-Kette.
 
-**Nebenbefund, nicht behoben:** R6 (Vorwiderstand des Sensor-Optokopplers U2,
+**Nebenbefund:** R6 (Vorwiderstand des Sensor-Optokopplers U2,
 2,2 kΩ im 0805-Footprint) liegt an 24 V und verheizt bei leitendem Sensor
 24²/2,2 kΩ ≈ **0,24 W** — fast das Doppelte dessen, was ein 0805 trägt. Genau
 der Fehler, den Beleg 11 für die neuen Schleifenwiderstände bewusst vermeidet.
 Aus dem Altprojekt geerbt, nicht Gegenstand dieser Aufgabe, gehört
 nachgerechnet.
+
+### Nachtrag 2026-09-01 (Aufgabe 5f) — beide Befunde behoben, und als Klasse geprüft
+
+Beide oben offenen Punkte sind erledigt. Wichtiger als die zwei Einzelfälle:
+`tests/test_motormodul.py` prüft sie jetzt als **Gattung**, und dabei ist ein
+**dritter** Fehler derselben Art aufgefallen.
+
+**(a) R6 — weggelassen statt vergrössert.** Die Rechnung bestätigt sich:
+(24 V − 1,2 V)² / 2,2 kΩ = **0,236 W** gegen **0,125 W** Belastbarkeit
+(belegt: UNI-ROYAL 0805W8F1002T5E, LCSC **C17414**, Produktseite gesichtet —
+„125mW“, „150V“). Ein grösserer Widerstand wäre die falsche Antwort gewesen:
+der Sensoreingang wird gar nicht gebraucht. Zwei Belege, beide selbst gelesen:
+
+* Altprojekt `PecheAuxCanards`, `README.md` und `firmware/pico_config.py`:
+  „Die Eingänge des Boards (GPIO16 Sensor via PC817 …) sind in diesem Projekt
+  **unbenutzt** — es sind keine Sensoren angeschlossen oder geplant.“
+* `docs/superpowers/specs/2026-08-28-picostack-design.md`, Tabelle
+  „Leistungsstufe“: Modultyp Motor = „DRV8876, ein Motor, Strommessung,
+  Notaus-Eingänge“ — **kein Sensor**.
+
+**Entfallen:** J2 (3-polige Klemme), R6, U2 und die Netze `SENSOR24V`,
+`U2_LED_A`, `SENSOR_3V3`. Frei geworden: **U100 Pin 2 (PC14)** als GPIO und
+die 3-polige Klemme aus der Stückliste. Das weicht bewusst von Aufgabe 5,
+Schritt 1 ab (dort stand „U2 … mit R6“ als zu übernehmen).
+Wer den Eingang später doch braucht: ein 0805 bräuchte an dieser Schiene
+> 5,1 kΩ ((26,4 − 1,2)²/0,125 W), sinnvoller ist 1206 wie R16–R19.
+
+**(b) Optokoppler-Footprint — gezeichnet.** Aus derselben Quelle, aber aus dem
+Abschnitt, den Beleg 12 oben noch nicht ausgewertet hatte: SHARP
+**D2-A03101EN**, „Design Considerations“ → **„Recommended Foot Print
+(reference)“**, Zeile **„SMT Gullwing Lead-form“** — Reihenabstand **8,2 mm**
+(Pad-Mitte zu Pad-Mitte), Pad **2,2 × 1,7 mm**, Raster **2,54 mm**. Genau das
+liegt jetzt als
+`hardware/kicad/components/footprints/Optocoupler_PC817.pretty/PC817_SMT_Gullwing.kicad_mod`
+im Projekt (Eintrag in `hardware/kicad/motor/fp-lib-table`).
+**Gegenprobe an einer zweiten Quelle:** die Landfläche, die LCSC/EasyEDA selbst
+für C97308 führt, heisst `OPTO-SMD-4_L4.6-W6.5-P2.54-LS10.3-TL` mit Pads bei
+±4,3 mm, 2,5 × 1,5 mm — das bestätigt die **normale** (nicht die „wide“)
+Gullwing-Form und den Reihenabstand auf 0,4 mm genau. In der
+KiCad-Standardbibliothek gibt es keinen passenden: `SOP-4_7.5x4.1mm_P2.54mm`
+hat nur 0,65 mm breite Pads, `SMDIP-4_W9.53mm` liegt 1,33 mm daneben.
+
+**(c) Der dritte Fall, den erst die Gattungsprüfung fand: Q1 gab es in seinem
+Footprint nicht.** `Q1` trug den Wert „IRF4905“ im Footprint
+`Package_TO_SOT_SMD:TO-252-3_TabPin2`. **Den IRF4905 gibt es nicht in
+TO-252** — bei LCSC nur TO-220 (C2564 Infineon, C18207551 UMW) und
+TO-263/D2Pak (C5337969, IRF4905S), alle drei Produktseiten gesichtet. Wert und
+Footprint widersprachen sich; JLCPCB hätte ein anderes Bauteil bestückt oder
+den Platz leer gelassen — beim Verpolungsschutz, der den ganzen Motorstrom
+führt. Ersetzt durch **IRFR5305PbF, D-Pak (TO-252AA), LCSC C2624** (neue
+Bauteilzeile oben). Nachgerechnet: 55 V gegen 26,4 V Schiene und gegen die
+Klemmspannung der TVS D1 (48,4 V max); V_GS = −13,2 V (R11/R12 gleich groß),
+unter ±20 V und über der Schwelle −4,0 V; 0,065 Ω × (2,5 A)² = 0,41 W gegen
+„up to 1.5 watts … in typical surface mount applications“ (PD-95025A).
+
+**Warum (c) der teuerste der drei gewesen wäre:** eine heisse Bauform und ein
+danebenliegender Footprint fallen beim ersten Aufbau auf. Ein
+Wert-Footprint-Widerspruch fällt **gar nicht** auf: die Platine kommt bestückt
+zurück, sieht richtig aus, und der Verpolungsschutz ist ein anderer Transistor
+als geplant.
+
+**Was jetzt die Klasse abdeckt** (beides in `tests/test_motormodul.py`, beides
+mit Rot-Nachweis in einer Wegwerfkopie):
+
+1. **Verlustleistung.** Für **jeden** Widerstand wird aus dem Schaltplan
+   hergeleitet, welche Spannung an ihm stehen kann (Schienen gesetzt;
+   Feldstecker dürfen im Fehlerfall alles zwischen 0 V und der 24-V-Schiene
+   führen; Bausteine halten ihre Netze innerhalb der Schienen, an denen sie
+   selbst hängen; Fortpflanzung über leitende Bauteile bis zum Fixpunkt) und
+   gegen die Belastbarkeit seiner Bauform gestellt. 20 Widerstände, 6 davon
+   über 5 V: R11/R12 mit 0,070 W von 0,125 W, R16–R19 mit 0,213 W von
+   0,250 W. Was sich nicht herleiten lässt (R100/R101 tragen im Schaltplan
+   keinen Zahlenwert), verlangt eine **belegte Handrechnung** und wird
+   ausgedruckt — nicht stillschweigend übersprungen.
+2. **Footprint gegen Gehäuse.** Für **jedes** Bauteil: Bibliothek auflösen,
+   Datei öffnen, Pad-Nummern gegen Symbol-Pins, Gehäuse des gewählten Teils
+   aus einer belegten Tabelle (geschlüsselt nach dem **Wert** — deshalb fiel
+   Q1 auf), Rastermass nachmessen und prüfen, ob die **Anschlussspanne**
+   überhaupt auf Pads trifft. 35 Bauteile geometrisch nachgemessen, 14 nur
+   nach Polzahl und Bauformnamen — die 14 werden bei jedem Lauf namentlich
+   ausgedruckt (u. a. Q1, U1, U100: ihre Massbilder liegen als Grafik im PDF).
+
+**Was offen bleibt:** die Klemmen-Footprints sind weiterhin
+Phoenix-Platzhalter mit richtigem Raster und richtiger Polzahl, aber falschem
+Körper (Auflage an Aufgabe 7, von der Prüfung nicht erfassbar); die
+Leistungsprüfung rechnet ohne Derating über 70 °C; Kondensatorspannungen und
+Diodenströme sind nicht Gegenstand der Prüfung.
 
 
 ## Beleg 13 — Ketten- und Leistungsstecker: SMD-Paare statt bedrahteter Paare (Aufgabe 5e, 2026-08-31)
@@ -1491,7 +1580,8 @@ zweiten, von der Buchsenluft unabhängigen Richtung.
 | **Notaus-Verriegelung wirkte nicht (Aufgabe-5-Fix-1)** | Die Diodenklemme D2+R14 liess den nSLEEP-Pin bei ≈3,05 V stehen (V_IL wäre 0,8 V); ersetzt durch ein UND-Gatter U3 (`SN74LVC1G08`, C7832, keine neue Bauteilnummer) + C14, D2/R14 entfallen, D3/D4 jetzt Schottky (BAT54W, C699107). Reserve jetzt 0,70 V gegen V_IL bzw. 1,65 V gegen V_IH; Details Beleg 10 |
 | **Notaus-Eingang auf Ruhestrom umgebaut (Aufgabe 5d)** | Der externe Kontakt ist jetzt ein **Öffner**: geschlossen = in Ordnung, offen = Notaus — und damit lösen auch Kabelbruch, gezogener Stecker und lose Klemme aus. Je Kanal 24 V über 2 × 3,3 kΩ (1206, C26032) hinaus, zurück über eine zweite Ader in einen PC817 (C97308), Emitterfolger gegen 4,7 kΩ Pulldown, von dort über einen Open-Drain-Inverter (SN74LVC1G06, **C7828**) auf die Sammelleitung. **D3/D4 entfallen** (eine Diode in Reihe zum Open-Drain-Ausgang liesse null Reserve). An U3/R9/R15/`U1_NSLEEP` **keine Änderung**. Details Beleg 11 |
 | **Zwei Auflagen aus Aufgabe 5d, die niemand übersehen darf** | (1) **Unbenutzter Kanal muss am Stecker gebrückt werden** — Kanal 1 = J3 Pin 1+2, Kanal 2 = J3 Pin 3+4, sonst meldet er dauerhaft Notaus (Jumper 2,54 mm; zusätzlich Siebdruck-Auflage für Aufgabe 7). (2) **Die bestehende Verkabelung des Pêche-aux-Canards-Exponats muss umgeklemmt werden** — J3 hat weiterhin vier Pole, ein altes Kabel passt mechanisch, das Exponat stünde danach dauerhaft auf Notaus. Details Beleg 11, Auflagen 1 und 2 |
-| **Optokoppler-Footprint passt nicht (Nebenbefund Aufgabe 5d)** | `SOP-4_3.8x4.1mm_P2.54mm` gegen den PC817-Gullwing (Körper 6,5 × 4,58 mm, Spanne 10,0 mm, Reihe 7,62 mm laut D2-A03101EN) — betrifft auch das geerbte U2. Aufgabe 7 muss einen eigenen Footprint zeichnen; ebenso offen: R6 verheizt an 24 V ≈ 0,24 W in einem 0805. Details Beleg 12 |
+| ~~Optokoppler-Footprint passt nicht (Nebenbefund Aufgabe 5d)~~ — **erledigt in Aufgabe 5f** | `SOP-4_3.8x4.1mm_P2.54mm` gegen den PC817-Gullwing (Körper 6,5 × 4,58 mm, Spanne 10,0 mm, Reihe 7,62 mm laut D2-A03101EN) — betraf auch das geerbte U2. Jetzt eigener Footprint aus der Herstellerempfehlung; R6 und der ganze Sensoreingang entfallen. Details Beleg 12, Nachtrag |
+| **Drei geerbte Fehler aus dem Muttern-Print, als Klasse geschlossen (Aufgabe 5f)** | (1) **R6** verheizte 0,236 W in einem 0805 mit 0,125 W (C17414) — behoben durch **Weglassen des ganzen Sensoreingangs** (J2/R6/U2 entfallen, im Altprojekt unbenutzt, in der Spec nicht vorgesehen; PC14 wird wieder freier GPIO). (2) **Optokoppler-Footprint** aus der Herstellerempfehlung neu gezeichnet (8,2 mm / 2,2 × 1,7 mm, D2-A03101EN). (3) **NEU GEFUNDEN: Q1 trug „IRF4905“ in einem TO-252-Footprint — den Typ gibt es nur in TO-220 und D2Pak**; ersetzt durch **IRFR5305PbF, D-Pak, C2624**. Beide Prüfungen decken jetzt die Gattung (Verlustleistung jedes Widerstands gegen seine Bauform; Footprint jedes Bauteils gegen das Gehäuse des gewählten Teils). Details Beleg 12, Nachtrag |
 | A_IPROPI des DRV8876 nachgeprüft (Aufgabe-5-Fix-1) | **1000 µA/A**, bestätigt aus dem PDF SLVSDS7B, Abschnitt 6.5, Block „CURRENT SENSE AND REGULATION (IPROPI, VREF)" — der Wert 1100 µA/A gehört zu keinem der beiden Familienmitglieder (der Schwestertyp DRV8874, Dok. SLVSF66A, nennt 450 µA/A). Damit bleibt ITRIP = 2,538 A bei R5 = 1,3 kΩ richtig, Marge unverändert ~27 % über 2 A |
 | **Ketten- und Leistungsstecker waren nicht baubar (Aufgabe 5e)** | Beide waren Paare aus **bedrahteter** Buchse oben und **bedrahteter** Stiftleiste unten am selben Ort — zwei bedrahtete Bauteile können sich aber keine Bohrungen teilen. Jetzt **SMD-Paare** (Buchse oben, Stiftleiste unten, gleicher Ort, keine Durchkontaktierung dazwischen); Einstecktiefe 5,60 statt 3,1 mm. Ein 2×2-**Stapelstecker** existiert bei LCSC nicht (nur 2×20/2×40), und über den vorhandenen 2×20 lässt sich die Leistung nicht führen (kein freier Kontakt, alle 40 sind Pico-Pins). Belegte Nummer: **C919361** (Stift 2×2). Buchsen 1×2/2×2 und Stift 1×2: **Nummer offen**, Spezifikation in Beleg 13.4; vollständig belegtes Ersatzpaar in 2×5: C261072 + C124391. Enger Punkt: 0,40 mm Luft über der Buchse (Beleg 13.5) |
 | **Stapelabstand 13,5 mm (Aufgabe 5g)** | `STAPEL_ABSTAND` von 13,0 auf **13,5 mm**: die Luft zwischen Stift-Isolierkörper und Buchsenoberkante steigt von 0,40 auf **0,90 mm** (der engste Punkt des Stapels, im Toleranzstapel bisher bis auf null). Genau zwei Werte sinken, beide um 0,50 mm — Einstecktiefe SMD-Paar 5,60 → **5,10 mm**, Stapelstecker 7,96 → **7,46 mm**, beide weit über der 2,0-mm-Reissleine. Alle anderen Reserven wachsen (Klemme 1,80 mm, K7805 1,70 mm). In der Ebene ändert sich nichts. Gehäuse (Aufgabe 9) auf 13,5 mm nachzuziehen; offen bleibt die Bolzenlänge — 11,90 mm ist kein Katalogmass (Beleg 14.1) |
