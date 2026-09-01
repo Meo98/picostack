@@ -79,21 +79,34 @@ class Platz:
     Drehung in Grad (KiCad-Konvention), tht=True fuer bedrahtete Teile
     (build.tidy_silkscreen laesst nur deren Referenz auf dem Silkscreen
     stehen, SMD-Referenzen wandern auf F.Fab).
+
+    unten=True setzt das Bauteil auf die Rueckseite (B.Cu). Fuer die
+    SMD-Steckerpaare ist das keine Geschmacksfrage: der Vertrag sagt
+    "Buchse oben, Stiftleiste unten", und KiCads Bibliothek zeichnet das
+    Paar bereits gespiegelt (Buchse Pad 1 rechts, Stiftleiste Pad 1
+    links) -- damit beide am selben Ursprung zusammenpassen, SOBALD die
+    Stifthaelfte gespiegelt ist. Ungespiegelt oben liegt ihr Kontakt 1
+    eine Spalte daneben, und beim Leistungsstecker (Spalte 0 = 24 V,
+    Spalte 1 = GND) traefe 24 V auf GND -- ein Kurzschluss durch den
+    ganzen Stapel, den weder DRC noch der Schaltplan-Abgleich sehen
+    kann, weil beide nur EINE Platine kennen.
     """
 
-    def __init__(self, ref, x, y, w, h, rot=0, tht=False):
-        self.ref, self.rot, self.tht = ref, rot, tht
+    def __init__(self, ref, x, y, w, h, rot=0, tht=False, unten=False):
+        self.ref, self.rot, self.tht, self.unten = ref, rot, tht, unten
         self.x, self.y, self.w, self.h = x, y, w, h
 
     def __repr__(self):
-        return "Platz(%s, %.2f, %.2f, %.2fx%.2f, %d)" % (
-            self.ref, self.x, self.y, self.w, self.h, self.rot)
+        return "Platz(%s, %.2f, %.2f, %.2fx%.2f, %d%s)" % (
+            self.ref, self.x, self.y, self.w, self.h, self.rot,
+            ", unten" if self.unten else "")
 
 
-def _aus_vertrag(ref, flaeche, rot, tht):
+def _aus_vertrag(ref, flaeche, rot, tht, unten=False):
     """Ein Bauteil, dessen Lage der Vertrag festlegt."""
     x0, y0, x1, y1 = flaeche
-    return Platz(ref, x0, y0, round(x1 - x0, 3), round(y1 - y0, 3), rot, tht)
+    return Platz(ref, x0, y0, round(x1 - x0, 3), round(y1 - y0, 3), rot, tht,
+                 unten)
 
 
 # --- Umriss, Lochbild, Regeln: alles aus dem Vertrag -----------------
@@ -152,12 +165,19 @@ _S = S.STECKER_POS
 PLACEMENT = {
     "J2": _aus_vertrag("J2", _S["stapel"]["flaeche"],
                        _S["stapel"]["drehung"], True),
-    "J3": _aus_vertrag("J3", S.HOF(FP_HDR_1X02_SMD, _S["kette"]["pin1"],
+    # Anker bleibt HOF, obwohl beide gespiegelt auf der Rueckseite
+    # sitzen: NUR so liegt ihr Kontaktfeld auf demselben Mittelpunkt wie
+    # das der Buchsenhaelfte eines Moduls (nachgerechnet: Buchse 55,97,
+    # Stift mit HOF 55,97, Stift mit gespiegeltem Anker 53,43). Der
+    # gespiegelte Anker war ein Irrweg -- s. OFFENE FRAGE am Dateiende.
+    "J3": _aus_vertrag("J3", S.HOF(FP_HDR_1X02_SMD,
+                                   _S["kette"]["pin1"],
                                    _S["kette"]["drehung"]),
-                       _S["kette"]["drehung"], False),
-    "J4": _aus_vertrag("J4", S.HOF(FP_HDR_2X02_SMD, _S["leistung"]["pin1"],
+                       _S["kette"]["drehung"], False, unten=True),
+    "J4": _aus_vertrag("J4", S.HOF(FP_HDR_2X02_SMD,
+                                   _S["leistung"]["pin1"],
                                    _S["leistung"]["drehung"]),
-                       _S["leistung"]["drehung"], False),
+                       _S["leistung"]["drehung"], False, unten=True),
     "U1": _aus_vertrag("U1", S.PICO_POS["flaeche"], S.PICO_POS["drehung"],
                        True),
 

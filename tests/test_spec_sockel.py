@@ -130,6 +130,14 @@ check("PICO_REF zeigt auf ein platziertes Bauteil",
       B.PICO_REF in B.PLACEMENT, True)
 check("SMD_CORRIDOR aus", B.SMD_CORRIDOR, None)
 
+# Die Stifthaelften gehoeren auf die Rueckseite -- der Sockel treibt
+# nach unten in das oberste Modul.
+check("J3/J4 sitzen unten",
+      sorted(r for r in ("J3", "J4") if not B.PLACEMENT[r].unten), [])
+check("kein anderes Bauteil sitzt unten",
+      sorted(r for r, p in B.PLACEMENT.items()
+             if p.unten and r not in ("J3", "J4")), [])
+
 # Die Pad-Reihen des Pico muessen dort liegen, wo seine Pads wirklich
 # sind: aus PICO_POS nachgerechnet, nicht aus spec_sockel abgeschrieben.
 _, py = S.PICO_POS["pin1"]

@@ -95,6 +95,16 @@ def check_all(placement, beschreibung):
     for i in range(len(refs)):
         for j in range(i + 1, len(refs)):
             a, c = placement[refs[i]], placement[refs[j]]
+            # Zwei Bauteile auf verschiedenen Platinenseiten koennen
+            # nicht kollidieren -- sie haben die Platine zwischen sich.
+            # Genau das ist der Normalfall bei den SMD-Steckerpaaren:
+            # Buchse oben und Stiftleiste unten sitzen absichtlich am
+            # SELBEN Ort (s. Platz.unten in der Beschreibung). Ohne
+            # diese Ausnahme meldete die Pruefung dort eine Ueberlappung,
+            # die es nicht gibt -- und wer sie dann durch Verschieben
+            # "behebt", zerstoert den Stecker.
+            if getattr(a, "unten", False) != getattr(c, "unten", False):
+                continue
             # SMD darf unter dem gesockelten Pico liegen (8,5 mm Luft)
             if pico is not None and (a is pico or c is pico):
                 other = c if a is pico else a

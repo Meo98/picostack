@@ -60,6 +60,32 @@ def mitte(punkte):
     return ((min(xs) + max(xs)) / 2.0, (min(ys) + max(ys)) / 2.0)
 
 
+# OFFENE FRAGE, am 2026-09-01 gefunden und BEWUSST NICHT hier
+# stillschweigend geloest -- s. gleichnamiger Abschnitt in
+# tools/pcb/spec_sockel.py:
+#
+# stack_spec.PAD_LAGEN() nimmt an, Kontakt 1 liege auf "pin1" und die
+# weiteren Kontakte waechsen nach rechts und unten. Fuer die
+# bedrahteten Stecker stimmt das. Fuer die SMD-Paare nicht: KiCads
+# Buchse hat Pad 1 rechts (+2,520), die Stiftleiste links (-2,525) --
+# die Bibliothek zeichnet das Paar bereits gespiegelt, damit es am
+# selben Ursprung zusammenpasst. Physisch liegt Kontakt 1 beider
+# Haelften deshalb in der RECHTEN Spalte des Kontaktfeldes, waehrend
+# "pin1" die linke bezeichnet.
+#
+# Fuer den Stapel ist das folgenlos, solange alle Platinen dieselben
+# Footprints benutzen -- die Haelften decken sich (nachgerechnet:
+# Kontaktfeldmitte 55,97 mm bei beiden). Falsch ist die veroeffentlichte
+# KOORDINATE: wer gegen sie einen eigenen Footprint zeichnet, setzt
+# Pin 1 in die falsche Spalte, und beim Leistungsstecker traefe damit
+# 24 V auf GND.
+#
+# Eine Pruefung dagegen steht hier bewusst NICHT: sie muesste gegen ein
+# Modell messen, von dem gerade gezeigt ist, dass es die Wirklichkeit
+# nicht trifft. Erst wird der Vertrag entschieden, dann die Pruefung
+# gebaut.
+
+
 def _abstand_zu_kante(punkt, kanten):
     """Kuerzester Abstand eines Punktes zu allen Edge.Cuts-Elementen.
 
@@ -179,16 +205,29 @@ def pruefen(beschreibung, board_pfad):
                 continue
 
             # 1. Pad-Schwerpunkt gegen Kontaktraster
-            pads = [(p.GetPosition().x / 1e6, p.GetPosition().y / 1e6)
-                    for p in fp.Pads() if p.GetNumber()]
-            soll = mitte(list(S.PAD_LAGEN(fp_name, pin1, drehung).values()))
-            ist = mitte(pads)
+            pads = {p.GetNumber(): (p.GetPosition().x / 1e6,
+                                    p.GetPosition().y / 1e6)
+                    for p in fp.Pads() if p.GetNumber()}
+            soll_raster = S.PAD_LAGEN(fp_name, pin1, drehung)
+            soll = mitte(list(soll_raster.values()))
+            ist = mitte(list(pads.values()))
             dx, dy = ist[0] - soll[0], ist[1] - soll[1]
             if abs(dx) > TOLERANZ or abs(dy) > TOLERANZ:
                 fails.append(
                     "%s (%s): Pad-Mitte bei (%.4f|%.4f), Vertrag verlangt "
                     "(%.4f|%.4f) -- Versatz (%+.4f|%+.4f) mm"
                     % (ref, name, ist[0], ist[1], soll[0], soll[1], dx, dy))
+
+            # 1b. Die richtige Platinenseite. Der Vertrag sagt "Buchse
+            # oben, Stiftleiste unten"; welche Haelfte dieses Bauteil
+            # ist, steht im Footprintnamen.
+            ist_unten = fp.IsFlipped()
+            soll_unten = "PinHeader" in fp_name and "SMD" in fp_name
+            if ist_unten != soll_unten:
+                fails.append(
+                    "%s (%s): sitzt %s, der Vertrag verlangt %s"
+                    % (ref, name, "unten" if ist_unten else "oben",
+                       "unten" if soll_unten else "oben"))
 
             # 2. Hof gegen stack_spec.HOF()
             box = build.courtyard_bbox(fp)

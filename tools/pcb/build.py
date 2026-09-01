@@ -231,7 +231,14 @@ def _zone(board, netname, layers, pts, name=""):
         raise ValueError("Netz %r gibt es auf der Platine nicht" % netname)
     z.SetNetCode(code)
     z.SetOutline(_outline(pts))
-    z.SetLocalClearance(mm(0.3))
+    # 0,20 mm statt der geerbten 0,30: der Guss darf so nah an eine
+    # Bahn heran, wie die Entwurfsregel es ohnehin erlaubt. Die
+    # zusaetzlichen 0,10 mm kosteten unter dem Stapelstecker echte
+    # Verbindung -- dort laufen vierzig Bahnen nebeneinander, und der
+    # Guss zerfiel zwischen ihnen in Inseln. Eine davon trug den
+    # Massepin 28 des Stapelsteckers: er war mit 3 statt 66 Elementen
+    # verbunden, also nicht an Masse.
+    z.SetLocalClearance(mm(0.2))
     z.SetMinThickness(mm(0.2))
     if name:
         z.SetZoneName(name)
@@ -435,6 +442,14 @@ def place(board, comps, beschreibung, kicad_dir):
         fp.SetReference(ref)
         fp.SetValue(comps.get(ref, {}).get("value", ""))
         fp.SetOrientationDegrees(p.rot)
+        if getattr(p, "unten", False):
+            # Auf die Rueckseite spiegeln, BEVOR der Hof gemessen wird --
+            # beim Spiegeln wandert der Hof von F.CrtYd nach B.CrtYd und
+            # die Geometrie kippt um die y-Achse. Danach messen und
+            # schieben stellt sicher, dass das Rechteck trotzdem auf der
+            # vorgesehenen Stelle landet. Warum ueberhaupt gespiegelt
+            # wird, steht bei Platz.unten in der Platinenbeschreibung.
+            fp.Flip(fp.GetPosition(), False)
 
         # Der Footprint-Ursprung liegt nicht zwangslaeufig in der Mitte
         # des Hofes. Darum erst drehen, dann den Hof messen und um die
@@ -497,22 +512,32 @@ def tidy_silkscreen(board, beschreibung):
         ref = fp.GetReference()
         p = beschreibung.PLACEMENT.get(ref)
 
+        # Auf der Rueckseite gehoert die Beschriftung auf die RUECKSEITIGEN
+        # Lagen. Ein Text auf F.Fab/F.SilkS bei einem gespiegelten
+        # Bauteil steht seitenverkehrt -- die DRC meldet ihn als
+        # "Mirrored text on front layer", und gedruckt waere er
+        # unlesbar. Aufgefallen, als die Steckerhaelften auf die
+        # Unterseite wanderten (2026-09-01).
+        unten = getattr(p, "unten", False) if p is not None else False
+        fab = pcbnew.B_Fab if unten else pcbnew.F_Fab
+        silk = pcbnew.B_SilkS if unten else pcbnew.F_SilkS
+
         wert = fp.Value()
-        wert.SetLayer(pcbnew.F_Fab)
+        wert.SetLayer(fab)
         wert.SetVisible(False)
 
         r = fp.Reference()
         r.SetTextSize(klein)
         r.SetTextThickness(mm(fertigung.SILK_DICKE))
         if p is not None and not p.tht:
-            r.SetLayer(pcbnew.F_Fab)
+            r.SetLayer(fab)
             n_fab += 1
         elif ref.startswith("H"):
             r.SetVisible(False)
         elif p is None:
-            r.SetLayer(pcbnew.F_SilkS)
+            r.SetLayer(silk)
         else:
-            r.SetLayer(pcbnew.F_SilkS)
+            r.SetLayer(silk)
             # Ueber das Bauteil setzen -- aber nur, wenn dort wirklich
             # Platz ist. Beim Pico (53,85 mm breit, direkt unter dem
             # Stapelstecker) landete die Beschriftung sonst mitten auf
@@ -535,7 +560,7 @@ def tidy_silkscreen(board, beschreibung):
                 # Klemme J1 nachgewiesen), und ein Text ueber dem eigenen
                 # Umriss ist genauso unlesbar wie einer ueber dem
                 # fremden.
-                r.SetLayer(pcbnew.F_Fab)
+                r.SetLayer(fab)
                 r.SetPosition(pcbnew.VECTOR2I(mm(mitte_x),
                                               mm(p.y + p.h / 2)))
                 n_fab += 1
