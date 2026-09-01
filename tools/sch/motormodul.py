@@ -145,6 +145,50 @@ stehen in `_notaus_schleifen()`. Die drei Kernpunkte:
     unbenutzter Kanal muss am Stecker gebrueckt werden**, sonst meldet er
     dauerhaft Notaus; und die bestehende Verkabelung des
     Peche-aux-Canards-Exponats muss beim Umstieg umgeklemmt werden.
+
+**6. Zwei geerbte Fehler behoben, und beide als KLASSE geschlossen
+(Aufgabe 5f, 2026-08-31).** Der Muttern-Print brachte zwei Fehler mit,
+die beim Uebernehmen der Endstufe niemand nachgerechnet hat. Beide sind
+behoben; wichtiger ist, dass tests/test_motormodul.py sie jetzt als
+GATTUNG prueft, nicht als Einzelfall:
+
+  * **R6 (Vorwiderstand des Sensor-Optokopplers) verheizte 0,24 W in
+    einem 0805.** Nachgerechnet (24 V - 1,2 V VF)^2 / 2,2 kOhm = 0,236 W
+    gegen 0,125 W Belastbarkeit -- Faktor 1,9 dauerhaft ueber Grenzwert.
+    Die Antwort ist nicht ein groesseres Gehaeuse, sondern **der ganze
+    Sensoreingang entfaellt** (J2, R6, U2): er war im Altprojekt
+    unbenutzt ("Die Eingaenge des Boards (GPIO16 Sensor via PC817 ...)
+    sind in diesem Projekt unbenutzt -- es sind keine Sensoren
+    angeschlossen oder geplant", dortiges README.md), und das
+    Design-Dokument nennt fuer den Modultyp Motor ausdruecklich nur
+    "DRV8876, ein Motor, Strommessung, Notaus-Eingaenge"
+    (docs/superpowers/specs/2026-08-28-picostack-design.md). Ein Bauteil,
+    das nichts tut, aber ueberlastet ist, wird weggelassen und nicht
+    vergroessert. Was frei wird: PC14 (U100 Pin 2) ist wieder ein freier
+    GPIO, die 3-polige Klemme J2 entfaellt, und mit ihr der einzige
+    Punkt, an dem 24 V ungeschuetzt Richtung Optokoppler gingen.
+  * **Der Optokoppler-Footprint passte nicht zum Bauteil.**
+    `Package_SO:SOP-4_3.8x4.1mm_P2.54mm` hat seine Padreihen 5,5 mm
+    auseinander; der beschaffte PC817X1CSP9F ist die SMT-Gullwing-Form
+    mit 10,0 mm Anschlussspanne, deren Fuesse erst bei ~4,0 mm vom
+    Bauteilmittelpunkt beginnen -- die Pads lagen also VOLLSTAENDIG
+    NEBEN den Anschluessen. Jetzt liegt der Footprint als eigene
+    Bibliothek im Projekt (`FP_PC817` unten) und ist Pad fuer Pad aus
+    dem Sharp-Datenblatt gezeichnet.
+  * **Dabei aufgefallen (dritter Fall derselben Gattung): Q1 gab es in
+    seinem Footprint gar nicht.** Der Schaltplan trug "IRF4905" im
+    TO-252-Footprint. Den IRF4905 gibt es bei Infineon/IR nur als
+    TO-220AB (IRF4905PbF, LCSC C2564) und als D2Pak/TO-263 (IRF4905S,
+    LCSC C5337969) -- **kein TO-252**. Bestueckt haette JLCPCB entweder
+    ein anderes Bauteil oder gar nichts. Ersetzt durch den
+    Schwestertyp derselben HEXFET-Familie, den es genau in dieser
+    Bauform gibt: **IRFR5305PbF, D-Pak (TO-252AA)**, s. Q1 unten.
+
+Beide Pruefungen in tests/test_motormodul.py decken die Klasse ab:
+jede Bauform bringt ihre Belastbarkeit als benannte Groesse mit Herkunft
+mit, jedes Bauteil braucht einen belegten Gehaeuseeintrag. Ein neues
+Bauteil ohne Beleg faellt durch, nicht erst das naechste Exemplar
+desselben Fehlers.
 """
 import os
 import sys
@@ -163,8 +207,28 @@ FP_HDR_1X04 = "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
 FP_CP_RADIAL = "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm"          # Aufgabenbrief 4, woertlich
 FP_TVS_SMC = "Diode_SMD:D_SMC_Handsoldering"                      # Aufgabenbrief 4, woertlich
 FP_SOD123 = "Diode_SMD:D_SOD-123"                                 # BAT54W (D3/D4)
-FP_TO252 = "Package_TO_SOT_SMD:TO-252-3_TabPin2"                  # Q1, aus dem Altprojekt
-FP_SOP4 = "Package_SO:SOP-4_3.8x4.1mm_P2.54mm"                    # U2 (PC817), aus dem Altprojekt
+FP_TO252 = "Package_TO_SOT_SMD:TO-252-3_TabPin2"                  # Q1, s. Q1-Kommentar
+# Optokoppler U4/U5 (PC817 in SMT-Gullwing-Form). **Nicht** mehr
+# `Package_SO:SOP-4_3.8x4.1mm_P2.54mm` -- der Platzhalter aus dem
+# Altprojekt (Aufgabe 5f, s. Moduldoku Punkt 6). Dessen Padreihen liegen
+# 5,5 mm auseinander (Pads bei +-2,75 mm, je 1,45 mm lang, also von 2,03
+# bis 3,48 mm vom Mittelpunkt); der Anschlussfuss des PC817 beginnt erst
+# bei rund 4,0 mm und endet bei 5,0 mm -- die Pads lagen VOLLSTAENDIG
+# neben den Anschluessen, das Bauteil haette auf blankem Loetstopplack
+# gesessen.
+#
+# Der neue Footprint ist Pad fuer Pad die vom Hersteller empfohlene
+# Landflaeche: SHARP "PC817X Series", Sheet No. **D2-A03101EN, Date
+# Sep. 30. 2003**, Abschnitt "Design Considerations" -> "Recommended
+# Foot Print (reference)", Zeile "SMT Gullwing Lead-form": Reihenabstand
+# **8,2 mm** (Pad-Mitte zu Pad-Mitte), Pad **2,2 mm x 1,7 mm**, Raster
+# **2,54 mm**. Gegengeprueft an der Landflaeche, die LCSC/EasyEDA selbst
+# fuer C97308 fuehrt (Paketname `OPTO-SMD-4_L4.6-W6.5-P2.54-LS10.3-TL`,
+# Pads +-4,3 mm, 2,5 x 1,5 mm): 0,4 mm Unterschied im Reihenabstand,
+# dieselbe Bauform, dieselbe Anschlussspanne (LS10.3 == 10,0 mm +0/-0,5
+# aus "Outline Dimensions", Zeichnung 2 "SMT Gullwing Lead-Form").
+# Gezeichnet wird die Herstellerempfehlung.
+FP_PC817 = "Optocoupler_PC817:PC817_SMT_Gullwing"
 FP_SOT353 = modulsockel.FP_SOT353                                 # U3/U6/U7 (SOT-353), wie U103
 # 1206 statt 0805 NUR fuer die vier Schleifenwiderstaende R16..R19: sie
 # liegen als einzige Bauteile dieser Platine dauerhaft an 24 V und
@@ -188,11 +252,11 @@ FP_DRV8876 = "DRV8876PWPR:IC_DRV8876PWPR"
 # Platzhalter, bis die PCB-Layout-Aufgabe (7) einen eigenen DB128L-
 # Footprint zeichnet. J5 (Motor, 2-polig) nutzt denselben Footprint-
 # Platzhalter wie sockelplatine.FP_KLEMME_2 (beide DB128L-5.08-2P-GN-S,
-# LCSC C395868, hardware/bauteile-1b.md); J2 (Sensor, 3-polig) den
-# 3-poligen Bruder DB128L-5.08-3P-GN-S (LCSC C395869, ebenfalls
-# hardware/bauteile-1b.md, Beleg 5).
+# LCSC C395868, hardware/bauteile-1b.md). Der 3-polige Bruder
+# (DB128L-5.08-3P-GN-S, LCSC C395869) wird von diesem Modul seit
+# Aufgabe 5f nicht mehr gebraucht -- er trug die Sensorklemme J2, die
+# mit dem Sensoreingang entfallen ist (Moduldoku Punkt 6).
 FP_KLEMME_2 = "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-3-2-5.08_1x02_P5.08mm_Horizontal"
-FP_KLEMME_3 = "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-3-3-5.08_1x03_P5.08mm_Horizontal"
 
 # ------------------------------------------------------- Bauteilwerte
 # Aus dem Altprojekt uebernommen (Netzliste `kicad-cli sch export
@@ -206,7 +270,12 @@ C9_WERT = "0.1u"         # VCP-Kondensator (VM<->VCP, DRV8876-Ladungspumpe)
 C10_WERT = "0.022u"      # Ladungspumpen-Kondensator CPH<->CPL
 C11_WERT = "0.1u"        # zweiter 24-V-Abblock-Kondensator (neben C9-Anteil)
 C13_WERT = "0.1u"        # IPROPI-Filterkondensator gegen GND
-R6_WERT = "2.2k"         # Vorwiderstand Sensor-Eingang -> U2 (PC817) LED
+# R6 (2,2k, Vorwiderstand des Sensor-Optokopplers U2) ist ENTFALLEN --
+# mit dem ganzen Sensoreingang, s. Moduldoku Punkt 6. Die Zahlen bleiben
+# als benannte Groessen stehen, damit die Leistungspruefung in
+# tests/test_motormodul.py zeigen kann, WARUM: der Wert ist die
+# Gegenprobe, nicht mehr ein bestuecktes Bauteil.
+ALT_R6_OHM = 2200.0      # war 0805 an 24 V -> 0,236 W bei 0,125 W Belastbarkeit
 R7_WERT = "0.1k"         # Vorwiderstand MCU -> U1 EN/IN1
 R8_WERT = "0.1k"         # Vorwiderstand MCU -> U1 PH/IN2
 R9_WERT = "0.1k"         # Vorwiderstand MCU -> U1 NSLEEP
@@ -346,14 +415,258 @@ ALT_R14_OHM = 1000.0
 ALT_VF_1N4148 = 0.6             # V, gaengiger Arbeitspunkt einer Si-Diode
 
 
+# ===================================================================
+#  Aufgabe 5f, Klasse 1: Belastbarkeit der Bauformen
+# ===================================================================
+# Diese Tabelle ist die Rechengrundlage der Leistungspruefung in
+# tests/test_motormodul.py. Sie steht hier und nicht im Test, damit
+# Schaltplan und Pruefung DIESELBEN Zahlen benutzen -- und sie nennt zu
+# jeder Zahl das Bauteil, an dem sie gemessen wurde. Eine Bauform ohne
+# Eintrag laesst die Pruefung durchfallen; niemand kann einen
+# Widerstand in ein unbelegtes Gehaeuse setzen.
+#
+# 0805: UNI-ROYAL 0805W8F1002T5E, 10 kOhm +-1 %, LCSC **C17414**
+#   (`lcsc.com/product-detail/Chip-Resistor-Surface-Mount_Uniroyal-Elec-
+#   0805W8F1002T5E_C17414.html`, Produktseite gesichtet -- Rohdaten:
+#   Gehaeuse "0805", "10kOhm", Toleranz "+-1%", Leistung "**125mW**",
+#   max. Arbeitsspannung "150V", TK "+-100ppm/C", Bestand 21 700 400).
+#   Dieselbe Baureihe (0805W8F...) liefert alle 0805-Werte dieser
+#   Platine; die 125 mW gelten fuer die Baureihe, nicht nur fuer den
+#   10-kOhm-Wert.
+# 1206: UNI-ROYAL 1206W4F3301T5E, LCSC C26032 (s. FP_R1206 oben).
+#
+# **Was die Zahl NICHT sagt:** 125 mW/250 mW sind die Nennwerte bis
+# 70 C Umgebungstemperatur; darueber muessen sie derated werden. Die
+# Pruefung rechnet ohne Derating -- sie ist damit die notwendige, nicht
+# die hinreichende Bedingung.
+P_NENN_JE_BAUFORM = {
+    FP_R0805: 0.125,
+    FP_R1206: 0.25,
+}
+U_MAX_JE_BAUFORM = {
+    FP_R0805: 150.0,
+    FP_R1206: 200.0,
+}
+#: Ab dieser Spannung an einem Widerstand verlangt der Auftrag die
+#: Leistungsrechnung. Die Pruefung rechnet trotzdem fuer JEDEN
+#: Widerstand -- die Grenze entscheidet nur, welche Faelle im
+#: Testprotokoll namentlich auftauchen.
+HOCHVOLT_GRENZE = 5.0
+#: Toleranz der verwendeten Widerstandsbaureihen (beide +-1 %, s.
+#: Produktseiten oben). Fuer die Verlustleistung zaehlt der KLEINSTE
+#: Widerstand, weil P = U^2/R.
+R_TOLERANZ = 0.01
+
+# Wieviel Spannung kann ueberhaupt an einem Netz stehen? Die Pruefung
+# leitet das aus dem Schaltplan her (Fixpunkt ueber die leitenden
+# Bauteile); nur diese Startwerte sind gesetzt. Herkunft:
+#   GND/3V3  -- Vertragsschienen (docs/vertrag.md)
+#   PWR24V   -- Stapelschiene, +-10 % (Annahme, s. V_24V_MIN/MAX oben)
+#   +24V     -- dieselbe Schiene hinter Q1; ein durchgesteuerter
+#               P-MOSFET mit 65 mOhm faellt bei 2,5 A um 0,16 V ab,
+#               das liegt innerhalb der 10-%-Toleranz und wird
+#               deshalb nicht getrennt gefuehrt.
+NETZ_SPANNUNG_FEST = {
+    "GND": (0.0, 0.0),
+    "3V3": (V_3V3, V_3V3),
+    "PWR24V": (V_24V_MIN, V_24V_MAX),
+    "+24V": (V_24V_MIN, V_24V_MAX),
+}
+#: Stecker, deren Gegenseite die MUSEUMSVERKABELUNG ist: was dort auf
+#: einer Ader liegt, weiss die Platine nicht. Ihre Netze duerfen im
+#: schlechtesten Fall alles zwischen 0 V und der 24-V-Schiene fuehren
+#: (Kurzschluss gegen eine Nachbarader im selben Mantel) -- genau der
+#: Fall, den `_notaus_schleifen()` unter Punkt 4 von Hand rechnet.
+FELDSTECKER = {"J3", "J5"}
+#: Stecker, deren Gegenseite ein anderes Modul DESSELBEN Entwurfs ist.
+#: Was auf jedem Pin liegt, steht im Vertrag (tools/stack_spec.py) --
+#: sie tragen deshalb nichts Unbekanntes ein.
+STAPELSTECKER = {"J100", "J101", "J102", "J103", "J104"}
+#: Pins, die ein Baustein aus eigener Kraft ueber die Schienen hinaus
+#: treiben kann. Nur die Ladungspumpe des DRV8876 tut das: VCP liegt
+#: laut SLVSDS7B, Abschnitt 7.3.1 "Charge Pump", ueber VM. An diesen
+#: Knoten darf deshalb kein Widerstand haengen, dessen Leistung die
+#: Pruefung aus den Schienen ableitet -- sie prueft das ausdruecklich.
+LADUNGSPUMPE_PINS = {("U1", "12"), ("U1", "13"), ("U1", "14")}
+#: Ein Baustein verbindet seine Pins NICHT miteinander -- aber jeder
+#: seiner Pins kann ein Netz innerhalb der Schienen halten oder treiben,
+#: an denen der Baustein selbst haengt. Die Pruefung liest diese
+#: Schienen aus dem Schaltplan (welche festen Netze beruehrt dieser
+#: Baustein?) und braucht deshalb keine Tabelle -- ausser dort, wo das
+#: zu grob waere. Genau ein Baustein ist so ein Fall:
+#:
+#: **U1 (DRV8876)** liegt mit VM an +24V und mit VREF an 3V3, seine
+#: Logik- und Analogpins gehoeren aber ausschliesslich in die
+#: 3,3-V-Domaene. Ohne diese Ausnahme haette die Pruefung an R5/R7/R8/
+#: R9/R13 26,4 V angesetzt und sechs falsche Alarme erzeugt. Belegt aus
+#: TI SLVSDS7B:
+#:   Pin 1/2/3 (EN/IN1, PH/IN2, nSLEEP) -- Logikeingaenge, Abschnitt 6.5
+#:     "LOGIC-LEVEL INPUTS"; sie treiben gar nichts, ihr Pegel kommt vom
+#:     MCU ueber R7/R8/R9 bzw. vom Gatter U3.
+#:   Pin 4 (nFAULT) -- Open-Drain-Ausgang gegen GND, Abschnitt 7.3.2
+#:     "Protection Circuits"; hochgezogen wird er allein von R13 an 3V3.
+#:   Pin 5 (VREF) -- liegt in diesem Entwurf fest auf 3V3.
+#:   Pin 6 (IPROPI) -- Stromausgang, Abschnitt 7.3.3.2 "Current
+#:     Regulation": I = ITRIP x AIPROPI = 2,54 mA bei der hier
+#:     gewaehlten Stromgrenze; an R5 (1,3 k) macht das 3,3 V, an R10
+#:     (4,7 k, unbestueckt) waeren es rechnerisch mehr -- deshalb ist
+#:     die Obergrenze hier ausdruecklich die 3,3-V-Schiene und nicht
+#:     "Strom mal Widerstand": mehr als VREF kann der Pin nicht
+#:     ausgeben, weil die Regelung bei ITRIP abschaltet.
+#: Pin 8/10 (Out1/Out2) und Pin 11 (VM) bleiben ohne Ausnahme, also bei
+#: der vollen 24-V-Spanne -- das ist richtig so.
+IC_PIN_BEREICH_AUSNAHME = {
+    ("U1", "1"): (0.0, V_3V3),
+    ("U1", "2"): (0.0, V_3V3),
+    ("U1", "3"): (0.0, V_3V3),
+    ("U1", "4"): (0.0, V_3V3),
+    ("U1", "5"): (0.0, V_3V3),
+    ("U1", "6"): (0.0, V_3V3),
+}
+
+
+# ===================================================================
+#  Aufgabe 5f, Klasse 2: Gehaeuse der gewaehlten Bauteile
+# ===================================================================
+# Zu jedem Bauteil das Gehaeuse des TATSAECHLICH gewaehlten Teils, mit
+# Quelle. Geschluesselt nach dem Wert im Schaltplan -- also nach dem,
+# was bestellt wird. Wer den Wert aendert (z.B. "IRFR5305" zurueck auf
+# "IRF4905"), hat keinen Eintrag mehr und faellt durch.
+#
+# Felder: (Gehaeusename, Pinzahl, Raster in mm oder None,
+#          Anschlussspanne in mm oder None, Quelle)
+# Die **Anschlussspanne** ist der Abstand von Anschlussspitze zu
+# Anschlussspitze quer ueber das Bauteil. Sie ist das Mass, mit dem sich
+# ein Footprint maschinell widerlegen laesst: der Punkt Spanne/2 muss
+# INNERHALB eines Pads liegen, sonst sitzt der Anschluss neben seiner
+# Loetflaeche. Genau daran faellt der alte Optokoppler-Footprint auf.
+# `None` heisst ausdruecklich: dieses Mass ist NICHT belegt und wird
+# NICHT geprueft. Die Pruefung zaehlt diese Faelle und nennt sie beim
+# Namen, statt sie stillschweigend als "in Ordnung" zu buchen.
+GEHAEUSE = {
+    # --- Endstufe -------------------------------------------------
+    "IRFR5305": ("D-Pak (TO-252AA)", 3, None, None,
+                 "LCSC C2624 (Produktseite gesichtet: 'DPAK (TO-252AA)'); "
+                 "Datenblatt Infineon/IR PD-95025A, Abschnitt "
+                 "'D-Pak (TO-252AA) Package Outline'. Rastermass der "
+                 "Anschluesse nicht aus dem Datenblatt gelesen "
+                 "(Massbild nur als Grafik) -- deshalb None."),
+    "DRV8876PWPR": ("HTSSOP-16 mit Waermepad (PowerPAD, Pin 17)", 17, None, None,
+                    "TI SLVSDS7B, Abschnitt 11 'Mechanical, Packaging, and "
+                    "Orderable Information' (PWP-Gehaeuse). Footprint ist "
+                    "der im Altprojekt reparierte, s. FP_DRV8876."),
+    "SMCJ30A": ("SMC (DO-214AB)", 2, None, None,
+                "LCSC C340696, bereits in sockelplatine.py gesichtet."),
+    "220u": ("Elko radial, Raster 3,5 mm", 2, 3.5, None,
+             "Aufgabenbrief 4, woertlich: CP_Radial_D8.0mm_P3.50mm."),
+    "PC817": ("SMD-4P, SMT-Gullwing-Anschluesse", 4, 2.54, 10.0,
+              "SHARP D2-A03101EN (Sep. 30. 2003), 'Outline Dimensions' "
+              "Zeichnung 2 'SMT Gullwing Lead-Form' (Raster 2,54+-0,25, "
+              "Spanne 10,0 +0/-0,5, Reihe 7,62+-0,3) und 'Design "
+              "Considerations' -> 'Recommended Foot Print (reference)', "
+              "Zeile 'SMT Gullwing Lead-form' (Reihenabstand 8,2, Pad "
+              "2,2 x 1,7, Raster 2,54). LCSC C97308."),
+    # ("Notaus-Ruhestrom"/"Motor-Klemme" sind Steckverbinder mit
+    #  Durchsteck- bzw. Schraubanschluss -- dort ist nicht die
+    #  Anschlussspanne das Mass, sondern das Raster; deshalb Spanne
+    #  None und Raster gesetzt.)
+    "SN74LVC1G06": ("SOT-353 (SC-70-5), DCK", 5, 0.65, 2.10,
+                    "LCSC C7828 (Produktseite: Gehaeuse 'SC-70-5'); TI "
+                    "SCES295AB, Abschnitt 3 'Description', Tabelle "
+                    "'Package Information': 'DCK (SC70, 5) ... PACKAGE "
+                    "SIZE 2.00mm x 2.10mm ... BODY SIZE 2.00mm x "
+                    "1.25mm', Fussnote (2): 'The package size (length x "
+                    "width) is a nominal value and includes pins' -- die "
+                    "2,10 mm sind also die Anschlussspanne (die "
+                    "Gehaeusezeichnung DCK0005A, 4214834/G 11/2024, in "
+                    "Abschnitt 10 nennt dafuer 1,8 bis 2,4 mm). Das "
+                    "Rastermass steht in derselben Zeichnung als "
+                    "'2X 0.65'."),
+    "SN74LVC1G08": ("SOT-353 (SC-70-5), DCK", 5, 0.65, 2.10,
+                    "LCSC C7832 (Produktseite: Gehaeuse 'SC-70-5'); "
+                    "dasselbe DCK-Gehaeuse (DCK0005A) wie der "
+                    "SN74LVC1G06, Masse daher aus SCES295AB, s. dort."),
+    "Motor-Klemme": ("Schraubklemme 2-polig, Raster 5,08 mm", 2, 5.08, None,
+                     "DB128L-5.08-2P-GN-S, LCSC C395868 (hardware/"
+                     "bauteile-1b.md). Der Footprint ist ein genormter "
+                     "5,08-mm-Platzhalter -- Polzahl und Raster stimmen, "
+                     "der Koerperumriss ist der eines Phoenix-Blocks. "
+                     "Aufgabe 7 zeichnet den echten DB128L."),
+    "Notaus-Ruhestrom": ("Stiftleiste 1x04, Raster 2,54 mm", 4, 2.54, None,
+                         "Beleg 11 in hardware/bauteile-1b.md: "
+                         "handelsuebliche 2,54-mm-Stiftleiste, damit eine "
+                         "gewoehnliche Jumper-Bruecke den unbenutzten "
+                         "Kanal schliessen kann."),
+    # --- Modulsockel (Aufgaben 3/4, hier nur wiederverwendet) ------
+    "STM32C011F6P6": ("TSSOP-20", 20, None, None,
+                      "hardware/bauteile.md (Etappe 1a), ST DS13866. "
+                      "Raster nicht aus dem Datenblatt gelesen."),
+    "SN74LVC1G175": ("SOT-363 (SC-70-6)", 6, None, None,
+                     "LCSC C202238; TI SCES560G, Abschnitt 3 "
+                     "('DCK Package, 6-Pin SC70')."),
+    "SN74LVC2G00DCUR": ("VSSOP-8, 0,5 mm", 8, 0.5, None,
+                        "LCSC C206109 (Produktseite: Gehaeuse "
+                        "'VSSOP-8-0.5mm')."),
+    "Stapelstecker 2x20": ("Buchse mit durchgehendem Stift, 2,54 mm", 40, 2.54, None,
+                           "LCSC C35165 (hardware/bauteile-1b.md, Beleg 1/6)."),
+    "Kettenstecker, Buchse oben (SMD)": ("Buchsenleiste 1x02, 2,54 mm", 2, 2.54, None,
+                                         "LCSC C541849."),
+    "Kettenstecker, Stift unten (SMD)": ("Stiftleiste 1x02, 2,54 mm", 2, 2.54, None,
+                                         "LCSC C492401."),
+    "Leistungsstecker, Buchse oben (SMD)": ("Buchsenleiste 2x02, 2,54 mm", 4, 2.54, None,
+                                            "LCSC C2977590."),
+    "Leistungsstecker, Stift unten (SMD)": ("Stiftleiste 2x02, 2,54 mm", 4, 2.54, None,
+                                            "LCSC C66690."),
+}
+#: Chipbauformen: hier bestimmt nicht der Wert das Gehaeuse, sondern die
+#: Bauformwahl. Zollcode -> Koerperlaenge in mm. Der Code IST das Mass
+#: (0805 = 0,080" x 0,050"), deshalb braucht er kein Datenblatt; die
+#: metrische Zweitbezeichnung im KiCad-Namen (2012Metric = 2,0 x 1,2 mm)
+#: sagt dasselbe noch einmal.
+CHIP_LAENGE_MM = {"0805": 2.03, "1206": 3.05}
+#: Wieviel darf die Spannweite der Pad-Mitten eines Chip-Footprints vom
+#: Koerpermass abweichen, bevor die Pruefung sie fuer eine andere
+#: Bauform haelt? 0,8 mm trennt 0805 (2,03) und 1206 (3,05) sicher --
+#: die beiden benachbarten Zollcodes liegen 1,02 mm auseinander.
+CHIP_TOLERANZ_MM = 0.8
+
+#: Die vom Hersteller empfohlene Landflaeche des PC817 in SMT-Gullwing-
+#: Form, gegen die der projekteigene Footprint Pad fuer Pad geprueft
+#: wird. Quelle: SHARP D2-A03101EN, "Design Considerations" ->
+#: "Recommended Foot Print (reference)", Zeile "SMT Gullwing Lead-form".
+PC817_LAND_REIHE_MM = 8.2       # Pad-Mitte zu Pad-Mitte, quer
+PC817_LAND_PAD_X_MM = 2.2       # Padlaenge (quer, Richtung Anschluss)
+PC817_LAND_PAD_Y_MM = 1.7       # Padbreite (laengs, Richtung Raster)
+
+#: Pads, die im Footprint vorkommen, aber im Symbol keinen Pin haben --
+#: mit Begruendung. Ohne Eintrag faellt die Pruefung durch; ein
+#: ueberzaehliges Pad ist sonst ein Hinweis auf den falschen Footprint.
+FOOTPRINT_PAD_OHNE_PIN = {
+    ("SN74LVC1G06", "1"):
+        "Pin 1 des DCK-Gehaeuses ist unbeschaltet: TI SCES295AB, "
+        "Abschnitt 4 'Pin Configuration and Functions', Figure 4-3 "
+        "'DCK Package 5-Pin SC70 Top View' -- 1 = NC, 2 = A, 3 = GND, "
+        "4 = Y, 5 = VCC. Das KiCad-Symbol 74xGxx:74LVC1G06 fuehrt den "
+        "NC-Pin gar nicht erst; die Loetflaeche muss trotzdem da sein, "
+        "weil das Gehaeuse dort ein Bein hat.",
+}
+
+
 def _load_libs(sch):
     sch.lib("Device:R", "Device.kicad_sym", "R")
     sch.lib("Device:C", "Device.kicad_sym", "C")
     sch.lib("Device:C_Polarized", "Device.kicad_sym", "C_Polarized")
     sch.lib("Device:D", "Device.kicad_sym", "D")
     sch.lib("Device:D_Zener", "Device.kicad_sym", "D_Zener")
-    sch.lib_extends("Transistor_FET:IRF4905", "Transistor_FET.kicad_sym",
-                     "IRF9540N", "IRF4905")
+    # Q1: das GENERISCHE P-Kanal-Symbol (Pins 1=G, 2=D, 3=S -- eigene
+    # Pruefung: pinngleich mit dem frueher benutzten IRF9540N/IRF4905).
+    # Der Typ steht im Wertfeld ("IRFR5305"), weil die KiCad-Bibliothek
+    # fuer ihn kein eigenes Symbol fuehrt -- und weil ein Symbolname,
+    # der einen anderen Typ nennt als die Stueckliste, genau der Fehler
+    # waere, den Aufgabe 5f hier abstellt (s. Q1 in
+    # _endstufe_leistung()).
+    sch.lib("Transistor_FET:Q_PMOS_GDS", "Transistor_FET.kicad_sym",
+            "Q_PMOS_GDS")
     sch.lib("Isolator:PC817", "Isolator.kicad_sym", "PC817")
     # U3: dasselbe Gatter-Bauteil wie U103 im Modulsockel (SN74LVC1G08,
     # SOT-353) -- keine neue Bauteilnummer noetig, LCSC C7832 ist in
@@ -399,16 +712,59 @@ def _endstufe_leistung(sch, ox, oy):
     "PWR24V". Der Verpolungsschutz (Q1/R11/R12, unveraendert aus dem
     Altprojekt uebernommen) sitzt deshalb zwischen dem Stapel-Netz
     "PWR24V" (Quelle, ueber J103/J104) und der lokalen, geschuetzten
-    Schiene "+24V" (Verbraucher: D1, C12, U1 VM, J2 Pin 1) -- dieselbe
+    Schiene "+24V" (Verbraucher: D1, C12, U1 VM, R16/R17) -- dieselbe
     Funktion wie im Altprojekt (schuetzt vor Verpolung), nur an der
     Schnittstelle zum Stapelstecker statt an einer eigenen Schraubklemme.
     Das schuetzt sogar zusaetzlich vor einem falsch gesteckten
     Stapelstecker, nicht nur vor einer falsch verdrahteten Klemme.
     """
     # Q1: P-MOSFET, Source an PWR24V (vom Stapel), Drain an +24V (lokal,
-    # geschuetzt), Gate ueber R11 an Source / R12 an GND -- unveraendert
-    # aus dem Altprojekt (dort R11/R12 = 10k/10k, Netzliste bestaetigt).
-    sch.bauteil("Q1", "Transistor_FET:IRF4905", (ox, oy), "IRF4905", FP_TO252,
+    # geschuetzt), Gate ueber R11 an Source / R12 an GND -- Verschaltung
+    # unveraendert aus dem Altprojekt (dort R11/R12 = 10k/10k, Netzliste
+    # bestaetigt).
+    #
+    # **Der TYP ist geaendert (Aufgabe 5f).** Das Altprojekt trug
+    # "IRF4905" im TO-252-Footprint. Den IRF4905 gibt es aber nicht in
+    # TO-252: Infineon/IR fuehrt ihn als TO-220AB (IRF4905PbF, LCSC
+    # C2564, Produktseite gesichtet: Gehaeuse "TO-220") und als
+    # D2Pak/TO-263 (IRF4905S, LCSC C5337969, Produktseite gesichtet:
+    # Gehaeuse "TO-263"). Wert und Footprint widersprachen sich also --
+    # bestueckt worden waere im besten Fall ein anderes Bauteil.
+    #
+    # Statt den Footprint auf D2Pak zu vergroessern (10,2 x 9,9 mm statt
+    # 6,5 x 6,1 mm -- das Layout des Altprojekts, auf dem Aufgabe 7
+    # aufsetzt, rechnet mit dem D-Pak-Umriss) wird der Typ auf den
+    # Schwestertyp derselben HEXFET-Familie gesetzt, den es genau in
+    # dieser Bauform gibt:
+    #
+    #   IRFR5305PbF (Infineon/International Rectifier), P-Kanal,
+    #   **D-Pak (TO-252AA)**, LCSC **C2624**
+    #   (`lcsc.com/product-detail/mosfets_infineon-technologies-
+    #   irfr5305trpbf_C2624.html`, Rohdaten: "P-Channel MOSFET",
+    #   Gehaeuse "DPAK (TO-252AA)", "55V", "31A", "65mOhm @ 10V",
+    #   "110W", Bestand 17 854).
+    #   Datenblatt Infineon/IR **PD-95025A** (12/13/04), selbst gelesen:
+    #   Titelzeile "IRFR5305PbF ... Surface Mount (IRFR5305) ...
+    #   VDSS = -55V, RDS(on) = 0.065 Ohm, ID = -31A"; "Absolute Maximum
+    #   Ratings": VGS +-20 V, PD 110 W; "Electrical Characteristics":
+    #   VGS(th) -2,0 bis -4,0 V, IGSS +-100 nA bei VGS = +-20 V;
+    #   Abschnitt "D-Pak (TO-252AA) Package Outline".
+    #
+    # Nachgerechnet fuer diesen Einsatz:
+    #   * Sperrspannung: 55 V gegen 26,4 V Schiene und gegen die
+    #     Klemmspannung der TVS D1 (SMCJ30A, MAX 48,4 V) -- passt.
+    #   * Gatespannung: R11/R12 sind gleich gross, also VGS = -U/2 =
+    #     -13,2 V im schlechtesten Fall. Unter +-20 V (Grenzwert) und
+    #     ueber den -4,0 V Einschaltschwelle (MAX) -- der Transistor ist
+    #     sicher durchgesteuert und sicher nicht ueberlastet.
+    #   * Durchlassverlust: 0,065 Ohm x (2,5 A)^2 = 0,41 W; das
+    #     Datenblatt nennt fuer typische SMD-Montage "Power dissipation
+    #     levels up to 1.5 watts are possible".
+    #   * Gateleckstrom 100 nA gegen 1,3 mA Teilerstrom durch R11/R12 --
+    #     der Teiler bestimmt die Gatespannung, nicht der Transistor.
+    #     Genau darauf stuetzt sich die Leistungspruefung, wenn sie den
+    #     Gate-Pin als gleichspannungsmaessig getrennt behandelt.
+    sch.bauteil("Q1", "Transistor_FET:Q_PMOS_GDS", (ox, oy), "IRFR5305", FP_TO252,
                 rot=0, roff=(2.54, 2.54), voff=(2.54, 5.08))
     sch.netz("Q1", "1", "L", "Q1_GATE")   # G
     sch.netz("Q1", "2", "U", "+24V")      # D -> lokale, geschuetzte Schiene
@@ -544,30 +900,30 @@ def _endstufe_treiber(sch, ox, oy, netze):
     sch.netz("C13", "2", "D", "GND")
 
 
-def _sensor(sch, ox, oy, netze):
-    """U2 (PC817) + R6, J2 (Sensor-Klemme, 3-polig). SENSOR_3V3 (U2 Pin 4,
-    Optokoppler-Ausgang) erreicht den Modul-MCU ueber einen der vier
-    freien U100-Pins (modulsockel.ZUSATZ_PIN_RICHTUNG) -- s.
-    `bauen()` unten, Aufruf von `modulsockel.einbauen(..., zusatz_pins=...)`.
-    """
-    sch.bauteil("J2", "Connector:Screw_Terminal_01x03", (ox, oy),
-                "Sensor-Klemme", FP_KLEMME_3, rot=0,
-                roff=(2.54, -8.89), voff=(2.54, -6.35))
-    sch.netz("J2", "1", "L", "+24V")
-    sch.netz("J2", "2", "L", "SENSOR24V")
-    sch.netz("J2", "3", "L", "GND")
-
-    sch.bauteil("R6", "Device:R", (ox + 25.4, oy + 5.08), R6_WERT, FP_R0805,
-                rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
-    sch.netz("R6", "1", "U", "SENSOR24V")
-    sch.netz("R6", "2", "D", "U2_LED_A")
-
-    sch.bauteil("U2", "Isolator:PC817", (ox + 25.4, oy - 15.24), "PC817",
-                FP_SOP4, rot=0, roff=(-7.62, 12.7), voff=(-7.62, 15.24))
-    sch.netz("U2", "1", "L", "U2_LED_A")   # Anode -- aus R6
-    sch.netz("U2", "2", "L", "GND")        # Kathode
-    sch.netz("U2", "3", "R", "GND")        # Emitter
-    sch.netz("U2", "4", "R", netze["SENSOR_3V3"])   # Kollektor -> MCU
+# Der Sensoreingang (J2 + R6 + U2) ist ENTFALLEN -- Aufgabe 5f,
+# Begruendung in der Moduldoku oben, Punkt 6. Kurz: er war schon im
+# Altprojekt unbenutzt ("keine Sensoren angeschlossen oder geplant",
+# dortiges README.md), das Design-Dokument fuehrt ihn fuer den Modultyp
+# Motor nicht ("DRV8876, ein Motor, Strommessung, Notaus-Eingaenge"),
+# und sein Vorwiderstand R6 lag mit 0,236 W dauerhaft ueber der
+# Belastbarkeit seines 0805-Gehaeuses (0,125 W). Ein ueberlastetes
+# Bauteil ohne Aufgabe wird weggelassen, nicht vergroessert.
+#
+# Wer den Eingang spaeter doch braucht, baut ihn NICHT einfach mit einem
+# groesseren Widerstand wieder ein: bei 24 V und einem PC817 (VF 1,2 V)
+# braucht man fuer 0,125 W mindestens
+#     R > (26,4 V - 1,2 V)^2 / 0,125 W = 5,1 kOhm  (0805)
+# und landet dann bei 4,9 mA LED-Strom -- oder man nimmt gleich 1206
+# (0,25 W) wie die Schleifenwiderstaende R16..R19, die genau dieselbe
+# Aufgabe an derselben Schiene loesen und deren Rechnung in
+# `_notaus_schleifen()`, Punkt 4, steht. Die Leistungspruefung in
+# tests/test_motormodul.py rechnet das fuer JEDEN Widerstand nach, der
+# an mehr als 5 V liegt -- ein zu kleines Gehaeuse faellt dort auf,
+# egal an welcher Stelle des Schaltplans es steht.
+#
+# Frei geworden: U100 Pin 2 (PC14) ist wieder ein unbenutzter GPIO
+# (modulsockel legt ihn ohne Eintrag in zusatz_pins selbst auf
+# no_connect), und die 3-polige Klemme entfaellt aus der Stueckliste.
 
 
 def _motor_out(sch, ox, oy):
@@ -931,11 +1287,15 @@ def _notaus_schleifen(sch, ox, oy, netze):
         sch.netz(r_rueck, "2", "D", led)
 
         # U4/U5: Optokoppler. Kollektor an 3V3, Emitter auf den
-        # Schleifenknoten -- Emitterfolger, nicht wie U2 (Sensoreingang)
-        # in Emitterschaltung: hier soll ein GESCHLOSSENER Kreis HIGH
-        # ergeben, kein LOW.
+        # Schleifenknoten -- Emitterfolger: hier soll ein GESCHLOSSENER
+        # Kreis HIGH ergeben, kein LOW. (Der frueher hier genannte
+        # Vergleich mit U2 ist entfallen -- den Sensoreingang gibt es
+        # seit Aufgabe 5f nicht mehr, s. Moduldoku Punkt 6.)
+        # Footprint: FP_PC817, die Landflaeche aus dem Sharp-Datenblatt.
+        # Bis Aufgabe 5f stand hier derselbe zu kleine SOP-4-Platzhalter
+        # wie bei U2 -- die Pads lagen neben den Anschluessen.
         sch.bauteil(opto, "Isolator:PC817", (ox + 76.2, y), OPTO_WERT,
-                    FP_SOP4, rot=0, roff=(-7.62, 12.7), voff=(-7.62, 15.24))
+                    FP_PC817, rot=0, roff=(-7.62, 12.7), voff=(-7.62, 15.24))
         sch.netz(opto, "1", "L", led)      # Anode
         sch.netz(opto, "2", "L", "GND")    # Kathode
         sch.netz(opto, "3", "R", knoten)   # Emitter -> Schleifenknoten
@@ -1089,10 +1449,12 @@ def bauen(sch, ox, oy):
     DRV8876-Endstufe aus dem Muttern-Board."""
     _load_libs(sch)
 
-    # Drei der vier freien U100-Pins (modulsockel.ZUSATZ_PIN_RICHTUNG)
-    # tragen hier echte Aufgaben -- Pin "15" (PA8) bleibt frei/nc.
+    # Zwei der vier freien U100-Pins (modulsockel.ZUSATZ_PIN_RICHTUNG)
+    # tragen hier echte Aufgaben -- Pin "2" (PC14) und Pin "15" (PA8)
+    # bleiben frei/nc. PC14 trug bis Aufgabe 5f den Ausgang des
+    # Sensor-Optokopplers U2; mit dem Sensoreingang (Moduldoku Punkt 6)
+    # ist er wieder frei geworden.
     netze = modulsockel.einbauen(sch, ox, oy, mit_flipflop=True, zusatz_pins={
-        "2": "SENSOR_3V3",    # PC14 -- Optokoppler-Ausgang (U2 Pin 4)
         # PC15/PA7: die zwei Schleifenknoten der Notaus-Kanaele. Seit der
         # Ruhestrom-Umstellung (Aufgabe 5d) heissen sie SCHLEIFE_1/2 statt
         # NOTAUS_1/2 -- die PEGELbedeutung ist dieselbe geblieben (LOW =
@@ -1102,13 +1464,6 @@ def bauen(sch, ox, oy):
         "3": "SCHLEIFE_1",    # PC15 -- Kanal 1 (J3 Pin 1/2)
         "14": "SCHLEIFE_2",   # PA7  -- Kanal 2 (J3 Pin 3/4)
     })
-    # modulsockel.NETZE_NACH_AUSSEN fuehrt SENSOR_3V3 nicht (das ist eine
-    # Endstufen-eigene Zusatzleitung, kein Vertragsnetz) -- fuer die
-    # Endstufenfunktionen unten wird sie deshalb hier ergaenzt, statt sie
-    # in modulsockel.py einzutragen (dort waere sie modulfremd).
-    netze = dict(netze)
-    netze["SENSOR_3V3"] = "SENSOR_3V3"
-
     # PWR_FLAG auf "+24V" und "VCP": beide haben nur "power_in"/"passive"-
     # Pins, keinen einzigen "power_out" -- ohne ein power_out-Pin
     # irgendwo im Netz meldet kicad-cli sch erc "Input Power pin not
@@ -1128,7 +1483,6 @@ def bauen(sch, ox, oy):
 
     _endstufe_leistung(sch, ox + 330.2, oy + 15.24)
     _endstufe_treiber(sch, ox + 431.8, oy + 12.7, netze)
-    _sensor(sch, ox + 330.2, oy - 63.5, netze)
     _motor_out(sch, ox + 431.8, oy - 63.5)
     _notaus_verriegelung(sch, ox + 330.2, oy + 63.5, netze)
     # Eigener, weit abgesetzter Streifen: der Ruhestrom-Eingang bringt

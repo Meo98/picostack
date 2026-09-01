@@ -17,6 +17,25 @@ tools/sch/motormodul.py) und wurde ausschliesslich durch den
 `kicad-cli sch erc`-Lauf gefunden, nicht durch die Selbstpruefung. Der
 ERC-Testschritt unten ist deshalb keine Formalitaet.
 
+Seit Aufgabe 5f (2026-08-31) stehen hier zusaetzlich zwei Pruefungen,
+die eine ganze FEHLERKLASSE abdecken statt eines Einzelfalls:
+
+* **Verlustleistung.** Fuer jeden Widerstand wird aus dem Schaltplan
+  hergeleitet, welche Spannung an ihm stehen kann, und die daraus
+  folgende Leistung gegen die Belastbarkeit seiner Bauform gestellt
+  (motormodul.P_NENN_JE_BAUFORM, jede Zahl mit Produktseite belegt).
+  Anlass war R6 (0,236 W in einem 0805); die Pruefung faellt aber bei
+  JEDEM zu kleinen Gehaeuse, an welcher Stelle auch immer.
+* **Footprint gegen Gehaeuse.** Fuer jedes Bauteil wird der zugewiesene
+  Footprint aufgeloest, gegen die Pins des Symbols gehalten und -- wo
+  ein Gehaeusemass belegt ist -- nachgemessen. Anlass war der PC817 im
+  SOP-4-Footprint; die Pruefung faellt bei jedem Bauteil, dessen
+  Anschluesse nicht auf seinen Loetflaechen landen.
+
+Beide sagen ausdruecklich, wo ihre Grenze liegt: nicht herleitbare
+Leistungen verlangen eine belegte Handrechnung, nicht belegte
+Gehaeusemasse werden gezaehlt und ausgedruckt.
+
 Stand 2026-08-31: alle kicad-cli-gestuetzten Pruefbloecke brauchen ein
 installiertes `kicad-cli`. Fehlt es, werden sie mit einer deutlichen
 Meldung uebersprungen statt entweder mit einem rohen Traceback
@@ -24,13 +43,14 @@ abzubrechen oder still gruen zu melden.
 """
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-for d in ("tools", "tools/sch"):
+for d in ("tools", "tools/sch", "tools/pcb"):
     sys.path.insert(0, os.path.join(HERE, "..", d))
 import stack_spec as S       # noqa: E402
 import modulsockel            # noqa: E402
@@ -327,7 +347,8 @@ check("Ader gegen +24V: der LED-Strom bleibt unter dem PC817-Grenzstrom",
 _KICAD_CLI = shutil.which("kicad-cli")
 if _KICAD_CLI is None:
     print("UEBERSPRUNGEN: kicad-cli nicht in PATH gefunden -- die "
-          "Netzzuordnungs- und ERC-Pruefung (beide bauen das Motormodul "
+          "Netzzuordnungs-, Leistungs-, Footprint- und ERC-Pruefung "
+          "(alle bauen das Motormodul "
           "ueber gen.py/symlib.py tatsaechlich auf, das braucht kicad-cli "
           "fuer die Symbolbibliothekspfade UND fuer den ERC-Lauf selbst) "
           "koennen in dieser Umgebung nicht laufen und werden ausgelassen. "
@@ -374,12 +395,19 @@ else:
     # Ruhestrom-Eingang: R16..R19 (Schleifenwiderstaende), U4/U5
     # (Optokoppler), R20/R21 (Pulldown am Schleifenknoten), U6/U7
     # (Inverter mit Open-Drain-Ausgang) und C15/C16 (deren Abblockung).
+    # Aufgabe 5f: J2, R6 und U2 -- der ganze Sensoreingang -- sind
+    # ENTFALLEN. Er war schon im Altprojekt unbenutzt, das Design-
+    # Dokument fuehrt ihn fuer den Modultyp Motor nicht, und sein
+    # Vorwiderstand lag mit 0,236 W dauerhaft ueber der Belastbarkeit
+    # seines 0805-Gehaeuses (0,125 W). Wer ihn wieder einbaut, faellt
+    # hier auf -- und, falls er ihn mit demselben Widerstand einbaut,
+    # zusaetzlich in der Leistungspruefung weiter unten.
     _erwartet_endstufe = {"D1", "C9", "C10", "C11", "C12",
                            "C13", "C14", "C15", "C16",
-                           "J2", "J3", "J5", "Q1", "R5", "R6",
+                           "J3", "J5", "Q1", "R5",
                            "R7", "R8", "R9", "R10", "R11", "R12", "R13",
                            "R15", "R16", "R17", "R18", "R19", "R20", "R21",
-                           "U1", "U2", "U3", "U4", "U5", "U6", "U7"}
+                           "U1", "U3", "U4", "U5", "U6", "U7"}
     _erwartet_sockel = {"U100", "U101", "U102", "U103", "R100", "R101",
                          "R102", "R104", "R105", "C100", "C101",
                          "J100", "J101", "J102", "J103", "J104"}
@@ -636,6 +664,473 @@ else:
           ("U3", "3") in set(_netz_pins(_sch, _gen, "GND")), True)
     check("C14 blockt die Gatterversorgung ab (Pin 1 an 3V3)",
           ("C14", "1") in set(_netz_pins(_sch, _gen, "3V3")), True)
+
+
+    # =================================================================
+    #  Aufgabe 5f -- Klasse 1: die Verlustleistung JEDES Widerstands
+    # =================================================================
+    # Der Anlass war R6 (2,2 kOhm im 0805 an 24 V, 0,236 W bei 0,125 W
+    # Belastbarkeit). Geprueft wird aber nicht R6, sondern die GATTUNG:
+    # fuer jeden Widerstand des Schaltplans wird die Spannung, die an
+    # ihm stehen kann, aus der Schaltung hergeleitet und die daraus
+    # folgende Leistung gegen die Belastbarkeit seiner Bauform gestellt.
+    # Die Belastbarkeiten stehen als benannte Groessen mit Herkunft in
+    # tools/sch/motormodul.py (P_NENN_JE_BAUFORM).
+    #
+    # Verfahren: jedes Netz bekommt ein Spannungs-INTERVALL.
+    #   * Die Schienen sind gesetzt (M.NETZ_SPANNUNG_FEST).
+    #   * Ein Feldstecker traegt ein, dass auf seiner Ader im
+    #     schlechtesten Fall alles zwischen 0 V und der 24-V-Schiene
+    #     liegen kann (Kurzschluss gegen eine Nachbarader).
+    #   * Ein Baustein verbindet seine Pins NICHT, kann aber jedes
+    #     seiner Netze innerhalb der Schienen halten, an denen er selbst
+    #     haengt -- gelesen aus dem Schaltplan, nicht behauptet.
+    #   * Ueber leitende Bauteile (Widerstand, LED und Fototransistor
+    #     des Optokopplers, Drain-Source des MOSFET) wird das Intervall
+    #     fortgepflanzt, bis sich nichts mehr aendert.
+    # Das Ergebnis ist eine OBERE SCHRANKE, kein Arbeitspunkt: sie ist
+    # absichtlich zu pessimistisch statt zu optimistisch. Wo sie nicht
+    # ausreicht, verlangt die Pruefung eine Handrechnung mit Quelle --
+    # sie ueberspringt nichts stillschweigend.
+
+    _netznamen = ({t for _x, _y, _r, t in _sch.LABELS}
+                   | {v for _l, _p, _r, v in _sch.POWERS})
+    _pins_je_netz = {n: set(_netz_pins(_sch, _gen, n)) for n in _netznamen}
+    _netz_je_pin = {}
+    _doppelt = []
+    for _n, _ps in sorted(_pins_je_netz.items()):
+        for _p in _ps:
+            if _p in _netz_je_pin and _netz_je_pin[_p] != _n:
+                _doppelt.append((_p, _netz_je_pin[_p], _n))
+            _netz_je_pin[_p] = _n
+    check("kein Pin liegt auf zwei Netzen (sonst waere die "
+          "Spannungsherleitung unten wertlos)", _doppelt, [])
+
+    # Ein Bauteil ist entweder leitend (mit benannten Pinpaaren),
+    # sperrend, ein Stecker oder ein Baustein. Eine unbekannte
+    # Bauteilart laesst die Pruefung durchfallen -- damit kann niemand
+    # ein neues Bauteil einbauen, dessen elektrisches Verhalten die
+    # Leistungsrechnung nicht kennt.
+    _LEITENDE_PAARE = {
+        # Widerstand: die beiden Anschluesse.
+        "Device:R": [("1", "2")],
+        # Diode: in Durchlassrichtung leitend -- konservativ als
+        # Verbindung gewertet.
+        "Device:D": [("1", "2")],
+        # Optokoppler: LED (1-2) und Fototransistor (3-4). Die beiden
+        # Seiten sind gegeneinander isoliert (5 kV, LCSC C97308) -- genau
+        # deshalb steht hier kein Paar, das sie verbindet.
+        "Isolator:PC817": [("1", "2"), ("3", "4")],
+        # P-MOSFET: Drain-Source leitet; das Gate ist gleichspannungs-
+        # maessig getrennt (IGSS MAX +-100 nA bei +-20 V, PD-95025A,
+        # "Electrical Characteristics") und traegt deshalb kein Paar.
+        "Transistor_FET:Q_PMOS_GDS": [("2", "3")],
+    }
+    _SPERREND = {
+        "Device:C", "Device:C_Polarized",   # Kondensator: kein Gleichstrom
+        "Device:D_Zener",                    # TVS D1: sperrt bis 33 V (SMCJ30A)
+        "power:PWR_FLAG",                    # kein Bauteil, nur ERC-Marke
+    }
+    _STECKER = {"Connector:Conn_01x04_Pin", "Connector:Screw_Terminal_01x02",
+                 "Connector_Generic:Conn_01x02",
+                 "Connector_Generic:Conn_02x02_Odd_Even",
+                 "Connector_Generic:Conn_02x20_Odd_Even"}
+    _BAUSTEINE = {"74xGxx:74LVC1G06", "74xGxx:74LVC1G08", "74xGxx:74LVC1G175",
+                   "74xGxx:74LVC2G00", "DRV8876PWPR:DRV8876PWPR",
+                   "MCU_ST_STM32C0:STM32C011F6Px"}
+
+    _bauteile = {}          # ref -> (libid, wert, footprint)
+    for _ref, _libid, _pos, _rot, _wert, _fp, _a, _b, _e in _sch.COMPS:
+        _bauteile.setdefault(_ref, (_libid, _wert, _fp))
+    _unerklaert = sorted({lid for lid, _w, _f in _bauteile.values()
+                           if lid not in _LEITENDE_PAARE and lid not in _SPERREND
+                           and lid not in _STECKER and lid not in _BAUSTEINE})
+    check("jede Bauteilart im Schaltplan ist elektrisch eingeordnet "
+          "(leitend / sperrend / Stecker / Baustein)", _unerklaert, [])
+
+    # Jeder Stecker muss entweder Feld- oder Stapelstecker sein: davon
+    # haengt ab, ob seine Adern Unbekanntes eintragen duerfen.
+    _stecker_refs = {r for r, (lid, _w, _f) in _bauteile.items() if lid in _STECKER}
+    check("jeder Stecker ist als Feld- oder Stapelstecker eingeordnet",
+          sorted(_stecker_refs - (M.FELDSTECKER | M.STAPELSTECKER)), [])
+
+    def _huelle(a, b):
+        if a is None:
+            return b
+        if b is None:
+            return a
+        return (min(a[0], b[0]), max(a[1], b[1]))
+
+    def _netz_intervalle():
+        iv = {}
+        fest = set()
+        for n, v in M.NETZ_SPANNUNG_FEST.items():
+            if n in _pins_je_netz:
+                iv[n] = v
+                fest.add(n)
+        feld = (0.0, M.V_24V_MAX)
+        for _ in range(60):
+            geaendert = False
+
+            def setze(netz, wert):
+                nonlocal geaendert
+                if netz is None or netz in fest or wert is None:
+                    return
+                neu = _huelle(iv.get(netz), wert)
+                if neu != iv.get(netz):
+                    iv[netz] = neu
+                    geaendert = True
+
+            for ref, (libid, _wert, _fp) in _bauteile.items():
+                if ref in M.FELDSTECKER:
+                    for num in _sch.PINS[libid]:
+                        setze(_netz_je_pin.get((ref, num)), feld)
+                if libid in _BAUSTEINE:
+                    # Versorgungsbereich: die festen Netze, die dieser
+                    # Baustein selbst beruehrt.
+                    bereich = None
+                    for num in _sch.PINS[libid]:
+                        n = _netz_je_pin.get((ref, num))
+                        if n in fest:
+                            bereich = _huelle(bereich, iv[n])
+                    for num in _sch.PINS[libid]:
+                        setze(_netz_je_pin.get((ref, num)),
+                              M.IC_PIN_BEREICH_AUSNAHME.get((ref, num), bereich))
+                for a, b in _LEITENDE_PAARE.get(libid, ()):
+                    na = _netz_je_pin.get((ref, a))
+                    nb = _netz_je_pin.get((ref, b))
+                    setze(nb, iv.get(na))
+                    setze(na, iv.get(nb))
+            if not geaendert:
+                break
+        return iv
+
+    _iv = _netz_intervalle()
+
+    def _ohm(wert):
+        """Widerstandswert aus dem Schaltplan-Wertfeld, oder None.
+
+        Erlaubt einen Zusatz in Klammern ("10000 (ID_OBEN)"); ein
+        reiner Text ("Kennwiderstand (Modultyp)") liefert None -- dann
+        verlangt die Pruefung eine Handrechnung."""
+        w = re.sub(r"\s*\(.*\)\s*$", "", wert.strip())
+        m = re.fullmatch(r"([0-9]*\.?[0-9]+)\s*([kKmM]?)", w)
+        if not m:
+            return None
+        return float(m.group(1)) * {"": 1.0, "k": 1e3, "K": 1e3,
+                                     "m": 1e6, "M": 1e6}[m.group(2)]
+
+    # Widerstaende, deren Leistung sich aus dem Schaltplan allein NICHT
+    # herleiten laesst -- mit Rechnung und Grund. Ohne Eintrag faellt die
+    # Pruefung durch; stillschweigend uebersprungen wird nichts.
+    _P_VON_HAND = {}
+    for _r in ("R100", "R101"):
+        _P_VON_HAND[_r] = (
+            max(M.V_3V3 ** 2 * _w / (S.ID_OBEN + _w) ** 2
+                for _w in S.ID_WIDERSTAENDE),
+            "Kennwiderstand: sein Wert steht erst in der Stueckliste des "
+            "jeweiligen Moduls (stack_spec.ID_WIDERSTAENDE), im "
+            "Schaltplan steht ein Platzhaltertext. Gerechnet wird der "
+            "unguenstigste Wert der Reihe im Teiler 3V3-ID_OBEN-R-GND: "
+            "P = U^2 R / (ID_OBEN + R)^2, groesstes Glied bei "
+            "R = ID_OBEN.")
+
+    _widerstaende = sorted(r for r, (lid, _w, _f) in _bauteile.items()
+                            if lid == "Device:R")
+    _hochvolt, _ohne_herleitung, _bericht = [], [], []
+    for _ref in _widerstaende:
+        _libid, _wert, _fp = _bauteile[_ref]
+        _na = _netz_je_pin.get((_ref, "1"))
+        _nb = _netz_je_pin.get((_ref, "2"))
+        _iva, _ivb = _iv.get(_na), _iv.get(_nb)
+        _r_nom = _ohm(_wert)
+        _p_nenn = M.P_NENN_JE_BAUFORM.get(_fp)
+        check("%s: die Belastbarkeit seiner Bauform ist belegt "
+              "(P_NENN_JE_BAUFORM)" % _ref, _p_nenn is not None, True)
+        if _p_nenn is None:
+            continue
+        if _r_nom is None or _iva is None or _ivb is None:
+            # Nicht herleitbar -- dann MUSS eine Handrechnung dastehen.
+            _grund = ("Wert kein Zahlenwert" if _r_nom is None
+                       else "Netzspannung unbestimmt")
+            check("%s: Leistung nicht aus dem Schaltplan herleitbar (%s) "
+                  "-- dann muss eine belegte Handrechnung vorliegen"
+                  % (_ref, _grund), _ref in _P_VON_HAND, True)
+            _ohne_herleitung.append((_ref, _grund))
+            if _ref not in _P_VON_HAND:
+                continue
+            _p = _P_VON_HAND[_ref][0]
+            _u = None
+        else:
+            _u = max(_iva[1] - _ivb[0], _ivb[1] - _iva[0], 0.0)
+            _p = _u ** 2 / (_r_nom * (1 - M.R_TOLERANZ))
+            if max(_iva[1], _ivb[1]) > M.HOCHVOLT_GRENZE:
+                _hochvolt.append(_ref)
+            _u_max = M.U_MAX_JE_BAUFORM.get(_fp)
+            check("%s: die Spannung bleibt unter der zulaessigen "
+                  "Arbeitsspannung der Bauform" % _ref,
+                  _u_max is not None and _u <= _u_max, True)
+        check("%s (%s, %s): Verlustleistung %.3f W bleibt unter der "
+              "Belastbarkeit %.3f W seiner Bauform"
+              % (_ref, _wert, _fp.split(":")[-1].split("_Pad")[0], _p, _p_nenn),
+              _p <= _p_nenn, True)
+        _bericht.append((_ref, _wert, _p, _p_nenn, _u))
+
+    print("Verlustleistung, aus dem Schaltplan hergeleitet "
+          "(%d Widerstaende, davon %d ueber %.0f V):"
+          % (len(_bericht), len(_hochvolt), M.HOCHVOLT_GRENZE))
+    for _ref, _wert, _p, _p_nenn, _u in _bericht:
+        print("   %-5s %-24s U<=%s  P=%7.4f W von %.3f W%s"
+              % (_ref, _wert, "  --  " if _u is None else "%5.1f V" % _u,
+                 _p, _p_nenn, "   <== ueber 5 V" if _ref in _hochvolt else ""))
+    if _ohne_herleitung:
+        print("   nicht aus dem Schaltplan herleitbar, per Handrechnung "
+              "belegt: " + ", ".join("%s (%s)" % x for x in _ohne_herleitung))
+
+    # Positivprobe: der Klassifizierer muss die 24-V-Widerstaende
+    # tatsaechlich FINDEN. Ohne diese Zeile koennte die ganze Pruefung
+    # gruen sein, weil sie nirgends hinschaut.
+    for _ref in ("R11", "R12", "R16", "R17", "R18", "R19"):
+        check("%s wird als Widerstand ueber 5 V erkannt" % _ref,
+              _ref in _hochvolt, True)
+    # Und die Gegenrichtung: die Kleinsignalwiderstaende der
+    # 3,3-V-Domaene duerfen NICHT in der Hochvoltliste stehen, sonst
+    # rechnet die Schranke ins Blaue.
+    for _ref in ("R7", "R8", "R9", "R13", "R15", "R20", "R21"):
+        check("%s bleibt in der 3,3-V-Domaene" % _ref,
+              _ref in _hochvolt, False)
+
+    # An den Knoten der DRV8876-Ladungspumpe steht mehr als die
+    # 24-V-Schiene (VCP > VM, SLVSDS7B 7.3.1). Die Schranke oben kennt
+    # das nicht -- also muss hier sichergestellt sein, dass dort kein
+    # Widerstand haengt.
+    _pumpennetze = {_netz_je_pin.get(_p) for _p in M.LADUNGSPUMPE_PINS}
+    check("an den Ladungspumpen-Knoten des DRV8876 haengt kein "
+          "Widerstand (dort gilt die Schienen-Schranke nicht)",
+          sorted(r for r in _widerstaende
+                  if _netz_je_pin.get((r, "1")) in _pumpennetze
+                  or _netz_je_pin.get((r, "2")) in _pumpennetze), [])
+
+    # --- Gegenprobe: was R6 verheizt haette ---------------------------
+    # R6 (Vorwiderstand des Sensor-Optokopplers) ist mit dem ganzen
+    # Sensoreingang entfallen. Die Rechnung, die ihn verurteilt hat,
+    # laeuft weiter mit -- sie ist der Grund, aus dem die Klasse 1
+    # ueberhaupt existiert.
+    _p_alt_r6 = (M.V_24V_NOM - M.OPTO_VF_TYP) ** 2 / M.ALT_R6_OHM
+    check("Gegenprobe R6: 2,2 kOhm an 24 V verheizen mehr als ein 0805 "
+          "traegt", _p_alt_r6 > M.P_NENN_JE_BAUFORM[M.FP_R0805], True)
+    check("Gegenprobe R6: es war fast das Doppelte (Faktor > 1,8)",
+          _p_alt_r6 / M.P_NENN_JE_BAUFORM[M.FP_R0805] > 1.8, True)
+    # Und der Wert, den ein 0805 an dieser Stelle gebraucht haette --
+    # damit im Quelltext steht, dass "groesserer Widerstand" eine
+    # Rechnung ist und keine Vermutung.
+    _r_noetig_0805 = ((M.V_24V_MAX - M.OPTO_VF_TYP) ** 2
+                       / M.P_NENN_JE_BAUFORM[M.FP_R0805])
+    check("Gegenprobe R6: ein 0805 haette an 24 V mehr als 5 kOhm "
+          "gebraucht", _r_noetig_0805 > 5000.0, True)
+    check("R6 ist aus dem Schaltplan verschwunden (nicht bloss "
+          "vergroessert)", "R6" in _bauteile, False)
+    check("der Sensor-Optokoppler U2 ist mit ihm verschwunden",
+          "U2" in _bauteile, False)
+    check("die Sensorklemme J2 ist mit ihm verschwunden",
+          "J2" in _bauteile, False)
+
+    # =================================================================
+    #  Aufgabe 5f -- Klasse 2: Footprint gegen Gehaeuse, fuer JEDES Teil
+    # =================================================================
+    # Anlass war U2/U4/U5: der PC817 trug einen SOP-4-Footprint, dessen
+    # Pads 5,5 mm auseinander liegen, waehrend die Anschluesse des
+    # Bauteils 10,0 mm ueberspannen. Geprueft wird wieder die Gattung.
+    #
+    # Was die Pruefung maschinell KANN:
+    #   1. den Footprint tatsaechlich AUFLOESEN (fp-lib-table + Datei) --
+    #      ein Tippfehler oder eine fehlende Bibliothek faellt sofort auf;
+    #   2. die Pads mit den Pins des Symbols vergleichen (jede Nummer,
+    #      nicht nur die Anzahl); ueberzaehlige Pads muessen als NC
+    #      belegt sein;
+    #   3. das Rastermass aus den Pad-Koordinaten nachmessen;
+    #   4. pruefen, ob die ANSCHLUSSSPANNE des Gehaeuses ueberhaupt auf
+    #      Pads trifft: der Punkt Spanne/2 muss innerhalb eines Pads
+    #      liegen. Genau daran scheitert der alte Optokoppler-Footprint.
+    #   5. bei Chipbauformen (0805/1206) die Spannweite der Pad-Mitten
+    #      gegen das Zollmass der Bauform stellen.
+    #
+    # Was sie NICHT kann -- die ehrliche Grenze:
+    #   * Sie prueft Masse nur dort, wo sie in tools/sch/motormodul.py
+    #     mit Quelle hinterlegt sind. Wo `None` steht, ist das Mass
+    #     nicht belegt; die Pruefung zaehlt diese Faelle und druckt sie,
+    #     statt sie als "in Ordnung" zu buchen.
+    #   * Sie sieht Pad-BREITEN, Loetstoppmasken, Waermepad-Flaechen und
+    #     Koerperumrisse nur beim PC817 nach (dort gegen die
+    #     Herstellerempfehlung); sonst nur Lage und Raster.
+    #   * Ein Footprint, der geometrisch passt, aber fuer eine andere
+    #     Loetmethode gedacht ist (Handloet-Pads, Wellenloeten), faellt
+    #     ihr nicht auf.
+    #   * Die Klemmen tragen weiterhin einen Phoenix-Platzhalter mit dem
+    #     richtigen Raster und der richtigen Polzahl, aber dem falschen
+    #     Koerper -- das bleibt eine Auflage an Aufgabe 7.
+
+    import kicadlibs as _kicadlibs
+
+    _MOTORDIR = os.path.abspath(os.path.join(HERE, "..", "hardware", "kicad", "motor"))
+    _fp_libs = _kicadlibs.footprint_libs(_MOTORDIR)
+
+    def _pads(pfad):
+        """[(nummer, art, x, y, laenge, breite)] aus einer .kicad_mod.
+
+        Klammerzaehlung statt einer Regex ueber die ganze Datei: die
+        Reihenfolge der Unterausdruecke ist nicht festgelegt (der
+        uebernommene DRV8876-Footprint schreibt `(roundrect_rratio ...)`
+        VOR `(at ...)`, die KiCad-eigenen danach), und die Pad-Nummer
+        steht mal in Anfuehrungszeichen, mal nicht."""
+        txt = open(pfad, encoding="utf-8").read()
+        out = []
+        for m in re.finditer(r"\(pad\s+", txt):
+            i, tiefe = m.start(), 0
+            while True:
+                c = txt[i]
+                if c == '"':
+                    i += 1
+                    while txt[i] != '"' or txt[i - 1] == "\\":
+                        i += 1
+                elif c == "(":
+                    tiefe += 1
+                elif c == ")":
+                    tiefe -= 1
+                    if tiefe == 0:
+                        break
+                i += 1
+            blk = txt[m.start():i + 1]
+            kopf = re.match(r'\(pad\s+("([^"]*)"|\S+)\s+(\S+)', blk)
+            at = re.search(r"\(at\s+([-\d.]+)\s+([-\d.]+)", blk)
+            gr = re.search(r"\(size\s+([\d.]+)\s+([\d.]+)", blk)
+            if not (kopf and at and gr):
+                continue
+            nr = kopf.group(2) if kopf.group(2) is not None else kopf.group(1)
+            out.append((nr, kopf.group(3), float(at.group(1)),
+                        float(at.group(2)), float(gr.group(1)), float(gr.group(2))))
+        return out
+
+    _ohne_mass, _geprueft_geometrisch = [], []
+    for _ref in sorted(_bauteile):
+        _libid, _wert, _fp = _bauteile[_ref]
+        if not _fp:
+            continue                      # PWR_FLAG: kein echtes Bauteil
+        _nick, _name = _fp.split(":", 1)
+        _dir = _fp_libs.get(_nick)
+        check("%s: die Footprint-Bibliothek '%s' ist aufloesbar"
+              % (_ref, _nick), _dir is not None, True)
+        if _dir is None:
+            continue
+        _pfad = os.path.join(_dir, _name + ".kicad_mod")
+        check("%s: der Footprint '%s' existiert als Datei" % (_ref, _fp),
+              os.path.isfile(_pfad), True)
+        if not os.path.isfile(_pfad):
+            continue
+        _pl = _pads(_pfad)
+        _padnr = {p[0] for p in _pl if p[0] not in ("", '""')}
+        _pinnr = set(_sch.PINS[_libid])
+        check("%s: jeder Symbolpin hat eine Loetflaeche im Footprint"
+              % _ref, sorted(_pinnr - _padnr), [])
+        for _extra in sorted(_padnr - _pinnr):
+            check("%s: das ueberzaehlige Pad %s ist als unbeschaltet "
+                  "belegt" % (_ref, _extra),
+                  (_wert, _extra) in M.FOOTPRINT_PAD_OHNE_PIN, True)
+
+        # ---- Gehaeuse des gewaehlten Teils -------------------------
+        _chip = None
+        for _code in M.CHIP_LAENGE_MM:
+            if ("_%s_" % _code) in _name:
+                _chip = _code
+        _gh = M.GEHAEUSE.get(_wert)
+        check("%s: das Gehaeuse des gewaehlten Teils ist belegt "
+              "(GEHAEUSE-Eintrag oder Chipbauform im Footprintnamen)"
+              % _ref, (_gh is not None) or (_chip is not None), True)
+
+        _xs = [(p[2] - p[4] / 2.0, p[2] + p[4] / 2.0) for p in _pl if p[0] in _pinnr]
+        # Rastermass = kleinster Abstand zweier Pad-Mitten entlang
+        # EINER Achse. Nicht der Luftlinienabstand: die SMD-Buchsen der
+        # Kettenstecker versetzen Pin 1 und Pin 2 seitlich
+        # gegeneinander (PinSocket_1x02_..._SMD_Pin1Left), ihr Raster
+        # steckt trotzdem in der y-Achse. Waermepad-Duplikate (der
+        # DRV8876 fuehrt Pad 17 dreizehnmal) stoeren nicht -- fuer ihn
+        # ist kein Raster belegt.
+        _abstaende = sorted({round(v, 4)
+                              for a in _pl for b in _pl if a is not b
+                              for v in (abs(a[2] - b[2]), abs(a[3] - b[3]))
+                              if v > 1e-6})
+
+        if _chip is not None:
+            _l = M.CHIP_LAENGE_MM[_chip]
+            _mitten = sorted(p[2] for p in _pl if p[0] in _pinnr)
+            _spanne = _mitten[-1] - _mitten[0]
+            check("%s: Chipbauform %s -- die Spannweite der Pad-Mitten "
+                  "(%.3f mm) passt zum Koerpermass %.2f mm"
+                  % (_ref, _chip, _spanne, _l),
+                  abs(_spanne - _l) <= M.CHIP_TOLERANZ_MM, True)
+            check("%s: die Chipenden (+-%.3f mm) liegen auf Pads"
+                  % (_ref, _l / 2.0),
+                  all(any(x0 - 1e-6 <= s <= x1 + 1e-6 for x0, x1 in _xs)
+                      for s in (_l / 2.0, -_l / 2.0)), True)
+            _geprueft_geometrisch.append(_ref)
+            continue
+
+        _gname, _gpins, _graster, _gspanne, _gquelle = _gh
+        check("%s: das Gehaeuse '%s' hat %d Anschluesse, der Footprint "
+              "%d Loetflaechen" % (_ref, _gname, _gpins, len(_padnr)),
+              len(_padnr), _gpins)
+        _teilweise = []
+        if _graster is None:
+            _teilweise.append("Raster")
+        else:
+            check("%s: das Rastermass des Footprints betraegt %.2f mm"
+                  % (_ref, _graster),
+                  abs(_abstaende[0] - _graster) <= 0.05, True)
+        if _gspanne is None:
+            _teilweise.append("Anschlussspanne")
+        else:
+            check("%s: die Anschlussspitzen (+-%.2f mm) treffen auf "
+                  "Loetflaechen" % (_ref, _gspanne / 2.0),
+                  all(any(x0 - 1e-6 <= s <= x1 + 1e-6 for x0, x1 in _xs)
+                      for s in (_gspanne / 2.0, -_gspanne / 2.0)), True)
+        if _teilweise:
+            _ohne_mass.append((_ref, _gname, "+".join(_teilweise)))
+        else:
+            _geprueft_geometrisch.append(_ref)
+
+    print("Footprint-Pruefung: %d Bauteile geometrisch nachgemessen, "
+          "%d nur nach Polzahl und Bauformnamen." %
+          (len(_geprueft_geometrisch), len(_ohne_mass)))
+    for _ref, _gname, _fehlt in _ohne_mass:
+        print("   ohne belegtes Mass (%s): %-5s %s" % (_fehlt, _ref, _gname))
+
+    # ---- der PC817-Footprint gegen die Herstellerempfehlung ----------
+    # Fuer das Bauteil, an dem der Fehler aufgefallen ist, reicht die
+    # Spannenprobe oben nicht: hier wird die gezeichnete Landflaeche Pad
+    # fuer Pad gegen SHARP D2-A03101EN, "Recommended Foot Print
+    # (reference)", geprueft.
+    _pc817_pfad = os.path.join(_fp_libs[M.FP_PC817.split(":")[0]],
+                                M.FP_PC817.split(":")[1] + ".kicad_mod")
+    _pc = _pads(_pc817_pfad)
+    check("PC817-Footprint: vier Loetflaechen", len(_pc), 4)
+    check("PC817-Footprint: alle Pads sind SMD", {p[1] for p in _pc}, {"smd"})
+    check("PC817-Footprint: Reihenabstand der Pad-Mitten = %.1f mm "
+          "(D2-A03101EN, Recommended Foot Print)" % M.PC817_LAND_REIHE_MM,
+          {round(abs(p[2]) * 2, 3) for p in _pc}, {M.PC817_LAND_REIHE_MM})
+    check("PC817-Footprint: Raster 2,54 mm",
+          {round(abs(p[3]) * 2, 3) for p in _pc}, {2.54})
+    check("PC817-Footprint: Padgroesse 2,2 x 1,7 mm",
+          {(p[4], p[5]) for p in _pc},
+          {(M.PC817_LAND_PAD_X_MM, M.PC817_LAND_PAD_Y_MM)})
+    # Gegenprobe: der alte Platzhalter haette die Anschlussspitzen
+    # verfehlt -- dieselbe Rechnung wie oben, nur mit seinen Zahlen.
+    _alt_pad_mitte, _alt_pad_laenge = 2.75, 1.45   # SOP-4_3.8x4.1mm_P2.54mm
+    check("Gegenprobe: beim alten SOP-4-Platzhalter lag die "
+          "Anschlussspitze (5,0 mm) ausserhalb jedes Pads "
+          "(Pads reichten nur bis %.3f mm)"
+          % (_alt_pad_mitte + _alt_pad_laenge / 2.0),
+          (_alt_pad_mitte + _alt_pad_laenge / 2.0)
+          < M.GEHAEUSE["PC817"][3] / 2.0, True)
 
     # ------------------------------------------------------------- ERC
     ERWARTETE_ERC_FEHLER = 0
