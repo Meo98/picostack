@@ -82,6 +82,23 @@ def erzeugen(ziel=None):
              "Alle nicht aufgefuehrten Pins gehen unveraendert durch "
              "und stehen Modulen frei zur Verfuegung.",
              "",
+             "### Pins, die eine Rolle tragen und trotzdem NICHT "
+             "benutzbar sind",
+             "",
+             "Diese Pins fuehren eine Bezeichnung, liegen aber auf "
+             "keiner Platine des Stapels an einem Netz. Wer sich auf "
+             "die Rolle allein verlaesst, haelt sie faelschlich fuer "
+             "belegt.",
+             "",
+             tabelle(["Pin", "Rolle", "Warum nicht benutzbar"],
+                     [(p, S.PIN_ROLLE[p],
+                       # Die Begruendung beginnt in stack_spec mit dem
+                       # Rollennamen, damit sie dort allein lesbar ist.
+                       # In der Tabelle steht er schon in der Spalte
+                       # davor -- hier abschneiden.
+                       S.NICHT_BELEGBAR[p].split(" -- ", 1)[-1])
+                      for p in sorted(S.NICHT_BELEGBAR)]),
+             "",
              "## Stapelstecker und Kettenstecker",
              "",
              "Der 2x20-Signalstecker (Steckerbelegung oben) ist ein "

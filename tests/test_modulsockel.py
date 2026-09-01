@@ -212,6 +212,67 @@ check("als 'frei' gefuehrte Pins ohne durchgereichten GPIO",
 check("durchgereichte GPIO, die der Vertrag nicht 'frei' nennt",
       sorted(set(modulsockel.PIN_GPIO_NAME) - _frei), [])
 
+# --- Dieselbe Klasse fuer die andere Haelfte: Rolle ohne Netz ---------
+# Die Pruefung oben deckt nur "frei" ab. Am 2026-09-01 (Aufgabe 6) fiel
+# beim Lesen der Sockel-Netzliste die Gegenrichtung auf: drei Pins
+# TRUGEN einen Versorgungsnamen (37 "3V3_EN", 39 "VSYS", 40 "VBUS") und
+# lagen trotzdem auf jeder Platine auf no_connect. Die Ausnahmeliste
+# stand als Literal im Generator, der Vertrag wusste nichts davon.
+#
+# Jetzt kommt sie aus stack_spec.NICHT_BELEGBAR, und dieser Test haelt
+# beide Seiten zusammen: was der Vertrag als nicht benutzbar fuehrt,
+# muss im Generator no_connect sein -- und umgekehrt darf kein Pin
+# stillschweigend unverdrahtet bleiben, ohne dass der Vertrag den Grund
+# nennt. Wer kuenftig einen Pin abhaengt, muss ihn hier eintragen und
+# begruenden, oder der Test faellt.
+check("jeder nicht benutzbare Pin traegt eine Begruendung",
+      sorted(p for p, grund in S.NICHT_BELEGBAR.items()
+             if len(grund.strip()) < 20), [])
+check("nicht benutzbare Pins liegen im gueltigen Bereich",
+      sorted(p for p in S.NICHT_BELEGBAR if not 1 <= p <= 40), [])
+check("kein nicht benutzbarer Pin ist zugleich durchgereichter GPIO",
+      sorted(set(S.NICHT_BELEGBAR) & set(modulsockel.PIN_GPIO_NAME)), [])
+check("IST_BELEGBAR stimmt mit NICHT_BELEGBAR ueberein",
+      sorted(p for p in S.PIN_ROLLE
+             if S.IST_BELEGBAR(p) == (p in S.NICHT_BELEGBAR)), [])
+
+# Und die Probe am Generator selbst: was er fuer den Stapelstecker
+# entscheidet, muss zum Vertrag passen -- fuer BEIDE Aufrufarten.
+#
+# Gefragt wird der Generator, nicht die erzeugte Datei. Ein Textvergleich
+# im .kicad_sch trifft die PINNAMEN des Pico-Symbols ("VSYS", "RUN", ...)
+# und meldet jeden dieser Pins als verdrahtet, obwohl nur das Symbol sie
+# beschriftet -- ein erster Versuch dieser Pruefung lief genau darauf
+# hinein und stand fuenfmal falsch rot.
+class _Mitschrift:
+    """Nimmt entgegen, was _stapelstecker() verdrahten wuerde."""
+
+    def __init__(self):
+        self.netze, self.offen = {}, set()
+
+    def bauteil(self, *a, **k):
+        pass
+
+    def netz(self, ref, num, richtung, name, laenge=None):
+        self.netze[int(num)] = name
+
+    def nc(self, ref, num):
+        self.offen.add(int(num))
+
+
+for _name, _durchreichen in (("Modul J100", False), ("Sockel J2", True)):
+    _m = _Mitschrift()
+    modulsockel._stapelstecker(_m, "JX", 0.0, 0.0,
+                               frei_durchreichen=_durchreichen)
+    check("%s: alle 40 Pins entschieden" % _name,
+          sorted(set(_m.netze) | _m.offen), list(range(1, 41)))
+    check("%s: nicht benutzbare Pins sind offen" % _name,
+          sorted(p for p in S.NICHT_BELEGBAR if p not in _m.offen), [])
+    check("%s: kein offener Pin ohne Grund im Vertrag" % _name,
+          sorted(p for p in _m.offen
+                 if p not in S.NICHT_BELEGBAR
+                 and S.PIN_ROLLE[p] not in ("frei", "SEL_OUT")), [])
+
 if fails:
     print("FEHLGESCHLAGEN:")
     for f in fails:

@@ -46,6 +46,18 @@ Die Zusagen rund um das Flashen -- die Leitungen `FLASH_TX`, `FLASH_RX`, `SEL`, 
 
 Alle nicht aufgefuehrten Pins gehen unveraendert durch und stehen Modulen frei zur Verfuegung.
 
+### Pins, die eine Rolle tragen und trotzdem NICHT benutzbar sind
+
+Diese Pins fuehren eine Bezeichnung, liegen aber auf keiner Platine des Stapels an einem Netz. Wer sich auf die Rolle allein verlaesst, haelt sie faelschlich fuer belegt.
+
+| Pin | Rolle | Warum nicht benutzbar |
+|---|---|---|
+| 30 | RUN | Reset des RP2040, aktiv-LOW mit eigenem Pullup (Pico Datasheet Rel. 21, Abschnitt 2.1). Ein Modul, das ihn treibt, setzt den Pico zurueck. |
+| 35 | ADC_VREF | analoge Referenzspannung des ADC, kein Digitalanschluss. |
+| 37 | 3V3_EN | schaltet den internen Regler des Pico ab. Nach aussen gefuehrt waere das ein Ausschalter fuer den ganzen Stapel, den jedes Modul versehentlich ziehen koennte. |
+| 39 | VSYS | Versorgungs-EINGANG des Pico. Der Sockel treibt ihn heute nicht (s. Ruling oben); ein Modul darf ihn nicht speisen, solange das nicht geregelt ist. |
+| 40 | VBUS | liegt nur an, wenn am Pico ein USB-Kabel steckt. Eine Schiene, die von einem Zufall abhaengt, ist keine Zusage. |
+
 ## Stapelstecker und Kettenstecker
 
 Der 2x20-Signalstecker (Steckerbelegung oben) ist ein **Stapelstecker**: Buchse mit durchgehendem Stift (Stapelstecker), 2x20, 2,54 mm. Bauteil: LCSC `C35165`, Gehaeusehoehe 8.50 mm, Stiftlaenge unterhalb des Gehaeuses 12.46 mm. Quelle: hardware/bauteile-1b.md, Beleg 1 (Fassung 2026-08-31).

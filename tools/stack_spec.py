@@ -151,6 +151,70 @@ def IST_VERSORGUNG(pin):
     return pin in _VERSORGUNG
 
 
+# Pins, die eine Rolle TRAGEN, aber trotzdem nicht benutzbar sind.
+#
+# Warum es diesen Eintrag gibt (2026-09-01, Aufgabe 6, beim Lesen der
+# Netzliste gefunden). PIN_ROLLE gab bis dahin drei Pins einen
+# Versorgungsnamen -- 37 "3V3_EN", 39 "VSYS", 40 "VBUS" --, und
+# IST_VERSORGUNG() bestaetigte das. Getrieben hat sie NIEMAND: der
+# Generator legte sie auf jeder Platine auf no_connect, Sockelseite wie
+# Modulseite. Auf dem Sockel gibt es sogar eine 5-V-Schiene (der K7805
+# speist damit U1 Pin 39), sie erreicht den Stapelstecker nur nicht.
+# Wer sich auf den Vertrag verliess, haelt drei Pins fuer belegt, an
+# denen nichts liegt.
+#
+# Das ist genau die Luecke, die der Vertrag fuer Pin 30 und 35 schon
+# selbst benennt ("ein Modulautor, der sich auf PIN_ROLLE verlaesst,
+# haelt einen Pin fuer benutzbar, der es nicht ist"). Bei diesen dreien
+# stand nirgends etwas; sie sassen bloss im selben elif-Zweig von
+# tools/sch/modulsockel.py wie 30 und 35. Die Liste stand damit im
+# GENERATOR und nicht im Vertrag -- dieselbe Trennung, die dieses
+# Projekt sonst ueberall aufloest.
+#
+# RULING (2026-09-01): Der Vertrag wird ehrlich gemacht, es wird KEINE
+# 5-V-Schiene verteilt.
+#   Fuer das Verteilen spraeche: der K7805 kann 2 A, die Schiene
+#   existiert auf dem Sockel bereits, eine Bahn zu J2 Pin 39 waere
+#   billig.
+#   Dagegen spricht dreierlei. (1) Es gibt heute keinen Verbraucher:
+#   das Motormodul zieht 24 V aus dem Leistungsstecker und 3V3 aus
+#   Pin 36. Eine Schiene ohne Verbraucher ist eine Zusage, die nie
+#   erprobt wird. (2) VSYS ist am Pico ein EINGANG. Sobald der Sockel
+#   ihn treibt, muss der Vertrag zusaetzlich regeln, dass kein Modul
+#   ihn ebenfalls speisen darf -- sonst stehen zwei Quellen auf einem
+#   Netz. Diese Regel gaebe es dann nur, weil die Schiene existiert.
+#   (3) Die Entscheidung laesst sich spaeter mit einem echten Bedarf
+#   im Ruecken treffen; heute waere sie geraten.
+# Kosten wenn falsch: eine Bahn auf dem Sockel und eine Vertragszeile,
+# solange keine Platine gefertigt ist. Genau deshalb wird sie
+# aufgeschoben und nicht vorweggenommen.
+NICHT_BELEGBAR = {
+    30: "RUN -- Reset des RP2040, aktiv-LOW mit eigenem Pullup "
+        "(Pico Datasheet Rel. 21, Abschnitt 2.1). Ein Modul, das ihn "
+        "treibt, setzt den Pico zurueck.",
+    35: "ADC_VREF -- analoge Referenzspannung des ADC, kein "
+        "Digitalanschluss.",
+    37: "3V3_EN -- schaltet den internen Regler des Pico ab. Nach "
+        "aussen gefuehrt waere das ein Ausschalter fuer den ganzen "
+        "Stapel, den jedes Modul versehentlich ziehen koennte.",
+    39: "VSYS -- Versorgungs-EINGANG des Pico. Der Sockel treibt ihn "
+        "heute nicht (s. Ruling oben); ein Modul darf ihn nicht "
+        "speisen, solange das nicht geregelt ist.",
+    40: "VBUS -- liegt nur an, wenn am Pico ein USB-Kabel steckt. Eine "
+        "Schiene, die von einem Zufall abhaengt, ist keine Zusage.",
+}
+
+
+def IST_BELEGBAR(pin):
+    """Darf ein Modul diesen Pin benutzen?
+
+    Die Frage, die ein Modulautor wirklich stellt -- PIN_ROLLE allein
+    beantwortet sie nicht, weil dort auch Namen stehen, hinter denen
+    nichts liegt.
+    """
+    return pin not in NICHT_BELEGBAR
+
+
 PIN_ROLLE = {}
 for _p in range(1, 41):
     PIN_ROLLE[_p] = "GND" if _p in _GND else "frei"

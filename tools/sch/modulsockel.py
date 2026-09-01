@@ -266,7 +266,14 @@ def _stapelstecker(sch, ref, ox, oy, frei_durchreichen=False):
                 sch.netz(ref, str(pin), richtung, PIN_GPIO_NAME[pin])
             else:
                 sch.nc(ref, str(pin))
-        elif rolle in ("3V3_EN", "VSYS", "VBUS", "RUN", "ADC_VREF"):
+        elif not S.IST_BELEGBAR(pin):
+            # Bis 2026-09-01 stand hier die Liste
+            # ("3V3_EN", "VSYS", "VBUS", "RUN", "ADC_VREF") als Literal.
+            # Fuer RUN und ADC_VREF war sie begruendet, fuer die drei
+            # anderen nicht -- und der Vertrag wusste von keiner davon.
+            # Jetzt kommt sie aus stack_spec.NICHT_BELEGBAR, samt
+            # Begruendung je Pin, und tools/vertrag_doku.py zeigt sie.
+            # tests/test_modulsockel.py haelt beide Seiten zusammen.
             sch.nc(ref, str(pin))
         else:
             sch.netz(ref, str(pin), richtung, STECKER_NETZE[rolle])
