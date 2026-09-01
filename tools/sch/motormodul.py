@@ -1493,12 +1493,29 @@ def bauen(sch, ox, oy):
     _notaus_schleifen(sch, ox + 330.2, oy + 165.1, netze)
 
 
-if __name__ == "__main__":
+# ------------------------------------------------------- Erzeugen
+# Projektname, Titel, Datum und Zielpfad stehen hier als Konstanten und
+# nicht mehr im __main__-Block: tests/test_erzeugte_dateien.py muss den
+# Schaltplan mit GENAU denselben Angaben nachbauen koennen, um ihn gegen
+# die eingecheckte Datei zu halten. Stuenden sie im __main__, muesste der
+# Test sie abschreiben -- und zwei Kopien derselben Angabe laufen
+# auseinander, ohne dass es jemand merkt. Genau daran ist die
+# eingecheckte Datei schon einmal veraltet (s. Test).
+PROJEKT = "Motormodul"
+TITEL = "Motormodul"
+DATUM = "2026-08-31"
+ZIEL = os.path.join(HERE, "..", "..", "hardware", "kicad", "motor",
+                    "Motormodul.kicad_sch")
+
+
+def erzeugen(ziel=None):
+    """Baut den Schaltplan und schreibt ihn nach `ziel` (Vorgabe: ZIEL)."""
     import gen
 
-    sch = gen.Schaltplan("Motormodul", "Motormodul", "2026-08-31")
+    sch = gen.Schaltplan(PROJEKT, TITEL, DATUM)
     bauen(sch, 0.0, 0.0)
-    ziel = os.path.join(HERE, "..", "..", "hardware", "kicad", "motor",
-                         "Motormodul.kicad_sch")
-    pfad = sch.schreiben(ziel)
-    print("keine unverbundenen Pins -- geschrieben:", pfad)
+    return sch.schreiben(ZIEL if ziel is None else ziel)
+
+
+if __name__ == "__main__":
+    print("keine unverbundenen Pins -- geschrieben:", erzeugen())
