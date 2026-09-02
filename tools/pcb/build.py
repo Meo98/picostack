@@ -419,6 +419,14 @@ def stitching_vias(board, beschreibung):
         v.SetViaType(pcbnew.VIATYPE_THROUGH)
         v.SetLayerPair(pcbnew.F_Cu, pcbnew.B_Cu)
         v.SetNetCode(code)
+        # Ausdruecklich abgedeckt (Loetstopplack ueber der Via), nicht
+        # der Board-Vorgabe ueberlassen: die Verdreh-Kupferregel des
+        # Vertrags verbietet freiliegendes Kupfer an den Landepunkten,
+        # und eine Vorgabe, die jemand im Projekt umstellt, wuerde alle
+        # Naehvias auf einmal freilegen. steckerprobe.verdrehtprobe()
+        # verlangt an den kritischen Stellen genau diesen Modus.
+        v.SetFrontTentingMode(pcbnew.TENTING_MODE_TENTED)
+        v.SetBackTentingMode(pcbnew.TENTING_MODE_TENTED)
         board.Add(v)
     return len(stellen)
 
@@ -599,6 +607,55 @@ def tidy_silkscreen(board, beschreibung):
     return n_fab
 
 
+def kennzeichnung(board, beschreibung):
+    """Die Pflicht-Kennzeichnung aus stack_spec.LAYOUT_AUFLAGEN.
+
+    Dreieck plus "1" neben Pin 1 des Stapelsteckers und "KLEMMEN" an
+    der Klemmenkante. Grund steht im Vertrag: das M3-Lochbild ist
+    punktsymmetrisch, ein um 180 Grad verdreht angeschraubtes Modul
+    steckt nicht -- aber ohne Kennzeichnung sieht niemand, WARUM es
+    nicht steckt. Bis 2026-09-01 hat kein Werkzeug diese Auflage
+    umgesetzt und keine Pruefung sie angemahnt; die erste Fassung der
+    Sockelplatine wurde ohne committet.
+
+    PIN1_MARKE und KLEMMEN_POS kommen aus der Platinenbeschreibung
+    (die Platzverhaeltnisse sind je Platine verschieden) und sind
+    PFLICHT -- fehlt eines, bricht das Bauen ab, statt still eine
+    Platine ohne Kennzeichnung zu erzeugen.
+    """
+    for feld in ("PIN1_MARKE", "KLEMMEN_POS"):
+        if getattr(beschreibung, feld, None) is None:
+            raise SystemExit(
+                "%s fehlt in der Platinenbeschreibung -- die "
+                "Kennzeichnung ist Vertragsauflage (stack_spec."
+                "LAYOUT_AUFLAGEN)" % feld)
+
+    mx, my = beschreibung.PIN1_MARKE
+    # Dreieck, Spitze nach rechts auf Pin 1 zeigend, ~1,2 mm hoch.
+    ecken = [(mx - 0.6, my - 0.6), (mx - 0.6, my + 0.6), (mx + 0.6, my)]
+    for a, b in zip(ecken, ecken[1:] + ecken[:1]):
+        sh = pcbnew.PCB_SHAPE(board)
+        sh.SetShape(pcbnew.SHAPE_T_SEGMENT)
+        sh.SetStart(pcbnew.VECTOR2I(mm(a[0]), mm(a[1])))
+        sh.SetEnd(pcbnew.VECTOR2I(mm(b[0]), mm(b[1])))
+        sh.SetLayer(pcbnew.F_SilkS)
+        sh.SetWidth(mm(0.2))
+        board.Add(sh)
+        _UMRISSE.append(sh)
+
+    for txt, (x, y) in (("1", (mx, my + 1.6)),
+                        ("KLEMMEN", beschreibung.KLEMMEN_POS)):
+        t = pcbnew.PCB_TEXT(board)
+        t.SetText(txt)
+        t.SetLayer(pcbnew.F_SilkS)
+        t.SetTextSize(pcbnew.VECTOR2I(mm(fertigung.SILK_TEXT),
+                                      mm(fertigung.SILK_TEXT)))
+        t.SetTextThickness(mm(0.15))
+        t.SetPosition(pcbnew.VECTOR2I(mm(x), mm(y)))
+        board.Add(t)
+        _UMRISSE.append(t)
+
+
 def mark_version(board, versionstext, beschreibung, hinweise=()):
     """Versionsvermerk und optionale Bauhinweise aufs Silkscreen drucken.
 
@@ -735,6 +792,7 @@ def bauen(beschreibung, board_pfad, sch_pfad, kicad_dir=None,
     # unvollstaendig aus, obwohl nur Loecher neben der Platine wegfallen.
     weg, weg_mit_netz = drop_offboard_pads(board, beschreibung)
     n_fab = tidy_silkscreen(board, beschreibung)
+    kennzeichnung(board, beschreibung)
     if versionstext:
         mark_version(board, versionstext, beschreibung, hinweise)
     if getattr(beschreibung, "ANTENNA_SLOT", None) is not None:

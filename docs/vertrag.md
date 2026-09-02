@@ -105,11 +105,17 @@ Das Lochbild ist punktsymmetrisch -- ein Modul laesst sich um 180 Grad verdreht 
 
 ## Auflagen an das Modul-Layout
 
-- Jede Platine traegt neben Pin 1 des Stapelsteckers eine Kennzeichnung im Bestueckungsdruck (Dreieck plus Text "1") und an der Klemmenkante (untere Kante, y = BOARD_H) die Beschriftung "KLEMMEN". Grund: das M3-Lochbild ist punktsymmetrisch, ein Modul laesst sich also um 180 Grad verdreht anschrauben. Die Steckerlage (STECKER_POS) ist bewusst so unsymmetrisch, dass dann kein einziger Stift in einen Buchsenkontakt findet -- das verhindert den Schaden, macht den Fehler aber nicht sichtbar. Ausserdem darf in den drei Flaechen VERDREHT(STECKER_POS[...]["flaeche"]) kein freiliegendes Kupfer liegen (keine Testpunkte, keine offenen Pads): dort setzen die Stifte eines verdreht aufgesteckten Moduls auf.
+- Jede Platine traegt neben Pin 1 des Stapelsteckers eine Kennzeichnung im Bestueckungsdruck (Dreieck plus Text "1") und an der Klemmenkante (untere Kante, y = BOARD_H) die Beschriftung "KLEMMEN". Grund: das M3-Lochbild ist punktsymmetrisch, ein Modul laesst sich also um 180 Grad verdreht anschrauben. Die Steckerlage (STECKER_POS) ist bewusst so unsymmetrisch, dass dann kein einziger Stift in einen Buchsenkontakt findet -- das verhindert den Schaden, macht den Fehler aber nicht sichtbar. Ausserdem darf auf der OBERSEITE eines Moduls im Umkreis von LANDE_SPERRRADIUS um jeden der Punkte aus LANDEPUNKTE_VERDREHT() kein freiliegendes Kupfer liegen (keine Testpunkte, keine offenen Pads, keine unbedeckten Durchkontaktierungen): genau dort setzen die Stifte eines verdreht aufgesteckten Aufbaus auf. Die Sockelplatine ist von dieser Kupferregel ausgenommen -- sie sitzt zuoberst, auf ihre Oberseite drueckt nie ein Stift.
 
 - Ketten- und Leistungsstecker sind SMD-Paare: Buchse auf der Oberseite, Stiftleiste auf der Unterseite, auf demselben Kontaktraster und OHNE Durchkontaktierung zwischen den beiden Kontaktflaechen. Beim Kettenstecker ist die fehlende Durchkontaktierung die eigentliche Funktion: oben liegt SEL_IN, unten SEL_OUT: waeren sie verbunden, waere die Auswahlkette kurzgeschlossen und das Schieberegister (tools/kette.py) wirkungslos. Beim Leistungsstecker fuehren beide Seiten dasselbe Netz; dort ist die Verbindung erlaubt, aber sie gehoert dann in eine eigene Durchkontaktierung neben dem Pad, nicht in das SMD-Pad selbst.
 
 - Beide SMD-Steckerpaare brauchen eine Zugentlastung: die Steckkraft eines ganzen Stapels darf nicht an den Loetstellen haengen. Zulaessig sind zwei zusaetzliche, mechanisch verschraubte oder verklebte Befestigungspunkte je Stecker, oder ein Fuegeverfahren, bei dem die Platinen ERST gesteckt und DANN auf die Abstandsbolzen geschraubt werden. Welches von beiden, entscheidet die Layout-Aufgabe -- aber nicht keines von beiden. Bedrahtete Stecker haetten das nicht gebraucht; sie sind hier aber ausgeschlossen (s. Block bei STECKER_KETTE).
+
+Kein freiliegendes Kupfer naeher als 1.5 mm an einem der 46 Landepunkte aus `LANDEPUNKTE_VERDREHT()` (das sind die um 180 Grad gedrehten Lagen aller Steckerkontakte).
+
+## Montage
+
+ERST stecken, DANN auf die Abstandsbolzen schrauben. Die Zugentlastung der SMD-Steckerpaare ist die Verschraubung des Stapels; ein bereits verschraubter Stapel darf nicht auseinandergezogen werden, ohne zuerst die Bolzen zu loesen.
 
 ## Modultypen
 

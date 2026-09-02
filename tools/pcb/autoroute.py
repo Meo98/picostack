@@ -265,6 +265,11 @@ def auf_platine(board, bahnen, vias):
         v.SetWidth(build.mm(fertigung.VIA_PAD))
         v.SetDrill(build.mm(fertigung.VIA_DRILL))
         v.SetNetCode(code)
+        # Abgedeckt wie die Naehvias -- s. build.stitching_vias(): die
+        # Verdreh-Kupferregel des Vertrags kennt keine Ausnahme fuer
+        # Vias, die der Router gesetzt hat.
+        v.SetFrontTentingMode(pcbnew.TENTING_MODE_TENTED)
+        v.SetBackTentingMode(pcbnew.TENTING_MODE_TENTED)
         board.Add(v)
         _HALTEN.append(v)
         vorhanden.append(pos)

@@ -193,6 +193,106 @@ def umrissprobe(board, beschreibung):
     return fails
 
 
+def kennzeichnungsprobe(board, beschreibung):
+    """Traegt die Platine die Pflicht-Kennzeichnung des Vertrags?
+
+    Dreieck plus "1" neben Pin 1 des Stapelsteckers, "KLEMMEN" an der
+    Klemmenkante (stack_spec.LAYOUT_AUFLAGEN, erste Auflage). Die erste
+    Fassung der Sockelplatine wurde OHNE committet, weil kein Werkzeug
+    die Auflage umsetzte und keine Pruefung sie kannte -- eine Auflage
+    in Prosa, die niemand misst, ist keine.
+    """
+    fails = []
+    texte = [(d.GetText(), d.GetPosition().x / 1e6, d.GetPosition().y / 1e6)
+             for d in board.GetDrawings()
+             if isinstance(d, pcbnew.PCB_TEXT)
+             and d.GetLayer() == pcbnew.F_SilkS]
+
+    klemmen = [t for t in texte if t[0] == "KLEMMEN"]
+    if not klemmen:
+        fails.append("Kennzeichnung: kein \"KLEMMEN\" auf dem "
+                     "Bestueckungsdruck")
+    elif all(t[2] < S.BOARD_H - 6.0 for t in klemmen):
+        fails.append("Kennzeichnung: \"KLEMMEN\" liegt nicht an der "
+                     "Klemmenkante (y = %.1f)" % klemmen[0][2])
+
+    ax, ay = S.STECKER_POS["stapel"]["pin1"]
+    einsen = [t for t in texte if t[0] == "1"
+              and math.hypot(t[1] - ax, t[2] - ay) < 6.0]
+    if not einsen:
+        fails.append("Kennzeichnung: kein \"1\" neben Pin 1 des "
+                     "Stapelsteckers (%.1f|%.1f)" % (ax, ay))
+
+    dreieck = [d for d in board.GetDrawings()
+               if not isinstance(d, pcbnew.PCB_TEXT)
+               and d.GetLayer() == pcbnew.F_SilkS
+               and math.hypot(d.GetPosition().x / 1e6 - ax,
+                              d.GetPosition().y / 1e6 - ay) < 6.0]
+    if len(dreieck) < 3:
+        fails.append("Kennzeichnung: kein Dreieck neben Pin 1 des "
+                     "Stapelsteckers")
+    if not fails:
+        print("  Kennzeich Dreieck+1 an Pin 1, KLEMMEN an der Kante")
+    return fails
+
+
+def verdrehtprobe(board, beschreibung):
+    """Kein freiliegendes Kupfer an den Landepunkten eines verdreht
+    aufgesteckten Aufbaus -- die Kupferklausel des Vertrags, an der
+    gebauten Platine gemessen.
+
+    Nur fuer Module (beschreibung.IST_MODUL): die Sockelplatine sitzt
+    zuoberst, auf ihre Oberseite drueckt nie ein Stift -- der Vertrag
+    nimmt sie ausdruecklich aus.
+
+    Freiliegend heisst: jedes Pad, das auf F.Cu Kupfer traegt (SMD auf
+    der Oberseite oder durchkontaktiert -- der Loetstopplack spart Pads
+    immer aus), und jede Via, die nicht AUSDRUECKLICH abgedeckt ist.
+    Bahnen und Gussflaechen liegen unter dem Lack und zaehlen nicht.
+    """
+    if not getattr(beschreibung, "IST_MODUL", False):
+        print("  Verdreht  Sockelplatine -- Kupferregel gilt nicht "
+              "(zuoberst)")
+        return []
+
+    punkte = S.LANDEPUNKTE_VERDREHT()
+    fails = []
+
+    def zu_nah(cx, cy, radius, was):
+        for px, py in punkte:
+            d = math.hypot(cx - px, cy - py) - radius
+            if d < S.LANDE_SPERRRADIUS - TOLERANZ:
+                fails.append(
+                    "Verdreht: %s bei (%.2f|%.2f) nur %.2f mm Kupferkante "
+                    "vom Landepunkt (%.2f|%.2f) -- Vertrag verlangt %.1f"
+                    % (was, cx, cy, d, px, py, S.LANDE_SPERRRADIUS))
+                return
+
+    for fp in board.GetFootprints():
+        for pad in fp.Pads():
+            oben = (pad.GetDrillSize().x > 0
+                    or (not fp.IsFlipped()
+                        and pad.GetAttribute() == pcbnew.PAD_ATTRIB_SMD))
+            if not oben or not pad.GetNumber():
+                continue
+            r = max(pad.GetSize().x, pad.GetSize().y) / 2e6
+            zu_nah(pad.GetPosition().x / 1e6, pad.GetPosition().y / 1e6, r,
+                   "Pad %s.%s" % (fp.GetReference(), pad.GetNumber()))
+
+    for t in board.Tracks():
+        if t.Type() != pcbnew.PCB_VIA_T:
+            continue
+        if t.GetFrontTentingMode() == pcbnew.TENTING_MODE_TENTED:
+            continue
+        zu_nah(t.GetPosition().x / 1e6, t.GetPosition().y / 1e6,
+               t.GetWidth() / 2e6, "unbedeckte Via")
+
+    if not fails:
+        print("  Verdreht  %d Landepunkte, alle >= %.1f mm von "
+              "freiliegendem Kupfer" % (len(punkte), S.LANDE_SPERRRADIUS))
+    return fails
+
+
 def pruefen(beschreibung, board_pfad):
     board = pcbnew.LoadBoard(board_pfad)
     fps = {f.GetReference(): f for f in board.GetFootprints()}
@@ -260,6 +360,8 @@ def pruefen(beschreibung, board_pfad):
                       % (name, ref))
 
     fails += umrissprobe(board, beschreibung)
+    fails += kennzeichnungsprobe(board, beschreibung)
+    fails += verdrehtprobe(board, beschreibung)
 
     # Die M3-Bohrungen gehoeren zum selben Vertrag und kosten nichts.
     loecher = sorted((p.GetPosition().x / 1e6, p.GetPosition().y / 1e6)

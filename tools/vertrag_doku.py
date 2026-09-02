@@ -213,6 +213,15 @@ def erzeugen(ziel=None):
              "",
              "\n\n".join("- " + a for a in S.LAYOUT_AUFLAGEN),
              "",
+             "Kein freiliegendes Kupfer naeher als %.1f mm an einem der "
+             "%d Landepunkte aus `LANDEPUNKTE_VERDREHT()` (das sind die "
+             "um 180 Grad gedrehten Lagen aller Steckerkontakte)."
+             % (S.LANDE_SPERRRADIUS, len(S.LANDEPUNKTE_VERDREHT())),
+             "",
+             "## Montage",
+             "",
+             S.MONTAGE_REGEL,
+             "",
              "## Modultypen",
              "",
              tabelle(["Nummer", "Name", "Kanaele"],

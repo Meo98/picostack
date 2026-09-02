@@ -299,6 +299,25 @@ def _naehte():
 
 STITCH_VIAS = _naehte()
 
+# --- Pflicht-Kennzeichnung (stack_spec.LAYOUT_AUFLAGEN) --------------
+# Dreieck plus "1" neben Pin 1 des Stapelsteckers, "KLEMMEN" an der
+# Klemmenkante. build.kennzeichnung() bricht ohne diese Felder ab; die
+# erste Fassung dieser Platine wurde ohne Kennzeichnung committet, weil
+# kein Werkzeug die Auflage umsetzte.
+#
+# Lage der Marke: links neben dem Stapelstecker (Hof beginnt x = 6,22),
+# auf Hoehe von Pin 1 (8|13). "KLEMMEN" links an der unteren Kante --
+# der Streifen x 2..17 unterhalb von y 57 ist frei (J1/U2/C3 liegen
+# weiter rechts bzw. enden frueher).
+PIN1_MARKE = (5.3, 11.8)
+KLEMMEN_POS = (7.5, 58.6)
+
+# Die Sockelplatine ist KEIN Modul: sie sitzt zuoberst, auf ihre
+# Oberseite drueckt nie ein Stift eines verdreht aufgesteckten Aufbaus.
+# Die Verdreh-Kupferregel des Vertrags nimmt sie deshalb aus
+# (steckerprobe.verdrehtprobe prueft nur Module).
+IST_MODUL = False
+
 # --- GND-Vorverdrahtung ----------------------------------------------
 # Kurze GND-Stummel von jedem Massepin des Stapelsteckers in den freien
 # Streifen darueber, VOR dem Verlegen gelegt.

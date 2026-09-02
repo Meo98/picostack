@@ -1036,6 +1036,57 @@ AUFLAGEN = (
 # Kupfer und Bestueckungsdruck statt Software. Getrennt von
 # AUFLAGEN, weil das eine der Firmware gilt und das andere der
 # Platine.
+# --- Wo die Stifte eines verdreht aufgesteckten Aufbaus landen ------
+# Praezisierung der Kupferklausel in LAYOUT_AUFLAGEN (RULING 2026-09-01,
+# waehrend Aufgabe 7). Die alte Fassung verbot freiliegendes Kupfer in
+# den drei GANZEN Flaechen VERDREHT(STECKER_POS[...]["flaeche"]). Das
+# war in sich unerfuellbar: die eigenen Loetpads des Stapelsteckers
+# ragen 0,17 mm in VERDREHT(leistung) hinein -- der Vertrag verletzte
+# seine eigene Auflage auf jeder Platine, gebaut oder nicht.
+#
+# Physisch drueckt aber keine Flaeche, sondern es druecken STIFTE, und
+# die landen an ausrechenbaren PUNKTEN: an VERDREHT() jedes einzelnen
+# Kontakts der drei Stecker (46 Punkte). Der bestehende Vertragstest
+# sichert bereits, dass jeder Landepunkt mindestens
+# VERDREHT_MINDESTABSTAND_MM = 2,755 mm von jedem Kontakt entfernt
+# bleibt; bis zur KUPFERKANTE des naechsten Steckerpads sind es
+# 1,90 mm (Padradius 0,85 abgezogen, nachgerechnet). Die Regel wird
+# deshalb: kein freiliegendes Kupfer naeher als LANDE_SPERRRADIUS an
+# einem Landepunkt. 1,5 mm lassen dem stumpfen Stiftende (0,64 mm
+# Vierkant, halbe Diagonale 0,45 mm) rund 1 mm Montagetoleranz.
+# tools/pcb/steckerprobe.py misst das an der gebauten Platine nach.
+LANDE_SPERRRADIUS = 1.5    # mm um jeden Landepunkt, bis zur Kupferkante
+
+
+def LANDEPUNKTE_VERDREHT():
+    """Alle 46 Punkte, an denen ein verdreht aufgesteckter Aufbau mit
+    seinen Stiften auf der Oberseite dieser Platine aufsetzt."""
+    aus = []
+    for eintrag in STECKER_POS.values():
+        lagen = PAD_LAGEN(eintrag["footprints"][0], eintrag["pin1"],
+                          eintrag["drehung"])
+        for x, y in lagen.values():
+            aus.append((round(BOARD_W - x, 3), round(BOARD_H - y, 3)))
+    return tuple(aus)
+
+
+# RULING (2026-09-01, Aufgabe 7) zur Zugentlastungs-Auflage unten: es
+# gilt das FUEGEVERFAHREN -- die Platinen werden ERST gesteckt und DANN
+# auf die Abstandsbolzen geschraubt. Begruendung: null Platinenflaeche
+# und null Bauteile, und nach dem Verschrauben tragen die M3-Bolzen
+# jede Steck- und Zugkraft; die Loetstellen sehen nur den einen
+# kontrollierten Fuegevorgang. Zusaetzliche Befestigungspunkte je
+# Stecker haetten auf 64 x 60 mm zweimal vier Bohrungen gekostet --
+# mitten in den Flaechen, die den Modulen gehoeren. Kosten wenn
+# falsch: die Regel steht im Vertragsdokument, eine Montageanweisung,
+# kein Kupfer -- jederzeit aenderbar.
+MONTAGE_REGEL = (
+    "ERST stecken, DANN auf die Abstandsbolzen schrauben. Die "
+    "Zugentlastung der SMD-Steckerpaare ist die Verschraubung des "
+    "Stapels; ein bereits verschraubter Stapel darf nicht "
+    "auseinandergezogen werden, ohne zuerst die Bolzen zu loesen."
+)
+
 LAYOUT_AUFLAGEN = (
     "Jede Platine traegt neben Pin 1 des Stapelsteckers eine "
     "Kennzeichnung im Bestueckungsdruck (Dreieck plus Text \"1\") und "
@@ -1045,10 +1096,14 @@ LAYOUT_AUFLAGEN = (
     "180 Grad verdreht anschrauben. Die Steckerlage (STECKER_POS) ist "
     "bewusst so unsymmetrisch, dass dann kein einziger Stift in einen "
     "Buchsenkontakt findet -- das verhindert den Schaden, macht den "
-    "Fehler aber nicht sichtbar. Ausserdem darf in den drei Flaechen "
-    "VERDREHT(STECKER_POS[...][\"flaeche\"]) kein freiliegendes Kupfer "
-    "liegen (keine Testpunkte, keine offenen Pads): dort setzen die "
-    "Stifte eines verdreht aufgesteckten Moduls auf.",
+    "Fehler aber nicht sichtbar. Ausserdem darf auf der OBERSEITE "
+    "eines Moduls im Umkreis von LANDE_SPERRRADIUS um jeden der "
+    "Punkte aus LANDEPUNKTE_VERDREHT() kein freiliegendes Kupfer "
+    "liegen (keine Testpunkte, keine offenen Pads, keine unbedeckten "
+    "Durchkontaktierungen): genau dort setzen die "
+    "Stifte eines verdreht aufgesteckten Aufbaus auf. Die "
+    "Sockelplatine ist von dieser Kupferregel ausgenommen -- sie "
+    "sitzt zuoberst, auf ihre Oberseite drueckt nie ein Stift.",
 
     "Ketten- und Leistungsstecker sind SMD-Paare: Buchse auf der "
     "Oberseite, Stiftleiste auf der Unterseite, auf demselben "
