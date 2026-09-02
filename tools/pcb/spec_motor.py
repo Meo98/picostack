@@ -189,8 +189,20 @@ PLACEMENT = {
     # 1. 24-V-Strang rechts.
     "U1": Platz("U1", 36.00, 22.00, 7.80, 5.50, 0, False),
     "C11": Platz("C11", 36.00, 18.90, 3.76, 1.96, 0, False),
-    "C9": Platz("C9", 46.20, 22.00, 3.76, 1.96, 0, False),
-    "C10": Platz("C10", 46.20, 24.60, 3.76, 1.96, 0, False),
+    # C9/C10 GEDREHT als "Harfe" (2026-09-02): liegend zwangen beide
+    # Caps alle vier Ladungspumpen-Anschluesse (VM/VCP/CPH/CPL, Pins
+    # 11-14) kreuzend durch die 2,9-mm-Gasse zwischen U1 und den Caps
+    # -- nachweislich unloesbar (VCP-Band kollidierte mit jeder
+    # moeglichen 1,0-mm-Kappe des VM-Halses). Stehend, mit den
+    # Ziel-Pads in derselben y-Reihenfolge wie die Pins (CPL oben,
+    # dann CPH, VCP, VM), kreuzt keine der vier Bahnen eine andere.
+    "C9": Platz("C9", 48.02, 22.7325, 1.96, 3.76, 90, False),
+    # C10 NICHT hoeher schieben: der Versuch (y-0,4, fuer ein
+    # breiteres VCP-Fenster) liess freerouting deterministisch in
+    # Durchgang 3 endlos kreisen -- vierter Haenger-Fund, Ursache
+    # unklar, Reproduktion: C10-Platz 45.32/20.2575. Das VCP-Fenster
+    # schafft stattdessen die abgesenkte /+24V-Bahn (s. PRE_TRACKS).
+    "C10": Platz("C10", 45.32, 20.6575, 1.96, 3.76, 90, False),
     "R11": Platz("R11", 44.20, 29.80, 3.70, 1.90, 0, False),
     "R12": Platz("R12", 48.60, 29.80, 3.70, 1.90, 0, False),
     "Q1": Platz("Q1", 44.80, 32.60, 11.10, 7.00, 0, False),
@@ -255,19 +267,198 @@ def _gnd_stummel():
 #   der Leistungsklasse passen nicht an die 0,45 mm schmalen Pads
 #   (der Nachbarpin laege in der Bahn). Ein kurzes 0,40-mm-Halsstueck
 #   (breiter geht nicht: Nachbarpad-Abstand 0,425 mm) fuehrt vom Pad
-#   ins Freie; dort uebernimmt der Router mit voller Breite. Kuerzer
-#   als 2 mm, damit die Bahnbreitenpruefung (pcb_checks, meldet ab
-#   2 mm Unterbreite je Netz) nicht anschlaegt -- die Laenge ist der
-#   Kompromiss zwischen Engstelle und Waermeentwicklung.
+#   ins Freie; dort uebernimmt die volle Breite. Unterbreite je Netz
+#   unter 2 mm halten (pcb_checks meldet ab 2 mm) -- die Laenge ist
+#   der Kompromiss zwischen Engstelle und Waermeentwicklung.
+#   Zwischenpunkte EXAKT auf die Pad-Mitten legen (25,725 statt
+#   25,72): ein um 5 um schiefes Halsstueck liess freerouting vor
+#   Durchgang 1 endlos haengen -- build.pre_tracks() weist schiefe
+#   Segmente seither ab.
+#
+# * Fuenf Verbindungen blieben in JEDEM Router-Lauf offen (auch mit
+#   99 Durchgaengen; der Router gibt vorher auf) -- sie werden wie die
+#   GND-Stummel vorab reserviert, dann sind die Korridore garantiert:
+#
+#   - /+24V und /Out2 an U1: die Pads 10/11 liegen 0,65 mm auseinander,
+#     zwei 1,0-mm-Fortsetzungen brauchen aber 1,2 mm Kappenabstand --
+#     direkt nebeneinander ist das unerfuellbar, der Router fand nie
+#     eine Loesung. Die Vorverdrahtung staffelt die Kappen schraeg
+#     ((44,60|25,725) gegen (44,35|26,975) = 1,28 mm): /+24V laeuft
+#     gerade in das VM-Pad des gedrehten C9 (Harfe, s. PLACEMENT),
+#     /Out2 knickt nach unten ab und faellt im freien Streifen
+#     zwischen D1 und der Naehvia-Spalte x=43,25 zur Klemme J5. Alle
+#     Abstaende gegen U1-Pads (Kante 43,55), die gedrehten Caps,
+#     R11 (Pad ab 44,45), D1 und die Naehvias nachgerechnet; engste
+#     Stellen: Out2-Diagonale zu Pad 9 = 0,242, Vertikale x=42,2 zu
+#     den Naehvias = 0,25 (Kante-Kante).
+#   - das NAND-Nest: U102-3 -> U100-6 (/NRST) links um die Padspalte
+#     herum (x=14,5), U102-8 -> U103-5 (3V3) oben ueber U103 hinweg
+#     (y=23,8) und weiter bis zum Abblockkondensator C16, U102-5 ->
+#     U103-1 (/FLASH_MODE) unten herum und durch die Gasse x=20,3
+#     (Kante-Kante 0,277 zu U103). Die drei Routen kreuzen einander
+#     nicht und lassen die Escapes der uebrigen U102/U103-Pads frei.
+#     Die NRST-Ausfahrt am Pad ist 0,20 statt 0,25 breit: mit 0,25
+#     waere der Abstand zu den Nachbarpads EXAKT 0,200 -- an solchen
+#     Grenzwert-Draehten haengt sich freerouting beim Import auf
+#     (zweiter Haenger-Fund nach dem Schiefstand); 0,20 breit bleiben
+#     0,225 Luft.
 _HALS = 0.40
+_LEISTUNG = 1.00
 PRE_TRACKS = _gnd_stummel() + (
     ("/SEL_OUT", "F.Cu", (("PAD", "U102", "1"), ("PAD", "U102", "2"))),
     ("/NQ", "F.Cu", (("PAD", "U102", "6"), ("PAD", "U102", "7"))),
     # U1 sitzt bei Hofmitte (39,90|24,75); Pads rechts x = 42,80,
     # links x = 37,00 (Padreihen +-2,90 von der Mitte).
-    ("/+24V", "F.Cu", (("PAD", "U1", "11"), (44.60, 25.72)), _HALS),
-    ("/Out2", "F.Cu", (("PAD", "U1", "10"), (44.60, 26.37)), _HALS),
-    ("/Out1", "F.Cu", (("PAD", "U1", "8"), (35.20, 27.02)), _HALS),
+    ("/+24V", "F.Cu", (("PAD", "U1", "11"), (44.60, 25.725)), _HALS),
+    # Abgesenkt auf y=25,4 zwischen den Caps: so bleibt zwischen der
+    # Bahn (Nordkante 24,9) und dem C10-1-Pad (Suedkante 24,17) ein
+    # 0,73-mm-Fenster, durch das der Router /VCP nach Osten fuehrt.
+    # Der letzte Knick liegt VOR der Pad-Westkante (48,275): ein
+    # Drahtknick im Pad-Kupfer abseits des Zentrums war der naechste
+    # freerouting-Import-Haenger.
+    # Endhoehe 25,65 = VM-Pad des nach Sueden gerueckten C9: dessen
+    # VCP-Pad liegt damit auf 23,575 -- GLEICHE Hoehe wie das
+    # CPH-Pad von C10 (Spalten versetzt). Vorher lag das VCP-Ziel
+    # UEBER dem CPH-Ziel, obwohl der VCP-Pin UNTER dem CPH-Pin sitzt:
+    # die beiden Bahnen mussten sich kreuzen, und der Router liess in
+    # jedem Lauf eine von beiden (oder ein Nachbarsignal) liegen.
+    ("/+24V", "F.Cu", ((44.60, 25.725), (45.25, 25.725), (45.575, 25.40),
+                       (47.775, 25.40), (48.025, 25.65),
+                       ("PAD", "C9", "1")), _LEISTUNG),
+    ("/Out2", "F.Cu", (("PAD", "U1", "10"),
+                       (43.75, 26.375), (44.35, 26.975)), _HALS),
+    ("/Out2", "F.Cu", ((44.35, 26.975), (44.35, 28.70), (42.20, 28.70),
+                       (42.20, 48.50), (28.12, 48.50),
+                       ("PAD", "J5", "2")), _LEISTUNG),
+    ("/Out1", "F.Cu", (("PAD", "U1", "8"), (35.20, 27.025)), _HALS),
+    # /+24V-Ast zur Notaus-Speisung R16/R17: blieb als letzte Kante
+    # im Wuerfelspiel des Routers haengen. In Leistungsbreite ueber
+    # die R-Zeile (y=35,0; Pads erst ab 36,055), durch die Gasse
+    # R19/U3 (Pad-zu-Pad 1,52 -- fuer 1,0 mm plus 2x0,2 reicht es
+    # mit 0,26 je Seite), suedlich an U5-4 vorbei zu D1-1.
+    # y=35,3: das Fenster zwischen der Kennwiderstands-Zeile
+    # R104/R105 (Pads bis y34,55 -- bei 35,0 lag die Bahn AUF
+    # R105-2, Kurzschluss /+24V//ID1) und der R16-19-Zeile (ab
+    # 36,055): 1,505 mm fuer 1,0 plus 2x0,25.
+    ("/+24V", "F.Cu", (("PAD", "R17", "1"),
+                       (11.418, 35.30), (26.86, 35.30), (26.86, 39.20),
+                       (30.00, 39.20), ("PAD", "D1", "1")), _LEISTUNG),
+    # /VCP war nach dem CPH/VCP-Ordnungsfix das letzte Gassen-Signal,
+    # das der Router liegen liess: durch das 0,73-Fenster zwischen
+    # C10-1 (Suedkante 24,17) und der /+24V-Bahn (Nordkante 24,9),
+    # dann von Sueden in C9-2 (Knick ausserhalb des Pads).
+    # CPH/CPL ebenfalls festgelegt: auch nach dem Ordnungsfix liess
+    # der Router mal CPH, mal CPL liegen (die Gasse bleibt sein
+    # schwerstes Gebiet). Beide Bahnen unter der VCP-Bahn hindurch,
+    # alle Ecken gegen U1-Padecken (0,37/0,44) und das Naehvia
+    # (43,25|22,5) gerechnet.
+    ("/CPH", "F.Cu", (("PAD", "U1", "13"),
+                      (43.75, 24.425), (44.45, 23.725), (45.20, 23.725),
+                      (45.35, 23.575), ("PAD", "C10", "1"))),
+    ("/CPL", "F.Cu", (("PAD", "U1", "14"),
+                      (43.65, 23.775), (44.825, 22.60), (45.86, 22.60),
+                      (46.30, 22.16), ("PAD", "C10", "2"))),
+    ("/VCP", "F.Cu", (("PAD", "U1", "12"),
+                      (43.90, 25.075), (44.475, 24.50), (49.00, 24.50),
+                      ("PAD", "C9", "2"))),
+    ("/NRST", "F.Cu", (("PAD", "U102", "3"), (14.50, 26.00)), 0.20),
+    ("/NRST", "F.Cu", ((14.50, 26.00), (14.50, 20.325),
+                       ("PAD", "U100", "6"))),
+    # 3V3 U102-8 -> U103-5 auf der RUECKSEITE: die fruehere F.Cu-Bahn
+    # quer durch die Nordschneise (y=23,8) sperrte dem Router die
+    # einzige West-Ost-Passage des Nests -- FLASH-Stapelast, BOOT0
+    # und ID-Signale strandeten reihum. Zwei Vias kosten weniger als
+    # die Schneise.
+    ("3V3", "F.Cu", (("PAD", "U102", "8"), (18.68, 24.10))),
+    ("3V3", "B.Cu", ((18.68, 24.10), (23.35, 24.10), (23.90, 24.65),
+                     (23.90, 24.95))),
+    ("3V3", "F.Cu", ((23.90, 24.95), ("PAD", "U103", "5"))),
+    # Anbindung des NAND-Abblock-C16 an die 3V3-Schiene: ohne sie
+    # strandete C16-1 im verstopften Nest. Als EIGENER Zug von Pad zu
+    # Pad (C16-1 -> R15-1, beide 3V3), nicht als T-Abzweig einer
+    # vorhandenen Bahn: zwei Drahtzuege, die sich nur in einem Punkt
+    # beruehren, sind der dritte gefundene freerouting-Haenger
+    # (Import-Endlosschleife wie beim Schiefstand und beim
+    # Grenzwert-Abstand). Pads als Treffpunkte sind unkritisch.
+    # Der Knick vor R15-1 liegt SUEDLICH der Pad-Kante (20,85): ein
+    # Drahtknick im Pad-Kupfer abseits des Zentrums haengt freerouting
+    # auf (dieselbe Klasse wie beim /+24V-Knick vor C9-1).
+    ("3V3", "F.Cu", (("PAD", "C16", "1"),
+                     (24.5425, 21.30), (28.90, 21.30), (29.25, 20.95),
+                     ("PAD", "R15", "1"))),
+    # FLASH in der WESTSPUR der Gasse (x=19,68, Luft 0,25 zu den
+    # U102-Pads dank Feinraster-Ausnahme): die Ostspur (x=20,35)
+    # gehoert der /SEL_OUT-Abfahrt von U103-2 -- mit FLASH auf x=20,3
+    # war U103-2 auf F.Cu vollstaendig eingemauert (westlich die
+    # Bahn, drumherum Pads/Koerper) und blieb in jedem Lauf offen.
+    ("/FLASH_MODE", "F.Cu", (("PAD", "U102", "5"),
+                             (18.68, 27.20), (19.68, 27.20),
+                             (19.68, 24.35), (21.212, 24.35),
+                             ("PAD", "U103", "1"))),
+    # /SEL_OUT von U103-2: westlich raus, in der Ostspur nach Sueden,
+    # per Via auf die Rueckseite, quer unters Nest und noerdlich von
+    # U102-1 zurueck nach oben -- der einzige kreuzungsfreie Weg
+    # (jede F.Cu-Variante kreuzt eine andere Vorverdrahtung oder eine
+    # TSSOP-Padreihe; Herleitung bei build.pre_vias).
+    ("/SEL_OUT", "F.Cu", (("PAD", "U103", "2"),
+                          (20.35, 25.60), (20.35, 27.60))),
+    ("/SEL_OUT", "B.Cu", ((20.35, 27.60), (18.98, 27.60),
+                          (15.88, 24.50), (15.88, 23.65))),
+    ("/SEL_OUT", "F.Cu", ((15.88, 23.65), ("PAD", "U102", "1"))),
+    # /NFAULT-Ast zum Treiber: U1-4 blieb in jedem Lauf offen (die
+    # Westspalte von U1 ist von den Nachbarsignalen zugebaut). Die
+    # Nordschneise y=22,275 ist frei: noerdlich der 3V3-Bahn (y23,8),
+    # suedlich von C16/R15 (Pads bis y20,905), dann schraeg ans Pad.
+    # Nach kurzem Zeilen-Exit auf y=22,925 absenken: auf der
+    # Pad-Zeile (22,275) blieb zwischen dieser Bahn und dem
+    # C16-R15-Zug (y=21,3) nur 0,075 mm -- die U100-13-Ausfahrt
+    # (/IPROPI, y=21,625) war eingemauert.
+    # y=23,2 statt 22,925: die erste Absenkung landete mit exakt
+    # 0,425 Mittenabstand AUF dem Naehvia (28,25|22,5) -- Kurzschluss
+    # GND//NFAULT, von der DRC gefangen. 0,7 ist frei.
+    ("/NFAULT", "F.Cu", (("PAD", "U100", "12"),
+                         (23.00, 22.275), (23.925, 23.20),
+                         (33.65, 23.20), (34.875, 24.425),
+                         ("PAD", "U1", "4"))),
+    # /ID0: U100-7 sitzt hinter der NRST-Bahn (x=14,5) fest -- kein
+    # Westausgang. Ostausgang unter den TSSOP-Koerper, per Via auf die
+    # Rueckseite, diagonal am Nest vorbei (suedlich der Leistungs-
+    # Steckerpads y15,5..18!) und bei R100-1 zurueck nach oben.
+    ("/ID0", "F.Cu", (("PAD", "U100", "7"), (17.50, 20.975))),
+    ("/ID0", "B.Cu", ((17.50, 20.975), (13.50, 20.975),
+                      (5.85, 28.625), (5.85, 29.60))),
+    ("/ID0", "F.Cu", ((5.85, 29.60), ("PAD", "R100", "1"))),
+    # /ID1 sitzt einen Pad weiter (U100-8) in derselben Falle wie
+    # /ID0 -- gleiche Loesung, parallel versetzt (Diagonale 0,83 vom
+    # Naehvia (13,25|22,5) entfernt, ID0-Zuege 1,06 senkrecht).
+    ("/ID1", "F.Cu", (("PAD", "U100", "8"), (18.10, 21.625))),
+    ("/ID1", "B.Cu", ((18.10, 21.625), (15.30, 21.625),
+                      (10.15, 26.775), (10.15, 29.65))),
+    ("/ID1", "F.Cu", ((10.15, 29.65), ("PAD", "R101", "1"))),
+    # /+24V-Ast zum Abblock-C11 (noerdlich von U1): auf F.Cu ist jede
+    # Zufahrt von der 24-V-Schiene durch die CPH/VCP-Querbahnen der
+    # Gasse versperrt. Rueckseite: noerdlich der Waermepfad-
+    # Regelflaeche (y<21) nach Osten, oestlich von ihr (x>44,8) nach
+    # Sueden, Via mitten auf die +24V-Fettbahn (y25,4; gleiches Netz).
+    ("/+24V", "F.Cu", (("PAD", "C11", "2"), (39.50, 19.88))),
+    ("/+24V", "B.Cu", ((39.50, 19.88), (45.20, 19.88), (46.50, 21.18),
+                       (46.50, 25.40))),
+)
+
+# Lagenwechsel der /SEL_OUT-Vorverdrahtung (s. Kommentar dort).
+PRE_VIAS = (
+    ("/SEL_OUT", 20.35, 27.60),
+    ("/SEL_OUT", 15.88, 23.65),
+    ("/ID0", 17.50, 20.975),
+    ("/ID0", 5.85, 29.60),
+    ("/ID1", 18.10, 21.625),
+    ("/ID1", 10.15, 29.65),
+    ("3V3", 18.68, 24.10),
+    ("3V3", 23.90, 24.95),
+    # Das zweite /+24V-Via sitzt MITTEN AUF der Fettbahn (gleiches
+    # Netz) -- das ist der Anschluss, kein Versehen.
+    ("/+24V", 39.50, 19.88),
+    ("/+24V", 46.50, 25.40),
 )
 
 # --- Masseflaechen vernaehen -----------------------------------------
@@ -312,7 +503,26 @@ def _naehte():
     return tuple(aus)
 
 
-STITCH_VIAS = _naehte()
+# Gezielte Zusatznaehte fuer die Gussfragmente der Oberseite: das
+# 7,5er-Raster wird in der Brettmitte fast vollstaendig von den
+# Hof-Filtern verschluckt, und die vielen Bahnen zerschneiden den
+# F.Cu-Guss dort in ein Dutzend Stuecke ohne Anbindung (die DRC
+# meldete sie als fehlende Verbindungen der Flaeche mit sich selbst).
+# Punkte maschinell gesucht: im jeweiligen Fragment, mindestens
+# 0,5 mm zu jedem Pad, 0,9 zu jedem Via, ausserhalb Waermepfad-
+# Regelflaeche, M3-Hoefen und Randstreifen.
+STITCH_EXTRA = (
+    # (29,0|38,25) und (15,5|34,5) aus dem ersten Suchlauf kollidierten
+    # mit der /+24V-Bahn nach R17 (die Suche prueft Pads und Vias,
+    # nicht die eigene Vorverdrahtung): einmal 0,15 Abstand, einmal
+    # Beruehrung. Ersatzpunkte von Hand gerechnet; (28,113|38,15)
+    # bindet den U3-GND-Zwickel direkt unter dessen Massepad an.
+    (21.50, 42.50), (32.25, 38.75), (28.113, 38.15), (15.50, 34.00),
+    (24.00, 34.10), (7.00, 29.50), (19.25, 30.75), (26.00, 25.50),
+    (15.25, 27.50), (18.75, 20.75), (16.75, 7.50), (18.00, 6.50),
+)
+
+STITCH_VIAS = _naehte() + STITCH_EXTRA
 
 # --- Netzklassen -----------------------------------------------------
 # /PWR24V (Einspeisung vor Q1), /+24V (Schiene nach Q1) und die beiden

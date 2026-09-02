@@ -53,6 +53,7 @@ sys.path.insert(0, HERE)
 import pcbnew
 import fertigung
 import build          # nur fuer build.mm(v)
+import dsn_werkzeug   # Mehrpunkt-Drahtzuege aufspalten (s. dort)
 
 DURCHGAENGE = 30
 _HALTEN = []          # gegen die Zeiger-Fallen der Bindings
@@ -83,10 +84,67 @@ _HALTEN = []          # gegen die Zeiger-Fallen der Bindings
 # Die Einstellung geht als Umgebungsvariable, weil freerouting seine
 # Einstellungen aus FREEROUTING__<PFAD>-Variablen liest (GlobalSettings)
 # -- als Befehlszeilenschalter gibt es sie nicht.
-UMGEBUNG = {"FREEROUTING__GUI__ENABLED": "false"}
+UMGEBUNG = {
+    "FREEROUTING__GUI__ENABLED": "false",
+    # Der Optimierer von freerouting 2.3.0 kennt keine Abbruchbedingung,
+    # die hier greift: er drehte 30+ Paesse mit voellig unveraendertem
+    # Ergebnis (Score, unverlegt, Verletzungen konstant), und weder
+    # -oit noch ein Pass-Limit per CLI wirkten. Nur dieser Schalter
+    # beendet den Lauf; die SES entsteht erst am Job-Ende. Der Pfad
+    # ist verschachtelt (router.optimizer.enabled), NICHT die flache
+    # Sektion "optimizer" der freerouting.json.
+    "FREEROUTING__ROUTER__OPTIMIZER__ENABLED": "false",
+    # 2.3.0 verengt Bahnen an Pads eigenmaechtig auf 0,1874 mm --
+    # unter der Mindestbreite der Platine (0,20), 15 DRC-Fehler im
+    # ersten Lauf. Wir verengen selbst, wo es noetig ist (PRE_TRACKS).
+    "FREEROUTING__ROUTER__AUTOMATIC_NECKDOWN": "false",
+    # Die 0,1874er stammen aus der neuen Fanout-Stufe (der Schalter
+    # oben griff nicht dagegen); ihre Aufgabe -- Escapes an den
+    # Feinraster-Gehaeusen -- erledigen unsere PRE_TRACKS.
+    "FREEROUTING__ROUTER__FANOUT__ENABLED": "false",
+    # KEIN Multithreading: mit acht Threads liess der Router sieben
+    # Verbindungen offen, mit einem Thread ein bis zwei -- die
+    # parallelen Teilprobleme nehmen einander die Korridore weg.
+}
+
+# freerouting 2.3.0 statt der 2.2.4 aus nixpkgs, als JAR + System-Java.
+#
+# 2.2.4 haengt sich an dieser Platine reproduzierbar VOR oder zwischen
+# den Durchgaengen auf -- die Bisektion konvergierte auf keinen
+# einzelnen Ausloeser mehr: vier verschiedene, jeweils harmlose
+# Aenderungen an der Vorverdrahtung (NRST-Zug, T-Abzweig,
+# C10-Verschiebung, +24V-Absenkung) kippten den Import in eine
+# Endlosschleife, und dieselbe Geometrie lief nach kosmetischen
+# DSN-Umbauten wieder. 2.3.0 routet alle diese DSNs anstandslos
+# (mit eigener Fanout-Stufe) -- der Haenger ist dort offenbar behoben.
+_JAR_23 = os.path.expanduser(
+    "~/.local/share/freerouting/freerouting-2.3.0.jar")
+
+
+def _java_25():
+    """Ein Java >= 25 -- das JAR braucht Klassendateiversion 69.
+
+    Das java im PATH ist auf diesem System ein 17er (Version 61) und
+    scheitert mit UnsupportedClassVersionError. Das nixpkgs-Paket der
+    2.2.4 buendelt aber ein passendes JRE; sein Pfad steht als
+    Klartext im ELF-Wrapper und in /nix/store.
+    """
+    for muster in ("/nix/store/*openjdk*jre*/bin/java",
+                   "/nix/store/*openjdk*/bin/java"):
+        for kandidat in sorted(glob.glob(muster), reverse=True):
+            probe = subprocess.run([kandidat, "-version"],
+                                   capture_output=True, text=True)
+            m = re.search(r'version "(\d+)', probe.stderr + probe.stdout)
+            if m and int(m.group(1)) >= 25:
+                return kandidat
+    return None
 
 
 def freerouting_befehl():
+    if os.path.exists(_JAR_23):
+        java = _java_25()
+        if java:
+            return [java, "-jar", _JAR_23]
     p = shutil.which("freerouting")
     if p:
         return [p]
@@ -296,6 +354,12 @@ def verlegen(board_pfad, leistungsnetze):
     board = pcbnew.LoadBoard(board_pfad)
     if not pcbnew.ExportSpecctraDSN(board, dsn):
         raise SystemExit("DSN-Export fehlgeschlagen")
+    # KiCad verschmilzt beim Export je nach Reihenfolge Segmente der
+    # Vorverdrahtung zu Mehrpunkt-Pfaden -- freerouting haengt daran
+    # (Herleitung und Rot-Nachweis: dsn_werkzeug.zweipunkt_zeilen).
+    n_gespalten = dsn_werkzeug.datei_zweipunkt(dsn)
+    if n_gespalten:
+        print("%d Mehrpunkt-Drahtzuege der DSN aufgespalten" % n_gespalten)
     leistung = dsn_netzklassen(dsn, leistungsnetze)
     print("Leistungsklasse %.2f mm fuer: %s"
           % (fertigung.TRACK_POWER, ", ".join(sorted(leistung))))
@@ -304,14 +368,14 @@ def verlegen(board_pfad, leistungsnetze):
         os.remove(ses)
     umgebung = dict(os.environ)
     umgebung.update(UMGEBUNG)          # s. Kommentar bei UMGEBUNG oben
-    # 300 s statt 1800: ohne Oberflaeche ist der Lauf in Sekunden fertig.
-    # Die alte halbe Stunde war die Wartezeit auf ein Fenster, das nie
-    # jemand schloss -- sie wieder hochzusetzen wuerde denselben Fehler
-    # nur wieder verstecken.
+    # 420 s: freerouting 2.3.0 braucht fuer diese Platinen rund zwei
+    # Minuten (Fanout + Verlegen); die alte halbe Stunde war die
+    # Wartezeit auf ein GUI-Fenster, das nie jemand schloss -- sie
+    # wieder hochzusetzen wuerde denselben Fehler nur verstecken.
     lauf = subprocess.run(
         freerouting_befehl() + ["-de", dsn, "-do", ses,
                                 "-mp", str(DURCHGAENGE)],
-        capture_output=True, text=True, timeout=300, env=umgebung)
+        capture_output=True, text=True, timeout=420, env=umgebung)
     offen = []
     for zeile in lauf.stdout.splitlines():
         if "session completed" in zeile or "ERROR" in zeile:

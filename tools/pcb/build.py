@@ -100,7 +100,49 @@ def new_board(path):
     # gruenen LPI-Lack und beim Fertiger zu bestaetigen, bevor bestellt
     # wird -- sie steht deshalb im Bericht der Aufgabe, nicht nur hier.
     board.GetDesignSettings().m_SolderMaskMinWidth = mm(0.1)
+    # Mindestabstand auf 0,15 mm: die Padluft der Feinraster-Gehaeuse
+    # (VSSOP-8 im 0,5-mm-Raster: 0,35er-Pads -> 0,15 Luft) ist
+    # KONSTRUKTIONSBEDINGT kleiner als die 0,20 der Netzklassen. Die
+    # Netzklassen fordern weiterhin 0,20 zwischen Bahnen; hier faellt
+    # nur die harte Untergrenze der Platine auf das, was der Fertiger
+    # kann (JLCPCB: 0,127). Ohne beides -- Untergrenze UND die
+    # Pad-Ausnahme in feinraster_pads() -- meldet die DRC die vier
+    # Nachbarpad-Paare des VSSOP-8 als Verletzung.
+    board.GetDesignSettings().m_MinClearance = mm(0.15)
     return board
+
+
+def feinraster_pads(board):
+    """Pad-Ausnahmen fuer Gehaeuse, deren Raster enger ist als die Regel.
+
+    Zwei Faelle, beide 2026-09-02 an der DRC des Motormoduls gefunden:
+
+    * Padluft unter Netzklassen-Abstand: beim VSSOP-8 (0,5-mm-Raster)
+      liegen Nachbarpads 0,15 mm auseinander -- die DRC forderte 0,20
+      und meldete alle vier Paare. Die Ausnahme gilt NUR fuer diese
+      Pads (SetLocalClearance), nicht fuer die Platine.
+    * Maskenrand im Footprint: die TI-Vorlage des DRV8876 gibt jedem
+      Pad solder_mask_margin 0,102 mm mit. Bei 0,20 Padluft
+      ueberlappen sich die Maskenoeffnungen (0,20 - 2*0,102 < 0) --
+      dreizehn Masken-Bruecken zwischen fremden Netzen, die KEINE
+      Einstellung der Platine beheben kann, weil der Pad-Wert alles
+      uebersteuert. Der Rand wird auf 0 gesetzt (Oeffnung = Padform,
+      wie ueberall sonst auf der Platine).
+    """
+    n_luft, n_maske = 0, 0
+    for f in board.GetFootprints():
+        fein = "P0.5mm" in str(f.GetFPID().GetLibItemName())
+        for p in f.Pads():
+            if fein:
+                p.SetLocalClearance(mm(0.15))
+                n_luft += 1
+            rand = p.GetLocalSolderMaskMargin()
+            if rand is not None and rand != 0:
+                p.SetLocalSolderMaskMargin(0)
+                n_maske += 1
+    if n_luft or n_maske:
+        print("Feinraster-Ausnahmen: %d Pads Luft 0,15; %d Maskenraender "
+              "genullt" % (n_luft, n_maske))
 
 
 def bogenmitte(mittelpunkt, start, ende):
@@ -410,14 +452,65 @@ def pre_tracks(board, beschreibung):
         if code < 0:
             raise ValueError("PRE_TRACKS: Netz %r gibt es nicht" % netz)
         for a, b in zip(punkte, punkte[1:]):
+            # Nur 0/45/90 Grad, EXAKT. Ein Halsstueck des Motormoduls
+            # verfehlte die Pad-Mitte um 5 um -- der fast-gerade Draht
+            # liess freerouting 2.2.4 vor Durchgang 1 endlos haengen
+            # (Log endet nach "Job started"; achsparallel gemacht lief
+            # derselbe Stand in 38 s durch). Handkoordinaten gegen
+            # aufgeloeste ("PAD",...)-Punkte sind genau die Falle.
+            # Verglichen auf um gerundet: das ist die Aufloesung der
+            # DSN, also das, was freerouting wirklich sieht. Nanometer-
+            # Reste aus der Float-Arithmetik (10,54+1,27 ergibt
+            # 11,809999...) sind KEIN Schiefstand -- der erste, exakte
+            # Vergleich meldete genau so einen GND-Stummel, den
+            # freerouting nachweislich sauber verlegt hatte.
+            (ax, ay), (bx, by) = punkt(a), punkt(b)
+            dx = round((bx - ax) / 1000.0)
+            dy = round((by - ay) / 1000.0)
+            if dx and dy and abs(dx) != abs(dy):
+                raise ValueError(
+                    "PRE_TRACKS %s: Segment %s -> %s ist weder 0/90 noch "
+                    "45 Grad (dx=%d dy=%d um) -- freerouting haengt an "
+                    "schiefen Vorverdrahtungs-Draehten; Endpunkt exakt "
+                    "auf die Pad-Koordinate legen" % (netz, a, b, dx, dy))
             t = pcbnew.PCB_TRACK(board)
-            t.SetStart(pcbnew.VECTOR2I(*punkt(a)))
-            t.SetEnd(pcbnew.VECTOR2I(*punkt(b)))
+            t.SetStart(pcbnew.VECTOR2I(ax, ay))
+            t.SetEnd(pcbnew.VECTOR2I(bx, by))
             t.SetWidth(mm(breite))
             t.SetLayer(lagen[lage])
             t.SetNetCode(code)
             board.Add(t)
             n += 1
+    return n
+
+
+def pre_vias(board, beschreibung):
+    """Vorab gesetzte Vias aus der Beschreibung (PRE_VIAS).
+
+    Eintraege: (netzname, x, y). Gebraucht, sobald eine Vorverdrahtung
+    die Lage wechseln muss -- PRE_TRACKS kann nur Draehte legen.
+    Erster Fall (Motormodul, 2026-09-02): /SEL_OUT an U103-2 ist auf
+    F.Cu vollstaendig eingemauert (westlich die FLASH-Gassenbahn,
+    noerdlich/suedlich die Nachbarpads, oestlich der Gehaeusekoerper);
+    jeder denkbare F.Cu-Umweg kreuzt eine andere Vorverdrahtung oder
+    eine TSSOP-Padreihe. Zwei Vias und ein B.Cu-Stueck loesen das.
+
+    Abgedeckt wie die Naehvias (Verdreh-Kupferregel des Vertrags).
+    """
+    n = 0
+    for netz, x, y in getattr(beschreibung, "PRE_VIAS", ()):
+        code = board.GetNetcodeFromNetname(netz)
+        if code < 0:
+            raise ValueError("PRE_VIAS: Netz %r gibt es nicht" % netz)
+        v = pcbnew.PCB_VIA(board)
+        v.SetPosition(pcbnew.VECTOR2I(mm(x), mm(y)))
+        v.SetWidth(mm(fertigung.VIA_PAD))
+        v.SetDrill(mm(fertigung.VIA_DRILL))
+        v.SetNetCode(code)
+        v.SetFrontTentingMode(pcbnew.TENTING_MODE_TENTED)
+        v.SetBackTentingMode(pcbnew.TENTING_MODE_TENTED)
+        board.Add(v)
+        n += 1
     return n
 
 
@@ -854,6 +947,7 @@ def bauen(beschreibung, board_pfad, sch_pfad, kicad_dir=None,
     draw_outline(board, beschreibung)
     add_mounting_holes(board, beschreibung)
     placed, problems = place(board, comps, beschreibung, kicad_dir)
+    feinraster_pads(board)
     n, np_, ohne, n_bekannt = assign_nets(board, nets, ohne_pad)
     # Erst Netze zuweisen, dann die Pads im Ueberhang entfernen: sonst
     # meldet die Zuweisung sie als fehlend und die Netzliste sieht
@@ -869,6 +963,9 @@ def bauen(beschreibung, board_pfad, sch_pfad, kicad_dir=None,
     n_regel = rule_areas(board, beschreibung)
     n_stich = stitching_vias(board, beschreibung)
     n_vor = pre_tracks(board, beschreibung)
+    n_vorvia = pre_vias(board, beschreibung)
+    if n_vorvia:
+        print("%d Vorverdrahtungs-Vias gesetzt" % n_vorvia)
     add_zones(board, beschreibung)
     board.BuildListOfNets()
     board.BuildConnectivity()
