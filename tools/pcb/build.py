@@ -93,6 +93,13 @@ def new_board(path):
     """
     board = pcbnew.BOARD()
     board.SetFileName(path)
+    # Mindest-Maskensteg auf 0,10 mm: die KiCad-Vorgabe (0,25) ist bei
+    # 0,5-mm-Raster (VSSOP-8, Padluecke 0,20 mm) unerfuellbar -- die
+    # Maskenoeffnungen verschmelzen und die DRC meldet Bruecken
+    # zwischen fremden Netzen. 0,10 mm ist eine FERTIGUNGSANNAHME fuer
+    # gruenen LPI-Lack und beim Fertiger zu bestaetigen, bevor bestellt
+    # wird -- sie steht deshalb im Bericht der Aufgabe, nicht nur hier.
+    board.GetDesignSettings().m_SolderMaskMinWidth = mm(0.1)
     return board
 
 
@@ -353,6 +360,8 @@ def antenna_slot_keepout(board, beschreibung):
     z.SetDoNotAllowTracks(True)
     z.SetDoNotAllowVias(True)
     z.SetDoNotAllowZoneFills(True)
+    z.SetDoNotAllowPads(False)
+    z.SetDoNotAllowFootprints(False)
     ls = pcbnew.LSET()
     ls.addLayer(pcbnew.F_Cu)
     ls.addLayer(pcbnew.B_Cu)
@@ -378,20 +387,79 @@ def pre_tracks(board, beschreibung):
     """
     eintraege = getattr(beschreibung, "PRE_TRACKS", ())
     lagen = {"F.Cu": pcbnew.F_Cu, "B.Cu": pcbnew.B_Cu}
+    pads = {(f.GetReference(), p.GetNumber()): p.GetPosition()
+            for f in board.GetFootprints() for p in f.Pads()}
+
+    def punkt(q):
+        if isinstance(q, tuple) and len(q) == 3 and q[0] == "PAD":
+            # ("PAD", ref, nummer): aufgeloest aus der platzierten
+            # Platine -- die Beschreibung ist KiCad-frei und kennt die
+            # Pad-Lagen der Footprints nicht (gebraucht z.B. fuer die
+            # zusammengebundenen Eingaenge des VSSOP-8: benachbarte
+            # Pads desselben Netzes, die freerouting bei 0,5-mm-Raster
+            # nicht selbst verbinden kann).
+            pos = pads[(q[1], q[2])]
+            return pos.x, pos.y
+        return mm(q[0]), mm(q[1])
+
     n = 0
-    for netz, lage, punkte in eintraege:
+    for eintrag in eintraege:
+        netz, lage, punkte = eintrag[:3]
+        breite = eintrag[3] if len(eintrag) > 3 else fertigung.TRACK_SIGNAL
         code = board.GetNetcodeFromNetname(netz)
         if code < 0:
             raise ValueError("PRE_TRACKS: Netz %r gibt es nicht" % netz)
         for a, b in zip(punkte, punkte[1:]):
             t = pcbnew.PCB_TRACK(board)
-            t.SetStart(pcbnew.VECTOR2I(mm(a[0]), mm(a[1])))
-            t.SetEnd(pcbnew.VECTOR2I(mm(b[0]), mm(b[1])))
-            t.SetWidth(mm(fertigung.TRACK_SIGNAL))
+            t.SetStart(pcbnew.VECTOR2I(*punkt(a)))
+            t.SetEnd(pcbnew.VECTOR2I(*punkt(b)))
+            t.SetWidth(mm(breite))
             t.SetLayer(lagen[lage])
             t.SetNetCode(code)
             board.Add(t)
             n += 1
+    return n
+
+
+def rule_areas(board, beschreibung):
+    """Regelflaechen aus der Beschreibung (RULE_AREAS) auf die Platine.
+
+    Eintraege: (name, lagen, (x0, y0, x1, y1), verbote) mit lagen als
+    Tupel aus "F.Cu"/"B.Cu" und verbote als Menge aus "bahnen", "vias",
+    "guss".
+
+    Gebraucht fuer den Waermepfad des DRV8876 (Motormodul, Aufgabe 7):
+    unter dem Treiber muss die Masseflaeche auf der Rueckseite
+    DURCHGEHEND bleiben -- dort haengen die zwoelf Waermevias des
+    Footprints. Eine Regelflaeche, die Bahnen und fremde Vias verbietet,
+    den Guss aber erlaubt, sagt das dem Router (sie landet als keepout
+    in der DSN); die Footprint-eigenen Waermevias sind Pads und bleiben
+    von Regelflaechen unberuehrt.
+    """
+    lagen_map = {"F.Cu": pcbnew.F_Cu, "B.Cu": pcbnew.B_Cu}
+    n = 0
+    for name, lagen, (x0, y0, x1, y1), verbote in getattr(
+            beschreibung, "RULE_AREAS", ()):
+        z = pcbnew.ZONE(board)
+        z.SetIsRuleArea(True)
+        z.SetDoNotAllowTracks("bahnen" in verbote)
+        z.SetDoNotAllowVias("vias" in verbote)
+        z.SetDoNotAllowZoneFills("guss" in verbote)
+        # Pads und Footprints ausdruecklich erlauben: eine frische ZONE
+        # verbietet sie sonst mit, und die Waermevias des DRV8876 sind
+        # PTH-Pads seines eigenen Footprints -- die Flaeche, die sie
+        # schuetzen soll, hat sie in der ersten Fassung selbst gemeldet
+        # (12x "Items not allowed").
+        z.SetDoNotAllowPads(False)
+        z.SetDoNotAllowFootprints(False)
+        ls = pcbnew.LSET()
+        for l in lagen:
+            ls.addLayer(lagen_map[l])
+        z.SetLayerSet(ls)
+        z.SetOutline(_outline([(x0, y0), (x1, y0), (x1, y1), (x0, y1)]))
+        z.SetZoneName(name)
+        board.Add(z)
+        n += 1
     return n
 
 
@@ -798,6 +866,7 @@ def bauen(beschreibung, board_pfad, sch_pfad, kicad_dir=None,
     if getattr(beschreibung, "ANTENNA_SLOT", None) is not None:
         antenna_slot(board, beschreibung)
         antenna_slot_keepout(board, beschreibung)
+    n_regel = rule_areas(board, beschreibung)
     n_stich = stitching_vias(board, beschreibung)
     n_vor = pre_tracks(board, beschreibung)
     add_zones(board, beschreibung)
@@ -823,6 +892,8 @@ def bauen(beschreibung, board_pfad, sch_pfad, kicad_dir=None,
         print("%d GND-Vias zum Vernaehen der Masseflaechen gesetzt" % n_stich)
     if n_vor:
         print("%d Segmente Vorverdrahtung gelegt" % n_vor)
+    if n_regel:
+        print("%d Regelflaechen angelegt" % n_regel)
     if n_bekannt:
         print("%d bekannte Pins ohne Pad uebergangen" % n_bekannt)
     if ohne:
