@@ -217,7 +217,10 @@ footer .cols{display:flex;gap:40px;flex-wrap:wrap;justify-content:space-between}
       </div>
     </div>
     <div class="board">
-      <div class="im"><img src="assets/motor_iso.png" alt="Motor module render"></div>
+      <div class="im"><video autoplay loop muted playsinline style="max-width:100%;max-height:330px" aria-label="Motor module turntable render">
+        <source src="assets/motor_turntable.webm" type="video/webm">
+        <img src="assets/motor_iso.png" alt="Motor module render">
+      </video></div>
       <div class="tx">
         <h3>Motor module <span class="tag">routed · DRC clean</span></h3>
         <p>A DRV8876 H-bridge with its own STM32C011 co-processor.</p>
