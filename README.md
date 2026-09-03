@@ -57,6 +57,10 @@ and every board is measured against it before it may exist.
 | **Toolchain** (`tools/`) | Schematic generators, board builder, autorouter driver, ground healer, contract probes | working, evolving |
 
 <p align="center">
+  <img src="docs/assets/base_turntable.gif" alt="Base board turntable" width="520">
+</p>
+
+<p align="center">
   <img src="docs/assets/motor_top.png" alt="Motor module, top side" width="400">
   <img src="docs/assets/motor_bottom.png" alt="Motor module, bottom side" width="400">
 </p>
