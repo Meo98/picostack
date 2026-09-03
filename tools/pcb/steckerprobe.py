@@ -258,9 +258,21 @@ def verdrehtprobe(board, beschreibung):
     punkte = S.LANDEPUNKTE_VERDREHT()
     fails = []
 
-    def zu_nah(cx, cy, radius, was):
+    def zu_nah(cx, cy, radius, was, halbe=None):
+        # halbe = (halbbreite, halbhoehe) fuer rechteckiges Kupfer:
+        # die alte Kreisnaeherung (max-Dimension als Radius in ALLE
+        # Richtungen) meldete das 3,0 x 1,0 mm grosse Buchsenpad
+        # J103.4 mit 0,96 mm, obwohl die echte Suedkante 1,96 mm vom
+        # Landepunkt liegt -- Fehlalarm durch Grobheit, gemessen am
+        # gebauten Motormodul. Fuer runde Objekte (Vias) bleibt der
+        # Radius.
         for px, py in punkte:
-            d = math.hypot(cx - px, cy - py) - radius
+            if halbe is None:
+                d = math.hypot(cx - px, cy - py) - radius
+            else:
+                dx = max(abs(px - cx) - halbe[0], 0.0)
+                dy = max(abs(py - cy) - halbe[1], 0.0)
+                d = math.hypot(dx, dy)
             if d < S.LANDE_SPERRRADIUS - TOLERANZ:
                 fails.append(
                     "Verdreht: %s bei (%.2f|%.2f) nur %.2f mm Kupferkante "
@@ -275,9 +287,11 @@ def verdrehtprobe(board, beschreibung):
                         and pad.GetAttribute() == pcbnew.PAD_ATTRIB_SMD))
             if not oben or not pad.GetNumber():
                 continue
-            r = max(pad.GetSize().x, pad.GetSize().y) / 2e6
-            zu_nah(pad.GetPosition().x / 1e6, pad.GetPosition().y / 1e6, r,
-                   "Pad %s.%s" % (fp.GetReference(), pad.GetNumber()))
+            bb = pad.GetBoundingBox()
+            zu_nah(pad.GetPosition().x / 1e6, pad.GetPosition().y / 1e6,
+                   None,
+                   "Pad %s.%s" % (fp.GetReference(), pad.GetNumber()),
+                   halbe=(bb.GetWidth() / 2e6, bb.GetHeight() / 2e6))
 
     for t in board.Tracks():
         if t.Type() != pcbnew.PCB_VIA_T:
@@ -323,7 +337,16 @@ def pruefen(beschreibung, board_pfad):
             soll_raster = S.PAD_LAGEN(fp_name, pin1, drehung)
             soll = mitte(list(soll_raster.values()))
             ist = mitte(list(pads.values()))
-            dx, dy = ist[0] - soll[0], ist[1] - soll[1]
+            # Asymmetrische Loetpad-Ausleger herausrechnen (Herleitung
+            # bei stack_spec.PAD_SCHWERPUNKT_VERSATZ).
+            vx, vy = S.PAD_SCHWERPUNKT_VERSATZ.get(fp_name, (0.0, 0.0))
+            if drehung % 360 == 90:
+                vx, vy = -vy, vx
+            elif drehung % 360 == 180:
+                vx, vy = -vx, -vy
+            elif drehung % 360 == 270:
+                vx, vy = vy, -vx
+            dx, dy = ist[0] - soll[0] - vx, ist[1] - soll[1] - vy
             if abs(dx) > TOLERANZ or abs(dy) > TOLERANZ:
                 fails.append(
                     "%s (%s): Pad-Mitte bei (%.4f|%.4f), Vertrag verlangt "

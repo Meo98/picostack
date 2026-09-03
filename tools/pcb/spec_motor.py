@@ -361,6 +361,12 @@ PRE_TRACKS = _gnd_stummel() + (
     ("/VCP", "F.Cu", (("PAD", "U1", "12"),
                       (43.90, 25.075), (44.475, 24.50), (49.00, 24.50),
                       ("PAD", "C9", "2"))),
+    # Masse-Ausleitung fuer U100-5 (MCU-GND): sein Zonen-Kragen unterm
+    # TSSOP ist vom Escape-Gewimmel eingeschlossen, Via-in-Pad geht
+    # bei 0,4 mm Padbreite nicht (das 0,6er-Via raegte in die
+    # Nachbarn). Der Pad liegt aber NOERDLICH des NRST-Wand-Anfangs
+    # (y20,325): kurzer West-Exit, eigenes Via.
+    ("GND", "F.Cu", (("PAD", "U100", "5"), (13.90, 19.675))),
     ("/NRST", "F.Cu", (("PAD", "U102", "3"), (14.50, 26.00)), 0.20),
     ("/NRST", "F.Cu", ((14.50, 26.00), (14.50, 20.325),
                        ("PAD", "U100", "6"))),
@@ -373,19 +379,12 @@ PRE_TRACKS = _gnd_stummel() + (
     ("3V3", "B.Cu", ((18.68, 24.10), (23.35, 24.10), (23.90, 24.65),
                      (23.90, 24.95))),
     ("3V3", "F.Cu", ((23.90, 24.95), ("PAD", "U103", "5"))),
-    # Anbindung des NAND-Abblock-C16 an die 3V3-Schiene: ohne sie
-    # strandete C16-1 im verstopften Nest. Als EIGENER Zug von Pad zu
-    # Pad (C16-1 -> R15-1, beide 3V3), nicht als T-Abzweig einer
-    # vorhandenen Bahn: zwei Drahtzuege, die sich nur in einem Punkt
-    # beruehren, sind der dritte gefundene freerouting-Haenger
-    # (Import-Endlosschleife wie beim Schiefstand und beim
-    # Grenzwert-Abstand). Pads als Treffpunkte sind unkritisch.
-    # Der Knick vor R15-1 liegt SUEDLICH der Pad-Kante (20,85): ein
-    # Drahtknick im Pad-Kupfer abseits des Zentrums haengt freerouting
-    # auf (dieselbe Klasse wie beim /+24V-Knick vor C9-1).
-    ("3V3", "F.Cu", (("PAD", "C16", "1"),
-                     (24.5425, 21.30), (28.90, 21.30), (29.25, 20.95),
-                     ("PAD", "R15", "1"))),
+    # KEIN vorverlegter C16-R15-Zug mehr: er stammte aus der Zeit der
+    # 3V3-Querwand (C16-1 strandete damals im verstopften Nest). Die
+    # Wand liegt laengst auf der Rueckseite -- und die Horizontale des
+    # Zuges (y=21,3) liess der U100-13-Ausfahrt (/IPROPI, Zeile
+    # y=21,625) nur 0,075 mm: /IPROPI blieb in einem Drittel der
+    # Laeufe offen. Ohne den Zug findet der Router beides.
     # FLASH in der WESTSPUR der Gasse (x=19,68, Luft 0,25 zu den
     # U102-Pads dank Feinraster-Ausnahme): die Ostspur (x=20,35)
     # gehoert der /SEL_OUT-Abfahrt von U103-2 -- mit FLASH auf x=20,3
@@ -440,9 +439,13 @@ PRE_TRACKS = _gnd_stummel() + (
     # Gasse versperrt. Rueckseite: noerdlich der Waermepfad-
     # Regelflaeche (y<21) nach Osten, oestlich von ihr (x>44,8) nach
     # Sueden, Via mitten auf die +24V-Fettbahn (y25,4; gleiches Netz).
-    ("/+24V", "F.Cu", (("PAD", "C11", "2"), (39.50, 19.88))),
+    # In Leistungsbreite, obwohl nur der Abblock-C dranhaengt:
+    # pcb_checks prueft Unterbreite je NETZ und kann den stromlosen
+    # Zweig nicht vom Lastpfad unterscheiden -- 1,0 mm passt hier
+    # ohnehin (nachgemessen: Regelflaeche 0,62, C10-Rueckseite frei).
+    ("/+24V", "F.Cu", (("PAD", "C11", "2"), (39.50, 19.88)), _LEISTUNG),
     ("/+24V", "B.Cu", ((39.50, 19.88), (45.20, 19.88), (46.50, 21.18),
-                       (46.50, 25.40))),
+                       (46.50, 25.40)), _LEISTUNG),
 )
 
 # Lagenwechsel der /SEL_OUT-Vorverdrahtung (s. Kommentar dort).
@@ -459,6 +462,13 @@ PRE_VIAS = (
     # Netz) -- das ist der Anschluss, kein Versehen.
     ("/+24V", 39.50, 19.88),
     ("/+24V", 46.50, 25.40),
+    # Via IM Massepad von R5 (0805 ist breit genug): sein F.Cu-Kragen
+    # ist ringsum von Bahnen eingeschlossen, und eine Quer-Bindung zu
+    # R20-2 kostete den Router in mehreren Laeufen 3-5 andere
+    # Signale. Via-in-Pad ist bei Handloetung unbedenklich.
+    ("GND", 22.55, 32.15),
+    # Gegenstueck der U100-5-Ausleitung (s. PRE_TRACKS).
+    ("GND", 13.90, 19.675),
 )
 
 # --- Masseflaechen vernaehen -----------------------------------------
@@ -520,6 +530,12 @@ STITCH_EXTRA = (
     (21.50, 42.50), (32.25, 38.75), (28.113, 38.15), (15.50, 34.00),
     (24.00, 34.10), (7.00, 29.50), (19.25, 30.75), (26.00, 25.50),
     (15.25, 27.50), (18.75, 20.75), (16.75, 7.50), (18.00, 6.50),
+    # Zweite Runde (Union-Find ueber Fuellstuecke/Vias/Pads/Bahnen am
+    # besten Wuerfel-Stand): fuenf Cluster hingen noch in der Luft --
+    # die B.Cu-Insel hinter dem U3-Via, der U6/U7-Massestreifen, das
+    # Westband auf beiden Lagen und der R20-Streifen.
+    (27.20, 40.90), (34.80, 36.55), (12.50, 26.50), (11.00, 16.50),
+    (27.00, 30.60),
 )
 
 STITCH_VIAS = _naehte() + STITCH_EXTRA

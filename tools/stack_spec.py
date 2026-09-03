@@ -631,9 +631,27 @@ FOOTPRINT_HOF = {
     "Connector_PinHeader_2.54mm:PinHeader_2x02_P2.54mm_Vertical_SMD":
         (-4.60, -1.77, 7.14, 4.31),      # 11,74 x 6,08 mm
     "Connector_PinSocket_2.54mm:PinSocket_2x02_P2.54mm_Vertical_SMD":
-        (-3.28, -1.78, 5.82, 4.32),      # 9,10 x 6,10 mm
+        (-3.28, -1.78, 5.77, 4.32),      # 9,05 x 6,10 mm
+        # Rechts 5,77 statt 5,82: an der gebauten Platine nachgemessen
+        # (steckerprobe meldete am Motormodul 0,05 mm Hof-Abweichung;
+        # der reale KiCad-Hof endet strichbereinigt bei +5,77).
     "Module:RaspberryPi_Pico_Common_THT":
         (-2.65, -3.17, 20.43, 50.68),    # 23,08 x 53,85 mm
+}
+
+
+# Loetpad-Schwerpunkt relativ zum Kontaktfeld-Schwerpunkt, je
+# Footprint. Die SMD-Buchse 2x02 traegt ASYMMETRISCHE Ausleger (die
+# Loetpads ragen links 1,3 und rechts 1,2 mm ueber die Kontakte
+# hinaus) -- ihr Pad-Schwerpunkt liegt deshalb 0,05 mm westlich des
+# Kontaktrasters, bei exakt vertragskonformer Lage der KONTAKTE.
+# steckerprobe.pruefen() rechnet diesen Versatz beim
+# Schwerpunktvergleich heraus (gefunden 2026-09-03 am Motormodul:
+# die Probe meldete 0,05 mm Versatz, die Kontaktprobe war gruen).
+# In FOOTPRINT-Koordinaten (Drehung 0); die Probe dreht mit.
+PAD_SCHWERPUNKT_VERSATZ = {
+    "Connector_PinSocket_2.54mm:PinSocket_2x02_P2.54mm_Vertical_SMD":
+        (-0.05, 0.0),
 }
 
 
