@@ -89,7 +89,12 @@ def _subunits(block, name):
 class Schaltplan:
     """Ein KiCad-`.kicad_sch`-Blatt im Aufbau."""
 
-    def __init__(self, projekt, titel, datum="", rev="A", firma=""):
+    def __init__(self, projekt, titel, datum="", rev="A", firma="",
+                 papier="A3"):
+        # papier: Blattformat. Das Motormodul misst 516 x 278 mm
+        # Inhalt und lief auf A3 rechts und links ueber den Rand --
+        # gesehen erst beim SVG-Export fuer die Veroeffentlichung.
+        self.papier = papier
         self.projekt = projekt
         self.titel = titel
         self.datum = datum
@@ -302,7 +307,7 @@ class Schaltplan:
         o = []
         a = o.append
         a('(kicad_sch\n\t(version 20260306)\n\t(generator "eeschema")\n\t(generator_version "10.0")')
-        a('\t(uuid "%s")\n\t(paper "A3")' % self.sheet_uuid)
+        a('\t(uuid "%s")\n\t(paper "%s")' % (self.sheet_uuid, self.papier))
         a('\t(title_block\n\t\t(title "%s")\n\t\t(date "%s")\n\t\t(rev "%s")\n'
           '\t\t(company "%s")\n\t)' % (self.titel, self.datum, self.rev, self.firma))
         a("\t(lib_symbols")

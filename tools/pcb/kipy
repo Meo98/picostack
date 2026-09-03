@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# kipy -- run Python with KiCad's pcbnew bindings.
+#
+#   tools/pcb/kipy script.py board.kicad_pcb
+#   tools/pcb/kipy -c "import pcbnew; print(pcbnew.GetBuildVersion())"
+#
+# The system python3 usually cannot import pcbnew: the module is built
+# against the exact Python that ships with your KiCad. This launcher
+# finds a working pair.
+#
+# Strategy: try the system python3 first (works on most Linux distros
+# where KiCad installs into the system site-packages). On NixOS the
+# bindings live inside the kicad-base store path and are linked against
+# a private Python -- derive both from the installed KiCad version so
+# the pair survives every rebuild.
+set -euo pipefail
+
+HERE="$(dirname "$(readlink -f "$0")")"
+
+if python3 -c "import pcbnew" 2>/dev/null; then
+  export PYTHONPATH="$HERE${PYTHONPATH:+:$PYTHONPATH}"
+  exec python3 "$@"
+fi
+
+V="$(kicad-cli version)"
+SP="$(ls -d /nix/store/*kicad-base-"$V"/lib/python3*/site-packages 2>/dev/null | head -1)"
+if [ -z "$SP" ]; then
+  echo "kipy: no pcbnew bindings found for KiCad $V" >&2
+  echo "kipy: install KiCad with Python support, or adjust this launcher" >&2
+  exit 127
+fi
+LIB="$(ldd "$SP/_pcbnew.so" | awk '/libpython/{print $3}')"
+PY="$(dirname "$(dirname "$LIB")")/bin/python3"
+
+export PYTHONPATH="$SP:$HERE${PYTHONPATH:+:$PYTHONPATH}"
+exec "$PY" "$@"

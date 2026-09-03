@@ -1512,8 +1512,11 @@ def erzeugen(ziel=None):
     """Baut den Schaltplan und schreibt ihn nach `ziel` (Vorgabe: ZIEL)."""
     import gen
 
-    sch = gen.Schaltplan(PROJEKT, TITEL, DATUM)
-    bauen(sch, 0.0, 0.0)
+    # A2 quer und ein Ursprung, der den Inhalt (516 x 278 mm, von
+    # x=-20/y=-70 aus gebaut) mittig aufs Blatt legt: auf A3 lief der
+    # Plan an drei Seiten ueber den Rand. Raster 1,27 mm einhalten.
+    sch = gen.Schaltplan(PROJEKT, TITEL, DATUM, papier="A2")
+    bauen(sch, 60.96, 139.7)
     return sch.schreiben(ZIEL if ziel is None else ziel)
 
 

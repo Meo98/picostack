@@ -413,7 +413,10 @@ def erzeugen(ziel=None):
     import gen
 
     sch = gen.Schaltplan(PROJEKT, TITEL, DATUM)
-    bauen(sch, 0.0, 0.0)
+    # Inhalt 343 x 160 mm ab x=-23/y=-56: mittig auf A3 statt an der
+    # Blattecke angeschlagen (dort ragten Pico und Einspeisung ueber
+    # den Rand). Raster 1,27 mm einhalten.
+    bauen(sch, 60.96, 110.49)
     return sch.schreiben(ZIEL if ziel is None else ziel)
 
 
