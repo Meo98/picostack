@@ -58,7 +58,47 @@ def _kenn(typcode):
 _STECKER_HAND = ("von Hand - im gesteckten Verbund ausgerichtet, damit "
                  "die Stapelkontakte ohne Zwang fluchten (MONTAGE_REGEL)")
 
+def _dimmer(kanaele, typcode):
+    """BOM/Unbestueckt-Definition einer Dimmer-Variante."""
+    bom = [
+        ("100nF 50V X7R 0805",                ["C100"],      "", False),
+        ("1uF 25V X5R 0805",                  ["C101"],      "", False),
+        ("100kOhm 0805 1%",
+         ["R102"] + ["RP%d" % n for n in range(1, kanaele + 1)], "", False),
+        ("100Ohm 0805 1%",
+         ["RG%d" % n for n in range(1, kanaele + 1)],            "", False),
+        ("10kOhm 0805 1%",
+         ["R11", "R12", "R104", "R105"],                          "", False),
+        ("220uF 35V Elko radial D8 RM3.5",    ["C12"],       "", False),
+        ("SMCJ30A TVS unidirektional DO-214AB", ["D10"],     "", False),
+        ("SS36 Schottky 60V 3A DO-214AB (SMC)",
+         ["D%d" % n for n in range(1, kanaele + 1)],              "", False),
+        ("IRFR5305 P-MOSFET -55V TO-252",     ["Q10"],       "", False),
+        ("NCE6050KA N-MOSFET 60V TO-252",
+         ["Q%d" % n for n in range(1, kanaele + 1)],
+         LCSC_NMOS_TO252, True),
+        ("PT 1,5/2-3,5-H Klemme 3.5mm 2P 13.5A",
+         ["J%d" % (4 + n) for n in range(1, kanaele + 1)],        "", False),
+        ("SN74LVC1G08DCKR AND SC-70-5",       ["U103"],      "", False),
+        ("SN74LVC1G175DCKR D-Flipflop SC-70-6", ["U101"],    "", False),
+        ("SN74LVC2G00DCUR Dual-NAND VSSOP-8", ["U102"],      "", False),
+        ("STM32C011F6P6 MCU TSSOP-20",        ["U100"],      "", False),
+    ] + _kenn(typcode)
+    unbestueckt = {
+        "J100": "Stapelstecker 2x20 " + _STECKER_HAND,
+        "J101": "Kettenstecker Buchse (SMD) " + _STECKER_HAND,
+        "J102": "Kettenstecker Stift (SMD) " + _STECKER_HAND,
+        "J103": "Leistungsstecker Buchse (SMD) " + _STECKER_HAND,
+        "J104": "Leistungsstecker Stift (SMD) " + _STECKER_HAND,
+    }
+    return {"pcb": "Dimmer%d" % kanaele, "bom": bom,
+            "unbestueckt": unbestueckt}
+
+
 BOARDS = {
+    "dimmer1": None,   # unten gefuellt (braucht _kenn/_STECKER_HAND)
+    "dimmer3": None,
+    "dimmer4": None,
     "sockel": {
         "pcb": "Sockelplatine",
         "bom": [
@@ -119,6 +159,11 @@ BOARDS = {
         },
     },
 }
+
+
+BOARDS["dimmer1"] = _dimmer(1, 0x10)
+BOARDS["dimmer3"] = _dimmer(3, 0x11)
+BOARDS["dimmer4"] = _dimmer(4, 0x12)
 
 
 def erzeugen(board):

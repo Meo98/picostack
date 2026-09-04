@@ -63,6 +63,11 @@ GENERATOREN = (
     (vertrag_doku, "python3 tools/vertrag_doku.py"),
 )
 
+# Der Dimmer-Generator schreibt DREI Dateien (eine je Vertragsvariante)
+# -- er laeuft unten in einer eigenen Schleife ueber dimmermodul._ZIELE,
+# mit demselben UUID-normalisierten Vergleich.
+import dimmermodul  # noqa: E402
+
 _UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-"
                    r"[0-9a-f]{4}-[0-9a-f]{12}")
 
@@ -114,5 +119,18 @@ if fails:
     for f in fails:
         print("  -", f)
     raise SystemExit(1)
+for kanaele, ziel in sorted(dimmermodul._ZIELE.items()):
+    if not os.path.exists(ziel):
+        fails.append("dimmermodul: %s fehlt" % ziel)
+        continue
+    with tempfile.TemporaryDirectory() as tmp:
+        frisch = dimmermodul.erzeugen(
+            os.path.join(tmp, os.path.basename(ziel)), kanaele=kanaele)
+        neu = ohne_uuids(open(frisch, encoding="utf-8").read())
+    alt = ohne_uuids(open(ziel, encoding="utf-8").read())
+    if neu != alt:
+        fails.append("Dimmer%d: %s veraltet -- behebe mit: "
+                     "python3 tools/sch/dimmermodul.py" % (kanaele, ziel))
+
 print("%d erzeugte Dateien auf dem Stand ihrer Generatoren -- "
-      "alle Pruefungen bestanden" % len(GENERATOREN))
+      "alle Pruefungen bestanden" % (len(GENERATOREN) + len(dimmermodul._ZIELE)))
