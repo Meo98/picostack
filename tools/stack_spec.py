@@ -1177,3 +1177,20 @@ ID_WIDERSTAENDE = (
 def ID_ANTEIL(r):
     """Spannungsanteil am ADC fuer einen Kennwiderstand."""
     return r / (r + ID_OBEN)
+
+
+def TYPCODE_WIDERSTAENDE(typcode):
+    """(R_ID0, R_ID1) in Ohm fuer einen Modultyp-Code.
+
+    Kodierung, hiermit festgelegt: das NIEDRIGE Nibble waehlt die
+    Stufe des ID0-Kennwiderstands (R100), das HOHE Nibble die des
+    ID1-Kennwiderstands (R101). Stufe 0 ist 0 Ohm (Bruecke) --
+    deshalb ist Typ 0x00 unzulaessig: er ist von einer leeren
+    Platine nicht zu unterscheiden (beide Teiler lesen 0).
+
+    Beispiel Motor (0x01): R100 = 680 Ohm, R101 = Bruecke.
+    """
+    if typcode not in MODULTYPEN:
+        raise ValueError("unbekannter Modultyp 0x%02x" % typcode)
+    lo, hi = typcode & 0x0F, (typcode >> 4) & 0x0F
+    return ID_WIDERSTAENDE[lo], ID_WIDERSTAENDE[hi]

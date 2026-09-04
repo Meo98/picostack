@@ -1,0 +1,4 @@
+J2     Stapelstecker 2x20 von Hand - im gesteckten Verbund ausgerichtet, damit die Stapelkontakte ohne Zwang fluchten (MONTAGE_REGEL)
+J3     Kettenstecker (SMD-Stift) von Hand - im gesteckten Verbund ausgerichtet, damit die Stapelkontakte ohne Zwang fluchten (MONTAGE_REGEL)
+J4     Leistungsstecker (SMD-Stift) von Hand - im gesteckten Verbund ausgerichtet, damit die Stapelkontakte ohne Zwang fluchten (MONTAGE_REGEL)
+U1     Pico-Buchsenleisten von Hand - 2 Streifen, mit gestecktem Pico ausgerichtet

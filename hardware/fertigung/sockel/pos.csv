@@ -1,0 +1,17 @@
+Ref,Val,Package,PosX,PosY,Rot,Side
+"J3","Kettenstecker, Stift SMD (treibt SEL)","PinHeader_1x02_P2.54mm_Vertical_SMD_Pin1Left",12.500000,-4.020000,180.000000,bottom
+"J4","Leistungsstecker, Stift SMD (24V in den Stapel)","PinHeader_2x02_P2.54mm_Vertical_SMD",55.970000,-43.270000,180.000000,bottom
+"C1","100n","C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",20.380000,-45.980000,0.000000,top
+"C2","22u","C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",26.880000,-45.980000,0.000000,top
+"C3","220u","CP_Radial_D8.0mm_P3.50mm",36.502479,-52.751238,0.000000,top
+"D1","SMCJ30A","D_SMC_Handsoldering",36.900000,-42.750000,0.000000,top
+"H1","M3","",4.000000,-4.000000,0.000000,top
+"H2","M3","",4.000000,-56.000000,0.000000,top
+"H3","M3","",60.000000,-4.000000,0.000000,top
+"H4","M3","",60.000000,-56.000000,0.000000,top
+"J1","24V Eingang","TerminalBlock_Phoenix_MKDS-3-2-5.08_1x02_P5.08mm_Horizontal",48.040000,-53.600000,0.000000,top
+"J2","Stapelstecker 2x20","PinHeader_2x20_P2.54mm_Vertical",8.000000,-13.000000,90.000000,top
+"R1","4.7k","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",19.350000,-3.550000,0.000000,top
+"R2","4.7k","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",19.350000,-6.350000,0.000000,top
+"U1","Raspberry Pi Pico","RaspberryPi_Pico_Common_THT",3.800000,-36.000000,90.000000,top
+"U2","K7805-2000R3","Converter_DCDC_RECOM_R-78B-2.0_THT",21.460000,-50.750000,0.000000,top

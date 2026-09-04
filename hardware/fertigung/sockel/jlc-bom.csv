@@ -1,0 +1,8 @@
+Comment,Designator,Footprint,LCSC Part #
+100nF 50V X7R 0805,C1,C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,
+22uF 25V X5R 0805,C2,C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,
+220uF 35V Elko radial D8 RM3.5,C3,CP_Radial_D8.0mm_P3.50mm,
+SMCJ30A TVS unidirektional DO-214AB,D1,D_SMC_Handsoldering,
+DB128L-5.08-2P-GN-S Klemme 16A 300V,J1,TerminalBlock_Phoenix_MKDS-3-2-5.08_1x02_P5.08mm_Horizontal,C395868
+4.7kOhm 0805 1%,"R1,R2",R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,
+K7805-2000R3 DC/DC 5V 2A SIP-3,U2,Converter_DCDC_RECOM_R-78B-2.0_THT,C2931187

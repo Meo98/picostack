@@ -447,6 +447,28 @@ check("Firmware-Auflagen bleiben Firmware",
       any("Bestueckungsdruck" in a for a in S.AUFLAGEN), False)
 
 
+# --- Typcode -> Kennwiderstaende -------------------------------------
+# Die Nibble-Kodierung ist eine Zusage an jede Modul-Stueckliste.
+# Rot-Nachweis: der ungueltige Code 0x00 (nicht von einer leeren
+# Platine unterscheidbar) MUSS abgewiesen werden -- prueft man ihn
+# nicht, bestueckt irgendwann jemand ein "Typ-0"-Modul.
+check("Motor 0x01: ID0=680, ID1=Bruecke",
+      S.TYPCODE_WIDERSTAENDE(0x01), (680.0, 0.0))
+check("Dimmer3 0x11: beide 680",
+      S.TYPCODE_WIDERSTAENDE(0x11), (680.0, 680.0))
+check("Dimmer4 0x12: ID0=1500, ID1=680",
+      S.TYPCODE_WIDERSTAENDE(0x12), (1500.0, 680.0))
+try:
+    S.TYPCODE_WIDERSTAENDE(0x00)
+    fails.append("Typcode 0x00 wurde NICHT abgewiesen")
+except ValueError:
+    pass
+try:
+    S.TYPCODE_WIDERSTAENDE(0x99)
+    fails.append("unbekannter Typcode 0x99 wurde NICHT abgewiesen")
+except ValueError:
+    pass
+
 if fails:
     print("FEHLGESCHLAGEN:")
     for f in fails:
