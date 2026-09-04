@@ -198,8 +198,9 @@ footer .cols{display:flex;gap:40px;flex-wrap:wrap;justify-content:space-between}
 
 <section id="boards" class="alt"><div class="wrap">
   <h2>The boards so far</h2>
-  <p class="sub">Two boards exist today; the architecture is designed for many
-  more. Both are routed and DRC-clean, heading for their first fab run.</p>
+  <p class="sub">Five boards exist today: the base, a motor module and a
+  family of three LED dimmer modules generated from one description. All are
+  routed and DRC-clean, heading for their first fab run.</p>
   <div class="boards">
     <div class="board">
       <div class="im"><video autoplay loop muted playsinline style="max-width:100%;max-height:330px" aria-label="Base board turntable render">
@@ -228,6 +229,21 @@ footer .cols{display:flex;gap:40px;flex-wrap:wrap;justify-content:space-between}
           <li>up to 2.5 A motor current, current-chopping limit</li>
           <li>dual-channel opto-isolated emergency-stop loop (closed-circuit)</li>
           <li>flashable through the stack via the token chain</li>
+        </ul>
+      </div>
+    </div>
+    <div class="board" style="grid-column:1/-1">
+      <div class="im"><img src="assets/dimmer4_iso.png" alt="Four-channel LED dimmer module render" style="max-height:300px"></div>
+      <div class="tx">
+        <h3>LED dimmer family <span class="tag">1 / 3 / 4 channels · DRC clean</span></h3>
+        <p>Three contract variants (module types 0x10–0x12) generated from a
+        single parametric description — one schematic generator, one board
+        spec, three boards.</p>
+        <ul>
+          <li>low-side N-MOSFET per channel (NCE6050KA), PWM from the module MCU</li>
+          <li>flyback diode and 3.5 mm screw terminal per channel, ~3 A each</li>
+          <li>same reverse-polarity protection and MCU nest as the motor module —
+              the placement is inherited verbatim, pre-routes included</li>
         </ul>
       </div>
     </div>

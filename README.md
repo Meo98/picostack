@@ -54,6 +54,7 @@ and every board is measured against it before it may exist.
 | **Contract** (`tools/stack_spec.py`) | Connector positions, pin roles, keep-outs, landing-point copper rules, mating rules — the single source of truth for anyone building a module | stable |
 | **Base board** (`hardware/kicad/sockel/`) | Pico socket, 24 V input, 5 V rail, token chain driver | routed, DRC-clean |
 | **Motor module** (`hardware/kicad/motor/`) | DRV8876 H-bridge, STM32C011 co-processor, opto-isolated dual-channel e-stop loop | routed, DRC-clean |
+| **Dimmer family** (`hardware/kicad/dimmer{1,3,4}/`) | 1/3/4-channel low-side LED dimmers from one parametric description | routed, DRC-clean |
 | **Toolchain** (`tools/`) | Schematic generators, board builder, autorouter driver, ground healer, contract probes | working, evolving |
 
 <p align="center">
@@ -62,7 +63,7 @@ and every board is measured against it before it may exist.
 
 <p align="center">
   <img src="docs/assets/motor_top.png" alt="Motor module, top side" width="400">
-  <img src="docs/assets/motor_bottom.png" alt="Motor module, bottom side" width="400">
+  <img src="docs/assets/dimmer4_iso.png" alt="Four-channel LED dimmer module" width="400">
 </p>
 
 ## How a board gets built
