@@ -33,6 +33,29 @@ LCSC_KLEMME_508_2P = "C395868"    # DB128L-5.08-2P, passt aufs MKDS-3/2-Bild
 LCSC_K7805 = "C2931187"           # K7805-2000R3, SIP-3
 LCSC_NMOS_TO252 = "C96013"        # NCE6050KA, 60 V N-MOSFET, TO-252
 
+# Gepruefte Nummern aus hardware/bauteile.md / bauteile-1b.md (dort
+# jeweils mit LCSC-Produktseite belegt):
+LCSC_MCU = "C5456198"             # STM32C011F6P6, TSSOP-20
+LCSC_1G175 = "C202238"            # SN74LVC1G175DCKR, SC-70-6
+LCSC_2G00 = "C206109"             # SN74LVC2G00DCUR, VSSOP-8
+LCSC_1G08 = "C7832"               # SN74LVC1G08DCKR, SC-70-5
+LCSC_1G06 = "C7828"               # SN74LVC1G06DCKR, SC-70-5, Open-Drain
+LCSC_PMOS_TO252 = "C2624"         # IRFR5305PbF, P-Kanal, D-Pak
+LCSC_PC817 = "C97308"             # PC817X1CSP9F, SMD-Gullwing
+LCSC_R3K3_1206 = "C26032"         # 1206W4F3301T5E, 3,3 kOhm 250 mW
+LCSC_R10K_0805 = "C17414"         # 0805W8F1002T5E, 10 kOhm
+LCSC_SMCJ30A = "C340696"          # SMCJ30A, DO-214AB (sockelplatine.py)
+
+# Am 2026-09-04 fuer die Dimmer-Bestellung an der jeweiligen
+# LCSC-Produktseite gesichtet:
+LCSC_R100R_0805 = "C17408"        # 0805W8F1000T5E, 100 Ohm 1% (8,2 Mio Lager)
+LCSC_SS36C = "C16237"             # MDD SS36C -- Achtung: das MDD "SS36"
+                                  # (C16015) ist SMA! Der C-Suffix ist SMC
+LCSC_ELKO_220U35 = "C45078"       # Chengx GR227M..., 220u 35V D8x12 RM3.5
+LCSC_KLEMME_35_2P = "C474892"     # KF350-3.5-2P, 3,5mm 2P 10A 300V --
+                                  # THT-Klon zum Phoenix-PT-Footprint,
+                                  # Sitz im JLC-Preview gegenpruefen
+
 
 def _kenn(typcode):
     """BOM-Zeilen fuer die Kennwiderstaende eines Modultyps."""
@@ -66,23 +89,30 @@ def _dimmer(kanaele, typcode):
         ("100kOhm 0805 1%",
          ["R102"] + ["RP%d" % n for n in range(1, kanaele + 1)], "", False),
         ("100Ohm 0805 1%",
-         ["RG%d" % n for n in range(1, kanaele + 1)],            "", False),
+         ["RG%d" % n for n in range(1, kanaele + 1)],
+         LCSC_R100R_0805, True),
         ("10kOhm 0805 1%",
-         ["R11", "R12", "R104", "R105"],                          "", False),
-        ("220uF 35V Elko radial D8 RM3.5",    ["C12"],       "", False),
-        ("SMCJ30A TVS unidirektional DO-214AB", ["D10"],     "", False),
-        ("SS36 Schottky 60V 3A DO-214AB (SMC)",
-         ["D%d" % n for n in range(1, kanaele + 1)],              "", False),
-        ("IRFR5305 P-MOSFET -55V TO-252",     ["Q10"],       "", False),
+         ["R11", "R12", "R104", "R105"],       LCSC_R10K_0805, True),
+        ("220uF 35V Elko radial D8 RM3.5",    ["C12"],
+         LCSC_ELKO_220U35, True),
+        ("SMCJ30A TVS unidirektional DO-214AB", ["D10"],
+         LCSC_SMCJ30A, True),
+        ("SS36C Schottky 60V 3A DO-214AB (SMC)",
+         ["D%d" % n for n in range(1, kanaele + 1)],
+         LCSC_SS36C, True),
+        ("IRFR5305 P-MOSFET -55V TO-252",     ["Q10"],
+         LCSC_PMOS_TO252, True),
         ("NCE6050KA N-MOSFET 60V TO-252",
          ["Q%d" % n for n in range(1, kanaele + 1)],
          LCSC_NMOS_TO252, True),
-        ("PT 1,5/2-3,5-H Klemme 3.5mm 2P 13.5A",
-         ["J%d" % (4 + n) for n in range(1, kanaele + 1)],        "", False),
-        ("SN74LVC1G08DCKR AND SC-70-5",       ["U103"],      "", False),
-        ("SN74LVC1G175DCKR D-Flipflop SC-70-6", ["U101"],    "", False),
-        ("SN74LVC2G00DCUR Dual-NAND VSSOP-8", ["U102"],      "", False),
-        ("STM32C011F6P6 MCU TSSOP-20",        ["U100"],      "", False),
+        ("KF350-3.5-2P Klemme 3.5mm 2P 10A",
+         ["J%d" % (4 + n) for n in range(1, kanaele + 1)],
+         LCSC_KLEMME_35_2P, True),
+        ("SN74LVC1G08DCKR AND SC-70-5",       ["U103"], LCSC_1G08, True),
+        ("SN74LVC1G175DCKR D-Flipflop SC-70-6", ["U101"],
+         LCSC_1G175, True),
+        ("SN74LVC2G00DCUR Dual-NAND VSSOP-8", ["U102"], LCSC_2G00, True),
+        ("STM32C011F6P6 MCU TSSOP-20",        ["U100"], LCSC_MCU, True),
     ] + _kenn(typcode)
     unbestueckt = {
         "J100": "Stapelstecker 2x20 " + _STECKER_HAND,
@@ -104,8 +134,10 @@ BOARDS = {
         "bom": [
             ("100nF 50V X7R 0805",                ["C1"],        "", False),
             ("22uF 25V X5R 0805",                 ["C2"],        "", False),
-            ("220uF 35V Elko radial D8 RM3.5",    ["C3"],        "", False),
-            ("SMCJ30A TVS unidirektional DO-214AB", ["D1"],      "", False),
+            ("220uF 35V Elko radial D8 RM3.5",    ["C3"],
+             LCSC_ELKO_220U35, True),
+            ("SMCJ30A TVS unidirektional DO-214AB", ["D1"],
+             LCSC_SMCJ30A, True),
             ("DB128L-5.08-2P-GN-S Klemme 16A 300V", ["J1"],
              LCSC_KLEMME_508_2P, True),
             ("4.7kOhm 0805 1%",                   ["R1", "R2"],  "", False),
@@ -128,26 +160,36 @@ BOARDS = {
              ["C9", "C11", "C13", "C14", "C15", "C16", "C100"],  "", False),
             ("1uF 25V X5R 0805",                  ["C101"],      "", False),
             ("100kOhm 0805 1%",                   ["R102"],      "", False),
-            ("220uF 35V Elko radial D8 RM3.5",    ["C12"],       "", False),
-            ("SMCJ30A TVS unidirektional DO-214AB", ["D1"],      "", False),
+            ("220uF 35V Elko radial D8 RM3.5",    ["C12"],
+             LCSC_ELKO_220U35, True),
+            ("SMCJ30A TVS unidirektional DO-214AB", ["D1"],
+             LCSC_SMCJ30A, True),
             ("DB128L-5.08-2P-GN-S Klemme 16A 300V", ["J5"],
              LCSC_KLEMME_508_2P, True),
             ("Stiftleiste 1x04 2.54mm THT",       ["J3"],        "", False),
-            ("IRFR5305 P-MOSFET -55V TO-252",     ["Q1"],        "", False),
-            ("100Ohm 0805 1%",                    ["R7", "R8", "R9"], "", False),
+            ("IRFR5305 P-MOSFET -55V TO-252",     ["Q1"],
+             LCSC_PMOS_TO252, True),
+            ("100Ohm 0805 1%",                    ["R7", "R8", "R9"],
+             LCSC_R100R_0805, True),
             ("1.3kOhm 0805 1%",                   ["R5"],        "", False),
-            ("3.3kOhm 1206 5%",
-             ["R16", "R17", "R18", "R19"],                        "", False),
+            ("3.3kOhm 1206 1%",
+             ["R16", "R17", "R18", "R19"],         LCSC_R3K3_1206, True),
             ("4.7kOhm 0805 1%",                   ["R20", "R21"], "", False),
             ("10kOhm 0805 1%",
-             ["R11", "R12", "R13", "R15", "R104", "R105"],        "", False),
+             ["R11", "R12", "R13", "R15", "R104", "R105"],
+             LCSC_R10K_0805, True),
             ("DRV8876PWPR H-Bruecke HTSSOP-16 PowerPAD", ["U1"],  "", False),
-            ("SN74LVC1G08DCKR AND SC-70-5",       ["U3", "U103"], "", False),
-            ("SN74LVC1G06DCKR Inverter OD SC-70-5", ["U6", "U7"], "", False),
-            ("SN74LVC1G175DCKR D-Flipflop SC-70-6", ["U101"],     "", False),
-            ("SN74LVC2G00DCUR Dual-NAND VSSOP-8", ["U102"],      "", False),
-            ("STM32C011F6P6 MCU TSSOP-20",        ["U100"],      "", False),
-            ("PC817 Optokoppler SMD Gullwing",    ["U4", "U5"],  "", False),
+            ("SN74LVC1G08DCKR AND SC-70-5",       ["U3", "U103"],
+             LCSC_1G08, True),
+            ("SN74LVC1G06DCKR Inverter OD SC-70-5", ["U6", "U7"],
+             LCSC_1G06, True),
+            ("SN74LVC1G175DCKR D-Flipflop SC-70-6", ["U101"],
+             LCSC_1G175, True),
+            ("SN74LVC2G00DCUR Dual-NAND VSSOP-8", ["U102"],
+             LCSC_2G00, True),
+            ("STM32C011F6P6 MCU TSSOP-20",        ["U100"], LCSC_MCU, True),
+            ("PC817 Optokoppler SMD Gullwing",    ["U4", "U5"],
+             LCSC_PC817, True),
         ] + _kenn(0x01),
         "unbestueckt": {
             "R10": "Stromgrenze, ab Werk unbestueckt",

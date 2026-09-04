@@ -20,14 +20,22 @@ apply to every board in this directory.
 2. Toggle **"PCB Assembly"** on. Choose *Economic*, *Top side*,
    assembly quantity 2 (you rarely need 5 assembled prototypes).
 3. Upload `jlc-bom.csv` and `jlc-cpl.csv` when asked.
-4. **Check the part matching page carefully.** Only the channel MOSFET
-   (NCE6050KA, C96013) ships with a verified part number; every other
-   line is matched by JLC from its description. For each line confirm
-   package + value; pick the *Basic* part where offered (Extended parts
-   cost a one-time feeder fee each). Pay particular attention to:
-   STM32C011F6P6, the SN74LVC single gates, IRFR5305, SS36, and the
-   two ID resistors R100/R101 (their values encode the module type —
-   do not "optimise" them to a common value).
+4. **Check the part matching page carefully.** Most BOM lines now carry
+   an LCSC part number that was verified against the actual LCSC
+   product page (see the constants at the top of `tools/jlc.py` and the
+   evidence trail in `hardware/bauteile*.md`) — those match
+   automatically. The remaining lines (small ceramics, a few resistor
+   values) are matched by JLC from their description: confirm package +
+   value for each, and pick the *Basic* part where offered (Extended
+   parts cost a one-time feeder fee each). Two footguns:
+   - the free-wheeling diode is **SS36C** (C16237, SMC/DO-214AB) — the
+     MDD part named plain "SS36" (C16015) is the smaller SMA package
+     and does **not** fit the pads;
+   - the two ID resistors R100/R101 encode the module type — do not
+     "optimise" them to a common value.
+   The screw terminals J5–J8 are matched to the KF350-3.5-2P (C474892),
+   a 3.5 mm THT block on the Phoenix-PT footprint pattern — check its
+   fit in the placement preview.
 5. **Check the placement preview.** JLC's rotation convention differs
    from KiCad's for some packages: verify pin-1 / cathode orientation
    of U100, U101–U103, the diodes and both MOSFET types against the
