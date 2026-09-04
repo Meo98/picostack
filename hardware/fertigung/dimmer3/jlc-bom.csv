@@ -1,7 +1,7 @@
 Comment,Designator,Footprint,LCSC Part #
 100nF 50V X7R 0805,C100,C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,
 1uF 25V X5R 0805,C101,C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,
-100kOhm 0805 1%,"R102,RP1,RP2,RP3",R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,C17407
+100kOhm 0805 1%,"R102,RP1,RP2,RP3",R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,C149504
 100Ohm 0805 1%,"RG1,RG2,RG3",R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,C17408
 10kOhm 0805 1%,"R11,R12,R104,R105",R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,C17414
 220uF 35V Elko radial D8 RM3.5,C12,CP_Radial_D8.0mm_P3.50mm,C45078

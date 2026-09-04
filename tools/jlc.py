@@ -59,8 +59,16 @@ LCSC_ELKO_220U35 = "C45078"       # Chengx GR227M..., 220u 35V D8x12 RM3.5
 LCSC_KLEMME_35_2P = "C474892"     # KF350-3.5-2P, 3,5mm 2P 10A 300V --
                                   # THT-Klon zum Phoenix-PT-Footprint,
                                   # Sitz im JLC-Preview gegenpruefen
-LCSC_R100K_0805 = "C17407"        # 0805W8F1003T5E, 100 kOhm (JLC-Basic;
-                                  # JLCs Auto-Match C5713386 war leer)
+LCSC_R100K_0805 = "C149504"       # 0805W8F1003T5E, 100 kOhm. Achtung:
+                                  # denselben Widerstand gibt es bei LCSC
+                                  # doppelt -- C17407 traegt den Vermerk
+                                  # "SMT-Geschaeft vorbehalten" und
+                                  # meldete im JLC-Dialog trotzdem
+                                  # shortfall; C149504 ist der Eintrag
+                                  # der JLC-Bestueckungsbibliothek
+                                  # (jlcpcb.com/partdetail/160838-.../
+                                  # C149504). JLCs Auto-Match C5713386
+                                  # war ebenfalls leer
 LCSC_R680R_0805 = "C17798"        # 0805W8F6800T5E, 680 Ohm (JLC-Basic)
 LCSC_R1K5_0805 = "C4310"          # 0805W8F1501T5E, 1,5 kOhm (JLC-Basic)
 LCSC_R0_0805 = "C17477"           # 0805W8F0000T5E, 0-Ohm-Bruecke
