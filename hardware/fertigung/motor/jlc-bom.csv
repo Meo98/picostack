@@ -2,7 +2,7 @@ Comment,Designator,Footprint,LCSC Part #
 22nF 50V X7R 0805,C10,C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,
 100nF 50V X7R 0805,"C9,C11,C13,C14,C15,C16,C100",C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,
 1uF 25V X5R 0805,C101,C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,
-100kOhm 0805 1%,R102,R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,
+100kOhm 0805 1%,R102,R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,C17407
 220uF 35V Elko radial D8 RM3.5,C12,CP_Radial_D8.0mm_P3.50mm,C45078
 SMCJ30A TVS unidirektional DO-214AB,D1,D_SMC_Handsoldering,C340696
 DB128L-5.08-2P-GN-S Klemme 16A 300V,J5,TerminalBlock_Phoenix_MKDS-3-2-5.08_1x02_P5.08mm_Horizontal,C395868
@@ -20,5 +20,5 @@ SN74LVC1G175DCKR D-Flipflop SC-70-6,U101,SOT-363_SC-70-6,C202238
 SN74LVC2G00DCUR Dual-NAND VSSOP-8,U102,VSSOP-8_2.3x2mm_P0.5mm,C206109
 STM32C011F6P6 MCU TSSOP-20,U100,TSSOP-20_4.4x6.5mm_P0.65mm,C5456198
 PC817 Optokoppler SMD Gullwing,"U4,U5",PC817_SMT_Gullwing,C97308
-680Ohm 0805 1% (Kennwiderstand ID0),R100,R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,
-0Ohm Bruecke 0805 (Kennwiderstand ID1),R101,R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,
+680Ohm 0805 1% (Kennwiderstand ID0),R100,R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,C17798
+0Ohm Bruecke 0805 (Kennwiderstand ID1),R101,R_0805_2012Metric_Pad1.20x1.40mm_HandSolder,C17477

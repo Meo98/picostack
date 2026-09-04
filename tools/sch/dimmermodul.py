@@ -14,9 +14,9 @@ Modul:
     steht die vollstaendige Bauteil-Herleitung (Datenblattzitate,
     Grenzwerte); sie gilt hier woertlich weiter, weil Schiene und
     Klemmspannung dieselben sind.
-  * Je Kanal n: Low-Side-N-MOSFET Qn (NCE6050KA, TO-252) mit
+  * Je Kanal n: Low-Side-N-MOSFET Qn (NCE6020AK, TO-252) mit
     Gate-Vorwiderstand RGn (100 Ohm) und Gate-Pulldown RPn (100 kOhm),
-    Freilaufdiode Dn (SS36, Drain -> +24V) und Schraubklemme Jn
+    Freilaufdiode Dn (SS36C, Drain -> +24V) und Schraubklemme Jn
     (Pin 1 = +24V, Pin 2 = geschaltetes Minus der Last).
 
 KANAL->PIN-ZUORDNUNG (hiermit festgelegt, Firmware richtet sich
@@ -27,14 +27,21 @@ PA7 = TIM1_CH1N/TIM3_CH2); PC14/PC15 sind reine GPIO -- Kanal 3 und 4
 dimmen notfalls per Software-PWM. Deshalb hat der Ein-Kanal-Dimmer
 IMMER Hardware-PWM.
 
-GATE DIREKT AM 3,3-V-PIN: Der NCE6050KA ist bei VGS = 3,3 V nicht
+GATE DIREKT AM 3,3-V-PIN: Der Kanal-FET ist bei VGS = 3,3 V nicht
 vollstaendig durchgesteuert (Datenblatt spezifiziert RDS(on) bei 10 V
 und 4,5 V). Das VIERKANALIGE LED-Dimmer-Board des Espace des
-Inventions treibt dieselben NCE6050KA seit seiner Inbetriebnahme
-direkt aus 3,3-V-GPIO und bleibt bei 3 A je Kanal handwarm -- fuer
-LED-Lasten dieser Groessenordnung reicht die Ansteuerung nachweislich.
-Wer mehr Strom schalten will, braucht einen Gatetreiber (und sollte
-ein eigenes Modul vorschlagen).
+Inventions treibt NCE6050KA seit seiner Inbetriebnahme direkt aus
+3,3-V-GPIO und bleibt bei 3 A je Kanal handwarm -- fuer LED-Lasten
+dieser Groessenordnung reicht die Ansteuerung nachweislich. ERSATZ
+2026-09-04: Der NCE6050KA ist bei JLC/LCSC ausverkauft; bestueckt wird
+der NCE6020AK (gleiche Familie, gleiches Gehaeuse, gleiches
+V_GS(th)-Limit "2.5V" laut LCSC-Rohdaten, RDS(on) 40 mOhm bei 4,5 V
+statt 20 mOhm bei 10 V). Die Espace-Felderfahrung gilt woertlich nur
+fuer den 6050KA; beim 6020AK ist die Rechnung konservativ dieselbe
+(40 mOhm x (3 A)^2 = 0,36 W je Kanal, TO-252 auf Masseflaeche traegt
+das), am ersten bestueckten Board aber nachzumessen. Wer mehr Strom
+schalten will, braucht einen Gatetreiber (und sollte ein eigenes
+Modul vorschlagen).
 """
 import os
 import sys
@@ -63,9 +70,12 @@ R11_WERT = "10k"
 R12_WERT = "10k"
 D10_WERT = "SMCJ30A"
 C12_WERT = "220u"
-QK_WERT = "NCE6050KA"    # Kanal-FET: 60 V, 50 A, TO-252, LCSC C96013
-                         # (Produktseite im LED-Dimmer-Projekt gesichtet)
-DK_WERT = "SS36"         # Freilauf: Schottky 60 V 3 A, DO-214AB
+QK_WERT = "NCE6020AK"    # Kanal-FET: 60 V, 20 A, TO-252, LCSC C108639
+                         # (Produktseite gesichtet 2026-09-04; Ersatz
+                         # fuer den ausverkauften NCE6050KA, s. oben)
+DK_WERT = "SS36C"        # Freilauf: Schottky 60 V 3 A, DO-214AB --
+                         # das C unterscheidet bei MDD das SMC-Gehaeuse
+                         # vom SMA-"SS36" (C16015), s. bauteile-dimmer.md
 RG_WERT = "100"
 RP_WERT = "100k"
 

@@ -31,7 +31,11 @@ REPO = os.path.join(HERE, "..")
 # LCSC-Produktseite uebernommen, Bauform identisch):
 LCSC_KLEMME_508_2P = "C395868"    # DB128L-5.08-2P, passt aufs MKDS-3/2-Bild
 LCSC_K7805 = "C2931187"           # K7805-2000R3, SIP-3
-LCSC_NMOS_TO252 = "C96013"        # NCE6050KA, 60 V N-MOSFET, TO-252
+LCSC_NMOS_TO252 = "C108639"       # NCE6020AK, 60 V 20 A N-MOSFET,
+                                  # TO-252 -- Ersatz 2026-09-04 fuer den
+                                  # bei JLC/LCSC ausverkauften NCE6050KA
+                                  # (C96013); Herleitung in
+                                  # tools/sch/dimmermodul.py
 
 # Gepruefte Nummern aus hardware/bauteile.md / bauteile-1b.md (dort
 # jeweils mit LCSC-Produktseite belegt):
@@ -55,6 +59,16 @@ LCSC_ELKO_220U35 = "C45078"       # Chengx GR227M..., 220u 35V D8x12 RM3.5
 LCSC_KLEMME_35_2P = "C474892"     # KF350-3.5-2P, 3,5mm 2P 10A 300V --
                                   # THT-Klon zum Phoenix-PT-Footprint,
                                   # Sitz im JLC-Preview gegenpruefen
+LCSC_R100K_0805 = "C17407"        # 0805W8F1003T5E, 100 kOhm (JLC-Basic;
+                                  # JLCs Auto-Match C5713386 war leer)
+LCSC_R680R_0805 = "C17798"        # 0805W8F6800T5E, 680 Ohm (JLC-Basic)
+LCSC_R1K5_0805 = "C4310"          # 0805W8F1501T5E, 1,5 kOhm (JLC-Basic)
+LCSC_R0_0805 = "C17477"           # 0805W8F0000T5E, 0-Ohm-Bruecke
+
+# Kennwiderstands-Stufen (stack_spec.ID_WIDERSTAENDE) -> gesichtete
+# Nummer, soweit eine Stufe von einem existierenden Modultyp gebraucht
+# wird. Fehlt eine Stufe hier, bleibt das LCSC-Feld schlicht leer.
+LCSC_KENN = {0: LCSC_R0_0805, 680: LCSC_R680R_0805, 1500: LCSC_R1K5_0805}
 
 
 def _kenn(typcode):
@@ -69,8 +83,10 @@ def _kenn(typcode):
         return "%gOhm 0805 1%%" % r
 
     return [
-        (fmt(r0) + " (Kennwiderstand ID0)", ["R100"], "", False),
-        (fmt(r1) + " (Kennwiderstand ID1)", ["R101"], "", False),
+        (fmt(r0) + " (Kennwiderstand ID0)", ["R100"],
+         LCSC_KENN.get(int(r0), ""), int(r0) in LCSC_KENN),
+        (fmt(r1) + " (Kennwiderstand ID1)", ["R101"],
+         LCSC_KENN.get(int(r1), ""), int(r1) in LCSC_KENN),
     ]
 
 
@@ -87,7 +103,8 @@ def _dimmer(kanaele, typcode):
         ("100nF 50V X7R 0805",                ["C100"],      "", False),
         ("1uF 25V X5R 0805",                  ["C101"],      "", False),
         ("100kOhm 0805 1%",
-         ["R102"] + ["RP%d" % n for n in range(1, kanaele + 1)], "", False),
+         ["R102"] + ["RP%d" % n for n in range(1, kanaele + 1)],
+         LCSC_R100K_0805, True),
         ("100Ohm 0805 1%",
          ["RG%d" % n for n in range(1, kanaele + 1)],
          LCSC_R100R_0805, True),
@@ -102,7 +119,7 @@ def _dimmer(kanaele, typcode):
          LCSC_SS36C, True),
         ("IRFR5305 P-MOSFET -55V TO-252",     ["Q10"],
          LCSC_PMOS_TO252, True),
-        ("NCE6050KA N-MOSFET 60V TO-252",
+        ("NCE6020AK N-MOSFET 60V 20A TO-252",
          ["Q%d" % n for n in range(1, kanaele + 1)],
          LCSC_NMOS_TO252, True),
         ("KF350-3.5-2P Klemme 3.5mm 2P 10A",
@@ -159,7 +176,8 @@ BOARDS = {
             ("100nF 50V X7R 0805",
              ["C9", "C11", "C13", "C14", "C15", "C16", "C100"],  "", False),
             ("1uF 25V X5R 0805",                  ["C101"],      "", False),
-            ("100kOhm 0805 1%",                   ["R102"],      "", False),
+            ("100kOhm 0805 1%",                   ["R102"],
+             LCSC_R100K_0805, True),
             ("220uF 35V Elko radial D8 RM3.5",    ["C12"],
              LCSC_ELKO_220U35, True),
             ("SMCJ30A TVS unidirektional DO-214AB", ["D1"],
