@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "c8027639-4277-4c00-9583-c715fce0061c")
+	(uuid "d02c803c-228f-40f0-84e5-866de0ef4b74")
 	(paper "A3")
 	(title_block
 		(title "Sockelplatine")
@@ -5729,7 +5729,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "J1")
 					(unit 1)
 				)
@@ -5795,7 +5795,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#FLG1")
 					(unit 1)
 				)
@@ -5859,7 +5859,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "D1")
 					(unit 1)
 				)
@@ -5923,7 +5923,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "C3")
 					(unit 1)
 				)
@@ -5987,7 +5987,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "C1")
 					(unit 1)
 				)
@@ -6014,7 +6014,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "K7805-2000R3"
+		(property "Value" "K7805-1000R3"
 			(at 116.84 99.06 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6051,7 +6051,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "U2")
 					(unit 1)
 				)
@@ -6115,7 +6115,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "C2")
 					(unit 1)
 				)
@@ -6179,7 +6179,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "J4")
 					(unit 1)
 				)
@@ -6243,7 +6243,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "J3")
 					(unit 1)
 				)
@@ -6307,7 +6307,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "J2")
 					(unit 1)
 				)
@@ -6371,7 +6371,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "U1")
 					(unit 1)
 				)
@@ -6435,7 +6435,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "R1")
 					(unit 1)
 				)
@@ -6499,7 +6499,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "R2")
 					(unit 1)
 				)
@@ -6565,7 +6565,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR177")
 					(unit 1)
 				)
@@ -6631,7 +6631,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR179")
 					(unit 1)
 				)
@@ -6697,7 +6697,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR181")
 					(unit 1)
 				)
@@ -6763,7 +6763,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR183")
 					(unit 1)
 				)
@@ -6829,7 +6829,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR185")
 					(unit 1)
 				)
@@ -6895,7 +6895,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR187")
 					(unit 1)
 				)
@@ -6961,7 +6961,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR189")
 					(unit 1)
 				)
@@ -7027,7 +7027,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR191")
 					(unit 1)
 				)
@@ -7093,7 +7093,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR193")
 					(unit 1)
 				)
@@ -7159,7 +7159,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR195")
 					(unit 1)
 				)
@@ -7225,7 +7225,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR197")
 					(unit 1)
 				)
@@ -7291,7 +7291,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR199")
 					(unit 1)
 				)
@@ -7357,7 +7357,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR201")
 					(unit 1)
 				)
@@ -7423,7 +7423,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR203")
 					(unit 1)
 				)
@@ -7489,7 +7489,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR205")
 					(unit 1)
 				)
@@ -7555,7 +7555,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR207")
 					(unit 1)
 				)
@@ -7621,7 +7621,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR209")
 					(unit 1)
 				)
@@ -7687,7 +7687,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR211")
 					(unit 1)
 				)
@@ -7753,7 +7753,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR213")
 					(unit 1)
 				)
@@ -7819,7 +7819,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR215")
 					(unit 1)
 				)
@@ -7885,7 +7885,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR217")
 					(unit 1)
 				)
@@ -7951,7 +7951,7 @@
 		)
 		(instances
 			(project "Sockelplatine"
-				(path "/c8027639-4277-4c00-9583-c715fce0061c"
+				(path "/d02c803c-228f-40f0-84e5-866de0ef4b74"
 					(reference "#PWR219")
 					(unit 1)
 				)

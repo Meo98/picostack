@@ -30,19 +30,15 @@ REPO = os.path.join(HERE, "..")
 # Gepruefte Nummern aus dem LED-Dimmer-Projekt (dort von der
 # LCSC-Produktseite uebernommen, Bauform identisch):
 LCSC_KLEMME_508_2P = "C395868"    # DB128L-5.08-2P, passt aufs MKDS-3/2-Bild
-LCSC_K7805 = "C5378008"           # K7805-2000R3 (JETEKPS), SIP-3.
-                                  # Ersatz 2026-09-07: die alte Nummer
-                                  # C2931187 (DEXU) ist bei JLC/LCSC
-                                  # ABGEKUENDIGT ("no longer
-                                  # manufactured"); C5378008 ist dasselbe
-                                  # K78-Klon-Modul eines anderen
-                                  # Herstellers, JLC-Lager am Sichtungstag
-                                  # 34 Stueck -- vor jeder Bestellung
-                                  # pruefen, notfalls von Hand loeten
-                                  # (SIP-3-THT) und das Teil im
-                                  # LCSC-Retail mitbestellen. Pin-
-                                  # kompatible Premium-Alternative auf
-                                  # demselben Footprint: RECOM R-78B5.0-2.0
+LCSC_K7805 = "C909765"            # K7805-1000R3 (DEXU), SIP-3, 6-30 V
+                                  # Eingang, 5 V / 1 A. ZWEITER Ersatz
+                                  # 2026-09-07: C2931187 (DEXU 2 A) ist
+                                  # abgekuendigt, und der erste Ersatz
+                                  # C5378008 (JETEKPS "K7805-2000R3")
+                                  # vertraegt laut LCSC-Rohdaten nur
+                                  # 7-18 V -- an 24 V unbrauchbar.
+                                  # 1-A-Herleitung und Datenblattzitat in
+                                  # tools/sch/sockelplatine.py
 LCSC_NMOS_TO252 = "C108639"       # NCE6020AK, 60 V 20 A N-MOSFET,
                                   # TO-252 -- Ersatz 2026-09-04 fuer den
                                   # bei JLC/LCSC ausverkauften NCE6050KA
@@ -219,7 +215,7 @@ BOARDS = {
              LCSC_KLEMME_508_2P, True),
             ("4.7kOhm 0805 1%",                   ["R1", "R2"],
              LCSC_R4K7_0805, True),
-            ("K7805-2000R3 DC/DC 5V 2A SIP-3",    ["U2"],
+            ("K7805-1000R3 DC/DC 5V 1A 6-30V SIP-3", ["U2"],
              LCSC_K7805, True),
         ],
         "unbestueckt": {

@@ -132,6 +132,23 @@ FP_TVS_SMC = "Diode_SMD:D_SMC_Handsoldering"               # Aufgabenbrief, woer
 # tatsaechlich einzukaufenden Teil (K7805-2000R3, LCSC C2931187), nicht
 # den Recom-Platzhalter -- das haelt BOM-Auszuege aus der Netzliste
 # korrekt, waehrend Symbol/Footprint wiederverwendet werden.
+#
+# NACHTRAG 2026-09-07 (Bestellrunde): Der 2-A-Typ K7805-2000R3 ist als
+# DEXU C2931187 ABGEKUENDIGT ("no longer manufactured" laut JLC-Seiten-
+# JSON), und der einzige lieferbare 2-A-Namensvetter (JETEKPS C5378008)
+# vertraegt laut LCSC-Rohdaten nur 7-18 V Eingang -- an der 24-V-
+# Schiene unbrauchbar, gleiche Typenbezeichnung hin oder her. Bestueckt
+# wird darum der 1-A-Bruder derselben DEXU-Baureihe, K7805-1000R3
+# (LCSC C909765): DEXU-Datenblatt "K78xx-1000R3" (REV A0-2018.12,
+# selbst gelesen), Auswahltabelle S. 1: K7805-1000R3 Eingang
+# "6.0-30V (24)", 5 V / 1000 mA, gleiche Bauform 11,6 x 7,5 x 10,2,
+# LM78xx-Pinout. 1 A statt 2 A traegt die 5-V-Schiene locker: sie
+# versorgt nur Logik -- Pico (<= ~0,35 A Spitze mit Funk), je Modul das
+# kleine MCU-Nest (~15 mA) und einzelne Optokoppler-LEDs; acht Module
+# zusammen ~0,5 A Worst Case. Die Leistungsstufen der Module haengen an
+# 24 V, nicht an 5 V. Wer je ein 5-V-hungriges Modul baut, versorgt es
+# lokal (und schlaegt es als eigenes Modul vor). Premium-Alternative
+# mit 2 A und 8-36 V auf demselben Footprint: RECOM R-78B5.0-2.0.
 FP_RECOM = "Converter_DCDC:Converter_DCDC_RECOM_R-78B-2.0_THT"
 # Terminalblock-Platzhalter fuer J1 -- exakt dieselbe Simplification wie
 # led_dimmer/hardware/generator/gen_sch.py fuer sein eigenes J1 (DB128L,
@@ -241,7 +258,7 @@ def bauen(sch, ox, oy):
     sch.netz("C1", "2", "D", "GND")
 
     sch.bauteil("U2", "Converter_DCDC:R-78B5.0-2.0", (ox + 63.5, oy),
-                "K7805-2000R3", FP_RECOM, rot=0,
+                "K7805-1000R3", FP_RECOM, rot=0,
                 roff=(-7.62, -13.97), voff=(-7.62, -11.43))
     sch.netz("U2", "1", "L", "PWR24V")   # IN
     sch.netz("U2", "2", "D", "GND")      # GND
