@@ -244,6 +244,30 @@ def erzeugen(board):
         for r in csv.DictReader(f):
             platz[r["Ref"]] = r
 
+    # KiCads Positionsexport liefert den Footprint-ANKER; bei den
+    # THT-Familien liegt der auf Pin 1 statt in der Bauteilmitte, und
+    # JLC setzt sein Modell auf Mid X/Y (Elko und Klemmen schwebten im
+    # Bestueckungs-Preview 1,75 mm neben ihren Loechern, Runde
+    # 2026-09-07). tools/pcb/zentroide.py schreibt die echten
+    # Pad-Zentroiden aus pcbnew; nur diese Familien werden ersetzt --
+    # bei SMD ist der Anker die Gehaeusemitte und damit schon richtig
+    # (TO-252: Pad-Zentroid waere FALSCH, er liegt neben dem Gehaeuse).
+    _THT_PIN1_ANKER = ("CP_Radial", "TerminalBlock", "PinHeader")
+    betroffen = [ref for ref, r in platz.items()
+                 if r["Package"].startswith(_THT_PIN1_ANKER)]
+    if betroffen:
+        zdatei = os.path.join(verz, "zentroide.csv")
+        if not os.path.exists(zdatei):
+            raise SystemExit(
+                "%s: %s brauchen Pad-Zentroiden, aber %s fehlt -- "
+                "tools/pcb/kipy tools/pcb/zentroide.py ausfuehren"
+                % (board, ", ".join(sorted(betroffen)), zdatei))
+        with open(zdatei) as f:
+            mitte = {r["Ref"]: r for r in csv.DictReader(f)}
+        for ref in betroffen:
+            platz[ref]["PosX"] = mitte[ref]["MidX"]
+            platz[ref]["PosY"] = mitte[ref]["MidY"]
+
     # Vollstaendigkeitsabgleich in beide Richtungen: jede Position der
     # Platine ist entweder bestueckt oder mit Begruendung unbestueckt.
     alle = set(platz) | {"U1"} if board == "sockel" else set(platz)
