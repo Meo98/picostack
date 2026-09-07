@@ -98,6 +98,33 @@ def _kenn(typcode):
     ]
 
 
+# JLCs Bauteilbibliothek hat fuer einige Gehaeusefamilien eine andere
+# Null-Drehung als KiCad -- im Bestueckungs-Preview standen U100-U103
+# verdreht (Bestellrunde 2026-09-07). Korrekturwinkel aus den beiden
+# Community-Datenbanken, die sich fuer genau diese Familien einig sind
+# (JLCKicadTools cpl_rotations_db.csv und Fabrication-Toolkit
+# transformations.csv, beide am 2026-09-07 gesichtet); angewandt wie
+# dort: (KiCad-Winkel + Korrektur) mod 360. TO-252 steht bewusst in
+# KEINER der beiden Tabellen (die NCE-FETs lagen im Preview richtig);
+# das verdrehte IRFR5305-Modell ist eine Teil-Eigenheit, die nur im
+# Preview selbst zu richten ist. Erster Treffer gewinnt.
+ROT_KORREKTUR = (
+    ("SOT-353", 180.0),
+    ("SOT-363", 180.0),
+    ("TSSOP-", 270.0),
+    ("VSSOP-8_", 180.0),   # gilt fuer unsere 2.3x2mm-Variante; die
+                           # 3.0x3.0-Variante braeuchte laut beiden
+                           # Datenbanken 270
+)
+
+
+def _jlc_winkel(package, rot):
+    for praefix, delta in ROT_KORREKTUR:
+        if package.startswith(praefix):
+            return (rot + delta) % 360.0
+    return rot
+
+
 # Stapel-Steckerteile werden IMMER von Hand bestueckt: die Kontakte
 # muessen im gesteckten Verbund fluchten (stack_spec.MONTAGE_REGEL --
 # erst stecken, dann schrauben), und ein maschinell schief gesetzter
@@ -294,7 +321,7 @@ def erzeugen(board):
         rows.append([ref, "%.4fmm" % float(r["PosX"]),
                      "%.4fmm" % float(r["PosY"]),
                      "Top" if r["Side"] == "top" else "Bottom",
-                     "%.0f" % float(r["Rot"])])
+                     "%.0f" % _jlc_winkel(r["Package"], float(r["Rot"]))])
     gefunden = {r[0] for r in rows}
     fehlend = [r for r in bestueckt if r not in gefunden]
 
