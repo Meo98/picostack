@@ -304,7 +304,10 @@ def erzeugen(board):
     # Pad-Zentroiden aus pcbnew; nur diese Familien werden ersetzt --
     # bei SMD ist der Anker die Gehaeusemitte und damit schon richtig
     # (TO-252: Pad-Zentroid waere FALSCH, er liegt neben dem Gehaeuse).
-    _THT_PIN1_ANKER = ("CP_Radial", "TerminalBlock", "PinHeader")
+    _THT_PIN1_ANKER = ("CP_Radial", "TerminalBlock", "PinHeader",
+                       "Converter_DCDC")   # U2 (SIP-3) ankert ebenfalls
+                                           # auf Pin 1 -- fiel erst im
+                                           # Sockel-Preview auf (2026-09-07)
     betroffen = [ref for ref, r in platz.items()
                  if r["Package"].startswith(_THT_PIN1_ANKER)]
     if betroffen:
