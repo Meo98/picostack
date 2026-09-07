@@ -30,7 +30,19 @@ REPO = os.path.join(HERE, "..")
 # Gepruefte Nummern aus dem LED-Dimmer-Projekt (dort von der
 # LCSC-Produktseite uebernommen, Bauform identisch):
 LCSC_KLEMME_508_2P = "C395868"    # DB128L-5.08-2P, passt aufs MKDS-3/2-Bild
-LCSC_K7805 = "C2931187"           # K7805-2000R3, SIP-3
+LCSC_K7805 = "C5378008"           # K7805-2000R3 (JETEKPS), SIP-3.
+                                  # Ersatz 2026-09-07: die alte Nummer
+                                  # C2931187 (DEXU) ist bei JLC/LCSC
+                                  # ABGEKUENDIGT ("no longer
+                                  # manufactured"); C5378008 ist dasselbe
+                                  # K78-Klon-Modul eines anderen
+                                  # Herstellers, JLC-Lager am Sichtungstag
+                                  # 34 Stueck -- vor jeder Bestellung
+                                  # pruefen, notfalls von Hand loeten
+                                  # (SIP-3-THT) und das Teil im
+                                  # LCSC-Retail mitbestellen. Pin-
+                                  # kompatible Premium-Alternative auf
+                                  # demselben Footprint: RECOM R-78B5.0-2.0
 LCSC_NMOS_TO252 = "C108639"       # NCE6020AK, 60 V 20 A N-MOSFET,
                                   # TO-252 -- Ersatz 2026-09-04 fuer den
                                   # bei JLC/LCSC ausverkauften NCE6050KA
