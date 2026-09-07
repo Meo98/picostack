@@ -28,6 +28,29 @@ C96013 meldet „Out of Stock". Ersatz, jeweils Produktseite gesichtet:
 | 100 kΩ (R102, RP1–RP4) | 0805W8F1003T5E (UNI-ROYAL) | C149504 | JLCPCB-Produktseite `jlcpcb.com/partdetail/160838-0805W8F1003T5E/C149504` (Bestückungsbibliothek); LCSC führt denselben Widerstand doppelt — C17407 („SMT-Geschäft vorbehalten", Lager 185 900 im Retail) meldete im JLC-Dialog trotzdem 35 shortfall, C149504 ist der bestückbare Eintrag. JLCs Auto-Match C5713386 hatte Lager 0 |
 | 0-Ω-Brücke (R101 Motor, R100 Dimmer1) | 0805W8F0000T5E (UNI-ROYAL) | C17477 | LCSC-Produktseite `lcsc.com/product-detail/C17477.html` (Rohdaten: „0Ω Jumper", „125mW", Lager 6 207 600) |
 
+## Nachtrag 2026-09-07: JLC-Basic-Festlegung der Kleinteile (Runde 3)
+
+Die „Extended components fee" (3,07 $ je Nicht-Basic-BOM-Zeile) machte
+sichtbar, welche Zeilen JLCs Beschreibungs-Matching dem Zufall
+überließ. Sichtung per headless Chrome direkt aus dem Seiten-JSON der
+JLC-Teileseiten (`componentLibraryType`, `overseasStockCount`,
+`noBuyReason`), alle am 2026-09-07:
+
+| Teil | LCSC | Befund |
+|---|---|---|
+| 100 nF 50 V X7R 0805 (C100 u. a.) | C49678 | YAGEO CC0805KRX7R9BB104, „base", Lager 20,6 Mio |
+| 1 µF 50 V X7R 0805 (C101) | C28323 | Samsung CL21B105KBFNNNE, „base", Lager 3,9 Mio |
+| 22 µF 25 V X5R 0805 (C2 Sockel) | C45783 | Samsung CL21A226MAQNNNE, „base", Lager 5,2 Mio |
+| 4,7 kΩ 0805 (R1/R2 Sockel, R20/R21 Motor) | C17673 | 0805W8F4701T5E, „base", Lager 6,6 Mio |
+| 100 kΩ — Bestätigung | C149504 | **„base", Lager 5,2 Mio** — der Karteileichen-Match C17407 ist „expand" UND `noBuyReason: "This product is no longer manufactured."` |
+| 100 kΩ — verworfen | C2889441 | VO-Teil aus der Websuche: „expand", Lager 0, ebenfalls abgekündigt |
+
+Ergebnis: Alle Widerstands- und Kondensator-Zeilen aller Boards sind
+Basic (keine Gebühr, deterministisches Auto-Match). Die verbleibenden
+8 Extended-Zeilen des Dimmer4 sind sämtlich Halbleiter ohne
+Basic-Äquivalent — die ~24,56 $ Gebühr sind das Minimum für dieses
+Design.
+
 Die übrigen Dimmer-BOM-Nummern (STM32C011F6P6 C5456198, 74LVC-Gatter
 C202238/C206109/C7832, IRFR5305 C2624, SMCJ30A C340696, 10 kΩ C17414)
 sind in `bauteile.md` / `bauteile-1b.md` bzw. im LED-Dimmer-Altprojekt

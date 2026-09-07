@@ -73,6 +73,15 @@ LCSC_R680R_0805 = "C17798"        # 0805W8F6800T5E, 680 Ohm (JLC-Basic)
 LCSC_R1K5_0805 = "C4310"          # 0805W8F1501T5E, 1,5 kOhm (JLC-Basic)
 LCSC_R0_0805 = "C17477"           # 0805W8F0000T5E, 0-Ohm-Bruecke
 
+# JLC-Bestellrunde 3 (2026-09-07): headless-Chrome-Sichtung der
+# JLC-Teileseiten (componentLibraryType/overseasStockCount im
+# Seiten-JSON). Alles hier ist "base" (JLC-Basic: keine 3-$-Feeder-
+# Gebuehr, matcht und selektiert automatisch):
+LCSC_C100N_0805 = "C49678"        # YAGEO CC0805KRX7R9BB104, 100n 50V X7R
+LCSC_C1U_0805 = "C28323"          # Samsung CL21B105KBFNNNE, 1u 50V X7R
+LCSC_C22U_0805 = "C45783"         # Samsung CL21A226MAQNNNE, 22u 25V X5R
+LCSC_R4K7_0805 = "C17673"         # 0805W8F4701T5E, 4,7 kOhm
+
 # Kennwiderstands-Stufen (stack_spec.ID_WIDERSTAENDE) -> gesichtete
 # Nummer, soweit eine Stufe von einem existierenden Modultyp gebraucht
 # wird. Fehlt eine Stufe hier, bleibt das LCSC-Feld schlicht leer.
@@ -135,8 +144,10 @@ _STECKER_HAND = ("von Hand - im gesteckten Verbund ausgerichtet, damit "
 def _dimmer(kanaele, typcode):
     """BOM/Unbestueckt-Definition einer Dimmer-Variante."""
     bom = [
-        ("100nF 50V X7R 0805",                ["C100"],      "", False),
-        ("1uF 25V X5R 0805",                  ["C101"],      "", False),
+        ("100nF 50V X7R 0805",                ["C100"], LCSC_C100N_0805,
+         True),
+        ("1uF 50V X7R 0805",                  ["C101"], LCSC_C1U_0805,
+         True),
         ("100kOhm 0805 1%",
          ["R102"] + ["RP%d" % n for n in range(1, kanaele + 1)],
          LCSC_R100K_0805, True),
@@ -184,15 +195,18 @@ BOARDS = {
     "sockel": {
         "pcb": "Sockelplatine",
         "bom": [
-            ("100nF 50V X7R 0805",                ["C1"],        "", False),
-            ("22uF 25V X5R 0805",                 ["C2"],        "", False),
+            ("100nF 50V X7R 0805",                ["C1"],
+             LCSC_C100N_0805, True),
+            ("22uF 25V X5R 0805",                 ["C2"],
+             LCSC_C22U_0805, True),
             ("220uF 35V Elko radial D8 RM3.5",    ["C3"],
              LCSC_ELKO_220U35, True),
             ("SMCJ30A TVS unidirektional DO-214AB", ["D1"],
              LCSC_SMCJ30A, True),
             ("DB128L-5.08-2P-GN-S Klemme 16A 300V", ["J1"],
              LCSC_KLEMME_508_2P, True),
-            ("4.7kOhm 0805 1%",                   ["R1", "R2"],  "", False),
+            ("4.7kOhm 0805 1%",                   ["R1", "R2"],
+             LCSC_R4K7_0805, True),
             ("K7805-2000R3 DC/DC 5V 2A SIP-3",    ["U2"],
              LCSC_K7805, True),
         ],
@@ -209,8 +223,10 @@ BOARDS = {
         "bom": [
             ("22nF 50V X7R 0805",                 ["C10"],       "", False),
             ("100nF 50V X7R 0805",
-             ["C9", "C11", "C13", "C14", "C15", "C16", "C100"],  "", False),
-            ("1uF 25V X5R 0805",                  ["C101"],      "", False),
+             ["C9", "C11", "C13", "C14", "C15", "C16", "C100"],
+             LCSC_C100N_0805, True),
+            ("1uF 50V X7R 0805",                  ["C101"],
+             LCSC_C1U_0805, True),
             ("100kOhm 0805 1%",                   ["R102"],
              LCSC_R100K_0805, True),
             ("220uF 35V Elko radial D8 RM3.5",    ["C12"],
@@ -227,7 +243,8 @@ BOARDS = {
             ("1.3kOhm 0805 1%",                   ["R5"],        "", False),
             ("3.3kOhm 1206 1%",
              ["R16", "R17", "R18", "R19"],         LCSC_R3K3_1206, True),
-            ("4.7kOhm 0805 1%",                   ["R20", "R21"], "", False),
+            ("4.7kOhm 0805 1%",                   ["R20", "R21"],
+             LCSC_R4K7_0805, True),
             ("10kOhm 0805 1%",
              ["R11", "R12", "R13", "R15", "R104", "R105"],
              LCSC_R10K_0805, True),
