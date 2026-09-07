@@ -22,11 +22,15 @@ Kante platziert -- ein simples Regal-Layout, keine Zufallssuche:
 Die vier M3-Eckloecher sitzen wie in v1 4 mm von der Kante (stack_spec
 kennt keinen anderen Wert) und bekommen ihren Freihaltebereich
 (M3_KEEPOUT, hier als Quadrat statt Kreis modelliert -- Design-Vorgabe:
-"jede Pflichtflaeche als Rechteck") in den seitlichen Raendern von
-Pico-Zone und Randpad-Kante. Das ist der einzige Kollisionstest, den
-dieses Skript wirklich rechnet: reicht der Rand rechts und links neben
-der zentrierten Zone, damit die Eckloecher nicht in ihr Rechteck
-hineinragen? Reicht er nicht, ist der Kandidat "GEOMETRIE ROT" --
+"jede Pflichtflaeche als Rechteck") in den seitlichen Raendern JEDER
+der vier Pflichtflaechen geprueft, nicht nur der beiden, die im ersten
+Entwurf oben/unten lagen (Review-Fund, Fix-Runde 1: die
+Versorgungszelle ist mit 57,2 mm BREITER als die Randpad-Kante mit
+55,88 mm und war ungeprueft -- s. RAND_PRUEF_ZONEN unten). Das ist der
+einzige Kollisionstest, den dieses Skript wirklich rechnet: reicht der
+Rand rechts und links neben jeder zentrierten Zone, damit die
+Eckloecher nicht in ihr Rechteck hineinragen? Reicht er bei
+irgendeiner Zone nicht, ist der Kandidat "GEOMETRIE ROT" --
 unabhaengig davon, ob rechnerisch genug Flaeche uebrig bliebe. Ein
 Kandidat mit viel freier Flaeche, dessen Eckloch aber im Steckerhof
 sitzt, ist trotzdem unbaubar.
@@ -207,17 +211,40 @@ NUTZLAST_BEDARF = round(MOTOR_NUTZLAST * PACKUNGS_RESERVE, 4)
 KANDIDATEN = ((70.0, 60.0), (75.0, 65.0), (80.0, 70.0))
 
 
+# Welche Zonen bei einer zentrierten Regal-Platzierung ueberhaupt in
+# den seitlichen Rand hineinragen koennten, in dem auch die M3-
+# Eckloecher sitzen -- also ALLE vier Pflichtflaechen, nicht nur die
+# beiden, die im urspruenglichen Entwurf tatsaechlich oben/unten
+# lagen. Fund aus dem Review (Fix-Runde 1): die Versorgungszelle
+# (57,2 mm) ist BREITER als die Randpad-Kante (55,88 mm) und wurde im
+# ersten Entwurf nie gegen M3_REICHWEITE geprueft, obwohl sie -- je
+# nachdem, wie die vier Regal-Zonen am Ende tatsaechlich uebereinander
+# angeordnet werden -- ebenso an einer Ecke liegen kann. Statt die
+# Pruefung an eine bestimmte Anordnung zu binden (und beim naechsten
+# Umsortieren der Regal-Reihenfolge still falsch zu werden), wird hier
+# JEDE der vier Zonen unabhaengig von ihrer tatsaechlichen Position
+# gegen den Eckloch-Freiraum geprueft: die breiteste Zone ist die
+# bindende Bedingung, welche Reihenfolge das Layout am Ende auch waehlt.
+RAND_PRUEF_ZONEN = (
+    ("Pico-Zone", PICO_ZONE_L),
+    ("Stecker-Zone", STECKER_ZONE_L),
+    ("Versorgungszelle", ZELLE_ZONE_L),
+    ("Randpad-Kante", RAND_KANTE),
+)
+
+
 def pruefe(w, h):
     """Rechnet einen Kandidaten (W, H) durch. Gibt ein Ergebnis-Dict."""
-    rand_oben = round((w - PICO_ZONE_L) / 2.0, 3)
-    rand_unten = round((w - RAND_KANTE) / 2.0, 3)
-    geometrie_oben = rand_oben >= M3_REICHWEITE
-    geometrie_unten = rand_unten >= M3_REICHWEITE
+    raender = []
+    for name, laenge in RAND_PRUEF_ZONEN:
+        rand = round((w - laenge) / 2.0, 3)
+        raender.append({
+            "name": name, "laenge": laenge, "rand": rand,
+            "ok": rand >= M3_REICHWEITE,
+        })
+    geometrie_ok = all(r["ok"] for r in raender)
     hoehe_ok = h >= H_BENOETIGT
-    breite_reicht = (w >= PICO_ZONE_L and w >= STECKER_ZONE_L
-                     and w >= ZELLE_ZONE_L and w >= RAND_KANTE)
-    kollisionsfrei = (geometrie_oben and geometrie_unten and hoehe_ok
-                      and breite_reicht)
+    kollisionsfrei = geometrie_ok and hoehe_ok
 
     flaeche = w * h
     frei = round(flaeche - MANDATORY_SUMME - M3_FLAECHE, 3)
@@ -226,9 +253,7 @@ def pruefe(w, h):
 
     return {
         "w": w, "h": h, "flaeche": flaeche, "frei": frei,
-        "rand_oben": rand_oben, "rand_unten": rand_unten,
-        "geometrie_oben": geometrie_oben, "geometrie_unten": geometrie_unten,
-        "hoehe_ok": hoehe_ok, "breite_reicht": breite_reicht,
+        "raender": raender, "hoehe_ok": hoehe_ok,
         "kollisionsfrei": kollisionsfrei, "flaeche_reicht": flaeche_reicht,
         "passt": passt,
     }
@@ -291,14 +316,12 @@ def main():
               % (w, h, r["flaeche"], r["flaeche"], MANDATORY_SUMME,
                  M3_FLAECHE, r["frei"], NUTZLAST_BEDARF,
                  "ok" if r["flaeche_reicht"] else "ZU KNAPP"))
-        print("    Rand oben (Pico-Zone %.1f mm breit)  = %.2f mm "
-              "(braucht >= %.2f mm) -> %s"
-              % (PICO_ZONE_L, r["rand_oben"], M3_REICHWEITE,
-                 "ok" if r["geometrie_oben"] else "KOLLISION mit M3-Ecke"))
-        print("    Rand unten (Randpad-Kante %.2f mm breit) = %.2f mm "
-              "(braucht >= %.2f mm) -> %s"
-              % (RAND_KANTE, r["rand_unten"], M3_REICHWEITE,
-                 "ok" if r["geometrie_unten"] else "KOLLISION mit M3-Ecke"))
+        for rd in r["raender"]:
+            print("    Rand bei zentrierter %s (%.2f mm breit) "
+                  "= (%.0f - %.2f)/2 = %.2f mm (braucht >= %.2f mm) -> %s"
+                  % (rd["name"], rd["laenge"], w, rd["laenge"], rd["rand"],
+                     M3_REICHWEITE,
+                     "ok" if rd["ok"] else "KOLLISION mit M3-Ecke"))
         print("    Hoehe %.0f mm (braucht >= %.2f mm) -> %s"
               % (h, H_BENOETIGT, "ok" if r["hoehe_ok"] else "ZU NIEDRIG"))
         print("    => %s" % status)
