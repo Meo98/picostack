@@ -424,8 +424,15 @@ else:
     # zusaetzlich J105 (zweite Stapelstecker-Reihe) und J95/J96
     # (Randpads) mit, seit motormodul.bauen() `frei_durchreichen=True`
     # UND `modulsockel.randpads(sch)` aufruft.
+    # Task 6b (2026-09-08): C17/C18/C19 sind dazugekommen -- je ein
+    # 100-nF-Abblockkondensator fuer U101/U102/U103 (modulsockel.py),
+    # dieselbe Luecke, die Task 6 schon im Dimmermodul geschlossen hat
+    # (dort C102/C103/C104, eigener Referenzraum, s.
+    # motormodul.py::_gatter_abblockung_sockel()). Wer sie wieder
+    # entfernt, faellt hier auf.
     _erwartet_endstufe = {"C9", "C10", "C11",
                            "C13", "C14", "C15", "C16",
+                           "C17", "C18", "C19",
                            "J3", "J5", "R5",
                            "R7", "R8", "R9", "R10", "R13",
                            "R15", "R16", "R17", "R18", "R19", "R20", "R21",
@@ -752,6 +759,18 @@ else:
           ("U3", "3") in set(_netz_pins(_sch, _gen, "GND")), True)
     check("C14 blockt die Gatterversorgung ab (Pin 1 an 3V3)",
           ("C14", "1") in set(_netz_pins(_sch, _gen, "3V3")), True)
+
+    # Task 6b: dieselbe Abblockung fuer die drei Modulsockel-Gatter
+    # U101/U102/U103 (bislang nur U100/das NCLR-Loeschglied ueber
+    # C100/C101 abgedeckt, s. modulsockel.py) -- je ein 100-nF-
+    # Kondensator zwischen 3V3 und GND, GATTUNG statt Einzelfall.
+    _an_3v3 = set(_netz_pins(_sch, _gen, "3V3"))
+    _an_gnd = set(_netz_pins(_sch, _gen, "GND"))
+    for _ref in ("C17", "C18", "C19"):
+        check("%s blockt eine Modulsockel-Gatterversorgung ab "
+              "(Pin 1 an 3V3, Pin 2 an GND)" % _ref,
+              ((_ref, "1") in _an_3v3, (_ref, "2") in _an_gnd),
+              (True, True))
 
 
     # =================================================================

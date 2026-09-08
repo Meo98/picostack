@@ -306,6 +306,27 @@ D_KOPPEL_WERT = "BAT54W"
 R15_WERT = "10k"         # Pullup NOTAUS-Sammelleitung an 3V3, s. dort
 C14_WERT = "0.1u"        # Abblockkondensator U3 (Verriegelungsgatter)
 
+# ---------------------------------------------- Gatter-Abblockung (Task 6b)
+# Dieselbe Luecke, die Task 6 fuer das Dimmermodul geschlossen hat
+# (dort: tools/sch/dimmermodul.py::_gatter_abblockung(), C102/C103/
+# C104), besteht hier unveraendert: modulsockel.einbauen() deckt mit
+# C100 nur U100 (MCU) ab, C101 ist Teil des NCLR-Loeschglieds -- keines
+# von beiden blockt U101 (SN74LVC1G175)/U102 (SN74LVC2G00DCUR)/U103
+# (SN74LVC1G08) ab. Diese drei ICs sind dem Modulsockel-Block
+# gemeinsam (`modulsockel.einbauen(mit_flipflop=True)`), NICHT dem
+# Motormodul selbst -- sie sind etwas anderes als U3/U6/U7 (die
+# EIGENEN Gatter dieses Moduls, s. Moduldoku Punkt 4/5), die bereits
+# ihre eigenen Kondensatoren C14/C15/C16 haben (jeweils direkt beim
+# `sch.bauteil(...)`-Aufruf kommentiert). Referenzen C17/C18/C19 --
+# naechste freie Nummern NACH C16 (dem letzten hier vergebenen Ref);
+# C102/C103/C104 (Dimmermodul) liegen im Referenzraum EINES ANDEREN,
+# eigenstaendigen Schaltplans (Dimmer%d.kicad_sch) und koennen mit
+# diesen Nummern hier nicht kollidieren.
+C_SOCKEL_ABBLOCK_WERT = "100n"   # C17/C18/C19 (U101/U102/U103)
+C_SOCKEL_ABBLOCK_LCSC = "C49678"   # 100nF/0805, JLCPCB-Basic-Teil
+                                   # (identisch mit dimmermodul.
+                                   # C_ABBLOCK_LCSC/-_WERT)
+
 # ------------------------------ Ruhestrom-Notauseingang (Aufgabe 5d, neu)
 # Werte: Herleitung vollstaendig in `_notaus_schleifen()`.
 R_SCHLEIFE_WERT = "3.3k"   # R16..R19, je zwei in Reihe pro Kanal, 1206
@@ -897,6 +918,46 @@ def _stapel_speist_lokal(sch, ox, oy):
     sch.draht(a, b)
     sch.LABELS.append((a[0], a[1], 0, "+24V"))
     sch.LABELS.append((b[0], b[1], 180, "PWR24V"))
+
+
+def _gatter_abblockung_sockel(sch, ox, oy):
+    """Je ein 100-nF-Abblockkondensator fuer U101/U102/U103 (Task 6b).
+
+    Schliesst im Motormodul dieselbe Luecke, die Task 6 bereits im
+    Dimmermodul geschlossen hat (dimmermodul.py::_gatter_abblockung()):
+    modulsockel.py deckt mit C100 nur U100 (MCU) ab, C101 ist Teil des
+    NCLR-Loeschglieds -- U101 (SN74LVC1G175, SOT-363), U102
+    (SN74LVC2G00DCUR, VSSOP-8) und U103 (SN74LVC1G08, SOT-353) haengen
+    alle drei mit VCC/GND an 3V3/GND, aber keines hatte bislang einen
+    eigenen Kondensator direkt an seiner Versorgung. `ox`/`oy` sind
+    hier DIESELBEN Koordinaten, die auch an `modulsockel.einbauen()`
+    uebergeben werden (s. `bauen()` unten) -- der Modulsockel-Block ist
+    in Dimmer- und Motormodul byte-fuer-byte derselbe Code, also liegen
+    U101/U102/U103 an genau denselben Absolutkoordinaten wie im
+    Dimmermodul, und dieselben drei x-Positionen (ox+152,40/+177,80/
+    +203,20) bei y = oy - 45,72 -- knapp 15,24 mm unterhalb der
+    Kennwiderstandsreihe (oy - 30,48, s. modulsockel.einbauen()) --
+    treffen hier ebenso knapp neben die drei ICs wie dort.
+
+    Referenzen C17/C18/C19 (naechste freie Motormodul-Nummern NACH
+    C16, s. Kommentar bei C_SOCKEL_ABBLOCK_WERT oben) -- NICHT C102/
+    C103/C104 wie im Dimmermodul: das sind zwei getrennte
+    .kicad_sch-Dateien mit je eigenem Referenzraum, eine Kollision ist
+    dort schon aus diesem Grund ausgeschlossen. Kollisionsfrei
+    gegenueber den EIGENEN Bauteilen dieses Moduls, weil alle anderen
+    Motormodul-Bloecke entweder bei ox-40,64/ox-76,2 (R7..R13, C13),
+    bei ox+330,2 oder weiter (Verriegelung, Notaus-Ruhestrom,
+    Versorgungszelle) oder bei ox+431,8 (Endstufe/Motor-Klemme) sitzen
+    -- keiner davon beruehrt das Fenster ox+152,4..ox+203,2 bei
+    y = oy - 45,72. Per `kicad-cli sch erc` gegen 0 Fehler geprueft
+    (Warnungen s. task-6b-report.md), nicht nur angenommen."""
+    for ref, x in (("C17", ox + 152.40), ("C18", ox + 177.80),
+                   ("C19", ox + 203.20)):
+        sch.bauteil(ref, "Device:C", (x, oy - 45.72), C_SOCKEL_ABBLOCK_WERT,
+                    FP_C0805, rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27),
+                    felder={"LCSC": C_SOCKEL_ABBLOCK_LCSC})
+        sch.netz(ref, "1", "U", "3V3")
+        sch.netz(ref, "2", "D", "GND")
 
 
 def _endstufe_treiber(sch, ox, oy, netze):
@@ -1602,6 +1663,13 @@ def bauen(sch, ox, oy):
     # gelegten Labels an J100/J105 ausschliesslich ueber den gemeinsamen
     # Namen, nicht ueber einen gemeinsamen Draht.
     modulsockel.randpads(sch)
+
+    # Gatter-Abblockung des Modulsockel-Blocks (Task 6b, s. dortiger
+    # Docstring) -- dieselbe Ergaenzung, die Task 6 fuer das
+    # Dimmermodul gemacht hat. `ox`/`oy` sind hier die UNVERAENDERTEN
+    # Koordinaten, die zwei Zeilen oberhalb auch an modulsockel.
+    # einbauen() gehen.
+    _gatter_abblockung_sockel(sch, ox, oy)
 
     # PWR_FLAG auf "+24V" und "VCP": beide haben nur "power_in"/"passive"-
     # Pins, keinen einzigen "power_out" -- ohne ein power_out-Pin
