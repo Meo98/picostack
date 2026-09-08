@@ -26,16 +26,21 @@ Kern-Checks unten stammen woertlich aus dem Aufgabenbrief (Task 3);
 falsche Pruefung waere -- er triffe Pinnamen im Symbol, nicht
 tatsaechliche Verdrahtung).
 
-ROT-NACHWEIS DER FEHLERKLASSE (unten, eigener Abschnitt): derselbe
-Drain-Check laeuft zusaetzlich gegen die tatsaechlich generierte
-motormodul.py-v1-Netzliste (Q1) -- und bestaetigt dort, wo dieser Test
-läuft (2026-09-08, Stand vor der Umstellung von motormodul.py auf diese
-neue Zelle), dass Q1s Drain (Pin 2) NICHT an der Einspeisung PWR24V
-haengt, sondern an der lokalen Schiene +24V -- exakt der eingangs
-beschriebene, umgekehrte Fehler. Das ist eine echte Assertion gegen
-motormodul.bauen(), kein blosser Kommentar: faellt sie irgendwann um
-(weil motormodul.py auf die neue Zelle umgestellt wurde, ohne diesen
-Testabschnitt zu entfernen), macht sich das hier bemerkbar.
+MIGRATIONS-NACHWEIS (unten, eigener Abschnitt): bis Task 5 (2026-09-08)
+stand hier ein ROT-NACHWEIS, der denselben Drain-Check zusaetzlich
+gegen die damals noch unveraenderte motormodul.py-v1-Netzliste (Q1)
+laufen liess und dort den eingangs beschriebenen, umgekehrten Fehler
+bestaetigte. Task 5 hat motormodul.py auf genau diese Zelle umgestellt
+(Q1/R11/R12/D1/C12 entfallen, `versorgung.bauen()` eingebunden,
+Referenzen Q90/R90/.../J90) -- der ROT-NACHWEIS ist damit hinfaellig
+geworden (Q1 existiert nicht mehr) und wurde durch einen POSITIV-
+NACHWEIS ersetzt: derselbe Drain-Check laeuft weiterhin gegen die
+ECHTE, gerade generierte motormodul.py-Netzliste und bestaetigt dort
+jetzt, dass Q90 die VERSORGUNG-Pledges tatsaechlich einhaelt. Das
+bleibt eine echte Assertion gegen motormodul.bauen(), kein blosser
+Kommentar: faellt sie irgendwann um (weil motormodul.py wieder einen
+eigenen, moeglicherweise falsch gepolten Verpolschutz bekommt), macht
+sich das hier bemerkbar.
 """
 import os
 import sys
@@ -134,28 +139,45 @@ check("J90 speist PWR_IN", ("J90", "1") in pins["PWR_IN"], True)
 # sch.schreiben() vor dem Schreiben laufen laesst.
 check("keine unverbundenen Pins in der Zelle", _sch.selbstpruefung(), [])
 
-# ------------------------------------------- Rot-Nachweis der Fehlerklasse
-# Baut motormodul.py (die tatsaechliche v1-Endstufe, unveraendert von
-# dieser Aufgabe) in ein eigenes, leeres Blatt und wendet DENSELBEN
-# Drain-Check auf sein Q1/PWR24V-Netz an -- der laut Moduldoku
-# (motormodul.py::_endstufe_leistung Docstring: "Q1: P-MOSFET, Source an
-# PWR24V (vom Stapel), Drain an +24V (lokal, geschuetzt)") dort genau
-# umgekehrt verdrahtet ist. Diese Assertion bestaetigt das gegen die
-# ECHTE generierte Netzliste, nicht nur gegen den Kommentar.
-_sch_v1 = gen.Schaltplan("motormodul_rot_nachweis", "Motormodul (Rot-Nachweis)", "")
-motormodul.bauen(_sch_v1, 0.0, 0.0)
-_pins_v1_pwr24v = {(r, n) for r, n, _, _ in _netz_pins(_sch_v1, gen, "PWR24V")}
-_pins_v1_24v = {(r, n) for r, n, _, _ in _netz_pins(_sch_v1, gen, "+24V")}
-check("ROT-NACHWEIS: Q1 (v1, motormodul.py) haengt mit dem Drain (Pin 2) "
-      "NICHT an der Einspeisung PWR24V -- derselbe Drain-Check wie oben "
-      "schlaegt hier fehl, das ist die Fehlerklasse, die diese Etappe "
-      "behebt", ("Q1", "2") in _pins_v1_pwr24v, False)
-check("ROT-NACHWEIS: Q1s Drain (Pin 2) haengt stattdessen an der "
-      "lokalen Schiene +24V -- der umgekehrte, falsche Anschluss",
-      ("Q1", "2") in _pins_v1_24v, True)
-check("ROT-NACHWEIS: Q1s Source (Pin 3) haengt an der rohen Einspeisung "
-      "PWR24V -- Source und Drain sind gegenueber der korrekten "
-      "Schutzschaltung vertauscht", ("Q1", "3") in _pins_v1_pwr24v, True)
+# --------------------------- Migrations-Nachweis: motormodul.py nach Task 5
+# Bis Task 5 (2026-09-08) stand hier ein ROT-NACHWEIS: derselbe
+# Drain-Check lief zusaetzlich gegen die damals noch unveraenderte
+# v1-Endstufe in motormodul.py und bestaetigte dort den umgekehrten,
+# falschen Anschluss (Q1-Drain an der bereits geschuetzten Schiene
+# "+24V" statt an der rohen Einspeisung "PWR24V") -- eine echte
+# Assertion gegen die generierte Netzliste, die rot wurde, sobald jemand
+# motormodul.py auf diese Zelle umstellte, OHNE diesen Testabschnitt
+# anzupassen.
+#
+# Task 5 hat motormodul.py genau darauf umgestellt: der ganze
+# Q1/R11/R12/D1/C12-Strang ist entfallen, `motormodul.bauen()` ruft
+# jetzt `versorgung.bauen()` auf (Referenzen werden zu Q90/R90/R91/D90/
+# C90/J90). Der alte ROT-NACHWEIS ist damit hinfaellig geworden -- Q1
+# existiert schlicht nicht mehr, ein Test auf sein Fehlen waere nur noch
+# vacuous wahr. An seine Stelle tritt dieser POSITIV-NACHWEIS: derselbe
+# Drain-Check laeuft weiterhin gegen die ECHTE, gerade generierte
+# motormodul.py-Netzliste (nicht nur gegen versorgung.py fuer sich
+# allein oben) und bestaetigt dort, dass Q90 (nicht mehr Q1) die
+# VERSORGUNG-Pledges tatsaechlich einhaelt: Drain an PWR_IN
+# (motormodul.py speist versorgung.bauen() ueber J90, seine EIGENE
+# Klemme -- s. Kommentar vor `_stapel_speist_lokal()` dort), Source an
+# der lokalen Schiene +24V, Gate-Teiler R90 an derselben lokalen
+# Schiene. Faellt diese Zelle irgendwann wieder um (weil motormodul.py
+# erneut einen eigenen, moeglicherweise falsch gepolten Verpolschutz
+# bekommt, ohne versorgung.py zu nutzen), macht sich das hier bemerkbar.
+_sch_mm = gen.Schaltplan("motormodul_versorgung_nachweis",
+                         "Motormodul (Versorgung-Nachweis)", "")
+motormodul.bauen(_sch_mm, 0.0, 0.0)
+_mm_pwr_in = {(r, n) for r, n, _, _ in _netz_pins(_sch_mm, gen, "PWR_IN")}
+_mm_24v = {(r, n) for r, n, _, _ in _netz_pins(_sch_mm, gen, "+24V")}
+check("motormodul.py (nach Task 5): Q1 existiert nicht mehr",
+      any(c[0] == "Q1" for c in _sch_mm.COMPS), False)
+check("motormodul.py: Q90-Drain (Schutz) haengt an der Einspeisung PWR_IN",
+      ("Q90", "2") in _mm_pwr_in, True)
+check("motormodul.py: Q90-Source (Schutz) haengt an der lokalen "
+      "Schiene +24V", ("Q90", "3") in _mm_24v, True)
+check("motormodul.py: Gate-Teiler R90 haengt an der lokalen Schiene "
+      "+24V (nicht an PWR_IN)", ("R90", "2") in _mm_24v, True)
 
 if fails:
     print("FEHLGESCHLAGEN:")

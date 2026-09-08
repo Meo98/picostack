@@ -449,7 +449,8 @@ def _kennwiderstand(sch, ref_ober, ref_kenn, ox, oy, netz):
 ZUSATZ_PIN_RICHTUNG = {"2": "L", "3": "L", "14": "R", "15": "R"}
 
 
-def einbauen(sch, ox, oy, mit_flipflop=True, zusatz_pins=None):
+def einbauen(sch, ox, oy, mit_flipflop=True, zusatz_pins=None,
+             frei_durchreichen=False):
     """Baut den Modulsockel-Block bei (ox, oy) in `sch` ein.
 
     mit_flipflop=True (Vorgabe): voller Modul-Block -- MCU, Flipflop,
@@ -464,6 +465,16 @@ def einbauen(sch, ox, oy, mit_flipflop=True, zusatz_pins=None):
     dem gegebenen Namen statt sch.nc(...); nicht genannte Pins bleiben wie
     bisher no_connect. Pin "18" (PA13/SWDIO) ist nicht waehlbar -- s.
     ZUSATZ_PIN_RICHTUNG-Kommentar.
+
+    frei_durchreichen (Vorgabe False): woertlich an _stapelstecker()
+    durchgereicht (s. dort) -- False laesst freie Pico-GPIO auf J100/J105
+    no_connect (der bisherige, unveraenderte Fall fuer jedes Modul ohne
+    eigene Randpads); True legt sie stattdessen unter ihrem GPIO-Namen
+    (PIN_GPIO_NAME) auf ein Label -- GENAU das Netz, das randpads() an
+    der unteren Plattenkante wieder aufgreift. Ein Modul, das seine
+    Randpads (J95/J96) tatsaechlich speisen will, ruft `einbauen(...,
+    frei_durchreichen=True)` UND zusaetzlich `randpads(sch)` im selben
+    Blatt auf (Aufgabe 5, Motormodul: beide Aufrufe in motormodul.bauen()).
 
     Liefert ein dict mit den Netznamen, die die Endstufe braucht
     (== NETZE_NACH_AUSSEN).
@@ -488,7 +499,8 @@ def einbauen(sch, ox, oy, mit_flipflop=True, zusatz_pins=None):
     sch.bauteil("#FLG102", "power:PWR_FLAG", (ox - 20.32, oy + 30.48), "PWR_FLAG", "")
     sch.netz("#FLG102", "1", "D", "3V3")
 
-    _stapelstecker(sch, "J100", "J105", ox, oy + 38.1)
+    _stapelstecker(sch, "J100", "J105", ox, oy + 38.1,
+                    frei_durchreichen=frei_durchreichen)
     _kettenstecker(sch, "J101", "J102", ox, oy - 20.32)
     _leistungsstecker(sch, "J103", "J104", ox + 254.0, oy + 20.32)
 

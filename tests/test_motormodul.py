@@ -67,6 +67,19 @@ def check(label, got, want):
 # ------------------------------------------------------- reine Python-Pruefungen
 # Brauchen kein kicad-cli.
 
+# ------------------------------------------- Notaus-Polaritaetsprobe (Task 5)
+# Woertlich aus dem Aufgabenbrief: dieser Check war gegen die v1-Fassung
+# dieser Datei ROT (2026-09-07, sie setzte 74LVC1G06 -- ein
+# INVERTIERENDES Gatter -- fuer U6/U7 ein, waehrend die gesamte
+# Pegelrechnung und Doku von nichtinvertierendem Verhalten ausgeht,
+# s. tools/sch/motormodul.py, INVERTER_WERT-Kommentar). Er prueft
+# bewusst den QUELLTEXT, nicht die generierte Netzliste: der Bauteiltyp
+# selbst (nicht nur eine Verdrahtung) war der Fehler.
+_quelltext_pfad = os.path.join(HERE, "..", "tools", "sch", "motormodul.py")
+_quelltext = open(_quelltext_pfad, encoding="utf-8").read()
+check("Notaus-Treiber nichtinvertierend",
+      "74LVC1G07" in _quelltext and "74LVC1G06" not in _quelltext, True)
+
 # Der reparierte DRV8876-Footprint aus dem Altprojekt: Waermepad MIT
 # Masken-/Pastenoeffnung, segmentiertes Pastenmuster, zwoelf Waermevias
 # mit echtem Restring auf Pad 17 (Aufgabenbrief, Schritt 2).
@@ -81,10 +94,11 @@ if os.path.isfile(_fp_mod):
 
 check("Footprint DRV8876 zeigt auf die uebernommene Bibliothek",
       motormodul.FP_DRV8876, "DRV8876PWPR:IC_DRV8876PWPR")
-check("Footprint TVS SMC (D1, wie sockelplatine.py)", motormodul.FP_TVS_SMC,
-      "Diode_SMD:D_SMC_Handsoldering")
-check("Footprint 220uF radial (C12, wie sockelplatine.py C3)",
-      motormodul.FP_CP_RADIAL, "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm")
+# Die alten Checks fuer motormodul.FP_TVS_SMC/FP_CP_RADIAL (D1/C12) sind
+# ENTFALLEN -- Task 5 ersetzt den ganzen Q1/D1/C12-Strang durch
+# versorgung.bauen() (D90/C90 dort, s. tools/sch/motormodul.py-Kommentar
+# vor `_stapel_speist_lokal()`); diese beiden Konstanten existieren in
+# motormodul.py nicht mehr.
 
 # Punkt 1 des Auftrags: R5 ist NEU gerechnet (2,538 A bei VVREF=3,3V,
 # AIPROPI=1000uA/A), nicht der Altprojekt-Wert (2,2k -> 1,5A, zu klein
@@ -402,17 +416,30 @@ else:
     # seines 0805-Gehaeuses (0,125 W). Wer ihn wieder einbaut, faellt
     # hier auf -- und, falls er ihn mit demselben Widerstand einbaut,
     # zusaetzlich in der Leistungspruefung weiter unten.
-    _erwartet_endstufe = {"D1", "C9", "C10", "C11", "C12",
+    # Task 5 (2026-09-08): Q1/R11/R12/D1/C12 (der v1-Verpolschutz-Strang)
+    # sind ENTFALLEN -- ersetzt durch versorgung.bauen()
+    # (J90/Q90/R90/R91/D90/C90/U90/C91/D91, eigene Kategorie
+    # `_erwartet_versorgung` unten, s. tools/sch/motormodul.py-Kommentar
+    # vor `_stapel_speist_lokal()`). Modulsockel v2 (Task 4) bringt
+    # zusaetzlich J105 (zweite Stapelstecker-Reihe) und J95/J96
+    # (Randpads) mit, seit motormodul.bauen() `frei_durchreichen=True`
+    # UND `modulsockel.randpads(sch)` aufruft.
+    _erwartet_endstufe = {"C9", "C10", "C11",
                            "C13", "C14", "C15", "C16",
-                           "J3", "J5", "Q1", "R5",
-                           "R7", "R8", "R9", "R10", "R11", "R12", "R13",
+                           "J3", "J5", "R5",
+                           "R7", "R8", "R9", "R10", "R13",
                            "R15", "R16", "R17", "R18", "R19", "R20", "R21",
                            "U1", "U3", "U4", "U5", "U6", "U7"}
+    _erwartet_versorgung = {"J90", "Q90", "R90", "R91", "D90", "C90",
+                             "U90", "C91", "D91"}
     _erwartet_sockel = {"U100", "U101", "U102", "U103", "R100", "R101",
                          "R102", "R104", "R105", "C100", "C101",
-                         "J100", "J101", "J102", "J103", "J104"}
-    check("Referenzen = Modulsockel-Block + Endstufe (nichts Ueberzaehliges)",
-          set(_refs), _erwartet_endstufe | _erwartet_sockel)
+                         "J100", "J101", "J102", "J103", "J104", "J105",
+                         "J95", "J96"}
+    check("Referenzen = Modulsockel-Block + Versorgungszelle + Endstufe "
+          "(nichts Ueberzaehliges)",
+          set(_refs),
+          _erwartet_endstufe | _erwartet_versorgung | _erwartet_sockel)
 
     # -------------------------------- Steuerleitungen haengen am MCU ---
     # Der eigentliche Auftrag: IN1/IN2/NSLEEP haengen am Modul-MCU (U100),
@@ -452,16 +479,70 @@ else:
     check("IPROPI traegt R5 (bestueckt, s.o.)", ("R5", "1") in _an_ipropi, True)
     check("IPROPI traegt R10 (DNP)", ("R10", "1") in _an_ipropi, True)
 
-    # -------------------------------------------------------- Punkt 3: C12
+    # -------------------------------------------------------- Punkt 3: C90
     # Polarisierter Kondensator: Pin 1 ("+" im Device:C_Polarized-Symbol)
-    # MUSS an +24V liegen, NIE an GND (der Muttern-Print-Fehler).
+    # MUSS an +24V liegen, NIE an GND (der Muttern-Print-Fehler). C12
+    # (motormodul.py) ist mit dem alten Q1-Strang entfallen -- derselbe
+    # Kondensator lebt jetzt als C90 in versorgung.py, s. Kommentar vor
+    # `_stapel_speist_lokal()` in tools/sch/motormodul.py.
     _an_24v = set(_netz_pins(_sch, _gen, "+24V"))
-    check("C12 Pin 1 (\"+\") haengt an +24V", ("C12", "1") in _an_24v, True)
+    check("C90 Pin 1 (\"+\") haengt an +24V", ("C90", "1") in _an_24v, True)
     _an_gnd = set(_netz_pins(_sch, _gen, "GND"))
-    check("C12 Pin 1 (\"+\") haengt NICHT an GND", ("C12", "1") in _an_gnd, False)
-    check("C12 Pin 2 haengt an GND", ("C12", "2") in _an_gnd, True)
+    check("C90 Pin 1 (\"+\") haengt NICHT an GND", ("C90", "1") in _an_gnd, False)
+    check("C90 Pin 2 haengt an GND", ("C90", "2") in _an_gnd, True)
     check("R5 ist bestueckt (nicht in sch.DNP)", "R5" in _sch.DNP, False)
     check("R10 ist DNP (Aufgabenbrief: 'R10 unbestueckt')", "R10" in _sch.DNP, True)
+
+    # ------------------------------------------- Task 5: die Versorgungszelle
+    # Die vier Kern-Checks aus dem Task-3-Brief, hier zusaetzlich gegen
+    # die tatsaechlich in DIESES Modul eingebaute Zelle gefahren (nicht
+    # nur gegen tests/test_versorgung.py's eigenes, isoliertes Blatt) --
+    # der Beweis, dass motormodul.bauen() versorgung.bauen() nicht nur
+    # aufruft, sondern auch richtig verdrahtet einbindet.
+    check("Q90-Drain (Schutz) an der Einspeisung PWR_IN",
+          ("Q90", "2") in set(_netz_pins(_sch, _gen, "PWR_IN")), True)
+    check("Q90-Source (Schutz) an der lokalen Schiene +24V",
+          ("Q90", "3") in _an_24v, True)
+    check("Gate-Teiler R90 an der lokalen Schiene +24V",
+          ("R90", "2") in _an_24v, True)
+    _an_vsys = set(_netz_pins(_sch, _gen, "VSYS"))
+    check("VSYS nur ueber die Diode D91, nicht direkt vom Regler U90",
+          ("D91", "1") in _an_vsys and not any(r == "U90" for r, _ in _an_vsys),
+          True)
+
+    # -------------------- Task 5: Stapel-PWR24V speist die lokale Schiene
+    # `_stapel_speist_lokal()` bindet "PWR24V" (Leistungsstecker J103/
+    # J104) und "+24V" (hinter Q90) elektrisch zu einem Knoten, indem sie
+    # EINEN Draht zwischen einem "+24V"- und einem "PWR24V"-Label zieht
+    # (s. dortiger Docstring). `_netz_pins()` (woertlich aus
+    # tests/test_modulsockel.py uebernommen) folgt dabei bewusst nur EINEM
+    # Drahtschritt ab einem Labelpunkt -- es ist kein vollstaendiger
+    # Netz-Flutfuellungs-Algorithmus, und die beiden Enden dieses
+    # speziellen Drahts sind selbst keine Bauteil-Pins. `_an_pwr24v` und
+    # `_an_24v` bleiben deshalb ABSICHTLICH disjunkte Mengen (J103/J104
+    # vs. Q90/D90/...) -- das ist eine Einschraenkung dieses Test-
+    # Helfers, KEIN Hinweis auf eine fehlende Verbindung. Die tatsaechliche
+    # elektrische Gleichsetzung bestaetigt stattdessen `kicad-cli sch erc`
+    # weiter unten (Meldungstyp "multiple_net_names": "Both +24V and
+    # PWR24V are attached to the same items"). Hier wird deshalb nur die
+    # STRUKTUR des Drahts selbst gegen `sch.WIRES`/`sch.LABELS` geprueft --
+    # eine Ebene tiefer als `_netz_pins()`, aber unmittelbar am Datenmodell,
+    # das auch `kicad-cli` letztlich sieht.
+    _an_pwr24v = set(_netz_pins(_sch, _gen, "PWR24V"))
+    check("J103 bleibt (nur) ueber das Label PWR24V erreichbar",
+          any(r == "J103" for r, _ in _an_pwr24v), True)
+    check("Q90 (Source) bleibt (nur) ueber das Label +24V erreichbar",
+          ("Q90", "3") in _an_24v, True)
+    _labels_24v = {(x, y) for x, y, _r, txt in _sch.LABELS if txt == "+24V"}
+    _labels_pwr24v = {(x, y) for x, y, _r, txt in _sch.LABELS if txt == "PWR24V"}
+    _direkt_verbunden = any(
+        (a in _labels_24v and b in _labels_pwr24v)
+        or (b in _labels_24v and a in _labels_pwr24v)
+        for a, b in _sch.WIRES)
+    check("ein Draht verbindet ein +24V-Label direkt mit einem PWR24V-"
+          "Label (_stapel_speist_lokal) -- ERC bestaetigt zusaetzlich die "
+          "daraus folgende elektrische Gleichsetzung (s. "
+          "ERWARTETE_ERC_WARNUNGEN unten)", _direkt_verbunden, True)
 
     # ----------------------------------------------------- Punkt 4: NOTAUS
     # Die Sammelleitung erreicht den Stapelstecker (global) UND die
@@ -717,6 +798,10 @@ else:
         # Diode: in Durchlassrichtung leitend -- konservativ als
         # Verbindung gewertet.
         "Device:D": [("1", "2")],
+        # Schottky-Diode (D91, versorgung.py): dieselbe Begruendung wie
+        # "Device:D" oben -- in Durchlassrichtung leitend, konservativ
+        # als Verbindung gewertet.
+        "Device:D_Schottky": [("1", "2")],
         # Optokoppler: LED (1-2) und Fototransistor (3-4). Die beiden
         # Seiten sind gegeneinander isoliert (5 kV, LCSC C97308) -- genau
         # deshalb steht hier kein Paar, das sie verbindet.
@@ -724,20 +809,34 @@ else:
         # P-MOSFET: Drain-Source leitet; das Gate ist gleichspannungs-
         # maessig getrennt (IGSS MAX +-100 nA bei +-20 V, PD-95025A,
         # "Electrical Characteristics") und traegt deshalb kein Paar.
+        # Gilt fuer Q1 (entfallen) UND Q90 (versorgung.py) gleichermassen
+        # -- dasselbe Symbol, dieselbe Herleitung.
         "Transistor_FET:Q_PMOS_GDS": [("2", "3")],
     }
     _SPERREND = {
         "Device:C", "Device:C_Polarized",   # Kondensator: kein Gleichstrom
-        "Device:D_Zener",                    # TVS D1: sperrt bis 33 V (SMCJ30A)
+        "Device:D_Zener",                    # TVS (D1 entfallen, jetzt D90): sperrt bis 33 V (SMCJ30A)
         "power:PWR_FLAG",                    # kein Bauteil, nur ERC-Marke
     }
     _STECKER = {"Connector:Conn_01x04_Pin", "Connector:Screw_Terminal_01x02",
                  "Connector_Generic:Conn_01x02",
                  "Connector_Generic:Conn_02x02_Odd_Even",
-                 "Connector_Generic:Conn_02x20_Odd_Even"}
-    _BAUSTEINE = {"74xGxx:74LVC1G06", "74xGxx:74LVC1G08", "74xGxx:74LVC1G175",
+                 # Connector_Generic:Conn_02x20_Odd_Even (v1, EIN 2x20-Block)
+                 # ist mit Task 4 entfallen -- v2 nutzt zwei 1x20-Reihen
+                 # (Conn_01x20, J100/J105).
+                 "Connector_Generic:Conn_01x20",
+                 # J95/J96 (Task 5, modulsockel.randpads()): unbestueckte
+                 # Loetpad-Leisten.
+                 "Connector_Generic:Conn_01x18",
+                 "Connector_Generic:Conn_01x04"}
+    _BAUSTEINE = {"74xGxx:74LVC1G07", "74xGxx:74LVC1G08", "74xGxx:74LVC1G175",
                    "74xGxx:74LVC2G00", "DRV8876PWPR:DRV8876PWPR",
-                   "MCU_ST_STM32C0:STM32C011F6Px"}
+                   "MCU_ST_STM32C0:STM32C011F6Px",
+                   # U90 (versorgung.py): der 5-V-Regler verbindet seine
+                   # Pins nicht direkt (kein einfacher Leitwert IN->OUT),
+                   # haelt aber -- wie DRV8876/STM32 -- jedes seiner Netze
+                   # innerhalb der Schienen, die er selbst beruehrt.
+                   "Converter_DCDC:R-78B5.0-2.0"}
 
     _bauteile = {}          # ref -> (libid, wert, footprint)
     for _ref, _libid, _pos, _rot, _wert, _fp, _a, _b, _e in _sch.COMPS:
@@ -890,7 +989,9 @@ else:
     # Positivprobe: der Klassifizierer muss die 24-V-Widerstaende
     # tatsaechlich FINDEN. Ohne diese Zeile koennte die ganze Pruefung
     # gruen sein, weil sie nirgends hinschaut.
-    for _ref in ("R11", "R12", "R16", "R17", "R18", "R19"):
+    # R90/R91 (versorgung.py, Q90-Gate-Teiler) ersetzen die alten R11/R12
+    # -- dieselbe Funktion (Teiler zwischen +24V und GND), Task 5.
+    for _ref in ("R90", "R91", "R16", "R17", "R18", "R19"):
         check("%s wird als Widerstand ueber 5 V erkannt" % _ref,
               _ref in _hochvolt, True)
     # Und die Gegenrichtung: die Kleinsignalwiderstaende der
@@ -1140,7 +1241,30 @@ else:
 
     # ------------------------------------------------------------- ERC
     ERWARTETE_ERC_FEHLER = 0
-    ERWARTETE_ERC_WARNUNGEN = 0
+    # Drei Warnungen sind erwartet, alle drei eine bekannte, dokumentierte
+    # Folge davon, dass dieses Modul seit Task 5 versorgung.bauen()
+    # einbindet -- kein neuer Befund an DIESER Datei:
+    #   1. lib_symbol_mismatch fuer "R-78B5.0-2.0" (U90) -- dieselbe
+    #      unvermeidliche Folge von gen.Schaltplan.lib_extends() wie in
+    #      tests/test_sockelplatine.py (dort ebenfalls genau EINE
+    #      Warnung dafuer erwartet, s. dortiger Kommentar).
+    #   2. isolated_pin_label fuer das Label "VSYS" -- D91 (versorgung.py)
+    #      speist VSYS in JEDEM Modul, das die Zelle einbindet, aber nur
+    #      die Sockelplatine hat einen echten Pico mit einem VSYS-Pin, an
+    #      den D91 andocken koennte. Auf dem Motormodul bleibt VSYS
+    #      deshalb ein einzelner, folgenloser Diodenausgang -- architek-
+    #      turell so vorgesehen (stack_spec.PIN_ROLLE/NICHT_BELEGBAR
+    #      geben VSYS gar nicht erst an ein Modul weiter, s.
+    #      modulsockel.py, PIN_GPIO_NAME-Kommentar), nicht behebbar ohne
+    #      versorgung.py selbst zu aendern (ausserhalb dieser Aufgabe).
+    #   3. multiple_net_names fuer "+24V"/"PWR24V" -- die ABSICHTLICHE
+    #      Verbindung aus `_stapel_speist_lokal()` (dieses Modul ist die
+    #      "gespeiste Platine", die den Rest des Stapels ueber den
+    #      Leistungsstecker mitversorgt). KiCad markiert jede Stelle, an
+    #      der zwei verschiedene Labelnamen denselben Knoten tragen, als
+    #      Warnung -- unabhaengig davon, ob das beabsichtigt ist; hier
+    #      ist es das.
+    ERWARTETE_ERC_WARNUNGEN = 3
 
     _tmp = tempfile.mkdtemp(prefix="motormodul_erc_")
     try:
@@ -1181,10 +1305,15 @@ else:
                     (_errors if _v["severity"] == "error" else _warnings).append(_v)
             check("ERC-Fehler auf dem Motormodul", len(_errors), ERWARTETE_ERC_FEHLER)
             check("ERC-Warnungen auf dem Motormodul", len(_warnings), ERWARTETE_ERC_WARNUNGEN)
+            _erwartete_warnungstypen = {"lib_symbol_mismatch", "isolated_pin_label",
+                                         "multiple_net_names"}
             for _e in _errors:
                 print("  ERC-Fehler:", _e.get("type"), "-", _e.get("description"))
             for _w in _warnings:
-                print("  ERC-Warnung:", _w.get("type"), "-", _w.get("description"))
+                _markierung = ("" if _w.get("type") in _erwartete_warnungstypen
+                                else "  <== UNERWARTET")
+                print("  ERC-Warnung:", _w.get("type"), "-", _w.get("description"),
+                      _markierung)
 
         # --------------------------------------------------------- Netzliste
         _net_pfad = os.path.join(_tmp, "motor.net")

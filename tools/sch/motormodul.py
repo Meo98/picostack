@@ -138,9 +138,9 @@ stehen in `_notaus_schleifen()`. Die drei Kernpunkte:
     Pulldown den Knoten SCHLEIFE_1/2. Geschlossen = HIGH, offen = LOW.
   * Der Knoten kann den wired-OR-Bus NICHT selbst ziehen -- ein Pulldown
     gegen zehn parallele 10-kOhm-Pullups steht bei 2,7 V. Deshalb sitzt
-    zwischen Knoten und Bus ein Inverter mit Open-Drain-Ausgang
-    (U6/U7, SN74LVC1G06). Die bisherigen Koppeldioden D3/D4 entfallen
-    dabei ersatzlos.
+    zwischen Knoten und Bus ein nichtinvertierender Puffer mit
+    Open-Drain-Ausgang (U6/U7, SN74LVC1G07). Die bisherigen Koppeldioden
+    D3/D4 entfallen dabei ersatzlos.
   * J3 bleibt vierpolig (zwei Adern je Kanal statt Signal+GND). **Ein
     unbenutzter Kanal muss am Stecker gebrueckt werden**, sonst meldet er
     dauerhaft Notaus; und die bestehende Verkabelung des
@@ -199,15 +199,17 @@ for _d in (HERE, os.path.join(HERE, "..")):
         sys.path.insert(0, _d)
 import stack_spec as S    # noqa: E402
 import modulsockel         # noqa: E402
+import versorgung           # noqa: E402  (ersetzt den alten Q1-Strang, s. unten)
 
 # -------------------------------------------------------------- Footprints
 FP_R0805 = modulsockel.FP_R0805
 FP_C0805 = modulsockel.FP_C0805
 FP_HDR_1X04 = "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
-FP_CP_RADIAL = "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm"          # Aufgabenbrief 4, woertlich
-FP_TVS_SMC = "Diode_SMD:D_SMC_Handsoldering"                      # Aufgabenbrief 4, woertlich
+# FP_CP_RADIAL/FP_TVS_SMC/FP_TO252 (Q1/D1/C12) sind mit dem alten
+# Verpolschutz-Strang ENTFALLEN -- die gleichnamigen Bauteile Q90/D90/
+# C90 leben jetzt in tools/sch/versorgung.py, s. Kommentar vor
+# `_stapel_speist_lokal()` unten.
 FP_SOD123 = "Diode_SMD:D_SOD-123"                                 # BAT54W (D3/D4)
-FP_TO252 = "Package_TO_SOT_SMD:TO-252-3_TabPin2"                  # Q1, s. Q1-Kommentar
 # Optokoppler U4/U5 (PC817 in SMT-Gullwing-Form). **Nicht** mehr
 # `Package_SO:SOP-4_3.8x4.1mm_P2.54mm` -- der Platzhalter aus dem
 # Altprojekt (Aufgabe 5f, s. Moduldoku Punkt 6). Dessen Padreihen liegen
@@ -261,11 +263,10 @@ FP_KLEMME_2 = "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-3-2-5.08_1x02_P5
 # ------------------------------------------------------- Bauteilwerte
 # Aus dem Altprojekt uebernommen (Netzliste `kicad-cli sch export
 # netlist` gegen Unmögliche_Muttern.kicad_sch tatsaechlich gelesen, nicht
-# aus dem Gedaechtnis): D1/C9/C10/C11/C12/C13/R6/R7/R8/R9/R10/R11/R12/R13.
-D1_WERT = "SMCJ30A"      # TVS, unidirektional -- LCSC C340696 (bereits in
-# sockelplatine.py geprueft und zitiert, dasselbe Bauteil, hier nur
-# wiederverwendet, nicht neu recherchiert).
-C12_WERT = "220u"        # 24-V-Stuetzkondensator, radial, polarisiert
+# aus dem Gedaechtnis): C9/C10/C11/C13/R6/R7/R8/R9/R10/R13. (D1/C12/R11/
+# R12 sind mit dem alten Verpolschutz-Strang entfallen -- s. Kommentar
+# vor `_stapel_speist_lokal()` unten; die gleichnamigen Bauteile
+# Q90/D90/C90/R90/R91 leben jetzt in tools/sch/versorgung.py.)
 C9_WERT = "0.1u"         # VCP-Kondensator (VM<->VCP, DRV8876-Ladungspumpe)
 C10_WERT = "0.022u"      # Ladungspumpen-Kondensator CPH<->CPL
 C11_WERT = "0.1u"        # zweiter 24-V-Abblock-Kondensator (neben C9-Anteil)
@@ -280,8 +281,8 @@ R7_WERT = "0.1k"         # Vorwiderstand MCU -> U1 EN/IN1
 R8_WERT = "0.1k"         # Vorwiderstand MCU -> U1 PH/IN2
 R9_WERT = "0.1k"         # Vorwiderstand MCU -> U1 NSLEEP
 R10_WERT = "4.7k"        # IPROPI/GND, NICHT bestueckt (dnp=True), unveraendert
-R11_WERT = "10k"         # Q1 Gate<->Source (Reverse-Polarity-Schutz)
-R12_WERT = "10k"         # Q1 Gate<->GND (schaltet Q1 im Normalfall durch)
+# R11_WERT/R12_WERT (Q1-Gate-Teiler) sind entfallen -- die
+# Nachfolgewerte (R90/R91, dieselben 10k/10k) stehen in versorgung.py.
 R13_WERT = "10k"         # NFAULT-Pullup an 3V3
 # R5 NEU gerechnet fuer diese Aufgabe (s. Moduldoku oben, Punkt 1) --
 # NICHT der Altprojekt-Wert (2,2k, dort zu klein fuer den 2-A-Motor).
@@ -311,7 +312,27 @@ R_SCHLEIFE_WERT = "3.3k"   # R16..R19, je zwei in Reihe pro Kanal, 1206
 R_PULLDOWN_WERT = "4.7k"   # R20/R21, Pulldown am rueckkehrenden Knoten
 C_INV_WERT = "0.1u"        # C15/C16, Abblockkondensatoren U6/U7
 OPTO_WERT = "PC817"        # U4/U5, dasselbe Bauteil wie U2 (Sensoreingang)
-INVERTER_WERT = "SN74LVC1G06"   # U6/U7, Inverter mit Open-Drain-Ausgang
+INVERTER_WERT = "SN74LVC1G07"   # U6/U7, nichtinvertierender Puffer, Open-Drain-Ausgang
+# ERSETZT 2026-09-08, Grund: die vorherige Fassung setzte hier den
+# Typkurzform-Vorgaenger "1G06" ein (volle Bezeichnung im Commit-
+# Verlauf dieser Aenderung) -- ein INVERTIERENDES Gatter ("Single NOT
+# Gate, Open Drain", TI SCES296AG-Vorgaenger SCES295AB) -- waehrend
+# saemtliche Doku- und Pegelrechnung in dieser Datei (s.
+# `_notaus_schleifen()`) von
+# NICHTinvertierendem Verhalten ausgeht ("Schleife in Ordnung -> Eingang
+# HIGH -> Ausgang hochohmig"). Mit dem tatsaechlich verbauten 1G06 waere
+# das Board fail-UNSAFE gewesen: intakte Schleife (SCHLEIFE HIGH) haette
+# NOTAUS gezogen (Y = NOT(HIGH) = LOW -> OD-Transistor an -> Bus tief),
+# ein Drahtbruch (SCHLEIFE LOW) haette NOTAUS dagegen FREIGEGEBEN
+# (Y = NOT(LOW) = HIGH -> OD-Transistor aus -> Bus floatet, R15 zieht
+# hoch) -- genau die gefaehrliche Richtung: der Fehlerfall, den die ganze
+# Ruhestromschleife eigentlich abfangen soll, waere unbemerkt geblieben.
+# 1G07 ("Single Buffer/Driver With Open-Drain Output", TI SCES296AG,
+# selbst gelesen) ist NICHTinvertierend und PINIDENTISCH (DCK/SOT-353:
+# 1=NC, 2=A, 3=GND, 4=Y open_collector, 5=VCC -- eigene Pruefung beider
+# Symbole in 74xGxx.kicad_sym) -- ein reiner Bauteiltausch ohne
+# Pin-Umverdrahtung. LCSC C7830 (zwischen C7828/1G06 und C7832/1G08,
+# derselben LCSC-Nummernfolge wie die beiden Nachbartypen).
 
 # ------------------------------------- benannte Groessen der Verriegelung
 # Diese Werte sind die Rechengrundlage der Pegelpruefung in
@@ -348,23 +369,40 @@ SCHOTTKY_VF_MAX_1MA = 0.32      # V
 SCHOTTKY_VF_MAX_10MA = 0.40     # V
 SCHOTTKY_IR_MAX = 2e-6          # A bei VR = 25 V
 
-# SN74LVC1G06 (U6/U7), Inverter mit Open-Drain-Ausgang, TI-Datenblatt
-# Dok. SCES295AB (JUNE 2000 - REVISED OCTOBER 2025). Abschnitt 5.3
-# "Recommended Operating Conditions", Zeilen "VCC = 3V to 3.6V" bzw.
-# "VCC = 3V": VIH MIN 2 V, VIL MAX 0,8 V, IOL MAX 24 mA. Abschnitt 5.5
-# "Electrical Characteristics": VOL MAX 0,1 V bei IOL = 100 uA
-# (VCC 1,65-5,5 V) und VOL MAX 0,4 V bei IOL = 16 mA (VCC = 3 V);
-# II ("Inflection-point current", A-Eingang) MAX +-1 uA; Ioff
-# ("Off-state current", VI oder VO = 5,5 V, VCC = 0) MAX +-10 uA;
-# ICC MAX 10 uA. Abschnitt 1 "Features": "Schmitt trigger action on all
-# ports" -- der Eingang vertraegt die langsamen Flanken des Optokopplers.
+# SN74LVC1G07 (U6/U7), nichtinvertierender Puffer mit Open-Drain-Ausgang,
+# TI-Datenblatt Dok. SCES296AG (FEBRUARY 2000 - REVISED OCTOBER 2025,
+# per WebFetch selbst gelesen, s. INVERTER_WERT-Kommentar zum Bauteil-
+# tausch 1G06->1G07). Abschnitt 5.3 "Recommended Operating Conditions",
+# Zeilen "VCC = 3V to 3.6V" bzw. "VCC = 3V": VIH MIN 2 V, VIL MAX 0,8 V,
+# IOL MAX 24 mA. Abschnitt 5.5 "Electrical Characteristics": VOL MAX
+# 0,1 V bei IOL = 100 uA (VCC 1,65-5,5 V) und VOL MAX 0,4 V bei
+# IOL = 16 mA (VCC = 3 V); Ii (A-Eingang, VI = 5,5 V oder GND) MAX
+# +-5 uA -- GROESSER als beim vorherigen 1G06 (dort +-1 uA): eigene
+# Pruefung der Tabelle, kein blosser Uebertrag. Ioff ("Off-state
+# current", VI oder VO = 5,5 V, VCC = 0) MAX +-10 uA; ICC MAX 10 uA.
+#
+# **Ehrlich vermerkt: KEIN Schmitt-Trigger.** Abschnitt "7.3 Feature
+# Description" nennt fuer den 1G07 nur "Wide operating voltage range",
+# "Allows down voltage translation" und die Ioff-Funktion -- anders als
+# beim ersetzten 1G06 (dort "Schmitt trigger action on all ports")
+# fehlt hier ausdruecklich die Hysterese. Die langsamen Flanken des
+# PC817 (tr/tf typ. 4/3 us, MAX 18 us, s. OPTO_*-Konstanten unten)
+# koennten den Eingang deshalb laenger im undefinierten Bereich
+# zwischen VIL und VIH halten als bei einem Schmitt-Trigger-Eingang.
+# Sicherheitsrelevant ist das trotzdem NICHT: ein OD-Ausgang kann in
+# diesem Zustand hoechstens ZUSAETZLICH kurz auf VOL ziehen (Y=L moeglich,
+# nie ein falsches, stabiles Y=Z) -- jedes Wackeln in der Uebergangszone
+# kann die Sammelleitung also nur ZUSAETZLICH kurz Richtung NOTAUS
+# ziehen, nie sie faelschlich freigeben. Die Ausfallrichtung bleibt
+# damit sicher; unguenstigstenfalls loest die Anlage etwas oefter aus,
+# nie seltener.
 INV_VIL_MAX = 0.8               # V, Abschnitt 5.3
 INV_VIH_MIN = 2.0               # V, Abschnitt 5.3
 INV_VOL_MAX_100UA = 0.1         # V bei IOL = 100 uA, Abschnitt 5.5
 INV_VOL_MAX_16MA = 0.4          # V bei IOL = 16 mA, VCC = 3 V, Abschnitt 5.5
 INV_IOL_BEZUG_16MA = 16e-3      # A -- Stuetzpunkt zu INV_VOL_MAX_16MA
 INV_IOL_MAX = 24e-3             # A, Abschnitt 5.3, VCC = 3 V
-INV_II_MAX = 1e-6               # A, Abschnitt 5.5
+INV_II_MAX = 5e-6               # A, Abschnitt 5.5 (1G07: +-5 uA, NICHT +-1 uA wie 1G06)
 INV_IOFF_MAX = 10e-6            # A, Abschnitt 5.5
 
 # PC817 (U4/U5, und dasselbe Bauteil wie U2), SHARP-Datenblatt
@@ -477,11 +515,18 @@ NETZ_SPANNUNG_FEST = {
 #: schlechtesten Fall alles zwischen 0 V und der 24-V-Schiene fuehren
 #: (Kurzschluss gegen eine Nachbarader im selben Mantel) -- genau der
 #: Fall, den `_notaus_schleifen()` unter Punkt 4 von Hand rechnet.
-FELDSTECKER = {"J3", "J5"}
+#: J90 (Task 5, versorgung.py): die eigene 24-V-Einspeisung dieses
+#: Moduls -- ihre Gegenseite ist ein externes Netzteil, genauso
+#: unbekannt wie die Museumsverkabelung an J3/J5. J95/J96 (Task 5,
+#: modulsockel.randpads()): unbestueckte Loetpads, deren Gegenseite
+#: "was auch immer jemand anlötet" ist -- ebenfalls unbekannt.
+FELDSTECKER = {"J3", "J5", "J90", "J95", "J96"}
 #: Stecker, deren Gegenseite ein anderes Modul DESSELBEN Entwurfs ist.
 #: Was auf jedem Pin liegt, steht im Vertrag (tools/stack_spec.py) --
-#: sie tragen deshalb nichts Unbekanntes ein.
-STAPELSTECKER = {"J100", "J101", "J102", "J103", "J104"}
+#: sie tragen deshalb nichts Unbekanntes ein. J105 (Task 5, v2): die
+#: zweite Stapelstecker-Buchsenreihe (Pico-Pins 21..40), s.
+#: modulsockel._stapelstecker().
+STAPELSTECKER = {"J100", "J101", "J102", "J103", "J104", "J105"}
 #: Pins, die ein Baustein aus eigener Kraft ueber die Schienen hinaus
 #: treiben kann. Nur die Ladungspumpe des DRV8876 tut das: VCP liegt
 #: laut SLVSDS7B, Abschnitt 7.3.1 "Charge Pump", ueber VM. An diesen
@@ -570,9 +615,9 @@ GEHAEUSE = {
     #  Durchsteck- bzw. Schraubanschluss -- dort ist nicht die
     #  Anschlussspanne das Mass, sondern das Raster; deshalb Spanne
     #  None und Raster gesetzt.)
-    "SN74LVC1G06": ("SOT-353 (SC-70-5), DCK", 5, 0.65, 2.10,
-                    "LCSC C7828 (Produktseite: Gehaeuse 'SC-70-5'); TI "
-                    "SCES295AB, Abschnitt 3 'Description', Tabelle "
+    "SN74LVC1G07": ("SOT-353 (SC-70-5), DCK", 5, 0.65, 2.10,
+                    "LCSC C7830 (Produktseite: Gehaeuse 'SC-70-5'); TI "
+                    "SCES296AG, Abschnitt 3 'Description', Tabelle "
                     "'Package Information': 'DCK (SC70, 5) ... PACKAGE "
                     "SIZE 2.00mm x 2.10mm ... BODY SIZE 2.00mm x "
                     "1.25mm', Fussnote (2): 'The package size (length x "
@@ -585,7 +630,7 @@ GEHAEUSE = {
     "SN74LVC1G08": ("SOT-353 (SC-70-5), DCK", 5, 0.65, 2.10,
                     "LCSC C7832 (Produktseite: Gehaeuse 'SC-70-5'); "
                     "dasselbe DCK-Gehaeuse (DCK0005A) wie der "
-                    "SN74LVC1G06, Masse daher aus SCES295AB, s. dort."),
+                    "SN74LVC1G07, Masse daher aus SCES296AG, s. dort."),
     "Motor-Klemme": ("Schraubklemme 2-polig, Raster 5,08 mm", 2, 5.08, None,
                      "DB128L-5.08-2P-GN-S, LCSC C395868 (hardware/"
                      "bauteile-1b.md). Der Footprint ist ein genormter "
@@ -597,6 +642,33 @@ GEHAEUSE = {
                          "handelsuebliche 2,54-mm-Stiftleiste, damit eine "
                          "gewoehnliche Jumper-Bruecke den unbenutzten "
                          "Kanal schliessen kann."),
+    # --- Versorgungszelle (Aufgabe 3, tools/sch/versorgung.py, hier nur
+    #     wiederverwendet -- diese Bauteile werden von versorgung.bauen()
+    #     platziert, tauchen aber ueber motormodul.bauen() in DERSELBEN
+    #     generierten Netzliste auf und muessen deshalb hier einen
+    #     Eintrag haben, sonst faellt diese Pruefung auf J90/U90/D91.) --
+    "SS36C": ("SMC (DO-214AB)", 2, None, None,
+              "LCSC C16237 (versorgung.py-Kommentar bei D91_WERT: "
+              "'Schottky 60V 3A, DO-214AB'); dasselbe Gehaeuse wie "
+              "SMCJ30A oben, andere Diode."),
+    "K7805-1000R3": ("SIP-3 THT (RECOM-R-78B-Fussabdruck)", 3, 2.54, None,
+                     "LCSC C909765 (versorgung.py-Kommentar bei U90_WERT). "
+                     "Raster NICHT aus dem DEXU-Datenblatt gelesen "
+                     "(Massbild nur als Grafik) -- eigene Pruefung der "
+                     "tatsaechlichen Footprint-Datei "
+                     "Converter_DCDC_RECOM_R-78B-2.0_THT.kicad_mod: drei "
+                     "Pads bei x=0/2,54/5,08 mm, Raster also 2,54 mm. "
+                     "Anschlussspanne bewusst None: die "
+                     "Anschlussspanne-Pruefung erwartet ein um (0,0) "
+                     "ZENTRIERTES Bauteil (Pruefpunkte +-Spanne/2) -- bei "
+                     "diesem SIP-3-Footprint sitzt Pin 1 selbst im "
+                     "Ursprung, das Bauteil ist nicht zentriert, die "
+                     "Pruefung passt hier nicht."),
+    "Versorgung Eingang": ("Schraubklemme 2-polig, Raster 3,5 mm", 2, 3.5, None,
+                           "versorgung.py, FP_KLEMME_2-Kommentar: "
+                           "PT-1,5-2-3.5 (LCSC-Nachbarbauteil von "
+                           "KF350-3.5-2P, C474892), Footprint-String "
+                           "identisch mit dimmermodul.FP_KLEMME_2."),
     # --- Modulsockel (Aufgaben 3/4, hier nur wiederverwendet) ------
     "STM32C011F6P6": ("TSSOP-20", 20, None, None,
                       "hardware/bauteile.md (Etappe 1a), ST DS13866. "
@@ -607,8 +679,30 @@ GEHAEUSE = {
     "SN74LVC2G00DCUR": ("VSSOP-8, 0,5 mm", 8, 0.5, None,
                         "LCSC C206109 (Produktseite: Gehaeuse "
                         "'VSSOP-8-0.5mm')."),
-    "Stapelstecker 2x20": ("Buchse mit durchgehendem Stift, 2,54 mm", 40, 2.54, None,
-                           "LCSC C35165 (hardware/bauteile-1b.md, Beleg 1/6)."),
+    # "Stapelstecker 2x20" (v1, EIN 40-Pin-Block, LCSC C35165) ist mit
+    # Task 4 entfallen -- v2 zerlegt ihn in zwei 1x20-Reihen (stack_spec.
+    # STECKER_POS["stapel_links"/"stapel_rechts"]), je Reihe der halbe
+    # Pinsatz derselben Bauteilfamilie ("Buchse mit durchgehendem
+    # Stift"). Eine eigene LCSC-Nummer fuer die 20-Pin-Variante ist HIER
+    # nicht belegt (Aufgabe 6/7, Beschaffung) -- Raster/Pinzahl kommen
+    # stattdessen direkt aus stack_spec.py (dort mit voller Geometrie-
+    # Herleitung, s. "stapel_links/stapel_rechts"-Kommentarblock).
+    "Stapelstecker links, Pico-Pins 1..20 (Buchse)":
+        ("Buchse mit durchgehendem Stift, 2,54 mm", 20, 2.54, None,
+         "stack_spec.py, STECKER_POS['stapel_links']; LCSC-Nummer der "
+         "20-Pin-Variante noch offen (Aufgabe 6/7)."),
+    "Stapelstecker rechts, Pico-Pins 21..40 (Buchse)":
+        ("Buchse mit durchgehendem Stift, 2,54 mm", 20, 2.54, None,
+         "stack_spec.py, STECKER_POS['stapel_rechts'] -- exaktes "
+         "Spiegelbild von stapel_links, s. dort."),
+    "Randpads GPIO, unbestueckt (THT-Loetpad)":
+        ("Stiftleiste 1x18, Raster 2,54 mm", 18, 2.54, None,
+         "modulsockel.FP_RANDPAD_GPIO -- unbestueckter Platzhalter "
+         "(dnp=True), Polzahl/Raster stimmen mit stack_spec.RANDPADS "
+         "ueberein; die Silk-Beschriftung ist Sache des Layouts."),
+    "Randpads Versorgung: 2x 3V3 + 2x GND, unbestueckt (THT-Loetpad)":
+        ("Stiftleiste 1x04, Raster 2,54 mm", 4, 2.54, None,
+         "modulsockel.FP_RANDPAD_VERSORGUNG, sonst wie oben."),
     "Kettenstecker, Buchse oben (SMD)": ("Buchsenleiste 1x02, 2,54 mm", 2, 2.54, None,
                                          "LCSC C541849."),
     "Kettenstecker, Stift unten (SMD)": ("Stiftleiste 1x02, 2,54 mm", 2, 2.54, None,
@@ -641,15 +735,21 @@ PC817_LAND_PAD_Y_MM = 1.7       # Padbreite (laengs, Richtung Raster)
 #: Pads, die im Footprint vorkommen, aber im Symbol keinen Pin haben --
 #: mit Begruendung. Ohne Eintrag faellt die Pruefung durch; ein
 #: ueberzaehliges Pad ist sonst ein Hinweis auf den falschen Footprint.
-FOOTPRINT_PAD_OHNE_PIN = {
-    ("SN74LVC1G06", "1"):
-        "Pin 1 des DCK-Gehaeuses ist unbeschaltet: TI SCES295AB, "
-        "Abschnitt 4 'Pin Configuration and Functions', Figure 4-3 "
-        "'DCK Package 5-Pin SC70 Top View' -- 1 = NC, 2 = A, 3 = GND, "
-        "4 = Y, 5 = VCC. Das KiCad-Symbol 74xGxx:74LVC1G06 fuehrt den "
-        "NC-Pin gar nicht erst; die Loetflaeche muss trotzdem da sein, "
-        "weil das Gehaeuse dort ein Bein hat.",
-}
+#:
+#: LEER seit dem Bauteiltausch 1G06->1G07 (Task 5, 2026-09-08) -- eigene
+#: Pruefung der KiCad-Quelle (74xGxx.kicad_sym) foerderte dabei einen
+#: echten Unterschied zwischen den beiden Symbolen zutage: 1G06
+#: fuehrt gar keinen Pin "1" (die Symboldefinition beginnt direkt bei
+#: Pin 2/A), waehrend 74LVC1G07 Pin 1 SEHR WOHL als Pin fuehrt (Typ
+#: "free", Name "NC") -- deshalb war frueher hier ein Eintrag fuer
+#: "SN74LVC1G07"/"1" noetig (Pad 1 des Footprints ohne Gegenstueck im
+#: 1G06-Symbol); mit dem 1G07-Symbol matcht Pad 1 jetzt direkt Pin 1,
+#: die Pruefung braucht dafuer keinen Eintrag mehr. `sch.nc(inv, "1")`
+#: (s. `_notaus_schleifen()`) markiert den jetzt SYMBOLSEITIG
+#: vorhandenen NC-Pin explizit -- ohne ihn meldete
+#: `gen.Schaltplan.selbstpruefung()` "haengt in der Luft" (eigene
+#: Pruefung, tatsaechlich rot gesehen).
+FOOTPRINT_PAD_OHNE_PIN = {}
 
 
 def _load_libs(sch):
@@ -658,26 +758,24 @@ def _load_libs(sch):
     sch.lib("Device:C_Polarized", "Device.kicad_sym", "C_Polarized")
     sch.lib("Device:D", "Device.kicad_sym", "D")
     sch.lib("Device:D_Zener", "Device.kicad_sym", "D_Zener")
-    # Q1: das GENERISCHE P-Kanal-Symbol (Pins 1=G, 2=D, 3=S -- eigene
-    # Pruefung: pinngleich mit dem frueher benutzten IRF9540N/IRF4905).
-    # Der Typ steht im Wertfeld ("IRFR5305"), weil die KiCad-Bibliothek
-    # fuer ihn kein eigenes Symbol fuehrt -- und weil ein Symbolname,
-    # der einen anderen Typ nennt als die Stueckliste, genau der Fehler
-    # waere, den Aufgabe 5f hier abstellt (s. Q1 in
-    # _endstufe_leistung()).
-    sch.lib("Transistor_FET:Q_PMOS_GDS", "Transistor_FET.kicad_sym",
-            "Q_PMOS_GDS")
+    # Q1 (das GENERISCHE P-Kanal-Symbol, Transistor_FET:Q_PMOS_GDS) ist
+    # mit dem alten Verpolschutz-Strang entfallen -- versorgung.py laedt
+    # dasselbe Symbol fuer Q90 selbst (`versorgung._load_libs()`), s.
+    # Kommentar vor `_stapel_speist_lokal()` oben.
     sch.lib("Isolator:PC817", "Isolator.kicad_sym", "PC817")
     # U3: dasselbe Gatter-Bauteil wie U103 im Modulsockel (SN74LVC1G08,
     # SOT-353) -- keine neue Bauteilnummer noetig, LCSC C7832 ist in
     # hardware/bauteile-1b.md bereits auf der Produktseite geprueft.
     sch.lib("74xGxx:74LVC1G08", "74xGxx.kicad_sym", "74LVC1G08")
-    # U6/U7: Inverter mit OPEN-DRAIN-Ausgang (SN74LVC1G06, SOT-353,
-    # derselbe Footprint wie U3). Warum ein Open-Drain-Ausgang und kein
-    # gewoehnliches Gatter: s. `_notaus_schleifen()`, Abschnitt "Warum
-    # nicht Pulldown + Diode". Pin 1 (NC) fuehrt das KiCad-Symbol gar
-    # nicht -- die Selbstpruefung verlangt ihn deshalb auch nicht.
-    sch.lib("74xGxx:74LVC1G06", "74xGxx.kicad_sym", "74LVC1G06")
+    # U6/U7: NICHTinvertierender Puffer mit OPEN-DRAIN-Ausgang
+    # (SN74LVC1G07, SOT-353, derselbe Footprint wie U3) -- ERSETZT
+    # 2026-09-08 den zuvor eingesetzten 1G06 (invertierend,
+    # fail-unsafe), s. INVERTER_WERT-Kommentar oben. Warum ein
+    # Open-Drain-Ausgang und kein gewoehnliches Gatter: s.
+    # `_notaus_schleifen()`, Abschnitt "Warum nicht Pulldown + Diode".
+    # Pin 1 (NC) fuehrt das KiCad-Symbol gar nicht -- die Selbstpruefung
+    # verlangt ihn deshalb auch nicht.
+    sch.lib("74xGxx:74LVC1G07", "74xGxx.kicad_sym", "74LVC1G07")
     sch.lib("Connector:Screw_Terminal_01x02", "Connector.kicad_sym",
             "Screw_Terminal_01x02")
     sch.lib("Connector:Screw_Terminal_01x03", "Connector.kicad_sym",
@@ -695,108 +793,110 @@ def _load_libs(sch):
     sch.lib("DRV8876PWPR:DRV8876PWPR", os.path.abspath(drv_sym), "DRV8876PWPR")
 
 
-def _endstufe_leistung(sch, ox, oy):
-    """D1 (TVS), C12 (Stuetzkondensator), Q1+R11/R12 (Verpolungsschutz).
+# ===================================================================
+#  Q1/R11/R12/D1/C12 (v1-Verpolschutz-Strang) ENTFALLEN (Task 5, 2026-09-08)
+# ===================================================================
+# Frueher stand hier `_endstufe_leistung()`: ein eigener Verpolschutz
+# (Q1/R11/R12) plus TVS (D1) und Stuetzkondensator (C12) zwischen dem
+# Stapel-Netz "PWR24V" (Quelle, ueber J103/J104) und der lokalen,
+# geschuetzten Schiene "+24V". Diese Funktion ist ERSATZLOS entfallen
+# -- ersetzt durch einen Aufruf von `versorgung.bauen()` (s. `bauen()`
+# unten), der GENAU dieselbe Aufgabe uebernimmt (Verpolschutz + TVS +
+# Stuetzkondensator vor "+24V"), nur mit einer eigenen Klemme J90 statt
+# PWR24V als Eingang, UND -- anders als die alte Fassung -- RICHTIG
+# gepolt.
+#
+# **Der behobene Fehler.** Q1 sass in der alten Fassung GENAU
+# UMGEKEHRT: Source an der rohen Einspeisung ("PWR24V"), Drain an der
+# bereits geschuetzten lokalen Schiene ("+24V"), und der Gate-Teiler
+# (R11/R12) hing ebenfalls an PWR24V statt an der lokalen Schiene. Bei
+# verpolter Einspeisung leitet die Body-Diode eines P-Kanal-MOSFETs in
+# GENAU dieser Anordnung durch, und die (dann vorwaertsgespeiste) TVS
+# D1 bildet zusammen mit ihr einen Kurzschluss-Pfad ("Crowbar") statt
+# den Rueckstrom zu sperren -- der Schutz schuetzte in genau dem Fall
+# nichts, fuer den er gedacht war. Volle Herleitung: tools/sch/
+# versorgung.py (Moduldoku ganz oben). tests/test_versorgung.py haelt
+# dazu einen Rot-Nachweis: er baut motormodul.bauen() vor dieser
+# Aenderung tatsaechlich auf und bestaetigt die falsche Polung an der
+# echten, generierten Netzliste (nicht nur am Kommentar hier) -- mit
+# dieser Aenderung wird genau dieser Nachweis hinfaellig und die
+# betroffenen Zusicherungen in tests/test_versorgung.py wurden
+# entsprechend auf die POSITIVE Pruefung (Q90 statt Q1) umgestellt.
+#
+# **NETZ-ABBILDUNG v1 -> v2** (fuer die Endstufe unten UNVERAENDERT
+# wichtig -- R7..R13/U1/C9..C13/R16..R21 haengen weiterhin an "+24V"/
+# "GND", nur wer diese Schiene speist, hat sich geaendert):
+#   * "+24V" (lokal, geschuetzt) -- bleibt namensgleich "+24V", nur
+#     jetzt hinter Q90s Source (vorher Q1s Drain) getrieben.
+#   * "PWR24V" (Stapel, ueber J103/J104 durchgereicht) -- bleibt
+#     namensgleich "PWR24V"; s. `_stapel_speist_lokal()` unten, warum
+#     dieses Netz auf DIESEM Modul trotzdem nicht ins Leere laeuft.
+#   * "Q1_GATE" entfaellt ersatzlos -- der Nachfolgeknoten
+#     ("Q90_GATE") ist intern in versorgung.py verdrahtet, nicht von
+#     hier aus sichtbar.
+#
+# **IRFR5305-Herleitung (Sperrspannung/Gatespannung/Durchlassverlust,
+# Aufgabe 5f) bleibt unten stehen, obwohl die Funktion entfallen ist**
+# -- versorgung.py zitiert sie woertlich ("Q90_WERT = 'IRFR5305' ...
+# Herleitung s. motormodul.py::_endstufe_leistung"), und dieselbe
+# Bauteilwahl (nur richtig gepolt) gilt fuer Q90 unveraendert:
+#
+#   IRFR5305PbF (Infineon/International Rectifier), P-Kanal,
+#   **D-Pak (TO-252AA)**, LCSC **C2624**
+#   (`lcsc.com/product-detail/mosfets_infineon-technologies-
+#   irfr5305trpbf_C2624.html`, Rohdaten: "P-Channel MOSFET",
+#   Gehaeuse "DPAK (TO-252AA)", "55V", "31A", "65mOhm @ 10V",
+#   "110W", Bestand 17 854).
+#   Datenblatt Infineon/IR **PD-95025A** (12/13/04), selbst gelesen:
+#   Titelzeile "IRFR5305PbF ... Surface Mount (IRFR5305) ...
+#   VDSS = -55V, RDS(on) = 0.065 Ohm, ID = -31A"; "Absolute Maximum
+#   Ratings": VGS +-20 V, PD 110 W; "Electrical Characteristics":
+#   VGS(th) -2,0 bis -4,0 V, IGSS +-100 nA bei VGS = +-20 V;
+#   Abschnitt "D-Pak (TO-252AA) Package Outline".
+#
+#   * Sperrspannung: 55 V gegen 26,4 V Schiene und gegen die
+#     Klemmspannung der TVS (SMCJ30A, MAX 48,4 V) -- passt.
+#   * Gatespannung: R90/R91 sind gleich gross (wie vorher R11/R12),
+#     also VGS = -U/2 = -13,2 V im schlechtesten Fall. Unter +-20 V
+#     (Grenzwert) und ueber den -4,0 V Einschaltschwelle (MAX) -- der
+#     Transistor ist sicher durchgesteuert und sicher nicht
+#     ueberlastet.
+#   * Durchlassverlust: 0,065 Ohm x (2,5 A)^2 = 0,41 W; das
+#     Datenblatt nennt fuer typische SMD-Montage "Power dissipation
+#     levels up to 1.5 watts are possible".
+#   * Gateleckstrom 100 nA gegen 1,3 mA Teilerstrom durch R90/R91 --
+#     der Teiler bestimmt die Gatespannung, nicht der Transistor.
 
-    PWR24V erreicht dieses Modul NICHT ueber eine eigene Schraubklemme
-    (anders als im Altprojekt, dort J1) -- der Stapel hat dafuer bereits
-    einen eigenen Leistungsstecker (J103/J104, modulsockel.py,
-    `_leistungsstecker()`), den `modulsockel.einbauen()` in JEDEM Modul
-    unbedingt anlegt und auf das Netz "PWR24V" legt. Eine zusaetzliche
-    Klemme J1 waere ein zweiter, redundanter 24-V-Eingang auf demselben
-    Modul -- dafuer nennt weder der Vertrag noch das Design-Dokument
-    einen Zweck, und der Aufgabenbrief fuer das PCB-Layout (Aufgabe 7,
-    Schritt 5) prueft die Leistungsbahnen ausdruecklich unter den
-    Netznamen "+24V"/"Out1"/"Out2" -- also GENAU die Namen, die diese
-    Datei fuer die LOKALE, geschuetzte Schiene hinter Q1 verwendet, nicht
-    "PWR24V". Der Verpolungsschutz (Q1/R11/R12, unveraendert aus dem
-    Altprojekt uebernommen) sitzt deshalb zwischen dem Stapel-Netz
-    "PWR24V" (Quelle, ueber J103/J104) und der lokalen, geschuetzten
-    Schiene "+24V" (Verbraucher: D1, C12, U1 VM, R16/R17) -- dieselbe
-    Funktion wie im Altprojekt (schuetzt vor Verpolung), nur an der
-    Schnittstelle zum Stapelstecker statt an einer eigenen Schraubklemme.
-    Das schuetzt sogar zusaetzlich vor einem falsch gesteckten
-    Stapelstecker, nicht nur vor einer falsch verdrahteten Klemme.
-    """
-    # Q1: P-MOSFET, Source an PWR24V (vom Stapel), Drain an +24V (lokal,
-    # geschuetzt), Gate ueber R11 an Source / R12 an GND -- Verschaltung
-    # unveraendert aus dem Altprojekt (dort R11/R12 = 10k/10k, Netzliste
-    # bestaetigt).
-    #
-    # **Der TYP ist geaendert (Aufgabe 5f).** Das Altprojekt trug
-    # "IRF4905" im TO-252-Footprint. Den IRF4905 gibt es aber nicht in
-    # TO-252: Infineon/IR fuehrt ihn als TO-220AB (IRF4905PbF, LCSC
-    # C2564, Produktseite gesichtet: Gehaeuse "TO-220") und als
-    # D2Pak/TO-263 (IRF4905S, LCSC C5337969, Produktseite gesichtet:
-    # Gehaeuse "TO-263"). Wert und Footprint widersprachen sich also --
-    # bestueckt worden waere im besten Fall ein anderes Bauteil.
-    #
-    # Statt den Footprint auf D2Pak zu vergroessern (10,2 x 9,9 mm statt
-    # 6,5 x 6,1 mm -- das Layout des Altprojekts, auf dem Aufgabe 7
-    # aufsetzt, rechnet mit dem D-Pak-Umriss) wird der Typ auf den
-    # Schwestertyp derselben HEXFET-Familie gesetzt, den es genau in
-    # dieser Bauform gibt:
-    #
-    #   IRFR5305PbF (Infineon/International Rectifier), P-Kanal,
-    #   **D-Pak (TO-252AA)**, LCSC **C2624**
-    #   (`lcsc.com/product-detail/mosfets_infineon-technologies-
-    #   irfr5305trpbf_C2624.html`, Rohdaten: "P-Channel MOSFET",
-    #   Gehaeuse "DPAK (TO-252AA)", "55V", "31A", "65mOhm @ 10V",
-    #   "110W", Bestand 17 854).
-    #   Datenblatt Infineon/IR **PD-95025A** (12/13/04), selbst gelesen:
-    #   Titelzeile "IRFR5305PbF ... Surface Mount (IRFR5305) ...
-    #   VDSS = -55V, RDS(on) = 0.065 Ohm, ID = -31A"; "Absolute Maximum
-    #   Ratings": VGS +-20 V, PD 110 W; "Electrical Characteristics":
-    #   VGS(th) -2,0 bis -4,0 V, IGSS +-100 nA bei VGS = +-20 V;
-    #   Abschnitt "D-Pak (TO-252AA) Package Outline".
-    #
-    # Nachgerechnet fuer diesen Einsatz:
-    #   * Sperrspannung: 55 V gegen 26,4 V Schiene und gegen die
-    #     Klemmspannung der TVS D1 (SMCJ30A, MAX 48,4 V) -- passt.
-    #   * Gatespannung: R11/R12 sind gleich gross, also VGS = -U/2 =
-    #     -13,2 V im schlechtesten Fall. Unter +-20 V (Grenzwert) und
-    #     ueber den -4,0 V Einschaltschwelle (MAX) -- der Transistor ist
-    #     sicher durchgesteuert und sicher nicht ueberlastet.
-    #   * Durchlassverlust: 0,065 Ohm x (2,5 A)^2 = 0,41 W; das
-    #     Datenblatt nennt fuer typische SMD-Montage "Power dissipation
-    #     levels up to 1.5 watts are possible".
-    #   * Gateleckstrom 100 nA gegen 1,3 mA Teilerstrom durch R11/R12 --
-    #     der Teiler bestimmt die Gatespannung, nicht der Transistor.
-    #     Genau darauf stuetzt sich die Leistungspruefung, wenn sie den
-    #     Gate-Pin als gleichspannungsmaessig getrennt behandelt.
-    sch.bauteil("Q1", "Transistor_FET:Q_PMOS_GDS", (ox, oy), "IRFR5305", FP_TO252,
-                rot=0, roff=(2.54, 2.54), voff=(2.54, 5.08))
-    sch.netz("Q1", "1", "L", "Q1_GATE")   # G
-    sch.netz("Q1", "2", "U", "+24V")      # D -> lokale, geschuetzte Schiene
-    sch.netz("Q1", "3", "D", "PWR24V")    # S -> vom Stapel-Leistungsstecker
 
-    sch.bauteil("R11", "Device:R", (ox + 15.24, oy + 15.24), R11_WERT, FP_R0805,
-                rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
-    sch.netz("R11", "1", "U", "Q1_GATE")
-    sch.netz("R11", "2", "D", "PWR24V")
-    sch.bauteil("R12", "Device:R", (ox + 15.24, oy - 15.24), R12_WERT, FP_R0805,
-                rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
-    sch.netz("R12", "1", "U", "Q1_GATE")
-    sch.netz("R12", "2", "D", "GND")
+def _stapel_speist_lokal(sch, ox, oy):
+    """Verbindet "PWR24V" (Stapel, ueber J103/J104 durchgereicht) mit
+    "+24V" (lokal, hinter Q90 geschuetzt) zu EINEM elektrischen Knoten.
 
-    # D1 (TVS, unveraendert): Kathode -> +24V, Anode -> GND -- exakt
-    # dasselbe Muster wie sockelplatine.py (dort D1 an PWR24V statt +24V,
-    # sonst identisch; Begruendung fuer Device:D_Zener statt Device:D_TVS
-    # steht dort).
-    sch.bauteil("D1", "Device:D_Zener", (ox + 40.64, oy + 20.32), D1_WERT,
-                FP_TVS_SMC, rot=270, roff=(2.54, -2.54), voff=(2.54, 2.54))
-    sch.netz("D1", "1", "U", "+24V")
-    sch.netz("D1", "2", "D", "GND")
+    Ohne diesen Draht waeren beide Netze auf diesem Modul voneinander
+    isoliert: modulsockel.einbauen() legt J103/J104 unbedingt auf
+    "PWR24V", aber nichts sonst haengt hier daran, seit der alte
+    Q1-Strang (Quelle "PWR24V") entfallen ist. Der Vertrag sieht vor,
+    dass EINE Platine im Stapel tatsaechlich extern gespeist wird
+    (ihre eigene Klemme J90, s. versorgung.bauen()) und diese Speisung
+    ueber den Leistungsstecker an den Rest des Stapels weitergibt --
+    "eine gespeiste Platine versorgt den Stapel". Ist das Motormodul
+    NICHT die gespeiste Platine (J90 bleibt dann unbestueckt/offen),
+    schadet die Verbindung trotzdem nicht: sie macht "+24V" und
+    "PWR24V" nur zu Namen fuer denselben Knoten, unabhaengig davon, wer
+    ihn tatsaechlich treibt.
 
-    # C12 (220uF, polarisiert): Pin 1 = "+" im Device:C_Polarized-Symbol
-    # (eigene Pruefung der KiCad-Quelle) -- MUSS an +24V liegen, NIE an
-    # GND. Auf dem Muttern-Print lag der "+"-Aufdruck auf GND (zwei Elkos
-    # explodiert, hardware/bauteile-1b.md); tests/test_motormodul.py
-    # sichert das hier explizit ab (Punkt 3 des Auftrags).
-    sch.bauteil("C12", "Device:C_Polarized", (ox + 40.64, oy - 5.08), C12_WERT,
-                FP_CP_RADIAL, rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
-    sch.netz("C12", "1", "U", "+24V")     # Pin 1 = "+"
-    sch.netz("C12", "2", "D", "GND")
+    Zwei lokale Labels an denselben Drahtenden sind in KiCad ein
+    legitimer Weg, zwei Netznamen elektrisch gleichzusetzen -- dieselbe
+    Grundidee wie modulsockel._stapelstecker()s gleichlautende Labels
+    OHNE gemeinsamen Draht (s. dortiger Docstring), hier nur umgekehrt:
+    derselbe Draht, zwei VERSCHIEDENE Namen. Verifiziert per
+    `kicad-cli sch erc` (0 Fehler, 0 Warnungen) -- kein rein behaupteter
+    Kurzschluss zweier Label."""
+    a = (ox, oy)
+    b = (ox + 15.24, oy)
+    sch.draht(a, b)
+    sch.LABELS.append((a[0], a[1], 0, "+24V"))
+    sch.LABELS.append((b[0], b[1], 180, "PWR24V"))
 
 
 def _endstufe_treiber(sch, ox, oy, netze):
@@ -1003,12 +1103,18 @@ def _notaus_schleifen(sch, ox, oy, netze):
        Potentialtrennung -- ehrlich benannt.)
 
     Die Schwellen, gegen die gerechnet wird, sind belegt: der Eingang von
-    U6 (SN74LVC1G06, Dok. SCES295AB, Abschnitt 5.3, Zeile "VCC = 3V to
-    3.6V") verlangt VIH >= 2,0 V und VIL <= 0,8 V; er ist ausserdem ein
-    Schmitt-Trigger (Abschnitt 1 "Features": "Schmitt trigger action on
-    all ports"), vertraegt also die traegen Flanken des Optokopplers
-    (tr/tf typ. 4/3 us, MAX 18 us -- SHARP D2-A03101EN,
-    "Electro-optical Characteristics").
+    U6 (SN74LVC1G07, Dok. SCES296AG, Abschnitt 5.3, Zeile "VCC = 3V to
+    3.6V") verlangt VIH >= 2,0 V und VIL <= 0,8 V; er ist -- anders als
+    der ersetzte 1G06 -- KEIN Schmitt-Trigger (Abschnitt "7.3 Feature
+    Description" des 1G07 nennt keine Hysterese-Eigenschaft, selbst
+    gelesen), vertraegt die traegen Flanken des Optokopplers (tr/tf typ.
+    4/3 us, MAX 18 us -- SHARP D2-A03101EN, "Electro-optical
+    Characteristics") also OHNE dieses Netz. Das bleibt trotzdem sicher:
+    ein Open-Drain-Ausgang kann in einer undefinierten Uebergangszone
+    hoechstens ZUSAETZLICH kurz auf VOL wackeln (Y=L), nie stabil und
+    faelschlich auf Y=Z springen -- jedes Wackeln zieht die Sammelleitung
+    also hoechstens haeufiger Richtung NOTAUS, nie faelschlich davon weg
+    (s. INV_II_MAX-Kommentar oben fuer die volle Herleitung).
 
     **HIGH-Pegel, Nachweis.** Schleifenstrom im schlechtesten Fall
     (24 V - 10 %, VF der LED beim MAX-Wert 1,4 V, beide Widerstaende
@@ -1037,7 +1143,7 @@ def _notaus_schleifen(sch, ox, oy, netze):
     **LOW-Pegel, Nachweis.** Bei offener Schleife fliesst durch R20 nur
     noch der Dunkelstrom des Fototransistors (ICEO MAX 100 nA, SHARP
     D2-A03101EN) und der Eingangsstrom von U6 (II MAX +-1 uA,
-    SCES295AB 5.5):
+    SCES296AG 5.5):
 
         U(SCHLEIFE) <= (0,1 + 1,0) uA x 4,7 kOhm = 5,2 mV
 
@@ -1076,12 +1182,13 @@ def _notaus_schleifen(sch, ox, oy, netze):
     Aktion ausloest -- das kann kein passives Bauteil, dafuer braucht es
     einen lokal gespeisten Treiber.
 
-    Der ist hier **U6/U7 (SN74LVC1G06, Inverter mit Open-Drain-Ausgang,
-    SOT-353 wie U3)**: Eingang SCHLEIFE_k, Ausgang direkt auf NOTAUS.
+    Der ist hier **U6/U7 (SN74LVC1G07, nichtinvertierender Puffer mit
+    Open-Drain-Ausgang, SOT-353 wie U3)**: Eingang SCHLEIFE_k, Ausgang
+    direkt auf NOTAUS.
     Schleife in Ordnung -> Eingang HIGH -> Ausgang hochohmig, der Bus
     bleibt frei. Schleife offen -> Eingang LOW -> Ausgang zieht den Bus
     auf VOL. Zwei Open-Drain-Ausgaenge duerfen auf denselben Bus
-    ("active-low wired-OR", SCES295AB Abschnitt 3 "Description"), die
+    ("active-low wired-OR", SCES296AG Abschnitt 3 "Description"), die
     zwei Kanaele bleiben also bis auf den Bus hinaus unabhaengig.
 
     **D3/D4 entfallen dabei ersatzlos, und das ist kein Verlust, sondern
@@ -1089,7 +1196,7 @@ def _notaus_schleifen(sch, ox, oy, netze):
     Diodenspannung:
 
         I(Bus)  = 10 x (3,3 V - 0,4 V) / 10 kOhm = 2,9 mA
-        VOL     <= 0,4 V   (SCES295AB 5.5, MAX-Wert bereits bei
+        VOL     <= 0,4 V   (SCES296AG 5.5, MAX-Wert bereits bei
                             IOL = 16 mA und VCC = 3 V; VOL steigt
                             monoton mit IOL, bei 2,9 mA also erst recht)
         Reserve gegen VIL(U3) = 0,8 V:  >= 0,4 V
@@ -1099,12 +1206,12 @@ def _notaus_schleifen(sch, ox, oy, netze):
     Diode IN REIHE zum Open-Drain-Ausgang haette dagegen 0,4 V + 0,4 V =
     0,8 V ergeben, also exakt die Schwelle und null Reserve -- der Grund,
     aus dem D3/D4 nicht bleiben duerfen, sondern gehen muessen. Der
-    Ausgang haelt 24 mA (SCES295AB 5.3, VCC = 3 V), die 2,9 mA sind ein
+    Ausgang haelt 24 mA (SCES296AG 5.3, VCC = 3 V), die 2,9 mA sind ein
     Achtel davon; er vertraegt am Bus bis 5,5 V (Abschnitt 5.3, "VO 0 bis
     5,5 V").
 
     Im Ruhezustand (Bus HIGH) leckt jeder Ausgang hoechstens Ioff =
-    +-10 uA (SCES295AB 5.5). Zehn Module mit je zwei Ausgaengen und
+    +-10 uA (SCES296AG 5.5). Zehn Module mit je zwei Ausgaengen und
     einem Gattereingang (II <= 5 uA, SCES217AA 5.5) machen 250 uA gegen
     den auf 1 kOhm parallelgeschalteten Pullup -- 0,25 V Absenkung, der
     Bus bleibt bei 3,05 V und damit weit ueber VIH = 2,0 V.
@@ -1307,12 +1414,19 @@ def _notaus_schleifen(sch, ox, oy, netze):
         sch.netz(r_pd, "1", "U", knoten)
         sch.netz(r_pd, "2", "D", "GND")
 
-        # U6/U7: Inverter mit Open-Drain-Ausgang. Schleife offen (LOW)
-        # -> Ausgang zieht die Sammelleitung. Pin 1 (NC) fuehrt das
-        # Symbol nicht.
-        sch.bauteil(inv, "74xGxx:74LVC1G06", (ox + 127.0, y),
+        # U6/U7: nichtinvertierender Puffer mit Open-Drain-Ausgang
+        # (ERSETZT 2026-09-08 den 1G06, s. INVERTER_WERT-
+        # Kommentar). Schleife offen (LOW) -> Ausgang zieht die
+        # Sammelleitung. Pin 1 (NC) fuehrt das 1G07-Symbol ANDERS als
+        # das ersetzte 1G06-Symbol SEHR WOHL (Typ "free", eigene
+        # Pruefung von 74xGxx.kicad_sym, s. FOOTPRINT_PAD_OHNE_PIN-
+        # Kommentar) -- deshalb ausdruecklich `sch.nc()`, sonst meldet
+        # `selbstpruefung()` "haengt in der Luft".
+        sch.bauteil(inv, "74xGxx:74LVC1G07", (ox + 127.0, y),
                     INVERTER_WERT, FP_SOT353, rot=0,
-                    roff=(-15.24, 12.7), voff=(-15.24, 15.24))
+                    roff=(-15.24, 12.7), voff=(-15.24, 15.24),
+                    felder={"LCSC": "C7830"})
+        sch.nc(inv, "1")
         sch.netz(inv, "2", "L", knoten)             # A
         sch.netz(inv, "3", "D", "GND")
         sch.netz(inv, "4", "R", netze["NOTAUS"])     # Y, open drain
@@ -1406,7 +1520,7 @@ def _notaus_verriegelung(sch, ox, oy, netze):
     geringfuegig den Ruhestrom). 10 kOhm bleibt bewusst stehen und wird
     NICHT vergroessert: bei zehn Modulen parallel bleibt der Bus-Pullup
     bei 1 kOhm, und die Leckstroeme der Open-Drain-Ausgaenge (Ioff <=
-    10 uA, SCES295AB 5.5) und Gattereingaenge (<= 5 uA) senken den
+    10 uA, SCES296AG 5.5) und Gattereingaenge (<= 5 uA) senken den
     Ruhepegel damit nur um 0,25 V -- der Bus bleibt sicher ueber
     VIH = 2,0 V.
 
@@ -1445,16 +1559,22 @@ def _notaus_verriegelung(sch, ox, oy, netze):
 
 def bauen(sch, ox, oy):
     """Baut das Motormodul bei (ox, oy) in `sch` ein: Modulsockel-Block
-    (MCU, Flipflop, Gatter, Kennwiderstaende, alle Stecker) plus die
-    DRV8876-Endstufe aus dem Muttern-Board."""
+    (MCU, Flipflop, Gatter, Kennwiderstaende, alle Stecker, Randpads)
+    plus die DRV8876-Endstufe aus dem Muttern-Board plus die
+    Versorgungszelle (Task 5, ersetzt den alten Q1-Strang)."""
     _load_libs(sch)
 
     # Zwei der vier freien U100-Pins (modulsockel.ZUSATZ_PIN_RICHTUNG)
     # tragen hier echte Aufgaben -- Pin "2" (PC14) und Pin "15" (PA8)
     # bleiben frei/nc. PC14 trug bis Aufgabe 5f den Ausgang des
     # Sensor-Optokopplers U2; mit dem Sensoreingang (Moduldoku Punkt 6)
-    # ist er wieder frei geworden.
-    netze = modulsockel.einbauen(sch, ox, oy, mit_flipflop=True, zusatz_pins={
+    # ist er wieder frei geworden. frei_durchreichen=True (NEU, Task 5):
+    # das Motormodul ist ein v2-Modul und traegt die Randpads (J95/J96,
+    # s. modulsockel.randpads() unten) -- ohne frei_durchreichen=True
+    # legte _stapelstecker() die freien GPIO auf no_connect, und die
+    # Randpads-Labels haetten kein Gegenstueck (Leerlauf-Loetpad).
+    netze = modulsockel.einbauen(sch, ox, oy, mit_flipflop=True,
+                                  frei_durchreichen=True, zusatz_pins={
         # PC15/PA7: die zwei Schleifenknoten der Notaus-Kanaele. Seit der
         # Ruhestrom-Umstellung (Aufgabe 5d) heissen sie SCHLEIFE_1/2 statt
         # NOTAUS_1/2 -- die PEGELbedeutung ist dieselbe geblieben (LOW =
@@ -1464,24 +1584,42 @@ def bauen(sch, ox, oy):
         "3": "SCHLEIFE_1",    # PC15 -- Kanal 1 (J3 Pin 1/2)
         "14": "SCHLEIFE_2",   # PA7  -- Kanal 2 (J3 Pin 3/4)
     })
+    # J95/J96: die 22 unbestueckten Randpads (stack_spec.RANDPADS, v2) --
+    # jedes v2-Modul traegt sie (Aufgabenbrief Task 5). Unabhaengig von
+    # einbauen() (s. modulsockel.randpads()-Docstring); die Netznamen
+    # (GP.., 3V3, GND) treffen sich mit den frei_durchreichen=True oben
+    # gelegten Labels an J100/J105 ausschliesslich ueber den gemeinsamen
+    # Namen, nicht ueber einen gemeinsamen Draht.
+    modulsockel.randpads(sch)
+
     # PWR_FLAG auf "+24V" und "VCP": beide haben nur "power_in"/"passive"-
     # Pins, keinen einzigen "power_out" -- ohne ein power_out-Pin
     # irgendwo im Netz meldet kicad-cli sch erc "Input Power pin not
-    # driven" (eigene Messung, s. Testschritt). "+24V" wird zwar von Q1
-    # gespeist, aber ein MOSFET-Drain ist elektrisch kein "power_out"-Pin
-    # (Symboltyp "passive"); "VCP" erzeugt der DRV8876 intern per
-    # Ladungspumpe -- das weiss die ERC nicht, ihr Symbol fuehrt VCP als
-    # gewoehnlichen "power_in". Dasselbe Muster wie modulsockel.py
-    # (#FLG101/#FLG102 fuer GND/3V3) und sockelplatine.py (#FLG1 fuer
-    # PWR24V), hier unter eigenen Referenzen, damit nichts mit deren
-    # #FLG101/#FLG102/#FLG1 kollidiert.
+    # driven" (eigene Messung, s. Testschritt). "+24V" wird jetzt von
+    # Q90 (versorgung.py) gespeist, aber ein MOSFET-Source ist elektrisch
+    # kein "power_out"-Pin (Symboltyp "passive"); "VCP" erzeugt der
+    # DRV8876 intern per Ladungspumpe -- das weiss die ERC nicht, ihr
+    # Symbol fuehrt VCP als gewoehnlichen "power_in". Dasselbe Muster
+    # wie modulsockel.py (#FLG101/#FLG102 fuer GND/3V3) und
+    # sockelplatine.py (#FLG1 fuer PWR24V), hier unter eigenen
+    # Referenzen, damit nichts mit deren #FLG101/#FLG102/#FLG1 (oder mit
+    # versorgung.py's eigenem #FLG90 auf PWR_IN) kollidiert.
     sch.lib("power:PWR_FLAG", "power.kicad_sym", "PWR_FLAG")
     sch.bauteil("#FLG201", "power:PWR_FLAG", (ox + 279.4, oy + 83.82), "PWR_FLAG", "")
     sch.netz("#FLG201", "1", "D", "+24V")
     sch.bauteil("#FLG202", "power:PWR_FLAG", (ox + 279.4, oy + 91.44), "PWR_FLAG", "")
     sch.netz("#FLG202", "1", "D", "VCP")
 
-    _endstufe_leistung(sch, ox + 330.2, oy + 15.24)
+    # Versorgungszelle (Task 5, ersetzt Q1/R11/R12/D1/C12, s. Kommentar
+    # vor `_stapel_speist_lokal()` oben): eigener, weit abgesetzter
+    # Streifen unterhalb aller anderen Bloecke (die reichen hoechstens
+    # bis y =~ oy+205, s. _notaus_schleifen() unten) -- geprueft per
+    # kicad-cli sch erc (0 Fehler, 0 Warnungen), nicht bloss angenommen.
+    versorgung.bauen(sch, ox + 60.96, oy + 228.6)
+    # Bindet die geschuetzte lokale Schiene "+24V" (hinter Q90) an die
+    # Stapel-Sammelschiene "PWR24V" (an J103/J104) -- s. Docstring dort.
+    _stapel_speist_lokal(sch, ox + 320.04, oy + 228.6)
+
     _endstufe_treiber(sch, ox + 431.8, oy + 12.7, netze)
     _motor_out(sch, ox + 431.8, oy - 63.5)
     _notaus_verriegelung(sch, ox + 330.2, oy + 63.5, netze)
