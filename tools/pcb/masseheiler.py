@@ -374,16 +374,39 @@ def heilen(board_pfad, nur_pruefen=False):
             pad_cluster = {_find(k) for k in list(_eltern)
                            if k and k[0] == "pad"}
             geloescht = 0
-            for lage, i, bb in offen:
-                c = _find((lage, i))
-                if c in pad_cluster:
-                    raise SystemExit(
-                        "masseheiler: %s-Stueck %d (x %.1f..%.1f y "
-                        "%.1f..%.1f) traegt Massepads, hat aber keinen "
-                        "freien Heilpunkt -- Layout pruefen"
-                        % (board.GetLayerName(lage), i,
-                           bb.GetLeft() / 1e6, bb.GetRight() / 1e6,
-                           bb.GetTop() / 1e6, bb.GetBottom() / 1e6))
+            # Sackgasse an einem Stueck MIT Massepads: das ist ein
+            # Layoutfehler und bleibt ROT (Rueckgabe 1).
+            #
+            # Die erste Fassung warf hier SystemExit -- und damit ALLES
+            # weg, was in den Runden davor schon geheilt war (die
+            # Platine wird erst am Ende gespeichert). Auf dem Motormodul
+            # kostete das in fast jedem Wuerfellauf ein Dutzend
+            # Masse-Kanten, die dieses Werkzeug hatte heilen KOENNEN:
+            # ein einziges nicht heilbares Stueck liess auch die
+            # heilbaren ungeheilt, und die DRC meldete hinterher beides
+            # gemeinsam als "missing connection". Ein Lauf mit einer
+            # restlos verlegten Platine (0 offene Verbindungen im
+            # Router) kam so trotzdem mit 11 offenen DRC-Posten heraus.
+            #
+            # Jetzt wird das Geheilte gespeichert und ALLE verbliebenen
+            # Stuecke gemeldet, nicht nur das erste. Rot bleibt rot --
+            # aber die Meldung nennt jetzt den ganzen Befund, und die
+            # DRC danach zeigt nur noch die echten Layoutfehler.
+            steckengeblieben = [(lage, i, bb) for lage, i, bb in offen
+                                if _find((lage, i)) in pad_cluster]
+            if steckengeblieben:
+                if gesetzt:
+                    board.Save(board_pfad)
+                    print("masseheiler: %d Heilung(en) gespeichert, bevor "
+                          "die Sackgasse kam" % len(gesetzt))
+                for lage, i, bb in steckengeblieben:
+                    print("  ! masseheiler: %s-Stueck %d (x %.1f..%.1f y "
+                          "%.1f..%.1f) traegt Massepads, hat aber keinen "
+                          "freien Heilpunkt -- Layout pruefen"
+                          % (board.GetLayerName(lage), i,
+                             bb.GetLeft() / 1e6, bb.GetRight() / 1e6,
+                             bb.GetTop() / 1e6, bb.GetBottom() / 1e6))
+                return 1
             for t in list(board.Tracks()):
                 if (t.Type() == pcbnew.PCB_VIA_T
                         and t.GetNetCode()

@@ -216,7 +216,16 @@ def kennzeichnungsprobe(board, beschreibung):
         fails.append("Kennzeichnung: \"KLEMMEN\" liegt nicht an der "
                      "Klemmenkante (y = %.1f)" % klemmen[0][2])
 
-    ax, ay = S.STECKER_POS["stapel"]["pin1"]
+    # Der v2-Vertrag kennt keinen Stecker "stapel" mehr: der eine
+    # 2x20-Block ist in die zwei Reihen "stapel_links"/"stapel_rechts"
+    # zerlegt. Diese Probe griff noch auf den v1-Namen zu und brach
+    # deshalb auf JEDER v2-Platine mit KeyError ab -- also genau in dem
+    # Schritt, der die Kennzeichnungs-Auflage messen soll. Pin 1 ist in
+    # v2 Kontakt 1 von stapel_links (dort zaehlt das Pico-Datenblatt
+    # selbst Pin 1); "stapel" bleibt als Rueckfall stehen, damit die
+    # Probe auch gegen einen v1-Vertrag noch laeuft.
+    _stapel = S.STECKER_POS.get("stapel_links") or S.STECKER_POS["stapel"]
+    ax, ay = _stapel["pin1"]
     einsen = [t for t in texte if t[0] == "1"
               and math.hypot(t[1] - ax, t[2] - ay) < 6.0]
     if not einsen:

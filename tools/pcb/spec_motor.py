@@ -138,6 +138,12 @@ for _d in (HERE, os.path.join(HERE, "..")):
     if _d not in sys.path:
         sys.path.insert(0, _d)
 import stack_spec as S       # noqa: E402
+# Die Bahnbreiten kommen aus fertigung.py, nicht aus einer zweiten
+# Zahl hier: die vorverdrahteten Leistungsstuecke muessen exakt so
+# breit sein wie das, was autoroute.dsn_netzklassen() daran
+# anschliesst -- und das liest dieselbe Datei. Zwei getrennte Kopien
+# derselben Zahl waren im Vorlaeuferprojekt genau der Fehler.
+import fertigung             # noqa: E402
 
 
 class Platz:
@@ -413,6 +419,34 @@ RULE_AREAS = (
     # auf der der Pico steckt) weder Bahn noch Via noch Guss.
     ("Antennenfreiheit (Pico-Schatten)", ("F.Cu",), S.ANTENNE_FREI,
      frozenset(("bahnen", "vias", "guss"))),
+
+    # Vias-frei in der Ausleitungsgasse des DRV8876.
+    #
+    # Zwischen der U1-Ostpadkante (43,15) und der J105-Kontaktreihe
+    # (Padkante 46,76) liegen 3,61 mm, und durch diese eine Gasse
+    # muessen FUENF Netze nach Sueden: /Out2 und /+24V in
+    # Leistungsbreite (1,00 mm) sowie /VCP, /CPH und /CPL (0,25 mm).
+    # Das 7,5-mm-Naehraster setzt sein Via aber genau in die Mitte
+    # dieser Gasse, auf (45,00|21,25) -- und zerlegt sie damit in zwei
+    # Teilgassen von 1,55 und 1,46 mm.
+    #
+    # ROT-NACHWEIS: mit diesem Via blieb /VCP (U1-12 -> C9-2) in FUENF
+    # aufeinanderfolgenden Wuerfellaeufen (e1..e5) offen -- als einzige
+    # Verbindung, und in jedem Lauf. Nachgerechnet ist das kein Pech:
+    # zwischen der Via-Oberkante (21,55) und der /+24V-Ausleitung auf
+    # Pad-11-Hoehe bleiben 0,575 mm, eine 0,25-mm-Bahn braucht mit
+    # beidseitigem Abstand 0,65 mm.
+    #
+    # Ein Naehvia ist hier also teurer als es nuetzt: es verbindet
+    # Masseflaechen, die ueber die Nachbarnaehte (45|28,75) und
+    # (37,5|21,25) ohnehin zusammenhaengen, und kostet dafuer ein
+    # ganzes Netz. Die Flaeche ist knapp um dieses eine Rasterpunkt
+    # gelegt (44,2..45,8 x 20,4..22,1); (45|28,75) bleibt bewusst
+    # erhalten -- unterhalb von U1 ist die Gasse breiter.
+    # _naht_erlaubt() liest RULE_AREAS generisch, der Eintrag wirkt
+    # dort also ohne eigenen Code.
+    ("Naehtfrei in der DRV8876-Ausleitung", ("F.Cu",),
+     (44.20, 20.40, 45.80, 22.10), frozenset(("vias",))),
 )
 
 # --- GND-Vorverdrahtung (nur das Nest; s. Moduldocstring) -------------
@@ -426,6 +460,10 @@ RULE_AREAS = (
 # hier uebernommen, weil sie an konkreten, nachgewiesen enge Gassen
 # gebunden ist, die der Verschub der Nest-Spalten nicht veraendert.
 _HALS = 0.40
+# Leistungsbreite wie in fertigung.TRACK_POWER -- hier als eigene
+# Konstante, weil die vorverdrahteten Leistungsstuecke dieselbe Breite
+# tragen muessen wie das, was der Router daran anschliesst.
+_LEISTUNG = fertigung.TRACK_POWER
 PRE_TRACKS = (
     ("/SEL_OUT", "F.Cu", (("PAD", "U102", "1"), ("PAD", "U102", "2"))),
     ("/NQ", "F.Cu", (("PAD", "U102", "6"), ("PAD", "U102", "7"))),
@@ -465,119 +503,193 @@ PRE_TRACKS = (
                       (9.15, 26.775), (9.15, 29.65))),
     ("/ID1", "F.Cu", ((9.15, 29.65), ("PAD", "R101", "1"))),
 
-    # -- Fuenf Verbindungen, die in ZWEI unabhaengigen Dice-Loop-
-    # Laeufen (Aufgabe 7) IDENTISCH offen blieben (nicht random --
-    # dieselben fuenf, byte-genau) -- dieselbe Klasse Problem wie in
-    # v1 ("Fuenf Verbindungen blieben in JEDEM Router-Lauf offen").
-    # Vier davon haengen an echten Engstellen WEIT WEG von U1s eigenem
-    # Pin-Feld (Herleitung je Route unten); die fuenfte -- die beiden
-    # /+24V-Aeste an U1-11 -- ist NICHT mehr hier: eine erste Fassung
-    # zog sie hart auf feste Bahnen (x = 43,50/44,60), und genau DAS
-    # verstopfte im naechsten Lauf sechs ANDERE U1-Pins (4/5/6/12/13,
-    # beide Seiten des Bausteins) -- derselbe Klasse Fehler wie
-    # "vorverdrahten verstopft, was der Router noch selbst loesen
-    # muss" aus v1s eigener Geschichte. U1-11 bleibt deshalb OHNE
-    # Vorverdrahtung; der Router bekommt das ganze Pin-Feld des
-    # DRV8876 zusammenhaengend, statt es Bahn fuer Bahn einzuengen.
+    # -- Motorstufe: NUR ORTSNAHE ESCAPES ------------------------------
     #
-    #   * J5-1 -> U1-8 und J5-2 -> U1-10 (/Out1, /Out2): J5 sitzt
-    #     unterhalb von C9/C10 (y 25,00..28,76); ein direkter, senk-
-    #     rechter Weg liefe durch deren Hoefe. Beide Routen weichen
-    #     seitlich aus (Out1 links um C10 bei x = 35,70, Out2 rechts
-    #     an C9 vorbei bei x = 42,40).
-    #   * U6-4 -> U3-2 (/NOTAUS): SOT-353-Fanout im 1,27-mm-Raster.
-    #     U3-2 zuerst waagrecht aus U3s Hof heraus (y = 46,98 liegt
-    #     zwischen keinem anderen Pad), dann unterhalb der Zeile durch
-    #     (y = 48,50, in der auf 2,12 mm erweiterten Luecke zu U4/U5,
-    #     s. PLACEMENT-Kommentar bei U4) zu U6-4.
+    # WARUM NUR ORTSNAH. Eine frühere Fassung dieser Aufgabe verdrahtete
+    # hier zusaetzlich sieben LANGE Querverbindungen von Hand vor
+    # (/NFAULT, /IPROPI und 3V3 durch den Streifen y = 0,90/1,35/1,80
+    # ueber den Stapelkontakten; /U1_NSLEEP quer durchs halbe Brett bei
+    # y = 39,10; /Out2 senkrecht bei x = 42,40; /NOTAUS bei y = 46,98;
+    # /FLASH_MODE von J100-5) -- weil der Router genau diese Kanten
+    # offen liess. Der Router meldete danach "1 Verbindung nicht
+    # verlegt", und genau das wurde als Erfolg gelesen.
+    #
+    # NACHGEMESSEN am gebauten Brett (kicad-cli drc auf die Platine OHNE
+    # jeden Router-Lauf, s. Bericht "Vorverdrahtungs-Gate"): diese sieben
+    # Zuege allein erzeugten 21 DRC-Verletzungen, BEVOR freerouting
+    # ueberhaupt startete -- die y=1,35- und y=1,80-Gassen tauchen bei
+    # x = 22,00/22,50 senkrecht ab und laufen dabei mitten durch die
+    # Pads von J101 (Pad 2, GND, bei (22,240|5,290)) und ueber ein
+    # Naehvia; /Out2 faehrt von U1-10 senkrecht nach Sueden und damit
+    # durch U1s EIGENES Pad 9 (GND, (42,400|23,925), nur 0,65 mm
+    # tiefer); /U1_NSLEEP kreuzt J100-Pad 15 bei (29,830|38,330) --
+    # der Kommentar dort behauptete Kontakte bei 37,83/40,37 und ein
+    # freies Fenster bei 39,10, das Raster liegt aber anders; /NOTAUS
+    # faehrt aus U3-2 waagrecht heraus und trifft U3-4.
+    #
+    # Alle sieben sind ersatzlos entfernt. Sie sind auch nicht durch
+    # korrigierte Langstrecken ersetzt: eine von Hand gelegte
+    # Querverbindung nimmt dem Router einen Korridor, den er fuer
+    # DREI andere Netze braucht -- das ist genau die Erfahrung, die v1
+    # als "vorverdrahten verstopft, was der Router noch selbst loesen
+    # muss" festgehalten hat. Vorverdrahtet wird deshalb nur noch, was
+    # der Router GRUNDSAETZLICH nicht kann: Escapes aus Feinraster-
+    # Gehaeusen und Halsstuecke an Leistungspads.
+    #
+    # /Out1 (U1-8 -> J5-1) bleibt: U1-8 ist der SUEDLICHSTE Pad der
+    # Westspalte, unter ihm liegt kein weiterer -- der Zug faellt frei
+    # nach Sueden, weicht westlich an C10 vorbei (x = 35,70; C10-Pads
+    # ab x = 36,79, also 0,965 mm Luft) und trifft J5-1 von oben.
+    # Nachgemessen: in der Gate-Messung oben ohne Beanstandung.
     ("/Out1", "F.Cu", (("PAD", "U1", "8"), (36.60, 24.60),
                        (35.70, 25.50), (35.70, 30.16),
                        (36.96, 31.42), ("PAD", "J5", "1"))),
-    ("/Out2", "F.Cu", (("PAD", "U1", "10"), (42.40, 29.72),
-                       (42.04, 30.08), ("PAD", "J5", "2"))),
-    ("/NOTAUS", "F.Cu", (("PAD", "U3", "2"), (3.40, 46.98),
-                         (3.40, 48.50), (6.2875, 48.50),
-                         ("PAD", "U6", "4"))),
 
-    # -- Zwei weitere Verbindungen, gefunden in ZWEI FOLGELAEUFEN NACH
-    # der ersten Vorverdrahtungs-Runde (dieselben zwei, wieder identisch
-    # in beiden Laeufen):
+    # -- Das gestaffelte Halsstueck-Paar an U1-10/U1-11 ------------------
     #
-    #   * R102-1 -> U101-5 (3V3): direkter Weg waere diagonal (nicht
-    #     0/45/90); Knick ausserhalb von U101s Hof (x = 9,25, Hof endet
-    #     bei 6,90) und Einfahrt auf Pad-5-Hoehe (y = 22,1).
-    #   * U1-3 -> U3-4 (/U1_NSLEEP): der weiteste Vorverdrahtungs-Weg
-    #     dieser Platine -- quer durchs halbe Brett, von der Motorstufe
-    #     (Luecke zwischen den Stapelreihen) zur Notaus-Kette links
-    #     unten. Kreuzt stapel_links bei y = 39,10 (Kontaktraster ab
-    #     y = 2,27, Kontakte bei 37,83/40,37 -- 39,10 ist der Mittelpunkt,
-    #     1,27 mm zu beiden, ausserhalb ANTENNE_FREI (< 42,9) UNABHAENGIG
-    #     von x). Faehrt dann bei x = 13,00 (rechts von J3/R16-19-Zeile,
-    #     links von U3/U6/U7) glatt durch bis in die U4/U5-Luecke
-    #     (y = 49,80) und von dort seitlich in U3-4 -- OHNE, wie ein
-    #     direkter Weg es taete, U3-Pad 5 (3V3, exakt 1,3 mm darueber
-    #     auf derselben Spalte) zu treffen.
+    # Das ist der EINE Fund aus v1, den die v2-Beschreibung verloren
+    # hatte, und der Grund, warum der Router hier ueberhaupt scheitert.
+    # v1 hielt ihn woertlich fest: "die Pads 10/11 liegen 0,65 mm
+    # auseinander, zwei 1,0-mm-Fortsetzungen brauchen aber 1,2 mm
+    # Kappenabstand -- direkt nebeneinander ist das unerfuellbar, der
+    # Router fand nie eine Loesung."
+    #
+    # ROT-NACHWEIS in dieser Aufgabe: drei unabhaengige Wuerfellaeufe
+    # ohne dieses Paar liessen 4, 2 und 4 Verbindungen offen -- und
+    # /Out2 (J5-2 -> U1-10) UND /+24V (U1-11) waren in ALLEN DREI dabei,
+    # als einzige, die nie durchkamen. Alles andere (auch /CPL, /CPH,
+    # /VCP, die durch dieselbe Ostgasse muessen) loeste der Router
+    # mindestens einmal selbst.
+    #
+    # /Out2 (Pad 10) und /+24V (Pad 11) tragen beide Leistungsbreite
+    # (1,00 mm), sitzen aber auf 0,45 mm hohen Pads im 0,65-mm-Raster.
+    # Beide bekommen deshalb ein 0,40-mm-Halsstueck (breiter geht nicht:
+    # 0,225 mm Luft zu den Nachbarpads 9 bzw. 12) waagrecht aus dem Pad
+    # heraus bis x = 43,55 -- erst DA, ausserhalb des Padfeldes
+    # (Ostkante 43,15), knicken sie um 45 Grad AUSEINANDER: /Out2 nach
+    # Sueden, /+24V nach Norden. Ihre Enden liegen bei y = 23,975 und
+    # 21,925, also 2,05 mm auseinander -- die 1,2 mm, die zwei
+    # 1,0-mm-Kappen brauchen, sind damit da, wo der Router sie braucht.
+    #
+    # NUR das Halsstueck-Paar reichte NICHT: vier weitere Wuerfellaeufe
+    # mit Haelsen, aber ohne die Fortsetzung unten, liessen /Out2 und
+    # /+24V weiterhin in JEDEM Lauf offen. Der Grund ist die Breite,
+    # nicht die Staffelung: eine 1,0-mm-Bahn von U1 bis zur Klemme J5
+    # quer durch die Ostgasse findet der Router nicht mehr, wenn er
+    # zuvor die Signalnetze durch dieselbe Gasse gelegt hat. v1 hat
+    # deshalb den GANZEN /Out2-Weg in Leistungsbreite vorverdrahtet;
+    # hier steht dieselbe Loesung mit v2-Geometrie.
+    # /Out2 knickt nach Sueden weg. /+24V bleibt dagegen GERADE:
+    # sein Hals brauchte den Gegenknick nach Norden nur so lange, wie
+    # der Router die 1,0-mm-Fortsetzung selbst suchen musste (dann
+    # gelten 1,2 mm Kappenabstand). Seit /+24V unten vollstaendig
+    # festgelegt ist und ueber ein Via auf die Rueckseite geht, ist der
+    # Knick nicht nur unnoetig, sondern schaedlich: er verschloss die
+    # Ausfahrt von Pad 12 (/VCP). Nachgerechnet -- Pad 12 kann erst ab
+    # x = 43,475 steigen (0,2 mm Luft zur Padkante 43,15), der
+    # Nordknick liess es aber nur bis x = 43,458 waagrecht laufen.
+    # 0,017 mm zu wenig; /VCP blieb in ELF Laeufen (e1..e6, f1..f4)
+    # ohne Ausnahme offen.
+    ("/Out2", "F.Cu", (("PAD", "U1", "10"), (43.55, 23.275),
+                       (44.25, 23.975)), _HALS),
+    ("/+24V", "F.Cu", (("PAD", "U1", "11"), (44.30, 22.625)), _HALS),
+
+    # /Out2 in Leistungsbreite weiter bis J5-2. Die Suedspur liegt bei
+    # x = 43,90, NICHT bei 44,25: die Naehvia-Spalte des 7,5-mm-Rasters
+    # sitzt bei x = 45,00 (Via-Rand 44,70) -- eine 1,0-mm-Bahn auf 44,25
+    # reicht bis 44,75 und ueberlappte sie um 0,05 mm. Auf 43,90
+    # bleiben 0,30 mm zum Via und 0,25 mm zu den U1-Ostpads (Kante
+    # 43,15). Der kurze 45-Grad-Versatz direkt unter dem Halsstueck
+    # bringt die Bahn von 44,25 auf diese Spur.
+    ("/Out2", "F.Cu", ((44.25, 23.975), (44.25, 25.00), (43.90, 25.35),
+                       (43.90, 31.60), (42.04, 33.46),
+                       ("PAD", "J5", "2")), _LEISTUNG),
+
+    # /+24V bekommt BEWUSST NUR das Halsstueck, keine Fortsetzung.
+    #
+    # Eine Zwischenfassung zog /+24V in Leistungsbreite nach Norden
+    # (Spur x = 43,90, y 18,30..21,575) ueber U1 hinweg nach C11-2. Sie
+    # loeste /+24V und /Out2 tatsaechlich -- und riss dafuer DREI neue
+    # Loecher auf: /VCP, /CPH und /CPL (U1-12/13/14) blieben danach in
+    # beiden Wuerfellaeufen offen. Nachgerechnet ist das kein Pech,
+    # sondern Arithmetik: zwischen der U1-Ostpadkante (43,15) und dem
+    # Naehvia bei (45|21,25) (Randkante 44,70) liegen 1,55 mm. Eine
+    # 1,0-mm-Spur samt Abstaenden braucht davon 1,40 mm; fuer eine
+    # 0,25-mm-Ausfahrt der darunter liegenden Pads 13/14 blieben 0,15
+    # statt der noetigen 0,65 mm. Die Pads waren eingemauert, und
+    # UNTEN durch konnten sie auch nicht: die Waermepfad-Regelflaeche
+    # (34,60..44,40 x 17,90..25,40) verbietet dort B.Cu.
+    #
+    # Also nicht nach Norden. Aber auch "nur der Hals" reichte nicht:
+    # in VIER weiteren Wuerfellaeufen (c4, d1, d2, d3) blieb U1-11 ->
+    # C9-1 als EINZIGE Verbindung in JEDEM Lauf offen -- der Router
+    # fing am Halsende gar nicht erst an.
+    #
+    # Der Grund steht im Naehraster, nicht im Router: die Ostgasse
+    # zwischen U1 (Padkante 43,15) und der J105-Reihe (Padkante 46,76)
+    # ist 3,61 mm breit, aber die 7,5-mm-Naehspalte x = 45,00 legt
+    # genau in ihre Mitte zwei Vias ((45|21,25) und (45|28,75),
+    # Randkante 44,70 bzw. 45,30). Die Gasse zerfaellt damit in zwei
+    # Teilgassen von 1,55 und 1,46 mm. Eine 1,0-mm-Bahn braucht mit
+    # beidseitigem Abstand 1,40 mm -- in JEDE Teilgasse passt genau
+    # EINE, und die westliche gehoert schon /Out2.
+    #
+    # /+24V bekommt deshalb die OESTLICHE Teilgasse, von Hand:
+    # unterhalb des oberen Naehvias (Unterkante 21,55) hinueber auf
+    # x = 46,03 (0,23 mm zum Naehvia, 0,23 mm zu den J105-Pads -- eng,
+    # aber ueber der Mindestluft 0,20), nach Sueden bis y = 26,50 und
+    # dort per Via auf die RUECKSEITE. Erst dort ist der Weg nach
+    # Westen frei: die Waermepfad-Regelflaeche sperrt B.Cu nur bis
+    # y = 25,40, und unter /Out2s Vorderseiten-Spur (x = 43,90)
+    # hindurch geht es nur auf der anderen Lage. Zurueck nach oben
+    # bei x = 41,40 (0,53 mm zum /VCP-Pad von C9) und schraeg in C9-1.
+    ("/+24V", "F.Cu", ((44.30, 22.625), (45.43, 22.625),
+                       (46.03, 23.225), (46.03, 26.50)), _LEISTUNG),
+    ("/+24V", "B.Cu", ((46.03, 26.50), (41.40, 26.50)), _LEISTUNG),
+    ("/+24V", "F.Cu", ((41.40, 26.50), (41.40, 26.918),
+                       (40.40, 27.918), ("PAD", "C9", "1")), _LEISTUNG),
+
+    # -- Ausfahrt von U1-12 (/VCP) --------------------------------------
+    # Nur die AUSFAHRT, nicht der Weg. Pad 12 liegt zwischen Pad 11
+    # (/+24V, dessen Hals nach Osten laeuft) und Pad 13 (/CPH) und ist
+    # damit das am engsten eingebaute Pad der Ostspalte: nach Norden
+    # und Sueden Nachbarpads, nach Osten der /+24V-Hals.
+    # Waagrecht bis x = 43,60 (0,45 mm ausserhalb der Padkante 43,15),
+    # dann 45 Grad nach NORDOSTEN in das freie Feld ueber dem
+    # /+24V-Strang -- das ist erst seit dem Entfall des Naehvias
+    # (45|21,25) freies Gebiet (s. RULE_AREAS). Engste Stellen
+    # nachgerechnet: 0,330 mm zur /+24V-Fuehrung (deren 1,0-mm-Kappe
+    # sitzt bei (44,30|22,625)), 0,494 mm zur Padecke von Pad 13
+    # (43,15|21,55).
+    # Wohin /VCP von dort nach C9-2 laeuft, bleibt dem Router -- die
+    # Ausfahrt war das, was er nicht fand.
+    ("/VCP", "F.Cu", (("PAD", "U1", "12"), (43.60, 21.975),
+                      (44.20, 21.375))),
+
+    # -- Masseanbindung der SOT-353-Notausgatter U6/U7 -------------------
+    # masseheiler.py brach in JEDEM Wuerfellauf an einem dieser beiden
+    # Stuecke ab ("traegt Massepads, hat aber keinen freien Heilpunkt"):
+    # das GND-Pad 3 der SC-70-Gehaeuse ist auf F.Cu von den eigenen
+    # Escapes eingemauert, und im Umkreis ist kein Fleck frei, der gross
+    # genug fuer ein 0,6-mm-Via samt Abstand waere. Kein Zufall des
+    # Wuerfels, sondern ein Platzproblem -- also gehoert die Loesung in
+    # die Beschreibung, nicht in den Heiler.
+    # Kurzer Stummel nach Sueden in die auf 2,12 mm erweiterte Luecke
+    # zwischen der U3/U6/U7-Zeile (Hof endet y = 48,08) und U4/U5 (Hof
+    # ab y = 50,20); Via bei y = 49,20 haelt dort 0,82 bzw. 0,70 mm
+    # Abstand zu beiden Hoefen. Seitlich naechster Nachbar ist jeweils
+    # Pad 4 desselben Gehaeuses, 1,04 mm entfernt.
+    ("GND", "F.Cu", (("PAD", "U6", "3"), (4.612, 49.20))),
+    ("GND", "F.Cu", (("PAD", "U7", "3"), (9.613, 49.20))),
+
+    # 3V3-Stummel im Kennwiderstands-Nest: R102-1 liegt zwischen U101s
+    # Hof (endet x = 6,90) und R13; der direkte Weg zu U101-5 waere
+    # schraeg (verboten). Knick bei x = 9,25 ausserhalb des Hofes,
+    # Einfahrt auf Pad-5-Hoehe. R13-1 haengt als senkrechter Nachbar-
+    # stummel in derselben Spalte daran.
     ("3V3", "F.Cu", (("PAD", "R102", "1"), (9.25, 22.1),
                      ("PAD", "U101", "5"))),
-    ("/U1_NSLEEP", "F.Cu", (("PAD", "U1", "3"), (35.20, 20.675),
-                            (35.20, 39.10), (13.00, 39.10),
-                            (13.00, 49.80), (2.7875, 49.80),
-                            ("PAD", "U3", "4"))),
-
-    # -- Fuenf weitere, wieder in ZWEI Folgelaeufen identisch offen
-    # (dritte Generation -- entstanden GENAU dadurch, dass die zweite
-    # Generation die alten +24V/CPL-Bahnen entfernte und dem Router
-    # wieder Spielraum um U1-11 gab; drei der fuenf haengen jetzt an
-    # U1s NORDSEITE (Pins 4/5/6, /NFAULT-3V3-IPROPI) statt an der
-    # Ostseite):
-    #
-    #   * C16-1 -> U1-5 (3V3), U1-4 -> U100-12 (/NFAULT) und U1-6 ->
-    #     U100-13 (/IPROPI) muessen alle drei von der Motorstufe zum
-    #     Nest, also an BEIDEN Stapelreihen vorbei (U1 sitzt zwischen
-    #     ihnen). Statt sie bei y ~39 zu kreuzen (wie /U1_NSLEEP, das
-    #     dort schon eine Bahn belegt), nutzen alle drei den Streifen
-    #     y < 2,27 UEBER Kontakt 1 von stapel_links/rechts -- dort ist
-    #     GARANTIERT kein Kontakt, unabhaengig vom Raster. Drei parallele
-    #     Gassen (y = 0,90 / 1,35 / 1,80, je 0,45 mm auseinander) halten
-    #     sie getrennt; jede faehrt seitlich an U100s Kontaktspalten
-    #     (x = 14,99 / 20,71) UND an C16 (x 22,70..26,46) vorbei, statt
-    #     durch sie hindurch, und biegt erst auf der Ziel-Pad-Hoehe
-    #     waagrecht ein (vermeidet die nachbarpads auf demselben
-    #     0,65-mm-Raster).
-    #   * C9-1 -> U1-11 (/+24V, s.o.): diesmal rechts an U1 vorbei
-    #     (x = 44,60, klar vor stapel_rechts bei 45,84) statt durch das
-    #     Waermevia-Feld.
-    #   * R102-1 -> R13-1 (3V3): direkter Nachbar, senkrechter Stummel,
-    #     dieselbe Spalte (x = 9,25).
-    ("3V3", "F.Cu", (("PAD", "C16", "1"), (24.50, 20.18),
-                     (24.50, 0.90), (34.50, 0.90), (34.50, 21.975),
-                     ("PAD", "U1", "5"))),
-    ("/NFAULT", "F.Cu", (("PAD", "U1", "4"), (34.00, 21.325),
-                         (34.00, 1.35), (22.00, 1.35), (22.00, 22.275),
-                         ("PAD", "U100", "12"))),
-    ("/IPROPI", "F.Cu", (("PAD", "U1", "6"), (34.20, 22.625),
-                         (34.20, 1.80), (22.50, 1.80), (22.50, 21.625),
-                         ("PAD", "U100", "13"))),
-    ("/+24V", "F.Cu", (("PAD", "C9", "1"), (44.60, 27.9175),
-                       (44.60, 22.625), ("PAD", "U1", "11"))),
     ("3V3", "F.Cu", (("PAD", "R102", "1"), ("PAD", "R13", "1"))),
-
-    # -- Vierte Generation: HIER BEWUSST GESTOPPT (Aufgabe 7, Dice-Loop-
-    # Protokoll). Zwei Versuche, die verbliebenen U1-Nachbarnetze
-    # (U1-11 -> C11-2, dann einzeln auch nur U1-5 -> J105-16)
-    # vorzuverdrahten, verschlimmerten die Lage JEDES Mal (zehn, dann
-    # sieben, dann wieder sieben offene Verbindungen -- U1s uebrige
-    # Pins 1/2/12/13/14 gerieten jedes Mal zusaetzlich ins Stocken).
-    # DREI unabhaengige Dice-Laeufe OHNE jede weitere U1-Vorverdrahtung
-    # liessen dagegen stabil nur noch GENAU EINE Verbindung offen
-    # (U1-5 -> J105-16, 3V3) -- besser als jede von Hand erzwungene
-    # Fassung. Diese eine bleibt deshalb bewusst dem Dice-Loop
-    # ueberlassen statt vorverdrahtet (s. Bericht, Bedenken, fuer die
-    # exakte Restliste und die Begruendung, warum ein Nachziehen von
-    # Hand hier zuverlaessig schadet statt nuetzt).
-    ("/FLASH_MODE", "F.Cu", (("PAD", "J100", "5"), (27.50, 12.93),
-                             (27.50, 26.90), (19.00, 26.90),
-                             (19.00, 24.95), ("PAD", "U103", "1"))),
 )
 
 PRE_VIAS = (
@@ -590,6 +702,13 @@ PRE_VIAS = (
     ("3V3", 17.68, 24.10),
     ("3V3", 22.90, 24.95),
     ("GND", 12.90, 19.675),
+    # Gegenstuecke der U6/U7-Masse-Ausleitungen (s. PRE_TRACKS): erst
+    # das Via bringt das eingemauerte F.Cu-Pad an den B.Cu-Guss.
+    ("GND", 4.612, 49.20),
+    ("GND", 9.613, 49.20),
+    # Lagenwechsel des /+24V-Wegs um /Out2 herum (s. PRE_TRACKS).
+    ("/+24V", 46.03, 26.50),
+    ("/+24V", 41.40, 26.50),
 )
 
 # --- Masseflaechen vernaehen -------------------------------------------
@@ -632,11 +751,43 @@ def _naehte():
 
 
 # Gezielte Zusatznaehte fuer Gussfragmente, die das 7,5-mm-Raster
-# verschluckt -- leer bis der Dice-Loop (Schritt 4 der Pipeline) eine
-# DRC-Meldung "missing connection between copper items" liefert; dann
-# werden hier, wie in v1, per Hand nachgesetzte Punkte ergaenzt
-# (Herleitung je Punkt als Kommentar, wie in v1).
-STITCH_EXTRA = ()
+# verschluckt. Der Dice-Loop hat die DRC-Meldung geliefert, auf die
+# dieser Block gewartet hat: rund um das MCU-Nest zerschneiden ~500
+# Bahnen den F.Cu-Guss in ein Dutzend Stuecke, und `masseheiler.py`
+# meldete in Lauf nach Lauf Stuecke, die Massepads tragen, aber keinen
+# freien Heilpunkt haben ("Layout pruefen").
+#
+# WARUM HIER UND NICHT IM HEILER: der Heiler arbeitet am fertig
+# verlegten Brett und findet dort keinen Platz mehr. Ein Naehvia, das
+# VOR dem Verlegen steht, hat den Platz -- der Router weicht ihm aus.
+# Genau das ist der Grund, aus dem v1 hier 17 Punkte fuehrte.
+#
+# WARUM NICHT AUS DEM RASTER: `_naht_erlaubt()` streicht in der
+# Brettmitte fast jeden Rasterpunkt, weil dort die Hoefe dicht an
+# dicht liegen. Ein Hof ist aber kein Kupfer. STITCH_EXTRA umgeht den
+# Filter bewusst (STITCH_VIAS = _naehte() + STITCH_EXTRA) -- dafuer
+# sind die Punkte einzeln gegen das GEBAUTE Brett gerechnet, mit
+# denselben Kriterien wie in v1: >= 0,50 mm zu jedem Pad, >= 0,90 mm
+# zu jeder Via-Mitte, >= 0,45 mm zu jeder vorverdrahteten Bahn.
+# Suchskript: scratchpad/naht_suche.py (rastert die Regionen ab, die
+# `masseheiler` gemeldet hat, und nimmt den mittigsten Treffer).
+#
+# Die Regionen stammen aus den Heiler-Meldungen von 30 Wuerfellaeufen;
+# jede Zeile deckt die Stuecke ab, die dort wiederholt auftraten:
+STITCH_EXTRA = (
+    (14.20, 24.30),   # grosses Nest-Mittelstueck (x 11,5..17,9 y 17,6..30,8)
+    (13.70, 19.10),   # B.Cu-Insel unter dem Nest (x 11,6..17,4 y 18,2..20,0)
+    (21.50, 27.20),   # Nest-Ost (x 19,5..29,3 y 24,6..29,9)
+    (21.30, 33.40),   # Zeile 4/5 (x 19,0..23,6 y 31,4..34,0)
+    (18.10, 32.10),   # Zwickel westlich davon (x 15,6..18,8 y 31,4..32,9)
+    (8.10, 28.50),    # Kennwiderstands-Nest West (x 5,1..15,0 y 22,3..35,3)
+    (3.00, 31.00),    # Westband (x 1,0..5,0 y 26,0..36,0)
+    (26.80, 17.70),   # Streifen unter dem Kettenstecker (x 24,0..29,1 y 16,7..19,0)
+    (25.70, 21.50),   # Ostband am Stapelrand (x 22,3..32,0 y 18,6..24,1)
+    (13.50, 39.20),   # Band zwischen Nest und Notaus (x 8,9..18,1 y 35,3..45,2)
+    (8.60, 47.70),    # Notaus-Zeile Mitte (x 6,6..11,1 y 46,1..49,5)
+    (3.20, 49.50),    # Notaus-Zeile West (x 0,5..6,0 y 47,3..51,6)
+)
 
 STITCH_VIAS = _naehte() + STITCH_EXTRA
 
