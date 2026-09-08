@@ -448,6 +448,58 @@ for name in ("stapel_links", "stapel_rechts"):
         check("%s: Hof von %s ist bekannt" % (name, fp.split(":")[-1]),
               fp in S.FOOTPRINT_HOF, True)
 
+# --- Der Hof umschliesst das Kontaktgitter mittig ---------------------
+#
+# WARUM DIESE PRUEFUNG EXISTIERT (Fix-Runde 1 zu Aufgabe 7).
+# Die Pruefungen oberhalb haben einen Zahlenfehler in FOOTPRINT_HOF
+# nicht fangen KOENNEN, und der Grund ist lehrreich:
+#
+#   * `flaeche == HOEFE(footprints, pin1, drehung)` (weiter oben) rechnet
+#     die Flaeche aus FOOTPRINT_HOF nach -- steht dort eine falsche Zahl,
+#     rechnet die Pruefung sie fehlerfrei nach und bleibt gruen.
+#   * die Bloecke direkt darueber pruefen nur, DASS ein Hof zu einem
+#     Footprint bekannt ist, nie WELCHER.
+#   * `tests/test_spec_motor.py` prueft Hoefe und Ueberlappungen aus
+#     derselben PLACEMENT-Tabelle, in der der Fehler steckte -- es kann
+#     an dieser Stelle gar nicht rot werden.
+#
+# Gefunden hat den Fehler erst `steckerprobe.py` an der GEBAUTEN
+# Platine: FOOTPRINT_HOF fuehrte fuer die 1x20-Buchse 5,10 x 50,80 mm,
+# der Footprint der Bibliothek ist aber 3,54 x 51,80 mm. build.place()
+# legt die Hof-ECKE des echten Footprints auf die Ecke des Rechtecks aus
+# dieser Tabelle -- die halbe Differenz, (-0,78|+0,50) mm, landete
+# damit als Versatz im KUPFER: beide Stapelreihen des Motormoduls sassen
+# neben dem Vertrag. Die Zahl stammt sichtbar noch aus v1, wo "stapel"
+# EIN 2x20-Block war (+-2,55 ist dessen halbe Breite).
+#
+# Die Invariante, die das ohne KiCad-Bibliothek faengt: bei den
+# bedrahteten 2,54-mm-Stiftleisten/Buchsen legt die KiCad-Bibliothek den
+# Hof mit dem GLEICHEN Rand um das Kontaktgitter -- auf allen vier
+# Seiten und in der ganzen Familie derselbe Wert. Der falsche Eintrag
+# war 2,55 mm breit gerandet und 1,27 mm hoch: in sich symmetrisch,
+# aber eben nicht der Familienrand. Genau daran bricht er.
+#
+# Die SMD-Paare sind ausgenommen: ihr Anker ist der KONTAKT, nicht Pad 1
+# (s. LAGE/FOOTPRINT_HOF), ihre Loetpads liegen seitlich daneben, und
+# ihr Hof ist deshalb absichtlich unsymmetrisch.
+THT_RAND = 1.775      # mm, an PinHeader_2x20 und PinSocket_1x20 gemessen
+THT_RAND_LUFT = 0.01  # die Bibliothek rundet auf 1,77 bzw. 1,78
+
+for _fp, (_spalten, _reihen) in sorted(S.FOOTPRINT_RASTER.items()):
+    if "_SMD" in _fp:
+        continue
+    _x0, _y0, _x1, _y1 = S.FOOTPRINT_HOF[_fp]
+    # Kontaktgitter im Footprint-Bezug: Anker (0|0) bis
+    # ((Spalten-1)*RASTER | (Reihen-1)*RASTER).
+    _gx = (_spalten - 1) * S.RASTER
+    _gy = (_reihen - 1) * S.RASTER
+    _raender = {"links": -_x0, "rechts": _x1 - _gx,
+                "oben": -_y0, "unten": _y1 - _gy}
+    for _seite, _wert in sorted(_raender.items()):
+        check("%s: Hofrand %s ist der Familienrand %.3f mm (ist %.3f)"
+              % (_fp.split(":")[-1], _seite, THT_RAND, _wert),
+              abs(_wert - THT_RAND) <= THT_RAND_LUFT, True)
+
 # --- Es bleibt noch Platz --------------------------------------------
 # Die Untergrenze ist hergeleitet, nicht gesetzt: Hofsumme des
 # anspruchsvollsten Moduls geteilt durch den auf einer wirklich

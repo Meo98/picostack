@@ -325,8 +325,22 @@ def pruefen(beschreibung, board_pfad):
         # Welche Referenz auf DIESER Platine an diesem Vertragsplatz
         # sitzt, weiss nur die Beschreibung -- der Sockel traegt an den
         # SMD-Plaetzen nur die Stiftseite, ein Modul beide Haelften.
-        refs = [r for r, fp in beschreibung.FOOTPRINTS.items()
-                if fp in eintrag["footprints"] and r in beschreibung.PLACEMENT]
+        # Sagt die Beschreibung die Zuordnung selbst? Dann ist sie
+        # maßgeblich. Das Raten ueber den Footprint-Namen darunter
+        # funktioniert nur, solange jeder Vertragsplatz einen EIGENEN
+        # Footprint hat -- in v2 teilen stapel_links und stapel_rechts
+        # dieselbe 1x20-Buchse, und das Raten ordnete dann jede der
+        # beiden Referenzen BEIDEN Plaetzen zu (acht Falschmeldungen mit
+        # 17,78 mm Versatz, dem Reihenabstand). Herleitung bei
+        # spec_motor.VERTRAGSPLATZ.
+        platz = getattr(beschreibung, "VERTRAGSPLATZ", None)
+        if platz:
+            refs = [r for r, s in platz.items()
+                    if s == name and r in beschreibung.PLACEMENT]
+        else:
+            refs = [r for r, fp in beschreibung.FOOTPRINTS.items()
+                    if fp in eintrag["footprints"]
+                    and r in beschreibung.PLACEMENT]
         if not refs:
             print("  %-9s kein Bauteil auf dieser Platine" % name)
             continue

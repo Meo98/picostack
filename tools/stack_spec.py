@@ -870,18 +870,39 @@ FOOTPRINT_HOF = {
         (-1.77, -1.78, 4.32, 50.03),     # 6,09 x 51,81 mm
     # v2-Stapelbuchse (eine Reihe, 1x20, echte Pico-Geometrie). Kontakt 1
     # == Pad 1 (bedrahtet). Pinspanne 19 x 2,54 = 48,26 mm (Pin 1 bis
-    # Pin 20, Mitte-zu-Mitte -- das Pico-Datenblattmass); Hof lt.
-    # Aufgabenzettel/tools/platzprobe_v2.py PICO_REIHE_L/B = 50,8 x
-    # 5,1 mm, also 1,27 mm Ueberstand an jedem Ende der Pinreihe
-    # (50,8 - 48,26 = 2,54, geteilt durch zwei Enden) und 2,55 mm
-    # beidseits der Kontaktachse (5,1 / 2). Kein gemessener .kicad_mod
-    # (noch kein Bauteil verifiziert bestellt, s. STECKER_STAPEL-
-    # Kommentar) -- deshalb aus dem Aufgabenzettelmass abgeleitet statt
-    # aus einer echten Footprint-Datei gelesen, wie es bei den anderen
-    # Eintraegen hier der Fall ist. Rot-Nachweis wird nachgeholt, sobald
-    # das Bauteil feststeht (s. Bericht zu Aufgabe 2, Bedenken).
+    # Pin 20, Mitte-zu-Mitte -- das Pico-Datenblattmass).
+    #
+    # KORRIGIERT (Fix-Runde 1 zu Aufgabe 7, 2026-09-09). Hier stand
+    # (-2,55 | -1,27 | 2,55 | 49,53), also 5,10 x 50,80 mm, abgeleitet
+    # aus dem RESERVIERUNGSMASS PICO_REIHE_L/B des Aufgabenzettels
+    # (tools/platzprobe_v2.py) statt aus dem Footprint, der wirklich
+    # gebaut wird -- der Kommentar sagte das sogar selbst ("Kein
+    # gemessener .kicad_mod ... Rot-Nachweis wird nachgeholt").
+    #
+    # Genau das war der Fehler, und er war nicht harmlos: build.place()
+    # legt die Hof-ECKE des ECHTEN Footprints auf die Ecke des
+    # Rechtecks, das aus dieser Tabelle kommt. Eine Reservierungs-
+    # schaetzung in dieser Tabelle verschiebt daher KUPFER. Der echte
+    # Hof der Bibliotheksbuchse ist 3,54 x 51,80 mm; die halbe Differenz
+    # zur Schaetzung, (-0,78 | +0,50) mm, sass am Motormodul als Versatz
+    # BEIDER Stapelreihen gegen den Vertrag -- gefunden von
+    # steckerprobe.py an der gebauten Platine (Vertrag pin1 (30,61|2,27),
+    # gebaut (29,83|2,77)).
+    #
+    # Jetzt gemessen, nicht geschaetzt: mit build.courtyard_bbox aus
+    # Connector_PinSocket_2.54mm.pretty gelesen, relativ zu Pad 1
+    # (= Kontakt 1, bedrahtet). Rand 1,77 mm auf allen vier Seiten um das
+    # Kontaktgitter -- derselbe Familienrand wie beim 2x20-Header
+    # darueber, und genau das prueft tests/test_stack_spec.py jetzt nach
+    # ("Hofrand ... ist der Familienrand").
+    #
+    # Das 50,8-x-5,1-Reservierungsmass bleibt gueltig als PLATZBEDARF
+    # eines spaeteren, echten Stapelsteckers (STECKER_STAPEL ist noch
+    # nicht bestellt) -- es gehoert aber in die Platzprobe, nicht in die
+    # Tabelle, aus der die Platzierung Koordinaten zieht. Wer den
+    # Footprint austauscht, muss diesen Eintrag neu MESSEN.
     "Connector_PinSocket_2.54mm:PinSocket_1x20_P2.54mm_Vertical":
-        (-2.55, -1.27, 2.55, 49.53),     # 5,10 x 50,80 mm
+        (-1.77, -1.77, 1.77, 50.03),     # 3,54 x 51,80 mm, gemessen
     # SMD-Paar Kettenstecker (1x2). Kontakt 1 liegt im Footprint bei
     # (0 | -1,27), die Pads bei (-1,655 | -1,27) und (1,655 | 1,27).
     "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical_SMD_Pin1Left":
@@ -1115,7 +1136,7 @@ def VERDREHT(flaeche):
 # perfekten X-Deckung: ein verdreht aufgestecktes Modul traefe
 # stapel_links exakt auf stapel_rechts in X, und der einzige
 # verbleibende Schutz waere der Y-Versatz -- der bei diesem Raster nie
-# ueber die haelfte des Rastermasses (1,27 mm) hinauskommt, weit unter
+# ueber die Haelfte des Rastermasses (1,27 mm) hinauskommt, weit unter
 # der 2,5-mm-Reissleine, die tests/test_stack_spec.py seit Aufgabe 5e
 # fuer jede Steckerlage verlangt (Nachrechnung ergab dort real nur
 # 0,50 mm -- ROT). Um 2,0 mm aus der Mitte verschoben ergibt dagegen
@@ -1123,15 +1144,21 @@ def VERDREHT(flaeche):
 # weil sie BEIDE Reihen der gespiegelten Paarung gegeneinander
 # versetzt) -- allein das haelt die Verdreh-Probe komfortabel ueber der
 # Reissleine, unabhaengig vom Y-Versatz (nachgerechnet: 4,03 mm). Der
-# Rand zur linken Kante (28,06 mm, s. "flaeche" von stapel_links unten)
+# Rand zur linken Kante (28,84 mm, s. "flaeche" von stapel_links unten)
 # bleibt dabei weiterhin weit ueber der M3-Eckloch-Reichweite
 # (7,5 mm) -- das Reihenpaar kann so oder so nicht in ein Eckloch
 # hineinragen.
-# Oben angeschlagen (1,0 mm Rand zur Plattenkante, mehr als das
-# vertragliche RAND-Minimum von 0,5 mm, damit an der Buchse noch
-# Loetstopplack/Silk Platz hat) -- die Reihe reicht dann von y = 1,0 bis
-# y = 51,8 mm, deutlich innerhalb der 65 mm Plattenhoehe und mit reichlich
-# Abstand zu den unteren M3-Loechern (y = 61).
+# Die Reihe reicht von y = 0,5 bis y = 52,3 mm -- deutlich innerhalb der
+# 65 mm Plattenhoehe und mit reichlich Abstand zu den unteren
+# M3-Loechern (y = 61). Diese Zahlen sind der HOF des Footprints, der
+# wirklich gebaut wird, nicht ein gewuenschter Randabstand: eine
+# fruehere Fassung nannte hier y = 1,0 .. 51,8 mm und begruendete den
+# 1,0-mm-Rand mit Platz fuer Loetstopplack -- die Zahl stammte aber aus
+# einem falschen FOOTPRINT_HOF-Eintrag (s. dort, Fix-Runde 1 zu Aufgabe
+# 7) und verschob beim Bauen das Kupfer. Bei y = 0,5 ist das
+# vertragliche RAND-Minimum exakt eingehalten; wer mehr Rand will, muss
+# pin1 verschieben -- also die Zusage aendern -- und nicht das
+# Hof-Rechteck.
 #
 # Zaehlrichtung UND Drehung sind gekoppelt (s. auch den Kommentar
 # weiter oben, gleich nach PIN_ROLLE, "v2: footprint-lokale Kontakte ->
@@ -1158,8 +1185,8 @@ def VERDREHT(flaeche):
 #
 # * Der Kettenstecker sitzt links NEBEN stapel_links (statt darueber
 #   wie in v1, weil "darueber" auf dem neuen Umriss die Plattenkante
-#   waere) -- 4,06 mm Luft zu dessen Hof (stapel_links.flaeche[0] -
-#   kette.flaeche[2] = 28,06 - 24,0 = 4,06 mm; die S.LUFT-Reissleine der
+#   waere) -- 4,84 mm Luft zu dessen Hof (stapel_links.flaeche[0] -
+#   kette.flaeche[2] = 28,84 - 24,0 = 4,84 mm; die S.LUFT-Reissleine der
 #   Ueberlapp-Probe ist 0,6 mm), Hoehe unveraendert aus v1 uebernommen
 #   (0,87 .. 7,17 relativ zu pin1, s. FOOTPRINT_HOF), weil sich an der
 #   SMD-Paar-Geometrie selbst nichts geaendert hat.
@@ -1179,7 +1206,11 @@ STECKER_POS = {
         "pin1": (30.61, 2.27),
         "drehung": 0,
         "mitte": (30.61, 26.4),
-        "flaeche": (28.06, 1.0, 33.16, 51.8),
+        # Fix-Runde 1 zu Aufgabe 7: war (28,06 | 1,0 | 33,16 | 51,8) --
+        # aus dem falschen FOOTPRINT_HOF-Eintrag gerechnet (s. dort).
+        # pin1 ist UNVERAENDERT: die Kontaktlage ist die Zusage an
+        # fremde Module, nur das Hof-Rechteck war falsch.
+        "flaeche": (28.84, 0.5, 32.38, 52.3),
     },
     "stapel_rechts": {
         "zweck": "1x20-Buchsenreihe, Pico-Pins 21..40 (rechts, unten->oben)",
@@ -1190,7 +1221,9 @@ STECKER_POS = {
         "pin1": (48.39, 50.53),
         "drehung": 180,
         "mitte": (48.39, 26.4),
-        "flaeche": (45.84, 1.0, 50.94, 51.8),
+        # Fix-Runde 1 zu Aufgabe 7, s. stapel_links: war
+        # (45,84 | 1,0 | 50,94 | 51,8).
+        "flaeche": (46.62, 0.5, 50.16, 52.3),
     },
     "kette": {
         "zweck": "zweipoliger Kettenstecker, SEL + GND (STECKER_KETTE)",

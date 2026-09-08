@@ -172,10 +172,62 @@ class Platz:
 
 
 def _aus_vertrag(ref, flaeche, rot, tht, unten=False):
-    """Ein Bauteil, dessen Lage der Vertrag festlegt."""
+    """Ein Bauteil, dessen Lage der Vertrag festlegt.
+
+    `flaeche` MUSS der Hof des Footprints sein, der wirklich gebaut wird
+    -- also `S.HOF(footprint, pin1, drehung)` bzw. `S.HOEFE(...)`, nie
+    ein von Hand gepflegtes Reservierungsrechteck.
+    """
     x0, y0, x1, y1 = flaeche
     return Platz(ref, x0, y0, round(x1 - x0, 3), round(y1 - y0, 3), rot, tht,
                  unten)
+
+
+# Referenz -> Vertragsplatz, von _vertragsstecker() gefuellt.
+#
+# WARUM DAS NOETIG IST (Fix-Runde 1 zu Aufgabe 7). steckerprobe.py hat
+# bisher selbst geraten, welche Referenz an welchem Vertragsplatz sitzt
+# -- ueber den FOOTPRINT-NAMEN. In v1 ging das auf, weil jeder Platz
+# einen eigenen Footprint hatte. In v2 benutzen stapel_links UND
+# stapel_rechts denselben Footprint (dieselbe 1x20-Buchse, nur um 180
+# Grad gedreht): das Namensraten fand fuer BEIDE Plaetze BEIDE
+# Referenzen und prueste J100 auch gegen stapel_rechts und J105 gegen
+# stapel_links. Ergebnis waren acht Falschmeldungen mit einem Versatz
+# von 17,78 mm -- exakt dem Reihenabstand, also gerade der Abstand zum
+# jeweils FALSCHEN Platz.
+# Die Zuordnung weiss nur die Beschreibung. Also sagt sie sie hier,
+# statt sie erraten zu lassen.
+VERTRAGSPLATZ = {}
+
+
+def _vertragsstecker(ref, slot, tht, index=0, unten=False):
+    """Eine Steckerhaelfte, ueber pin1 des Vertrags platziert.
+
+    WARUM UEBER pin1 UND NICHT UEBER "flaeche" (Fix-Runde 1 zu Aufgabe 7).
+    Der Vertrag ist eine Zusage an FREMDE Modulbauer, und zugesagt ist die
+    Lage der KONTAKTE (`pin1` plus Raster), nicht die eines Hof-Rechtecks.
+    Ein Dritter, der exakt nach `pin1` baut, muss auf unsere Platine
+    passen -- deshalb ist pin1 die einzige maßgebliche Referenz.
+
+    Die alte Fassung uebergab fuer die beiden Stapelreihen dagegen
+    `STECKER_POS[slot]["flaeche"]`, also eine ZWEITE, von Hand gepflegte
+    Zahl. build.place() legt die Hof-Ecke des echten Footprints auf die
+    Ecke dieses Rechtecks: stimmte das Rechteck nicht mit dem echten Hof
+    ueberein, wanderte das Kupfer um die halbe Differenz. Genau so sassen
+    beide Stapelreihen des Motormoduls um (-0,78|+0,50) mm neben dem
+    Vertrag (Herleitung bei stack_spec.FOOTPRINT_HOF).
+
+    `S.HOF(...)` aus pin1 und Drehung zu rechnen macht das unmoeglich:
+    die Platzierung haengt jetzt an derselben Quelle wie die Zusage. Es
+    ist ausserdem genau das Muster, das J101..J104 hier immer schon
+    richtig gemacht haben -- neu ist nur, dass die Stapelreihen es auch
+    benutzen.
+    """
+    e = S.STECKER_POS[slot]
+    fp = e["footprints"][index]
+    VERTRAGSPLATZ[ref] = slot
+    return _aus_vertrag(ref, S.HOF(fp, e["pin1"], e["drehung"]),
+                        e["drehung"], tht, unten)
 
 
 # --- Umriss, Lochbild, Regeln: alles aus dem Vertrag -----------------
@@ -259,22 +311,16 @@ _S = S.STECKER_POS
 
 PLACEMENT = {
     # -- Vertragsstecker: ausgerechnet, nicht abgeschrieben --
-    "J100": _aus_vertrag("J100", _S["stapel_links"]["flaeche"],
-                         _S["stapel_links"]["drehung"], True),
-    "J105": _aus_vertrag("J105", _S["stapel_rechts"]["flaeche"],
-                         _S["stapel_rechts"]["drehung"], True),
-    "J101": _aus_vertrag("J101", S.HOF(FP_SKT_1X02, _S["kette"]["pin1"],
-                                       _S["kette"]["drehung"]),
-                         _S["kette"]["drehung"], False),
-    "J102": _aus_vertrag("J102", S.HOF(FP_HDR_1X02, _S["kette"]["pin1"],
-                                       _S["kette"]["drehung"]),
-                         _S["kette"]["drehung"], False, unten=True),
-    "J103": _aus_vertrag("J103", S.HOF(FP_SKT_2X02, _S["leistung"]["pin1"],
-                                       _S["leistung"]["drehung"]),
-                         _S["leistung"]["drehung"], False),
-    "J104": _aus_vertrag("J104", S.HOF(FP_HDR_2X02, _S["leistung"]["pin1"],
-                                       _S["leistung"]["drehung"]),
-                         _S["leistung"]["drehung"], False, unten=True),
+    # ALLE SECHS gehen jetzt ueber _vertragsstecker(), also ueber pin1
+    # (Begruendung dort). Vorher zogen J100/J105 ihre Lage aus
+    # STECKER_POS[...]["flaeche"] -- die zweite Quelle, an der sich der
+    # (-0,78|+0,50)-mm-Versatz eingeschlichen hatte.
+    "J100": _vertragsstecker("J100", "stapel_links", True),
+    "J105": _vertragsstecker("J105", "stapel_rechts", True),
+    "J101": _vertragsstecker("J101", "kette", False, index=0),
+    "J102": _vertragsstecker("J102", "kette", False, index=1, unten=True),
+    "J103": _vertragsstecker("J103", "leistung", False, index=0),
+    "J104": _vertragsstecker("J104", "leistung", False, index=1, unten=True),
 
     # -- MCU-Nest (dx=-1.0 gegenueber v1, s. Moduldocstring; Zeilen 1-3
     #    unveraendert relativ zueinander) --
@@ -407,7 +453,14 @@ PLACEMENT = {
 # der klassischen unteren Kante mit echtem Kabelzugang (J3/J90 sitzen
 # in v2 an anderen Kanten, s. Moduldocstring).
 PIN1_MARKE = (25.50, 2.27)
-KLEMMEN_POS = (44.00, 58.00)
+# y = 59,60 statt 58,00 (Fix-Runde 1 zu Aufgabe 7): steckerprobe.py
+# verlangt fuer die Kennzeichnungs-Auflage ein "KLEMMEN" an der
+# Klemmenkante, gemessen als y >= BOARD_H - 6,0 = 59,0 mm. Bei 58,00 lag
+# die Schrift 1,0 mm zu hoch -- gemeldet hat das niemand, weil die Probe
+# vorher an der v1-Vertragszeile abbrach (s. steckerprobe.py). Die neue
+# Lage liegt im freien Streifen zwischen J5 (Hof endet y = 41,56) und der
+# Randpad-Reihe (Hof beginnt y = 60,96).
+KLEMMEN_POS = (44.00, 59.60)
 
 # --- Waermepfad des DRV8876 -------------------------------------------
 # U1-Hof (35,60|18,90)-(43,40|24,40) plus 1 mm Rand, wie in v1.
