@@ -21,6 +21,15 @@ Inhalt (mit_flipflop=True, der Normalfall fuer ein Modul):
         Datenblatt DS13866, TSSOP20-Pinout) -- das ist der einzige Pin
         dieses Bauteils, an dem die Selbstpruefung nicht aus einem
         eigenen Symbolpin "NRST" besteht, sondern aus "PF2".
+        PA2..PA6 (Pins 9-13) sind seit Fix-Runde 1 zu Task 6 (2026-09-08)
+        KEINE unbedingt verdrahteten DRV8876-Motorsignale mehr, sondern
+        genau wie PC14/PC15/PA7/PA8 gewoehnliche freie GPIO -- ein Modul
+        mit eigenem Motortreiber ruft `einbauen(..., motorsignale=True)`
+        und bekommt dann IN1/IN2/NSLEEP/NFAULT/IPROPI darauf; jedes
+        andere Modul (z.B. der Dimmer) bekommt sie ueber `zusatz_pins`
+        oder als no_connect wie jeden anderen freien Pin. S.
+        `ZUSATZ_PIN_RICHTUNG`- und `einbauen()`-Docstring fuer die volle
+        Begruendung.
   U101  SN74LVC1G175 (SOT-363-6), D-Flipflop mit asynchronem Loesch-
         eingang CLR. D = SEL_IN (Kettenstecker oben), CLK = SEL_CLK
         (Stapelstecker), Q = SEL_OUT (an Kettenstecker unten UND an
@@ -444,27 +453,39 @@ def _kennwiderstand(sch, ref_ober, ref_kenn, ox, oy, netz):
     sch.netz(ref_kenn, "2", "D", "GND")
 
 
-#: U100 (STM32C011F6P6, TSSOP-20) hat 20 Pins; 15 davon vergibt einbauen()
-#: fest (Bus, Versorgung, Kette, Endstufen-Netze, Bootlader). Fuenf bleiben
-#: ohne modulspezifische Rolle -- PC14/PC15/PA7/PA8 sind echte, freie GPIO
-#: (Pin-Richtung hier vermerkt, aus der Symbolgeometrie ausgemessen:
+#: U100 (STM32C011F6P6, TSSOP-20) hat 20 Pins; 11 davon vergibt einbauen()
+#: UNBEDINGT fest (Bus, Versorgung, Kette, Bootlader). NEUN bleiben ohne
+#: unbedingte modulspezifische Rolle -- PC14/PC15/PA7/PA8 waren das schon
+#: immer (Pin-Richtung hier vermerkt, aus der Symbolgeometrie ausgemessen:
 #: MCU_ST_STM32C0.kicad_sym, STM32C011F_4-6_Px, x=-17.78 -> "L",
-#: x=+17.78 -> "R"). PA13 (Pin 18) ist zugleich SWDIO und bleibt deshalb
-#: IMMER no_connect -- ein Modul, das den Debug-Pin fuer eigene Zwecke
-#: kapert, verliert die Moeglichkeit, es je wieder per SWD anzusprechen,
-#: falls die Firmware haengt. Aufgabe 5 (Motormodul) ist die erste
-#: Nutzerin: drei der vier Pins tragen dort SENSOR_3V3/SCHLEIFE_1/
-#: SCHLEIFE_2 (der Optokoppler-Ausgang und die zwei Schleifenknoten der
-#: Notaus-Kanaele muessen an den MCU; SCHLEIFE_1/2 hiessen bis zur
-#: Ruhestrom-Umstellung NOTAUS_1/2, s. tools/sch/motormodul.py) -- ohne diese Konstante haette
-#: einbauen() sie unbedingt auf nc() gelegt, und ein nachtraeglicher
-#: netz()-Aufruf auf demselben Pin waere ein Widerspruch (no_connect UND
-#: Draht auf demselben Punkt).
-ZUSATZ_PIN_RICHTUNG = {"2": "L", "3": "L", "14": "R", "15": "R"}
+#: x=+17.78 -> "R"); seit Fix-Runde 1 zu Task 6 (2026-09-08) zaehlen PA2..
+#: PA6 (Pins "9"/"10"/"11"/"12"/"13") DAZU.
+#:
+#: **Fix-Runde 1, WARUM.** Bis dahin verdrahtete einbauen() Pin 9-13
+#: UNBEDINGT auf die DRV8876-Motorsignale (NETZE_NACH_AUSSEN: IN1/IN2/
+#: NSLEEP/NFAULT/IPROPI) -- eine Altlast aus der Zeit, als es nur EIN
+#: Modultyp (das Motormodul) gab. Das kostete jedes Modul OHNE eigenen
+#: Motortreiber (den Dimmer) fuenf Port-A-Pins, die es nie benutzt: Task
+#: 6 wollte Dimmer-Kanal 3/4 auf PA5/PA6 legen und stiess dort auf exakt
+#: diese fest verdrahteten Motorsignale (s. tools/sch/dimmermodul.py,
+#: Fix-Runde-1-Abschnitt im Kopf-Docstring, und task-6-report.md).
+#: **NEUE REGEL:** das Scaffold verdrahtet nur, was ein Modul per
+#: `motorsignale=True` UND/ODER `zusatz_pins` tatsaechlich anfordert --
+#: unbenutzte MCU-Pins bleiben frei fuer moduleigene Funktionen, statt
+#: unbedingt eine Rolle zu tragen, die niemand braucht.
+ZUSATZ_PIN_RICHTUNG = {"2": "L", "3": "L", "9": "R", "10": "R", "11": "R",
+                       "12": "R", "13": "R", "14": "R", "15": "R"}
+#: Die fuenf Pins, die `motorsignale=True` fest auf NETZE_NACH_AUSSEN
+#: legt -- als eigene Menge, damit `einbauen()` sie sowohl gegen
+#: `zusatz_pins` abgleichen (Widerspruch = ValueError) als auch beim
+#: Aufbau selbst wiederverwenden kann, ohne die Zuordnung zweimal
+#: hinzuschreiben.
+MOTORSIGNAL_PINS = {"9": "IN1", "10": "IN2", "11": "NSLEEP",
+                     "12": "NFAULT", "13": "IPROPI"}
 
 
 def einbauen(sch, ox, oy, mit_flipflop=True, zusatz_pins=None,
-             frei_durchreichen=False):
+             frei_durchreichen=False, motorsignale=False):
     """Baut den Modulsockel-Block bei (ox, oy) in `sch` ein.
 
     mit_flipflop=True (Vorgabe): voller Modul-Block -- MCU, Flipflop,
@@ -473,12 +494,24 @@ def einbauen(sch, ox, oy, mit_flipflop=True, zusatz_pins=None,
     Kennwiderstaende -- fuer die Sockelplatine (Aufgabe 4), die kein
     Modul ist und keinen eigenen Modultyp hat.
 
-    zusatz_pins: optionales dict {Pinnummer(str): Netzname} fuer die vier
+    motorsignale (Vorgabe False, NEU seit Fix-Runde 1 zu Task 6): True
+    verdrahtet Pin 9/10/11/12/13 (PA2..PA6) fest auf die DRV8876-
+    Motorsignale (NETZE_NACH_AUSSEN: IN1/IN2/NSLEEP/NFAULT/IPROPI) --
+    fuer ein Modul mit eigenem Motortreiber (Motormodul). False (die
+    Vorgabe) laesst diese fuenf Pins wie gewoehnliche freie GPIO: per
+    `zusatz_pins` individuell belegbar, sonst no_connect -- fuer jedes
+    Modul OHNE eigenen Motortreiber (den Dimmer). Ein Modul darf
+    `motorsignale=True` NICHT gleichzeitig mit einem dieser fuenf Pins
+    in `zusatz_pins` kombinieren (ValueError) -- die Rolle waere sonst
+    doppelt vergeben.
+
+    zusatz_pins: optionales dict {Pinnummer(str): Netzname} fuer die
     freien U100-Pins aus ZUSATZ_PIN_RICHTUNG (PC14/PC15/PA7/PA8, Pins
-    "2"/"3"/"14"/"15"). Ein hier genannter Pin bekommt sch.netz(...) mit
-    dem gegebenen Namen statt sch.nc(...); nicht genannte Pins bleiben wie
-    bisher no_connect. Pin "18" (PA13/SWDIO) ist nicht waehlbar -- s.
-    ZUSATZ_PIN_RICHTUNG-Kommentar.
+    "2"/"3"/"14"/"15", UND -- wenn motorsignale=False -- zusaetzlich
+    PA2..PA6, Pins "9".."13"). Ein hier genannter Pin bekommt
+    sch.netz(...) mit dem gegebenen Namen statt sch.nc(...); nicht
+    genannte Pins bleiben wie bisher no_connect. Pin "18" (PA13/SWDIO)
+    ist nicht waehlbar -- s. ZUSATZ_PIN_RICHTUNG-Kommentar.
 
     frei_durchreichen (Vorgabe False): woertlich an _stapelstecker()
     durchgereicht (s. dort) -- False laesst freie Pico-GPIO auf J100/J105
@@ -491,13 +524,22 @@ def einbauen(sch, ox, oy, mit_flipflop=True, zusatz_pins=None,
     Blatt auf (Aufgabe 5, Motormodul: beide Aufrufe in motormodul.bauen()).
 
     Liefert ein dict mit den Netznamen, die die Endstufe braucht
-    (== NETZE_NACH_AUSSEN).
+    (== NETZE_NACH_AUSSEN) -- unabhaengig von `motorsignale`, aber nur
+    sinnvoll fuer einen Aufrufer, der auch tatsaechlich motorsignale=True
+    gesetzt hat.
     """
     zusatz_pins = zusatz_pins or {}
     unbekannt = set(zusatz_pins) - set(ZUSATZ_PIN_RICHTUNG)
     if unbekannt:
         raise ValueError("zusatz_pins kennt nur %s, nicht %s"
                           % (sorted(ZUSATZ_PIN_RICHTUNG), sorted(unbekannt)))
+    if motorsignale:
+        kollidiert = set(MOTORSIGNAL_PINS) & set(zusatz_pins)
+        if kollidiert:
+            raise ValueError(
+                "motorsignale=True belegt %s bereits fest -- nicht "
+                "gleichzeitig in zusatz_pins: %s"
+                % (sorted(MOTORSIGNAL_PINS), sorted(kollidiert)))
     _load_libs(sch)
 
     # PWR_FLAG auf GND und 3V3: ohne einen "power_out"-Pin irgendwo im
@@ -537,11 +579,19 @@ def einbauen(sch, ox, oy, mit_flipflop=True, zusatz_pins=None,
         sch.netz("U100", "6", "L", "NRST")
         sch.netz("U100", "7", "R", "ID0")           # PA0
         sch.netz("U100", "8", "R", "ID1")           # PA1
-        sch.netz("U100", "9", "R", NETZE_NACH_AUSSEN["IN1"])       # PA2
-        sch.netz("U100", "10", "R", NETZE_NACH_AUSSEN["IN2"])      # PA3
-        sch.netz("U100", "11", "R", NETZE_NACH_AUSSEN["NSLEEP"])   # PA4
-        sch.netz("U100", "12", "R", NETZE_NACH_AUSSEN["NFAULT"])   # PA5
-        sch.netz("U100", "13", "R", NETZE_NACH_AUSSEN["IPROPI"])   # PA6
+        # PA2..PA6 (Pins 9-13): seit Fix-Runde 1 (Task 6) NICHT mehr
+        # unbedingt auf die Motorsignale verdrahtet -- nur wenn
+        # motorsignale=True (Motormodul); sonst dasselbe Verhalten wie
+        # PC14/PC15/PA7/PA8 (per zusatz_pins belegbar, sonst nc()). S.
+        # ZUSATZ_PIN_RICHTUNG-Kommentar oben fuer die volle Begruendung.
+        for _p in ("9", "10", "11", "12", "13"):
+            if motorsignale:
+                sch.netz("U100", _p, ZUSATZ_PIN_RICHTUNG[_p],
+                          NETZE_NACH_AUSSEN[MOTORSIGNAL_PINS[_p]])
+            elif _p in zusatz_pins:
+                sch.netz("U100", _p, ZUSATZ_PIN_RICHTUNG[_p], zusatz_pins[_p])
+            else:
+                sch.nc("U100", _p)
         for _p in ("14", "15"):                      # PA7, PA8
             if _p in zusatz_pins:
                 sch.netz("U100", _p, ZUSATZ_PIN_RICHTUNG[_p], zusatz_pins[_p])

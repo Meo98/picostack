@@ -160,6 +160,49 @@ else:
         check("%s Kontakt %s (freier GPIO) bleibt no_connect" % (_ref, _p),
               _sch.pinpos(_ref, _p) in _sch.NOCONN, True)
 
+    # ------------------------------------ Fix-Runde 1 (Task 6, 2026-09-08)
+    # PA2..PA6 (U100-Pin "9".."13") sind seit dieser Fix-Runde KEINE
+    # unbedingt verdrahteten Motorsignale mehr, sondern -- wie PC14/PC15/
+    # PA7/PA8 -- gewoehnliche freie GPIO: `motorsignale=False` (die
+    # Vorgabe, hier ueber den unveraenderten Aufruf oben getestet) laesst
+    # sie ohne `zusatz_pins`-Eintrag auf no_connect. Vorher (vor der
+    # Fix-Runde) waren dieselben fuenf Pins IMMER auf IN1/IN2/NSLEEP/
+    # NFAULT/IPROPI verdrahtet -- diese Pruefung waere mit dem alten
+    # Verhalten durchgefallen und deckt die Regression damit direkt ab.
+    for _p in ("9", "10", "11", "12", "13"):
+        check("U100 Pin %s (PA2..PA6, ohne motorsignale/zusatz_pins) "
+              "bleibt no_connect" % _p,
+              _sch.pinpos("U100", _p) in _sch.NOCONN, True)
+
+    # motorsignale=True muss die ALTE, unbedingte Verdrahtung exakt
+    # reproduzieren -- das Motormodul verlaesst sich genau darauf
+    # (motormodul.bauen() ruft einbauen(..., motorsignale=True)), s.
+    # task-6-report.md, Abschnitt "Motormodul-Regressionsnachweis".
+    _sch_motor = _gen.Schaltplan("modulsockel_motorsignale_test",
+                                  "Modulsockel (motorsignale=True)", "")
+    _netze_motor = modulsockel.einbauen(_sch_motor, 0.0, 0.0,
+                                          mit_flipflop=True,
+                                          motorsignale=True)
+    for _p, _rolle in modulsockel.MOTORSIGNAL_PINS.items():
+        _an = _netz_pins(_sch_motor, _gen, _netze_motor[_rolle])
+        _mcu = [t for t in _an if t[0] == "U100" and t[1] == _p]
+        check("motorsignale=True: U100 Pin %s traegt %s" % (_p, _rolle),
+              len(_mcu), 1)
+
+    # motorsignale=True darf sich NICHT mit einem der fuenf Motorsignal-
+    # Pins in zusatz_pins widersprechen -- sonst waere die Rolle doppelt
+    # vergeben (ein Pin kann nicht gleichzeitig IN1 und ein Modul-eigenes
+    # Signal tragen).
+    try:
+        modulsockel.einbauen(
+            _gen.Schaltplan("modulsockel_kollision_test", "x", ""),
+            0.0, 0.0, mit_flipflop=True, motorsignale=True,
+            zusatz_pins={"12": "IRGENDWAS"})
+        fails.append("motorsignale=True + zusatz_pins={'12': ...} haette "
+                      "ValueError werfen muessen, tat es aber nicht")
+    except ValueError:
+        pass
+
     # ------------------------------------------------------------- ERC
     # Aufgabe 3, Nachtrag (Pruefer-Befund #2): drei echte Fehler (Phantom-
     # Stromsymbole, ungeloeste extends-Vererbung, Koordinaten neben dem
@@ -170,20 +213,33 @@ else:
     # weitere Schaltplaene; bricht dort einer der drei Fehler wieder auf,
     # faellt es sonst niemandem auf. Deshalb hier der ERC-Lauf als
     # Testschritt: bauen, exportieren, pruefen, aufraeumen.
-    ERWARTETE_ERC_WARNUNGEN = 7  # isolated_pin_label fuer IN1/IN2/NSLEEP/
-    # NFAULT/IPROPI/NOTAUS -- absichtlich einseitige Uebergabenetze, die
-    # erst Aufgabe 5 (Motormodul) auf der Gegenseite schliesst. Steigt
+    ERWARTETE_ERC_WARNUNGEN = 2  # isolated_pin_label fuer NOTAUS/VSYS --
+    # absichtlich einseitige Uebergabenetze, die erst ein echtes Modul
+    # (Motormodul: NOTAUS: _notaus_schleifen()/_notaus_verriegelung();
+    # VSYS: versorgung.bauen()) auf der Gegenseite schliesst. Steigt
     # diese Zahl, ist das entweder ein neues, ebenso erklaerbares
     # Warnungsmuster ODER ein echter neuer Befund -- in jedem Fall soll
     # der Test es melden, nicht stillschweigend durchwinken.
     #
-    # 7. VSYS (Pin 39, seit Fix-Runde 1/Task-5-Review, 2026-09-08):
+    # BIS Fix-Runde 1 (Task 6, 2026-09-08) standen hier 7: IN1/IN2/
+    # NSLEEP/NFAULT/IPROPI (Pin 9-13, PA2..PA6) kamen dazu, weil
+    # `einbauen(..., mit_flipflop=True)` sie damals UNBEDINGT auf die
+    # DRV8876-Motorsignale verdrahtete, unabhaengig vom aufrufenden
+    # Modul (auch auf diesem nackten Blatt ohne jeden Motortreiber). Seit
+    # der Fix-Runde ist das Vorgabeverhalten `motorsignale=False` -- Pin
+    # 9-13 bleiben auf diesem Blatt (ohne `motorsignale=True` und ohne
+    # `zusatz_pins`) einfach no_connect wie jeder andere freie GPIO, s.
+    # den eigenen Test dafuer oben ("bleibt no_connect") und den
+    # `motorsignale=True`-Gegentest direkt darunter, der die alten 5
+    # Warnungen gezielt wieder herstellt (s. dort).
+    #
+    # VSYS (Pin 39, seit Fix-Runde 1/Task-5-Review, 2026-09-08):
     # stack_spec.IST_BELEGBAR(39) ist jetzt True (VERSORGUNG["vsys_diode"]
     # verlangt genau diese Einspeisung durch jede Versorgungszelle, s.
     # stack_spec.py-Kommentar), also verdrahtet _stapelstecker() den Pin
     # jetzt statt no_connect auf das Label "VSYS" -- auf diesem nackten
     # Modulsockel-Blatt (kein versorgung.py, kein Pico) bleibt das
-    # dieselbe Art einseitiges Uebergabenetz wie IN1/IN2/... oben, nicht
+    # dieselbe Art einseitiges Uebergabenetz wie NOTAUS oben, nicht
     # ein neuer Fehler.
 
     _tmp = tempfile.mkdtemp(prefix="modulsockel_erc_")
@@ -213,7 +269,7 @@ else:
                         _warnings.append(_v)
             check("ERC-Fehler auf dem erzeugten Blatt", len(_errors), 0)
             check("ERC-Warnungen auf dem erzeugten Blatt (isolierte "
-                  "Uebergabenetze IN1/IN2/NSLEEP/NFAULT/IPROPI/NOTAUS/VSYS)",
+                  "Uebergabenetze NOTAUS/VSYS)",
                   len(_warnings), ERWARTETE_ERC_WARNUNGEN)
             if _errors:
                 for _e in _errors:

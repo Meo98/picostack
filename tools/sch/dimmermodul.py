@@ -21,62 +21,45 @@ Modul:
     (Pin 1 = +24V, Pin 2 = geschaltetes Minus der Last).
 
 KANAL->PIN-ZUORDNUNG (hiermit festgelegt, Firmware richtet sich
-danach): PWM1 = Pin "15" (PA8), PWM2 = Pin "14" (PA7), PWM3 = Pin "2"
-(PC14), PWM4 = Pin "3" (PC15). PA8/PA7 zuerst, weil sie am STM32C011
-Timerkanaele tragen (DS13866, Tabelle "Pin assignment": PA8 = TIM1_CH1,
-PA7 = TIM1_CH1N/TIM3_CH2); PC14/PC15 sind reine GPIO -- Kanal 3 und 4
-dimmen notfalls per Software-PWM. Deshalb hat der Ein-Kanal-Dimmer
-IMMER Hardware-PWM.
+danach): PWM1 = Pin "15" (PA8), PWM2 = Pin "14" (PA7), PWM3 = Pin "12"
+(PA5), PWM4 = Pin "13" (PA6). ALLE VIER jetzt auf Port A mit
+Timer-Faehigkeit -- eigene Extraktion der Alternate-Functions aus
+`MCU_ST_STM32C0.kicad_sym`, Symbol "STM32C011F_4-6_Px_1_1": PA8 traegt
+TIM1_CH1 (u.a.), PA7 TIM1_CH1N/TIM3_CH2/TIM14_CH1/TIM17_CH1, PA5
+TIM1_CH1/TIM1_CH3N, PA6 TIM16_CH1/TIM1_BKIN/TIM3_CH1. Welcher
+TIM-Kanal firmwareseitig fuer PWM3/PWM4 tatsaechlich verwendet wird
+(TIM1_CH1/TIM1_CH3N bzw. TIM16_CH1/TIM3_CH1), ist damit noch nicht
+festgelegt -- **Timer-Zuordnung PA5/PA6 in der Firmware zu pruefen**,
+insbesondere die Kollision "PA5 traegt ebenfalls TIM1_CH1 wie PA8" (auf
+verschiedenen Kanaelen desselben Timers unproblematisch, aber von der
+Firmware bewusst zu handhaben).
 
-**Task 6, PWM3/4 NICHT auf PA5/PA6 verlegt -- gepruefte, dokumentierte
-Ausnahme (kein Versehen).** Der Auftrag verlangte, Kanal 3/4 von den
-OSC32-Pins PC14/PC15 (schwacher Treiber, s. naechster Absatz) auf
-"regulaere" Port-A-Pins zu verlegen, mit dem Vorschlag Pin "12"/"13"
-(PA5/PA6) -- UNTER DER BEDINGUNG, dass diese Pins im Nest tatsaechlich
-frei sind. Beides selbst geprueft, mit gegensaetzlichem Ergebnis:
-  * Pin-Namen stimmen: `MCU_ST_STM32C0.kicad_sym`, Symbol
-    "STM32C011F_4-6_Px_1_1", eigene Extraktion aller Pin-Name/Nummer-
-    Paare -- Pin "12" traegt tatsaechlich den Symbolnamen "PA5", Pin
-    "13" "PA6" (und Pin "2"/"3" tatsaechlich "PC14"/"PC15", mit den
-    Alternate-Functions "RCC_OSCX_IN"/"RCC_OSCX_OUT"/"RCC_OSC32_EN" --
-    das belegt die "schwacher Treiber"-Sorge des Auftrags: das sind die
-    externen 32,768-kHz-Quarzpins, keine gewoehnlichen GPIO).
-  * Aber "frei im Nest" stimmt NICHT: `tools/sch/modulsockel.py::
-    einbauen()` verdrahtet Pin 9/10/11/12/13 (PA2..PA6) UNBEDINGT --
-    innerhalb von `if mit_flipflop:`, unabhaengig vom aufrufenden Modul
-    -- auf die festen Netznamen IN1/IN2/NSLEEP/NFAULT/IPROPI
-    (`modulsockel.NETZE_NACH_AUSSEN`). Das gilt fuer JEDES Modul mit
-    `mit_flipflop=True`, auch den Dimmer, der gar keinen DRV8876 hat --
-    diese fuenf Pins bleiben dann einfach als unbenutzte
-    Ein-Pin-Stichnetze stehen, sind aber elektrisch bereits VERGEBEN.
-    Der einzige Weg, ueberhaupt einen zusaetzlichen Netznamen auf einen
-    U100-Pin zu legen, ist der `zusatz_pins`-Parameter von einbauen(),
-    und der akzeptiert ausschliesslich die vier Pins in
-    `modulsockel.ZUSATZ_PIN_RICHTUNG` ("2"/"3"/"14"/"15" == PC14/PC15/
-    PA7/PA8) -- ein Aufruf mit "12" oder "13" wirft dort ausdruecklich
-    `ValueError` (eigene Pruefung des Codes: `unbekannt = set(zusatz_
-    pins) - set(ZUSATZ_PIN_RICHTUNG)`).
+**Fix-Runde 1 (2026-09-08): PWM3/4 von PC14/PC15 auf PA5/PA6
+verlegt.** Task 6 (Erstfassung) hatte diese Verlegung noch als
+BLOCKIERT gemeldet: `tools/sch/modulsockel.py::einbauen()` verdrahtete
+Pin 9/10/11/12/13 (PA2..PA6) bis dahin UNBEDINGT auf die
+DRV8876-Motorsignale (IN1/IN2/NSLEEP/NFAULT/IPROPI) -- eine Altlast aus
+der Zeit, als es nur ein Modultyp gab, die JEDES Modul mit
+`mit_flipflop=True` betraf, auch den Dimmer, der gar keinen DRV8876
+hat. Der Controller hat diesen Befund bestaetigt und den Fix an
+gemeinsamem Code freigegeben: `modulsockel.einbauen()` hat jetzt einen
+neuen Parameter `motorsignale` (Vorgabe **False**) -- nur ein Modul mit
+`motorsignale=True` (das Motormodul) bekommt die fuenf Motorsignale
+fest verdrahtet; jedes andere Modul (der Dimmer, hier mit dem
+weiterhin gueltigen `motorsignale=False`) behandelt PA2..PA6 wie jeden
+anderen freien GPIO -- per `zusatz_pins` belegbar, sonst no_connect.
+Damit sind PA5 (Pin "12") und PA6 (Pin "13") jetzt tatsaechlich frei,
+und PWM3/4 liegen auf ihnen. Volle Herleitung, inklusive der
+urspruenglichen Blockade-Analyse und des Regressionsnachweises fuer das
+Motormodul, in `tools/sch/modulsockel.py` (ZUSATZ_PIN_RICHTUNG-
+Kommentar, `einbauen()`-Docstring) und in task-6-report.md.
 
-  Ausgezaehlt bleibt damit: JEDER Port-A-Pin von U100 traegt bereits
-  eine feste Rolle -- PA0/PA1 (ID0/ID1), PA2/PA3 (IN1/IN2), PA4/PA5/PA6
-  (NSLEEP/NFAULT/IPROPI), PA7/PA8 (hier: PWM2/PWM1), PA9(11)/PA10(12)
-  (FLASH_RX/FLASH_TX), PA13 (SWDIO, dauerhaft no_connect), PA14
-  (BOOT0). Es gibt also, ueber die bereits an Kanal 1/2 vergebenen
-  PA8/PA7 hinaus, GENAU KEINE freien Port-A-Pins -- nicht "die beiden
-  mit der niedrigsten Nummer", sondern keinen einzigen. Frei bleiben
-  ausschliesslich PC14/PC15 (Port C, dieselben OSC32-Pins, die der
-  Auftrag vermeiden wollte).
-
-  Eine Verlegung waere nur durch eine Aenderung an `modulsockel.py`
-  selbst moeglich (z.B. NSLEEP/NFAULT/IPROPI bedingt statt unbedingt
-  verdrahten, oder ZUSATZ_PIN_RICHTUNG um Pin "12"/"13" erweitern) --
-  das ist eine Aenderung an gemeinsamem Code, der auch das bereits
-  fertige Motormodul (Task 5) traegt, und damit ausdruecklich NICHT im
-  Auftrag dieser Aufgabe (Modify-Liste: nur `dimmermodul.py`). PWM_PINS
-  bleibt deshalb UNVERAENDERT (Kanal 3/4 weiter auf Pin "2"/"3", PC14/
-  PC15, mit Software-PWM als Ausweichloesung, s. Absatz oben) -- diese
-  Erkenntnis ist der zentrale offene Punkt dieser Aufgabe und steht so
-  auch im Aufgabenbericht, nicht nur hier.
+WHY (Verlegung weg von PC14/PC15): PC14/PC15 tragen laut demselben
+Symbol die Alternate-Functions "RCC_OSCX_IN"/"RCC_OSCX_OUT"/
+"RCC_OSC32_EN" -- die externen 32,768-kHz-Quarzpins, keine
+gewoehnlichen GPIO, mit entsprechend schwachem Treiber fuer ein
+25-nC-MOSFET-Gate hinter 100 Ohm. PA5/PA6 haben keine solche
+Nebenfunktion und treiben wie jeder andere GPIO.
 
 GATE DIREKT AM 3,3-V-PIN: Der Kanal-FET ist bei VGS = 3,3 V nicht
 vollstaendig durchgesteuert (Datenblatt spezifiziert RDS(on) bei 10 V
@@ -136,8 +119,11 @@ RP_WERT = "100k"
 C_ABBLOCK_WERT = "100n"
 C_ABBLOCK_LCSC = "C49678"   # 100nF/0805, JLCPCB-Basic-Teil
 
-#: Kanalnummer -> Zusatzpin des Modulsockels (s. Docstring).
-PWM_PINS = {1: "15", 2: "14", 3: "2", 4: "3"}
+#: Kanalnummer -> Zusatzpin des Modulsockels (s. Docstring). Seit
+#: Fix-Runde 1 (Task 6, 2026-09-08) alle vier auf Port A (PA8/PA7/PA5/
+#: PA6) -- vorher waren "2"/"3" (PC14/PC15) die Ausweichbelegung fuer
+#: Kanal 3/4, s. Docstring "Fix-Runde 1" oben.
+PWM_PINS = {1: "15", 2: "14", 3: "12", 4: "13"}
 
 #: Variante -> (Typcode, Kanalzahl); direkt am Vertrag verankert.
 VARIANTEN = {1: 0x10, 3: 0x11, 4: 0x12}
@@ -276,8 +262,14 @@ def bauen(sch, ox, oy, kanaele):
     # _stapelstecker() die freien GPIO auf no_connect, und die
     # Randpads-Labels haetten kein Gegenstueck (Leerlauf-Loetpad).
     # Dasselbe Muster wie motormodul.bauen() (Task 5).
+    # motorsignale=False (Vorgabe, hier ausdruecklich hingeschrieben):
+    # der Dimmer hat keinen DRV8876 und braucht PA2..PA6 nicht als
+    # Motorsignale -- genau DAS ist Fix-Runde 1 (s. Docstring oben),
+    # PWM3/4 (in `zusatz` oben, Pins "12"/"13") belegen zwei dieser
+    # Pins stattdessen selbst.
     modulsockel.einbauen(sch, ox, oy, mit_flipflop=True,
-                          frei_durchreichen=True, zusatz_pins=zusatz)
+                          frei_durchreichen=True, motorsignale=False,
+                          zusatz_pins=zusatz)
     # J95/J96: die 22 unbestueckten Randpads (stack_spec.RANDPADS, v2) --
     # jedes v2-Modul traegt sie. Unabhaengig von einbauen() (s.
     # modulsockel.randpads()-Docstring); die Netznamen (GP.., 3V3, GND)

@@ -1564,7 +1564,7 @@ def bauen(sch, ox, oy):
     Versorgungszelle (Task 5, ersetzt den alten Q1-Strang)."""
     _load_libs(sch)
 
-    # Zwei der vier freien U100-Pins (modulsockel.ZUSATZ_PIN_RICHTUNG)
+    # Zwei der neun "freien" U100-Pins (modulsockel.ZUSATZ_PIN_RICHTUNG)
     # tragen hier echte Aufgaben -- Pin "2" (PC14) und Pin "15" (PA8)
     # bleiben frei/nc. PC14 trug bis Aufgabe 5f den Ausgang des
     # Sensor-Optokopplers U2; mit dem Sensoreingang (Moduldoku Punkt 6)
@@ -1573,8 +1573,19 @@ def bauen(sch, ox, oy):
     # s. modulsockel.randpads() unten) -- ohne frei_durchreichen=True
     # legte _stapelstecker() die freien GPIO auf no_connect, und die
     # Randpads-Labels haetten kein Gegenstueck (Leerlauf-Loetpad).
+    # motorsignale=True (NEU, Fix-Runde 1 zu Task 6, 2026-09-08): das
+    # Motormodul ist der einzige Aufrufer, der die DRV8876-Motorsignale
+    # (IN1/IN2/NSLEEP/NFAULT/IPROPI auf PA2..PA6, Pin 9-13) tatsaechlich
+    # braucht -- vorher verdrahtete modulsockel.einbauen() diese fuenf
+    # Pins UNBEDINGT fuer JEDES Modul (auch den Dimmer, der sie nie
+    # benutzte); seit der Fix-Runde muss ein Modul sie explizit
+    # anfordern. Diese Zeile ist die einzige Aenderung, die die
+    # generierte Netzliste dieses Moduls unveraendert laesst (Pin 9-13
+    # tragen exakt dieselben Netznamen wie vorher) -- s.
+    # task-6-report.md, Abschnitt "Motormodul-Regressionsnachweis".
     netze = modulsockel.einbauen(sch, ox, oy, mit_flipflop=True,
-                                  frei_durchreichen=True, zusatz_pins={
+                                  frei_durchreichen=True, motorsignale=True,
+                                  zusatz_pins={
         # PC15/PA7: die zwei Schleifenknoten der Notaus-Kanaele. Seit der
         # Ruhestrom-Umstellung (Aufgabe 5d) heissen sie SCHLEIFE_1/2 statt
         # NOTAUS_1/2 -- die PEGELbedeutung ist dieselbe geblieben (LOW =

@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "f6c954df-12db-477f-a256-b88d0e676e13")
+	(uuid "6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b")
 	(paper "A2")
 	(title_block
 		(title "Dimmer1")
@@ -5394,12 +5394,32 @@
 		(uuid "a5fd1708-87cf-51a8-a5ba-2365d2598546")
 	)
 	(no_connect
-		(at 167.64 142.24)
+		(at 167.64 129.54)
 		(uuid "60b75ba0-a33c-522a-ab68-5eefec50522f")
 	)
 	(no_connect
-		(at 167.64 152.4)
+		(at 167.64 132.08)
 		(uuid "8f50be10-4869-5fcb-98c6-3de19fae6389")
+	)
+	(no_connect
+		(at 167.64 134.62)
+		(uuid "309ca1b0-f2fc-5bbb-a016-5a25f4b6ea92")
+	)
+	(no_connect
+		(at 167.64 137.16)
+		(uuid "b319e898-c7ab-5c2a-a946-c8f31f7aac99")
+	)
+	(no_connect
+		(at 167.64 139.7)
+		(uuid "b5c2cafa-0ca0-5b1c-a805-243f745062fc")
+	)
+	(no_connect
+		(at 167.64 142.24)
+		(uuid "d547fc5e-4ebe-52dd-a49e-731de0119748")
+	)
+	(no_connect
+		(at 167.64 152.4)
+		(uuid "1a30fa31-2fe2-5f77-87e2-97f4567422a5")
 	)
 	(wire
 		(pts
@@ -5409,7 +5429,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "309ca1b0-f2fc-5bbb-a016-5a25f4b6ea92")
+		(uuid "236301b2-bef7-5f68-a6e6-c24a5d50978a")
 	)
 	(wire
 		(pts
@@ -5419,7 +5439,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "b319e898-c7ab-5c2a-a946-c8f31f7aac99")
+		(uuid "897f2b4d-c669-5837-9857-a8d291c3378b")
 	)
 	(wire
 		(pts
@@ -5429,7 +5449,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "b5c2cafa-0ca0-5b1c-a805-243f745062fc")
+		(uuid "92f72834-1e92-5b23-a69c-33d9ee530fde")
 	)
 	(wire
 		(pts
@@ -5439,7 +5459,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "d547fc5e-4ebe-52dd-a49e-731de0119748")
+		(uuid "83e62d82-87a2-5b62-8aa9-601dce026b59")
 	)
 	(wire
 		(pts
@@ -5449,7 +5469,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "1a30fa31-2fe2-5f77-87e2-97f4567422a5")
+		(uuid "228a6430-60ec-564b-ba82-ae5428357501")
 	)
 	(wire
 		(pts
@@ -5459,7 +5479,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "236301b2-bef7-5f68-a6e6-c24a5d50978a")
+		(uuid "8a54136f-371c-5424-9dd7-1f65e1f429cb")
 	)
 	(wire
 		(pts
@@ -5469,7 +5489,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "897f2b4d-c669-5837-9857-a8d291c3378b")
+		(uuid "8d232786-bfd9-5b8c-9324-fdface4e2af9")
 	)
 	(wire
 		(pts
@@ -5479,7 +5499,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "92f72834-1e92-5b23-a69c-33d9ee530fde")
+		(uuid "f0e3afc3-5498-53f7-8f43-96a1daa19e50")
 	)
 	(wire
 		(pts
@@ -5489,7 +5509,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "83e62d82-87a2-5b62-8aa9-601dce026b59")
+		(uuid "1b41dd2e-483f-5343-af75-0cbcb2db8241")
 	)
 	(wire
 		(pts
@@ -5499,7 +5519,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "228a6430-60ec-564b-ba82-ae5428357501")
+		(uuid "c78962d8-efa9-5d7d-ba62-0db01194a495")
 	)
 	(wire
 		(pts
@@ -5509,7 +5529,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "8a54136f-371c-5424-9dd7-1f65e1f429cb")
+		(uuid "45e1e168-25cc-523f-a1a4-d8ef54b95e21")
 	)
 	(wire
 		(pts
@@ -5519,7 +5539,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "8d232786-bfd9-5b8c-9324-fdface4e2af9")
+		(uuid "1f61958f-53a6-59de-9eca-a32cfa752cc2")
 	)
 	(wire
 		(pts
@@ -5529,7 +5549,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "f0e3afc3-5498-53f7-8f43-96a1daa19e50")
+		(uuid "c642939c-7b71-570c-81d8-4b17ac87b91c")
 	)
 	(wire
 		(pts
@@ -5539,7 +5559,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "1b41dd2e-483f-5343-af75-0cbcb2db8241")
+		(uuid "52d832e6-8b19-5e92-9551-b28f1d5cb26b")
 	)
 	(wire
 		(pts
@@ -5549,7 +5569,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "c78962d8-efa9-5d7d-ba62-0db01194a495")
+		(uuid "f0bcdadb-9174-5c90-9877-a4b5a438074f")
 	)
 	(wire
 		(pts
@@ -5559,7 +5579,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "45e1e168-25cc-523f-a1a4-d8ef54b95e21")
+		(uuid "b0150978-198d-5106-8ef2-2e9b21c2cfd3")
 	)
 	(wire
 		(pts
@@ -5569,7 +5589,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "1f61958f-53a6-59de-9eca-a32cfa752cc2")
+		(uuid "dd8879f6-9bca-5704-a7c7-768168ed1e0a")
 	)
 	(wire
 		(pts
@@ -5579,7 +5599,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "c642939c-7b71-570c-81d8-4b17ac87b91c")
+		(uuid "ce6ceea3-6695-575b-8b9f-e90d513886da")
 	)
 	(wire
 		(pts
@@ -5589,7 +5609,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "52d832e6-8b19-5e92-9551-b28f1d5cb26b")
+		(uuid "c8a3453d-477c-581a-ab5b-f408414429cc")
 	)
 	(wire
 		(pts
@@ -5599,7 +5619,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "f0bcdadb-9174-5c90-9877-a4b5a438074f")
+		(uuid "16ab52d6-993f-596d-9fa6-d0f12792037e")
 	)
 	(wire
 		(pts
@@ -5609,7 +5629,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "b0150978-198d-5106-8ef2-2e9b21c2cfd3")
+		(uuid "ae7a7f6f-2a6d-54d0-8494-21c3397d6194")
 	)
 	(wire
 		(pts
@@ -5619,7 +5639,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "dd8879f6-9bca-5704-a7c7-768168ed1e0a")
+		(uuid "c3d15a31-9b4d-5ec5-a470-8b020de73f91")
 	)
 	(wire
 		(pts
@@ -5629,7 +5649,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "ce6ceea3-6695-575b-8b9f-e90d513886da")
+		(uuid "97446116-1cba-5ada-8f5c-e6b0797cc8ee")
 	)
 	(wire
 		(pts
@@ -5639,7 +5659,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "c8a3453d-477c-581a-ab5b-f408414429cc")
+		(uuid "8aa58243-032f-53dd-a119-93847fb18691")
 	)
 	(wire
 		(pts
@@ -5649,7 +5669,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "16ab52d6-993f-596d-9fa6-d0f12792037e")
+		(uuid "0d8a1311-e2c2-564e-8979-0b6314266bf7")
 	)
 	(wire
 		(pts
@@ -5659,7 +5679,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "ae7a7f6f-2a6d-54d0-8494-21c3397d6194")
+		(uuid "068d9825-10d0-5d82-bcf3-b947aaf2aa99")
 	)
 	(wire
 		(pts
@@ -5669,7 +5689,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "c3d15a31-9b4d-5ec5-a470-8b020de73f91")
+		(uuid "960d5eb3-a2cf-5cfd-890f-093d8a89d7dc")
 	)
 	(wire
 		(pts
@@ -5679,7 +5699,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "97446116-1cba-5ada-8f5c-e6b0797cc8ee")
+		(uuid "d6bb9d5d-37a5-5ef8-a1d2-68061672fb44")
 	)
 	(wire
 		(pts
@@ -5689,7 +5709,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "8aa58243-032f-53dd-a119-93847fb18691")
+		(uuid "6e06da11-b70f-5046-9942-9e72a25f155c")
 	)
 	(wire
 		(pts
@@ -5699,7 +5719,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "0d8a1311-e2c2-564e-8979-0b6314266bf7")
+		(uuid "9425c6bd-2fab-555c-b9bb-435717363c90")
 	)
 	(wire
 		(pts
@@ -5709,7 +5729,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "068d9825-10d0-5d82-bcf3-b947aaf2aa99")
+		(uuid "2a00e121-b4ec-5cad-94f2-466fc692f779")
 	)
 	(wire
 		(pts
@@ -5719,7 +5739,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "960d5eb3-a2cf-5cfd-890f-093d8a89d7dc")
+		(uuid "3d2af6ce-1b57-5c37-90a4-35bf480a29c2")
 	)
 	(wire
 		(pts
@@ -5729,7 +5749,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "d6bb9d5d-37a5-5ef8-a1d2-68061672fb44")
+		(uuid "5a60c006-a6ab-5142-a086-954e2d104d1e")
 	)
 	(wire
 		(pts
@@ -5739,7 +5759,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "6e06da11-b70f-5046-9942-9e72a25f155c")
+		(uuid "5d58d165-d273-5491-9490-28c7f616b825")
 	)
 	(wire
 		(pts
@@ -5749,7 +5769,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "9425c6bd-2fab-555c-b9bb-435717363c90")
+		(uuid "5360a42e-1852-552b-9fb6-10742aabed5e")
 	)
 	(wire
 		(pts
@@ -5759,7 +5779,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "2a00e121-b4ec-5cad-94f2-466fc692f779")
+		(uuid "0989e4af-b321-58a2-9f64-aa586573896c")
 	)
 	(wire
 		(pts
@@ -5769,7 +5789,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "3d2af6ce-1b57-5c37-90a4-35bf480a29c2")
+		(uuid "76e9eb9a-2192-5233-b95c-f51a08d64b66")
 	)
 	(wire
 		(pts
@@ -5779,7 +5799,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "5a60c006-a6ab-5142-a086-954e2d104d1e")
+		(uuid "5f5902d7-63c1-5f0f-943e-c56f03df579d")
 	)
 	(wire
 		(pts
@@ -5789,7 +5809,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "5d58d165-d273-5491-9490-28c7f616b825")
+		(uuid "feaa663b-092a-5207-b560-6684a4d6a3c0")
 	)
 	(wire
 		(pts
@@ -5799,7 +5819,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "5360a42e-1852-552b-9fb6-10742aabed5e")
+		(uuid "e67717bb-d1bb-52fc-b70c-682b78d60fb3")
 	)
 	(wire
 		(pts
@@ -5809,7 +5829,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "0989e4af-b321-58a2-9f64-aa586573896c")
+		(uuid "06b9819a-e7e2-5e96-bf31-fe9914b9191a")
 	)
 	(wire
 		(pts
@@ -5819,7 +5839,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "76e9eb9a-2192-5233-b95c-f51a08d64b66")
+		(uuid "94e68644-a686-5a6f-b539-02241a886461")
 	)
 	(wire
 		(pts
@@ -5829,7 +5849,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "5f5902d7-63c1-5f0f-943e-c56f03df579d")
+		(uuid "c94b2b70-8c6c-5862-86f2-0482511ed2fb")
 	)
 	(wire
 		(pts
@@ -5839,7 +5859,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "feaa663b-092a-5207-b560-6684a4d6a3c0")
+		(uuid "792dcc3f-b4fb-524c-9f7a-a05665593eba")
 	)
 	(wire
 		(pts
@@ -5849,7 +5869,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "e67717bb-d1bb-52fc-b70c-682b78d60fb3")
+		(uuid "438a0c60-5763-529e-afb1-d6446e996ba4")
 	)
 	(wire
 		(pts
@@ -5859,7 +5879,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "06b9819a-e7e2-5e96-bf31-fe9914b9191a")
+		(uuid "df637540-139d-51c2-a124-911f6cef2fe6")
 	)
 	(wire
 		(pts
@@ -5869,7 +5889,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "94e68644-a686-5a6f-b539-02241a886461")
+		(uuid "806e69e3-29e7-5d27-91fe-daef6ac2cc75")
 	)
 	(wire
 		(pts
@@ -5879,7 +5899,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "c94b2b70-8c6c-5862-86f2-0482511ed2fb")
+		(uuid "302f14c9-6f4f-56d2-9fb8-edae8375e04a")
 	)
 	(wire
 		(pts
@@ -5889,7 +5909,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "792dcc3f-b4fb-524c-9f7a-a05665593eba")
+		(uuid "2ab0a440-254f-5452-aa56-2a5df4f48a22")
 	)
 	(wire
 		(pts
@@ -5899,7 +5919,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "438a0c60-5763-529e-afb1-d6446e996ba4")
+		(uuid "7717c6ad-0722-59fb-b2cf-0c5c8e81a847")
 	)
 	(wire
 		(pts
@@ -5909,7 +5929,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "df637540-139d-51c2-a124-911f6cef2fe6")
+		(uuid "b145c168-dcfc-5eac-8bdb-42d4aa9c90f7")
 	)
 	(wire
 		(pts
@@ -5919,7 +5939,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "806e69e3-29e7-5d27-91fe-daef6ac2cc75")
+		(uuid "1ade6c37-772d-5bc6-8c46-be26069dcffd")
 	)
 	(wire
 		(pts
@@ -5929,7 +5949,7 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "302f14c9-6f4f-56d2-9fb8-edae8375e04a")
+		(uuid "a1bd3f3b-ab7c-5544-94c2-40b60d0b3973")
 	)
 	(wire
 		(pts
@@ -5939,61 +5959,11 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "2ab0a440-254f-5452-aa56-2a5df4f48a22")
-	)
-	(wire
-		(pts
-			(xy 167.64 127) (xy 172.72 127)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7717c6ad-0722-59fb-b2cf-0c5c8e81a847")
-	)
-	(wire
-		(pts
-			(xy 167.64 129.54) (xy 172.72 129.54)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "b145c168-dcfc-5eac-8bdb-42d4aa9c90f7")
-	)
-	(wire
-		(pts
-			(xy 167.64 132.08) (xy 172.72 132.08)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1ade6c37-772d-5bc6-8c46-be26069dcffd")
-	)
-	(wire
-		(pts
-			(xy 167.64 134.62) (xy 172.72 134.62)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a1bd3f3b-ab7c-5544-94c2-40b60d0b3973")
-	)
-	(wire
-		(pts
-			(xy 167.64 137.16) (xy 172.72 137.16)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
 		(uuid "11892430-8bb8-5394-a214-1d0db95589dd")
 	)
 	(wire
 		(pts
-			(xy 167.64 139.7) (xy 172.72 139.7)
+			(xy 167.64 127) (xy 172.72 127)
 		)
 		(stroke
 			(width 0)
@@ -7397,61 +7367,6 @@
 		)
 		(uuid "307445fb-e5a2-5f6f-9b22-3cfa0d693f9d")
 	)
-	(label "IN1"
-		(at 172.72 129.54 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "1b758ebc-74dd-5995-ac94-a26e6d7dec85")
-	)
-	(label "IN2"
-		(at 172.72 132.08 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "b0da345e-1b27-50e7-84fa-bfd439d424f7")
-	)
-	(label "NSLEEP"
-		(at 172.72 134.62 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "03620f6d-e4c3-50c9-860b-13611680acaf")
-	)
-	(label "NFAULT"
-		(at 172.72 137.16 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "3186f323-2877-5169-bd23-3def5acd5418")
-	)
-	(label "IPROPI"
-		(at 172.72 139.7 0)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "a197afb8-3c2d-558c-a6d8-879e7e776606")
-	)
 	(label "PWM1"
 		(at 172.72 144.78 0)
 		(fields_autoplaced yes)
@@ -7461,7 +7376,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "d9098080-e083-544c-8911-0a11540bd04e")
+		(uuid "1b758ebc-74dd-5995-ac94-a26e6d7dec85")
 	)
 	(label "FLASH_RX"
 		(at 172.72 147.32 0)
@@ -7472,7 +7387,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "01ae47f5-d268-50a0-9aef-32c2aeaf389a")
+		(uuid "b0da345e-1b27-50e7-84fa-bfd439d424f7")
 	)
 	(label "FLASH_TX"
 		(at 172.72 149.86 0)
@@ -7483,7 +7398,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "11831927-1988-5b84-b758-4484904c67f3")
+		(uuid "03620f6d-e4c3-50c9-860b-13611680acaf")
 	)
 	(label "BOOT0"
 		(at 172.72 154.94 0)
@@ -7494,7 +7409,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "1123ff0a-ef9d-5339-97a9-a86b034c9404")
+		(uuid "3186f323-2877-5169-bd23-3def5acd5418")
 	)
 	(label "I2C_SCL"
 		(at 127 137.16 180)
@@ -7505,7 +7420,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "fefd997a-de48-52dd-9920-b1620817dc15")
+		(uuid "a197afb8-3c2d-558c-a6d8-879e7e776606")
 	)
 	(label "SEL_CLK"
 		(at 182.88 160.02 180)
@@ -7516,7 +7431,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "4d875544-706d-544c-9e21-457d6c157f4d")
+		(uuid "d9098080-e083-544c-8911-0a11540bd04e")
 	)
 	(label "SEL_IN"
 		(at 182.88 154.94 180)
@@ -7527,7 +7442,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "8c02198f-4454-58b4-a9fb-0c36b2236a04")
+		(uuid "01ae47f5-d268-50a0-9aef-32c2aeaf389a")
 	)
 	(label "SEL_OUT"
 		(at 218.44 154.94 0)
@@ -7538,7 +7453,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "48d630dc-b094-500a-ba49-14e9fc883c61")
+		(uuid "11831927-1988-5b84-b758-4484904c67f3")
 	)
 	(label "NCLR"
 		(at 182.88 165.1 180)
@@ -7549,7 +7464,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "4da7cd2e-2bac-5e30-9c0b-927c18db720e")
+		(uuid "1123ff0a-ef9d-5339-97a9-a86b034c9404")
 	)
 	(label "NCLR"
 		(at 220.98 179.07 270)
@@ -7560,7 +7475,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "4e325645-9c67-54dc-90af-cfafa7997071")
+		(uuid "fefd997a-de48-52dd-9920-b1620817dc15")
 	)
 	(label "NCLR"
 		(at 233.68 161.29 90)
@@ -7571,7 +7486,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "b6c7cbe2-c5ca-5935-9825-3b4d9dfa3e16")
+		(uuid "4d875544-706d-544c-9e21-457d6c157f4d")
 	)
 	(label "SEL_OUT"
 		(at 215.9 132.08 180)
@@ -7582,7 +7497,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "954f4f92-920d-599c-8187-93e4285fa5c5")
+		(uuid "8c02198f-4454-58b4-a9fb-0c36b2236a04")
 	)
 	(label "SEL_OUT"
 		(at 215.9 137.16 180)
@@ -7593,7 +7508,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "4b7b5a49-88da-5897-b3cd-87529ca34f81")
+		(uuid "48d630dc-b094-500a-ba49-14e9fc883c61")
 	)
 	(label "NQ"
 		(at 254 134.62 0)
@@ -7604,7 +7519,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "77792770-8fb7-53c6-b5af-1ecda08485b1")
+		(uuid "4da7cd2e-2bac-5e30-9c0b-927c18db720e")
 	)
 	(label "FLASH_MODE"
 		(at 215.9 116.84 180)
@@ -7615,7 +7530,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "6945d243-b258-5a9a-98a8-0ab5756a6b9f")
+		(uuid "4e325645-9c67-54dc-90af-cfafa7997071")
 	)
 	(label "NQ"
 		(at 215.9 121.92 180)
@@ -7626,7 +7541,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "54dbce3d-a5d2-5925-839d-83318b71c510")
+		(uuid "b6c7cbe2-c5ca-5935-9825-3b4d9dfa3e16")
 	)
 	(label "NRST"
 		(at 254 119.38 0)
@@ -7637,7 +7552,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "3805b5ea-9d9f-5b66-9860-6964926c7ff6")
+		(uuid "954f4f92-920d-599c-8187-93e4285fa5c5")
 	)
 	(label "FLASH_MODE"
 		(at 180.34 127 180)
@@ -7648,7 +7563,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "e590f054-4654-59ef-87c2-56fa095d3082")
+		(uuid "4b7b5a49-88da-5897-b3cd-87529ca34f81")
 	)
 	(label "SEL_OUT"
 		(at 180.34 132.08 180)
@@ -7659,7 +7574,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "5bcf218b-3543-51f5-8e03-1c8bc7356f15")
+		(uuid "77792770-8fb7-53c6-b5af-1ecda08485b1")
 	)
 	(label "BOOT0"
 		(at 218.44 129.54 0)
@@ -7670,7 +7585,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "9946e301-8f5d-5df1-99bd-cca89166eb31")
+		(uuid "6945d243-b258-5a9a-98a8-0ab5756a6b9f")
 	)
 	(label "ID0"
 		(at 81.28 118.11 270)
@@ -7681,7 +7596,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "5a717bac-3e12-50d3-ba1e-c1dc988740d6")
+		(uuid "54dbce3d-a5d2-5925-839d-83318b71c510")
 	)
 	(label "ID0"
 		(at 81.28 90.17 90)
@@ -7692,7 +7607,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "fe9fb5d4-089a-5495-926a-51669c2cd83b")
+		(uuid "3805b5ea-9d9f-5b66-9860-6964926c7ff6")
 	)
 	(label "ID1"
 		(at 96.52 118.11 270)
@@ -7703,7 +7618,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "0f50a457-a205-57c4-87d8-0d81127e83af")
+		(uuid "e590f054-4654-59ef-87c2-56fa095d3082")
 	)
 	(label "ID1"
 		(at 96.52 90.17 90)
@@ -7714,7 +7629,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "297a7a22-bf6c-56d7-8de7-615113830c3f")
+		(uuid "5bcf218b-3543-51f5-8e03-1c8bc7356f15")
 	)
 	(label "GP8"
 		(at -10.16 -121.92 180)
@@ -7725,7 +7640,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "6a36ece1-c59a-5b50-9fec-248ffc391d37")
+		(uuid "9946e301-8f5d-5df1-99bd-cca89166eb31")
 	)
 	(label "GP9"
 		(at -10.16 -119.38 180)
@@ -7736,7 +7651,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "fd1a11d1-3e0c-5e25-b8a1-c6aa21f351c8")
+		(uuid "5a717bac-3e12-50d3-ba1e-c1dc988740d6")
 	)
 	(label "GP10"
 		(at -10.16 -116.84 180)
@@ -7747,7 +7662,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "4dd81354-694d-5ded-9a4c-647f776d2bb9")
+		(uuid "fe9fb5d4-089a-5495-926a-51669c2cd83b")
 	)
 	(label "GP11"
 		(at -10.16 -114.3 180)
@@ -7758,7 +7673,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "df7f0b7f-a2a5-53a1-9728-c3820e1c58d3")
+		(uuid "0f50a457-a205-57c4-87d8-0d81127e83af")
 	)
 	(label "GP12"
 		(at -10.16 -111.76 180)
@@ -7769,7 +7684,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "53889daa-184e-5d38-9971-f238fe94d400")
+		(uuid "297a7a22-bf6c-56d7-8de7-615113830c3f")
 	)
 	(label "GP13"
 		(at -10.16 -109.22 180)
@@ -7780,7 +7695,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "625cf8e9-c79e-5f3b-b5c6-072751bf6350")
+		(uuid "6a36ece1-c59a-5b50-9fec-248ffc391d37")
 	)
 	(label "GP14"
 		(at -10.16 -106.68 180)
@@ -7791,7 +7706,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "09f0e82c-6277-55ff-824a-d8d27d464d90")
+		(uuid "fd1a11d1-3e0c-5e25-b8a1-c6aa21f351c8")
 	)
 	(label "GP15"
 		(at -10.16 -104.14 180)
@@ -7802,7 +7717,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "214be6cb-5192-55d8-9b54-171e8c0d6103")
+		(uuid "4dd81354-694d-5ded-9a4c-647f776d2bb9")
 	)
 	(label "GP16"
 		(at -10.16 -101.6 180)
@@ -7813,7 +7728,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "986884c0-89f7-567c-9c93-63a003f3e9a4")
+		(uuid "df7f0b7f-a2a5-53a1-9728-c3820e1c58d3")
 	)
 	(label "GP17"
 		(at -10.16 -99.06 180)
@@ -7824,7 +7739,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "34bffb35-beec-5292-8532-1ee32909a771")
+		(uuid "53889daa-184e-5d38-9971-f238fe94d400")
 	)
 	(label "GP18"
 		(at -10.16 -96.52 180)
@@ -7835,7 +7750,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "35b36655-d5c8-5af8-9d4e-ffde40ccc9d8")
+		(uuid "625cf8e9-c79e-5f3b-b5c6-072751bf6350")
 	)
 	(label "GP19"
 		(at -10.16 -93.98 180)
@@ -7846,7 +7761,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "2800b76b-a368-517d-a759-144ecc49771f")
+		(uuid "09f0e82c-6277-55ff-824a-d8d27d464d90")
 	)
 	(label "GP20"
 		(at -10.16 -91.44 180)
@@ -7857,7 +7772,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "990ee24c-2744-5d64-bdec-e449ae6bc961")
+		(uuid "214be6cb-5192-55d8-9b54-171e8c0d6103")
 	)
 	(label "GP21"
 		(at -10.16 -88.9 180)
@@ -7868,7 +7783,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "27b3e885-f407-5071-b133-5aaba5a8ac49")
+		(uuid "986884c0-89f7-567c-9c93-63a003f3e9a4")
 	)
 	(label "GP22"
 		(at -10.16 -86.36 180)
@@ -7879,7 +7794,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "ce66e278-5632-5fdd-8f88-bc4414792c9f")
+		(uuid "34bffb35-beec-5292-8532-1ee32909a771")
 	)
 	(label "GP26"
 		(at -10.16 -83.82 180)
@@ -7890,7 +7805,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "0828dee9-78dd-5a0a-a0b2-0a619882e3d8")
+		(uuid "35b36655-d5c8-5af8-9d4e-ffde40ccc9d8")
 	)
 	(label "GP27"
 		(at -10.16 -81.28 180)
@@ -7901,7 +7816,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "77e056c7-77bd-5643-be3a-5b870f8ab7c1")
+		(uuid "2800b76b-a368-517d-a759-144ecc49771f")
 	)
 	(label "GP28"
 		(at -10.16 -78.74 180)
@@ -7912,7 +7827,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "0c4939a2-9dc6-591f-9ebd-aaf54c2ccaa0")
+		(uuid "990ee24c-2744-5d64-bdec-e449ae6bc961")
 	)
 	(label "+24V"
 		(at 340.36 228.6 270)
@@ -7923,7 +7838,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "3853be03-fdba-5407-8918-0479d4ac8664")
+		(uuid "27b3e885-f407-5071-b133-5aaba5a8ac49")
 	)
 	(label "PWR_IN"
 		(at 391.16 154.94 0)
@@ -7934,7 +7849,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "a1421800-3981-5c7f-9c5d-75648ffc4440")
+		(uuid "ce66e278-5632-5fdd-8f88-bc4414792c9f")
 	)
 	(label "PWR_IN"
 		(at 403.86 144.78 270)
@@ -7945,7 +7860,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "9fcfcedb-1146-595a-a51f-2d07cdc16281")
+		(uuid "0828dee9-78dd-5a0a-a0b2-0a619882e3d8")
 	)
 	(label "Q90_GATE"
 		(at 411.48 167.64 180)
@@ -7956,7 +7871,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "54b995ae-c92c-5369-919c-63f6ad105cd0")
+		(uuid "77e056c7-77bd-5643-be3a-5b870f8ab7c1")
 	)
 	(label "PWR_IN"
 		(at 424.18 157.48 90)
@@ -7967,7 +7882,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "568578cf-2503-5787-a2ab-06603db8ccef")
+		(uuid "0c4939a2-9dc6-591f-9ebd-aaf54c2ccaa0")
 	)
 	(label "+24V"
 		(at 424.18 177.8 270)
@@ -7978,7 +7893,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "4cefd7a6-fd7c-57a5-a5e8-d1705f2a28af")
+		(uuid "3853be03-fdba-5407-8918-0479d4ac8664")
 	)
 	(label "Q90_GATE"
 		(at 436.88 173.99 90)
@@ -7989,7 +7904,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "54358951-b99b-5ed3-b3e5-bf9d7b3fad0a")
+		(uuid "a1421800-3981-5c7f-9c5d-75648ffc4440")
 	)
 	(label "+24V"
 		(at 436.88 191.77 270)
@@ -8000,7 +7915,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "43af47ca-3ebb-50bd-8543-89c76d6884eb")
+		(uuid "9fcfcedb-1146-595a-a51f-2d07cdc16281")
 	)
 	(label "Q90_GATE"
 		(at 436.88 143.51 90)
@@ -8011,7 +7926,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "ddfb840b-78e3-53b0-92a1-2f5c1f160742")
+		(uuid "54b995ae-c92c-5369-919c-63f6ad105cd0")
 	)
 	(label "+24V"
 		(at 462.28 179.07 90)
@@ -8022,7 +7937,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "8f4af0dc-61ed-5d1e-a3a9-288aeae3782d")
+		(uuid "568578cf-2503-5787-a2ab-06603db8ccef")
 	)
 	(label "+24V"
 		(at 462.28 153.67 90)
@@ -8033,7 +7948,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "86aefb9e-602d-5100-af4d-3840b4cfd308")
+		(uuid "4cefd7a6-fd7c-57a5-a5e8-d1705f2a28af")
 	)
 	(label "+24V"
 		(at 474.98 154.94 180)
@@ -8044,7 +7959,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "dfb8271a-e2a3-58fd-8119-49568b42cf4f")
+		(uuid "54358951-b99b-5ed3-b3e5-bf9d7b3fad0a")
 	)
 	(label "+5V_LOKAL"
 		(at 500.38 154.94 0)
@@ -8055,7 +7970,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "117c939a-5611-5d13-adbb-431d62f00975")
+		(uuid "43af47ca-3ebb-50bd-8543-89c76d6884eb")
 	)
 	(label "+5V_LOKAL"
 		(at 510.54 158.75 90)
@@ -8066,7 +7981,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "4a1c083e-5cf3-531e-9b76-8a3034295b7c")
+		(uuid "ddfb840b-78e3-53b0-92a1-2f5c1f160742")
 	)
 	(label "VSYS"
 		(at 533.4 166.37 90)
@@ -8077,7 +7992,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "dc3b9a64-18e7-59d3-8b5a-d8325a18a43b")
+		(uuid "8f4af0dc-61ed-5d1e-a3a9-288aeae3782d")
 	)
 	(label "+5V_LOKAL"
 		(at 533.4 184.15 270)
@@ -8088,7 +8003,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "2b671085-a283-51ec-a15c-059dc63e2214")
+		(uuid "86aefb9e-602d-5100-af4d-3840b4cfd308")
 	)
 	(label "+24V"
 		(at 563.88 154.94 0)
@@ -8099,7 +8014,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "14c4a2b4-02bd-534b-a709-9015e2213c77")
+		(uuid "dfb8271a-e2a3-58fd-8119-49568b42cf4f")
 	)
 	(label "PWR24V"
 		(at 579.12 154.94 180)
@@ -8110,7 +8025,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "046c64e9-da24-5437-9d88-7114d5a3d3e4")
+		(uuid "117c939a-5611-5d13-adbb-431d62f00975")
 	)
 	(label "PWM1_G"
 		(at 381 218.44 180)
@@ -8121,7 +8036,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "e2e8c0aa-0e81-5ccd-9fb2-e82b5fd53964")
+		(uuid "4a1c083e-5cf3-531e-9b76-8a3034295b7c")
 	)
 	(label "LED1"
 		(at 393.7 208.28 90)
@@ -8132,7 +8047,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "167b9e4e-ba18-5c27-a1a8-e0a5400b4bb5")
+		(uuid "dc3b9a64-18e7-59d3-8b5a-d8325a18a43b")
 	)
 	(label "PWM1"
 		(at 364.49 228.6 180)
@@ -8143,7 +8058,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "16e88f0d-a2aa-5d86-8550-c918b58e32f5")
+		(uuid "2b671085-a283-51ec-a15c-059dc63e2214")
 	)
 	(label "PWM1_G"
 		(at 382.27 228.6 0)
@@ -8154,7 +8069,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "4dd0d915-0a42-5435-963f-5915d5c8ec7b")
+		(uuid "14c4a2b4-02bd-534b-a709-9015e2213c77")
 	)
 	(label "PWM1_G"
 		(at 378.46 222.25 90)
@@ -8165,7 +8080,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "e2af10ee-f182-5a76-83cf-8919709ffdc2")
+		(uuid "046c64e9-da24-5437-9d88-7114d5a3d3e4")
 	)
 	(label "+24V"
 		(at 403.86 219.71 90)
@@ -8176,7 +8091,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "4e533866-f879-5d0a-9c0f-013425d53da4")
+		(uuid "e2e8c0aa-0e81-5ccd-9fb2-e82b5fd53964")
 	)
 	(label "LED1"
 		(at 403.86 237.49 270)
@@ -8187,7 +8102,7 @@
 			)
 			(justify right bottom)
 		)
-		(uuid "aae08fdd-c7b2-514b-b998-05966a737a64")
+		(uuid "167b9e4e-ba18-5c27-a1a8-e0a5400b4bb5")
 	)
 	(label "+24V"
 		(at 419.1 218.44 0)
@@ -8198,7 +8113,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "a26fde09-94a9-5d47-89cb-ff77839f4b48")
+		(uuid "16e88f0d-a2aa-5d86-8550-c918b58e32f5")
 	)
 	(label "LED1"
 		(at 419.1 220.98 0)
@@ -8209,7 +8124,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "0dfa1996-f1b3-5231-bf24-4237c4897d60")
+		(uuid "4dd0d915-0a42-5435-963f-5915d5c8ec7b")
 	)
 	(symbol
 		(lib_id "power:PWR_FLAG")
@@ -8219,7 +8134,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "d30980c3-6d9b-5d6e-af8a-caf7e2b4992b")
+		(uuid "e2af10ee-f182-5a76-83cf-8919709ffdc2")
 		(property "Reference" "#FLG101"
 			(at 40.64 177.8 0)
 			(show_name no)
@@ -8270,7 +8185,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "#FLG101")
 					(unit 1)
 				)
@@ -8285,7 +8200,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "9e5e83f2-98bb-5c4c-b44b-47521b4da22b")
+		(uuid "4e533866-f879-5d0a-9c0f-013425d53da4")
 		(property "Reference" "#FLG102"
 			(at 40.64 170.18 0)
 			(show_name no)
@@ -8336,7 +8251,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "#FLG102")
 					(unit 1)
 				)
@@ -8351,7 +8266,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "a04928e6-2621-506e-a218-b46a5b7d0832")
+		(uuid "aae08fdd-c7b2-514b-b998-05966a737a64")
 		(property "Reference" "J100"
 			(at 55.88 203.2 0)
 			(show_name no)
@@ -8400,7 +8315,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "J100")
 					(unit 1)
 				)
@@ -8415,7 +8330,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "4bdee4c8-db7c-5c47-8007-46d3666ad132")
+		(uuid "a26fde09-94a9-5d47-89cb-ff77839f4b48")
 		(property "Reference" "J105"
 			(at 86.36 203.2 0)
 			(show_name no)
@@ -8464,7 +8379,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "J105")
 					(unit 1)
 				)
@@ -8479,7 +8394,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "9568bd67-aa25-5b3c-a07b-b4b42c9f2fe9")
+		(uuid "0dfa1996-f1b3-5231-bf24-4237c4897d60")
 		(property "Reference" "J101"
 			(at 55.88 123.19 0)
 			(show_name no)
@@ -8528,7 +8443,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "J101")
 					(unit 1)
 				)
@@ -8543,7 +8458,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "9f1e4d68-0deb-5f4e-8566-0eeab425883a")
+		(uuid "d30980c3-6d9b-5d6e-af8a-caf7e2b4992b")
 		(property "Reference" "J102"
 			(at 55.88 113.03 0)
 			(show_name no)
@@ -8592,7 +8507,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "J102")
 					(unit 1)
 				)
@@ -8607,7 +8522,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "70227f92-2152-59bd-86d6-43a6552de3fb")
+		(uuid "9e5e83f2-98bb-5c4c-b44b-47521b4da22b")
 		(property "Reference" "J103"
 			(at 309.88 163.83 0)
 			(show_name no)
@@ -8656,7 +8571,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "J103")
 					(unit 1)
 				)
@@ -8671,7 +8586,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "d1863999-c76e-5cd3-af7a-0d4010821708")
+		(uuid "a04928e6-2621-506e-a218-b46a5b7d0832")
 		(property "Reference" "J104"
 			(at 309.88 156.21 0)
 			(show_name no)
@@ -8720,7 +8635,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "J104")
 					(unit 1)
 				)
@@ -8735,7 +8650,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "3c0d51a9-4bb0-50ff-a6f2-44722b25bcbe")
+		(uuid "4bdee4c8-db7c-5c47-8007-46d3666ad132")
 		(property "Reference" "U100"
 			(at 132.08 165.1 0)
 			(show_name no)
@@ -8784,7 +8699,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "U100")
 					(unit 1)
 				)
@@ -8799,7 +8714,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "7c9f4be3-f6a9-5dd2-bee4-00a6a9eb8b72")
+		(uuid "9568bd67-aa25-5b3c-a07b-b4b42c9f2fe9")
 		(property "Reference" "C100"
 			(at 172.72 161.29 0)
 			(show_name no)
@@ -8848,7 +8763,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "C100")
 					(unit 1)
 				)
@@ -8863,7 +8778,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "42e91d1c-91fa-5cb4-b0a7-d5c9ed0a0e92")
+		(uuid "9f1e4d68-0deb-5f4e-8566-0eeab425883a")
 		(property "Reference" "U101"
 			(at 187.96 175.26 0)
 			(show_name no)
@@ -8912,7 +8827,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "U101")
 					(unit 1)
 				)
@@ -8927,7 +8842,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "f9352bf2-8909-5da1-a026-f41e128fae8a")
+		(uuid "70227f92-2152-59bd-86d6-43a6552de3fb")
 		(property "Reference" "R102"
 			(at 223.52 168.91 0)
 			(show_name no)
@@ -8976,7 +8891,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "R102")
 					(unit 1)
 				)
@@ -8991,7 +8906,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "a1341405-446d-54c6-b5cd-c000f0cae8aa")
+		(uuid "d1863999-c76e-5cd3-af7a-0d4010821708")
 		(property "Reference" "C101"
 			(at 236.22 168.91 0)
 			(show_name no)
@@ -9040,7 +8955,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "C101")
 					(unit 1)
 				)
@@ -9055,7 +8970,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "10ddb1c0-f406-518e-9e89-2221967c7e76")
+		(uuid "3c0d51a9-4bb0-50ff-a6f2-44722b25bcbe")
 		(property "Reference" "U102"
 			(at 220.98 144.78 0)
 			(show_name no)
@@ -9104,7 +9019,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "U102")
 					(unit 1)
 				)
@@ -9119,7 +9034,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "a0da2562-28b5-50a2-b749-8866cecd4efd")
+		(uuid "7c9f4be3-f6a9-5dd2-bee4-00a6a9eb8b72")
 		(property "Reference" "U102"
 			(at 220.98 114.3 0)
 			(show_name no)
@@ -9168,7 +9083,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "U102")
 					(unit 2)
 				)
@@ -9183,7 +9098,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "cda7abf7-81b4-5490-b36f-126281d3959e")
+		(uuid "42e91d1c-91fa-5cb4-b0a7-d5c9ed0a0e92")
 		(property "Reference" "U102"
 			(at 256.54 114.3 0)
 			(show_name no)
@@ -9232,7 +9147,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "U102")
 					(unit 3)
 				)
@@ -9247,7 +9162,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "e3c66068-3aab-5725-b7d4-4e1dd147ce98")
+		(uuid "f9352bf2-8909-5da1-a026-f41e128fae8a")
 		(property "Reference" "U103"
 			(at 193.04 142.24 0)
 			(show_name no)
@@ -9296,7 +9211,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "U103")
 					(unit 1)
 				)
@@ -9311,7 +9226,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "da10140e-d764-5a01-95a7-fb79d4c7c604")
+		(uuid "a1341405-446d-54c6-b5cd-c000f0cae8aa")
 		(property "Reference" "R104"
 			(at 83.82 107.95 0)
 			(show_name no)
@@ -9360,7 +9275,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "R104")
 					(unit 1)
 				)
@@ -9375,7 +9290,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "9ab01449-bb7c-57c3-8b63-ade27f7f9553")
+		(uuid "10ddb1c0-f406-518e-9e89-2221967c7e76")
 		(property "Reference" "R100"
 			(at 83.82 97.79 0)
 			(show_name no)
@@ -9424,7 +9339,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "R100")
 					(unit 1)
 				)
@@ -9439,7 +9354,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "33180651-e6ff-5b6a-b59a-2037b0d9d627")
+		(uuid "a0da2562-28b5-50a2-b749-8866cecd4efd")
 		(property "Reference" "R105"
 			(at 99.06 107.95 0)
 			(show_name no)
@@ -9488,7 +9403,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "R105")
 					(unit 1)
 				)
@@ -9503,7 +9418,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "6b93cbfc-b62a-5244-8275-0e6cace22bf7")
+		(uuid "cda7abf7-81b4-5490-b36f-126281d3959e")
 		(property "Reference" "R101"
 			(at 99.06 97.79 0)
 			(show_name no)
@@ -9552,7 +9467,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "R101")
 					(unit 1)
 				)
@@ -9567,7 +9482,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp yes)
-		(uuid "0ffd2b67-5c09-556b-ad53-7529683516c2")
+		(uuid "e3c66068-3aab-5725-b7d4-4e1dd147ce98")
 		(property "Reference" "J95"
 			(at -5.08 -78.74 0)
 			(show_name no)
@@ -9616,7 +9531,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "J95")
 					(unit 1)
 				)
@@ -9631,7 +9546,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp yes)
-		(uuid "626a0f20-4e47-57b5-a559-9ed660fabd1a")
+		(uuid "da10140e-d764-5a01-95a7-fb79d4c7c604")
 		(property "Reference" "J96"
 			(at 25.4 -96.52 0)
 			(show_name no)
@@ -9680,7 +9595,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "J96")
 					(unit 1)
 				)
@@ -9695,7 +9610,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "fb3c6dbe-90f2-599d-b5e5-bbf3e9fadfc1")
+		(uuid "9ab01449-bb7c-57c3-8b63-ade27f7f9553")
 		(property "Reference" "C102"
 			(at 215.9 92.71 0)
 			(show_name no)
@@ -9756,7 +9671,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "C102")
 					(unit 1)
 				)
@@ -9771,7 +9686,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "305bbc1f-dbc7-5506-a7e0-d29115d16372")
+		(uuid "33180651-e6ff-5b6a-b59a-2037b0d9d627")
 		(property "Reference" "C103"
 			(at 241.3 92.71 0)
 			(show_name no)
@@ -9832,7 +9747,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "C103")
 					(unit 1)
 				)
@@ -9847,7 +9762,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "6931aae0-bb6f-5e62-8684-0ffa8561e61b")
+		(uuid "6b93cbfc-b62a-5244-8275-0e6cace22bf7")
 		(property "Reference" "C104"
 			(at 266.7 92.71 0)
 			(show_name no)
@@ -9908,7 +9823,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "C104")
 					(unit 1)
 				)
@@ -9923,7 +9838,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "de8e6251-7a70-556d-a5bd-3d030ff0fcf3")
+		(uuid "0ffd2b67-5c09-556b-ad53-7529683516c2")
 		(property "Reference" "#FLG201"
 			(at 340.36 223.52 0)
 			(show_name no)
@@ -9974,7 +9889,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "#FLG201")
 					(unit 1)
 				)
@@ -9989,7 +9904,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "7f0d1369-56dd-5d9d-b6d6-4809a284833f")
+		(uuid "626a0f20-4e47-57b5-a559-9ed660fabd1a")
 		(property "Reference" "J90"
 			(at 393.7 148.59 0)
 			(show_name no)
@@ -10038,7 +9953,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "J90")
 					(unit 1)
 				)
@@ -10053,7 +9968,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "0a9c66f3-6503-5282-808b-92dedaf3e266")
+		(uuid "fb3c6dbe-90f2-599d-b5e5-bbf3e9fadfc1")
 		(property "Reference" "#FLG90"
 			(at 403.86 139.7 0)
 			(show_name no)
@@ -10104,7 +10019,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "#FLG90")
 					(unit 1)
 				)
@@ -10119,7 +10034,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "8579db94-ed84-5d6a-b32f-17dcb95400ba")
+		(uuid "305bbc1f-dbc7-5506-a7e0-d29115d16372")
 		(property "Reference" "Q90"
 			(at 424.18 170.18 0)
 			(show_name no)
@@ -10168,7 +10083,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "Q90")
 					(unit 1)
 				)
@@ -10183,7 +10098,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "fe9a4fe7-ca8a-5a7b-a90a-aae6ed787517")
+		(uuid "6931aae0-bb6f-5e62-8684-0ffa8561e61b")
 		(property "Reference" "R90"
 			(at 439.42 181.61 0)
 			(show_name no)
@@ -10232,7 +10147,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "R90")
 					(unit 1)
 				)
@@ -10247,7 +10162,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "b279fc8e-5e96-5410-8a40-69dc0d5f2f0b")
+		(uuid "de8e6251-7a70-556d-a5bd-3d030ff0fcf3")
 		(property "Reference" "R91"
 			(at 439.42 151.13 0)
 			(show_name no)
@@ -10296,7 +10211,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "R91")
 					(unit 1)
 				)
@@ -10311,7 +10226,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "c8c51910-5927-5c1a-a77c-ef085c133a41")
+		(uuid "7f0d1369-56dd-5d9d-b6d6-4809a284833f")
 		(property "Reference" "D90"
 			(at 464.82 185.42 90)
 			(show_name no)
@@ -10360,7 +10275,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "D90")
 					(unit 1)
 				)
@@ -10375,7 +10290,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "cacf69d9-f34d-5255-827b-7853c8b06587")
+		(uuid "0a9c66f3-6503-5282-808b-92dedaf3e266")
 		(property "Reference" "C90"
 			(at 464.82 161.29 0)
 			(show_name no)
@@ -10424,7 +10339,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "C90")
 					(unit 1)
 				)
@@ -10439,7 +10354,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "70c7bc18-017c-5eac-99b1-39720b187ec1")
+		(uuid "8579db94-ed84-5d6a-b32f-17dcb95400ba")
 		(property "Reference" "U90"
 			(at 480.06 140.97 0)
 			(show_name no)
@@ -10488,7 +10403,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "U90")
 					(unit 1)
 				)
@@ -10503,7 +10418,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "f11d029f-1670-500f-90b7-cebe459d11e5")
+		(uuid "fe9a4fe7-ca8a-5a7b-a90a-aae6ed787517")
 		(property "Reference" "C91"
 			(at 513.08 166.37 0)
 			(show_name no)
@@ -10552,7 +10467,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "C91")
 					(unit 1)
 				)
@@ -10567,7 +10482,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "82aab993-15a9-5e63-9b71-26b0a91b2d59")
+		(uuid "b279fc8e-5e96-5410-8a40-69dc0d5f2f0b")
 		(property "Reference" "D91"
 			(at 535.94 172.72 90)
 			(show_name no)
@@ -10616,7 +10531,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "D91")
 					(unit 1)
 				)
@@ -10631,7 +10546,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "e891cb68-5ca0-5850-a43d-f86a2a09028a")
+		(uuid "c8c51910-5927-5c1a-a77c-ef085c133a41")
 		(property "Reference" "Q1"
 			(at 393.7 220.98 0)
 			(show_name no)
@@ -10680,7 +10595,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "Q1")
 					(unit 1)
 				)
@@ -10695,7 +10610,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "720945f2-0102-5a40-a9c4-13eaaca35377")
+		(uuid "cacf69d9-f34d-5255-827b-7853c8b06587")
 		(property "Reference" "RG1"
 			(at 372.11 226.06 270)
 			(show_name no)
@@ -10744,7 +10659,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "RG1")
 					(unit 1)
 				)
@@ -10759,7 +10674,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "2858d064-f7f0-5746-a162-775425fd780a")
+		(uuid "70c7bc18-017c-5eac-99b1-39720b187ec1")
 		(property "Reference" "RP1"
 			(at 381 229.87 0)
 			(show_name no)
@@ -10808,7 +10723,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "RP1")
 					(unit 1)
 				)
@@ -10823,7 +10738,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "b90943c9-c820-5e43-b365-c35540ffcac0")
+		(uuid "f11d029f-1670-500f-90b7-cebe459d11e5")
 		(property "Reference" "D1"
 			(at 406.4 226.06 90)
 			(show_name no)
@@ -10872,7 +10787,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "D1")
 					(unit 1)
 				)
@@ -10887,7 +10802,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "87544403-23bf-5d10-b308-ea2357dafc2e")
+		(uuid "82aab993-15a9-5e63-9b71-26b0a91b2d59")
 		(property "Reference" "J5"
 			(at 421.64 215.9 0)
 			(show_name no)
@@ -10936,7 +10851,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
 					(reference "J5")
 					(unit 1)
 				)
@@ -10951,8 +10866,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "bc2ab864-aa3a-5c5b-b9bd-9aad7bf8b3db")
-		(property "Reference" "#PWR322"
+		(uuid "720945f2-0102-5a40-a9c4-13eaaca35377")
+		(property "Reference" "#PWR317"
 			(at 40.64 180.34 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11002,8 +10917,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR322")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR317")
 					(unit 1)
 				)
 			)
@@ -11017,8 +10932,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "6ddb3df0-d595-552b-b6bd-602b694dceaa")
-		(property "Reference" "#PWR324"
+		(uuid "b90943c9-c820-5e43-b365-c35540ffcac0")
+		(property "Reference" "#PWR319"
 			(at 40.64 172.72 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11068,8 +10983,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR324")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR319")
 					(unit 1)
 				)
 			)
@@ -11083,8 +10998,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "972e3064-bb5d-5298-929a-3aae18f6ed6e")
-		(property "Reference" "#PWR326"
+		(uuid "5c9d9609-9c6d-5306-a2f8-42e4c4ad72a4")
+		(property "Reference" "#PWR321"
 			(at 50.8 157.48 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11134,8 +11049,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR326")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR321")
 					(unit 1)
 				)
 			)
@@ -11149,8 +11064,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "679735fd-237f-57d5-8a4e-e7b727a2190b")
-		(property "Reference" "#PWR328"
+		(uuid "d3be0db9-fca8-5072-8810-539f96e972b8")
+		(property "Reference" "#PWR323"
 			(at 50.8 170.18 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11200,8 +11115,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR328")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR323")
 					(unit 1)
 				)
 			)
@@ -11215,8 +11130,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "9e25fdd8-0792-539f-a616-931b233eeddf")
-		(property "Reference" "#PWR330"
+		(uuid "e0846f28-c585-5cc9-84cd-c6b2b9abd0db")
+		(property "Reference" "#PWR325"
 			(at 50.8 182.88 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11266,8 +11181,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR330")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR325")
 					(unit 1)
 				)
 			)
@@ -11281,8 +11196,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "46df63e3-63c6-5616-ab7b-53227d8b2ca0")
-		(property "Reference" "#PWR332"
+		(uuid "3c6e6a7c-c33f-5740-b814-94c41dbfc249")
+		(property "Reference" "#PWR327"
 			(at 50.8 195.58 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11332,8 +11247,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR332")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR327")
 					(unit 1)
 				)
 			)
@@ -11347,8 +11262,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "e196eb11-8545-50a7-ac4e-6152db0a5146")
-		(property "Reference" "#PWR334"
+		(uuid "f072252f-8388-5efa-8c08-100572345e16")
+		(property "Reference" "#PWR329"
 			(at 91.44 157.48 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11398,8 +11313,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR334")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR329")
 					(unit 1)
 				)
 			)
@@ -11413,8 +11328,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "de0f953e-3c32-5fe1-b391-2c0345e6365b")
-		(property "Reference" "#PWR336"
+		(uuid "e0712834-ee65-56a0-90eb-3e5b09f21eb6")
+		(property "Reference" "#PWR331"
 			(at 91.44 170.18 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11464,8 +11379,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR336")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR331")
 					(unit 1)
 				)
 			)
@@ -11479,8 +11394,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "59677ea5-ade0-549c-b10f-923e59d32732")
-		(property "Reference" "#PWR338"
+		(uuid "31de86f9-889d-5456-8bff-9ae58b133e97")
+		(property "Reference" "#PWR333"
 			(at 91.44 182.88 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11530,8 +11445,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR338")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR333")
 					(unit 1)
 				)
 			)
@@ -11545,8 +11460,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "1a87951f-4f41-54fa-94a1-aa61b0dd4687")
-		(property "Reference" "#PWR340"
+		(uuid "0933bb6a-1c16-5f72-bdca-7e22fbf353f9")
+		(property "Reference" "#PWR335"
 			(at 91.44 190.5 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11596,8 +11511,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR340")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR335")
 					(unit 1)
 				)
 			)
@@ -11611,8 +11526,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "ba87a641-5f5d-503c-be8d-883a81456953")
-		(property "Reference" "#PWR342"
+		(uuid "041a9965-0b39-5a5f-ace8-72e6a3713cb3")
+		(property "Reference" "#PWR337"
 			(at 91.44 195.58 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11662,8 +11577,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR342")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR337")
 					(unit 1)
 				)
 			)
@@ -11677,8 +11592,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "19ab6a1f-f99d-5a3a-880b-cbcec9061592")
-		(property "Reference" "#PWR344"
+		(uuid "954ba93e-2994-5114-b89b-fd46cf10a078")
+		(property "Reference" "#PWR339"
 			(at 50.8 119.38 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11728,8 +11643,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR344")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR339")
 					(unit 1)
 				)
 			)
@@ -11743,8 +11658,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "5c868687-6ae3-53f2-b0f1-08643ed9f2dc")
-		(property "Reference" "#PWR346"
+		(uuid "52ed3dab-f3b5-52fd-aff6-dd1824787b66")
+		(property "Reference" "#PWR341"
 			(at 50.8 109.22 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11794,8 +11709,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR346")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR341")
 					(unit 1)
 				)
 			)
@@ -11809,8 +11724,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "f072816a-dd23-5710-9c61-364da3bf8d0e")
-		(property "Reference" "#PWR348"
+		(uuid "0f9d6abd-0cb3-5144-a116-c5c1838eafec")
+		(property "Reference" "#PWR343"
 			(at 327.66 157.48 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11860,8 +11775,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR348")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR343")
 					(unit 1)
 				)
 			)
@@ -11875,8 +11790,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "31244380-0bb4-56a9-8936-2f1fce72f01a")
-		(property "Reference" "#PWR350"
+		(uuid "d605642a-7269-5f92-a6f9-b413d43ace5c")
+		(property "Reference" "#PWR345"
 			(at 327.66 160.02 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11926,8 +11841,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR350")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR345")
 					(unit 1)
 				)
 			)
@@ -11941,8 +11856,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "cb59d680-20e6-55ce-a4f0-8e0afda44f53")
-		(property "Reference" "#PWR352"
+		(uuid "a88a271b-2aaa-5e49-9f85-2d83b9229de0")
+		(property "Reference" "#PWR347"
 			(at 327.66 149.86 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11992,8 +11907,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR352")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR347")
 					(unit 1)
 				)
 			)
@@ -12007,8 +11922,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "e5d4ff57-b875-5e56-ac91-6e5fc96367c0")
-		(property "Reference" "#PWR354"
+		(uuid "019991f3-0b37-5e6b-9eb3-80abcdfaf8e5")
+		(property "Reference" "#PWR349"
 			(at 327.66 152.4 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12058,8 +11973,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR354")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR349")
 					(unit 1)
 				)
 			)
@@ -12073,8 +11988,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "d6385f60-8848-54a0-bd38-c96debc4cf63")
-		(property "Reference" "#PWR356"
+		(uuid "0462f944-7f36-5af7-a1d4-c4f2ecaee430")
+		(property "Reference" "#PWR351"
 			(at 149.86 109.22 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12124,8 +12039,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR356")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR351")
 					(unit 1)
 				)
 			)
@@ -12139,8 +12054,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "6669d8b2-5843-5140-92c9-b57ace3b1ca0")
-		(property "Reference" "#PWR358"
+		(uuid "57983e02-7cc7-52d0-b3bd-551ec03ce059")
+		(property "Reference" "#PWR353"
 			(at 149.86 165.1 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12190,8 +12105,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR358")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR353")
 					(unit 1)
 				)
 			)
@@ -12205,8 +12120,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "62d9ea62-cbe4-5800-b363-d127b34ca4ea")
-		(property "Reference" "#PWR360"
+		(uuid "f2f03809-1cf9-5baa-94f1-d60dc6840857")
+		(property "Reference" "#PWR355"
 			(at 170.18 151.13 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12256,8 +12171,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR360")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR355")
 					(unit 1)
 				)
 			)
@@ -12271,8 +12186,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "74fdeddc-9703-5a41-8880-186c5c903b63")
-		(property "Reference" "#PWR362"
+		(uuid "74e14185-55d4-5572-8cc1-5066c66cdc30")
+		(property "Reference" "#PWR357"
 			(at 170.18 168.91 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12322,8 +12237,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR362")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR357")
 					(unit 1)
 				)
 			)
@@ -12337,8 +12252,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "0459b78d-6448-5e83-9a40-337f2da0979d")
-		(property "Reference" "#PWR364"
+		(uuid "bd595069-6d76-5db6-affa-b3260fda1505")
+		(property "Reference" "#PWR359"
 			(at 200.66 175.26 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12388,8 +12303,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR364")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR359")
 					(unit 1)
 				)
 			)
@@ -12403,8 +12318,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "bbb5e295-655a-5450-807d-f5b77e0a717f")
-		(property "Reference" "#PWR366"
+		(uuid "13de9a0e-3ac3-5664-9b4e-3db76f844441")
+		(property "Reference" "#PWR361"
 			(at 200.66 139.7 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12454,8 +12369,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR366")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR361")
 					(unit 1)
 				)
 			)
@@ -12469,8 +12384,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "421fff34-ec8f-5704-b6ec-1175c63ffe80")
-		(property "Reference" "#PWR368"
+		(uuid "cdc20582-264a-5c4f-b27a-feffe1a7fe9b")
+		(property "Reference" "#PWR363"
 			(at 220.98 158.75 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12520,8 +12435,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR368")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR363")
 					(unit 1)
 				)
 			)
@@ -12535,8 +12450,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "d34d77bd-2e48-53b3-b732-b67213587258")
-		(property "Reference" "#PWR370"
+		(uuid "98307159-c0e8-5775-bb2d-9a8e6e45e24d")
+		(property "Reference" "#PWR365"
 			(at 233.68 176.53 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12586,8 +12501,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR370")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR365")
 					(unit 1)
 				)
 			)
@@ -12601,8 +12516,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "fd26cfeb-bd53-515a-b25a-a1bb403e8138")
-		(property "Reference" "#PWR372"
+		(uuid "dcd2326a-1b21-5b3c-ac9b-389e7107a1ee")
+		(property "Reference" "#PWR367"
 			(at 261.62 139.7 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12652,8 +12567,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR372")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR367")
 					(unit 1)
 				)
 			)
@@ -12667,8 +12582,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "92757a97-73a6-54aa-9ef4-864ab720eedf")
-		(property "Reference" "#PWR374"
+		(uuid "242681a3-09e8-5ab9-97a1-73efa6862644")
+		(property "Reference" "#PWR369"
 			(at 261.62 109.22 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12718,8 +12633,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR374")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR369")
 					(unit 1)
 				)
 			)
@@ -12733,8 +12648,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "7b7abc19-01d2-53b4-9112-727b0e9617c6")
-		(property "Reference" "#PWR376"
+		(uuid "b7383972-6a98-5f97-8b02-06b995bba46f")
+		(property "Reference" "#PWR371"
 			(at 200.66 142.24 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12784,8 +12699,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR376")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR371")
 					(unit 1)
 				)
 			)
@@ -12799,8 +12714,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "752e3f93-5bd5-587b-bb7c-709f9820c312")
-		(property "Reference" "#PWR378"
+		(uuid "48698829-13f9-568e-8a6c-8d70c7c82994")
+		(property "Reference" "#PWR373"
 			(at 200.66 111.76 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12850,8 +12765,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR378")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR373")
 					(unit 1)
 				)
 			)
@@ -12865,8 +12780,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "5951af78-c691-51f1-b16b-deb84fbaee00")
-		(property "Reference" "#PWR380"
+		(uuid "ffe315b9-ad55-520f-bddb-1f7d17c1959d")
+		(property "Reference" "#PWR375"
 			(at 81.28 97.79 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12916,8 +12831,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR380")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR375")
 					(unit 1)
 				)
 			)
@@ -12931,8 +12846,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "af6ad36e-fb21-5ef8-9ab6-89e582705447")
-		(property "Reference" "#PWR382"
+		(uuid "2fd7720e-d04e-5a1c-a5ad-1c9cdbdcf63b")
+		(property "Reference" "#PWR377"
 			(at 81.28 105.41 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12982,8 +12897,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR382")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR377")
 					(unit 1)
 				)
 			)
@@ -12997,8 +12912,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "460bb84b-47a5-547c-b130-042496e3ff3a")
-		(property "Reference" "#PWR384"
+		(uuid "9b54aa3a-6e49-5910-95ed-d03b3ea3d154")
+		(property "Reference" "#PWR379"
 			(at 96.52 97.79 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13048,8 +12963,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR384")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR379")
 					(unit 1)
 				)
 			)
@@ -13063,8 +12978,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "fd855627-4c5b-5d4f-b75e-8c0ababcfc40")
-		(property "Reference" "#PWR386"
+		(uuid "a76123a9-04f3-53ef-8e4f-f083aa187cc5")
+		(property "Reference" "#PWR381"
 			(at 96.52 105.41 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13114,8 +13029,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR386")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR381")
 					(unit 1)
 				)
 			)
@@ -13129,8 +13044,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "6be15d32-be93-5a97-801d-f5cddadf6ae3")
-		(property "Reference" "#PWR388"
+		(uuid "de96ff95-003b-561a-a78c-433c8647bb10")
+		(property "Reference" "#PWR383"
 			(at 30.48 -106.68 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13180,8 +13095,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR388")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR383")
 					(unit 1)
 				)
 			)
@@ -13195,8 +13110,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "505fbfd9-b65b-5fb4-924c-f556d0d736b7")
-		(property "Reference" "#PWR390"
+		(uuid "96ad513d-3371-591c-b6fb-1a085b22ca5c")
+		(property "Reference" "#PWR385"
 			(at 30.48 -104.14 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13246,8 +13161,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR390")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR385")
 					(unit 1)
 				)
 			)
@@ -13261,8 +13176,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "fb8a1b18-15d8-5faa-8de7-b6bc1f84911d")
-		(property "Reference" "#PWR392"
+		(uuid "6dccbe5b-917b-5d60-b0fc-5f1c30ec0f43")
+		(property "Reference" "#PWR387"
 			(at 30.48 -101.6 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13312,8 +13227,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR392")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR387")
 					(unit 1)
 				)
 			)
@@ -13327,8 +13242,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "8a55ce08-1f4c-5142-aa30-7b0e96437147")
-		(property "Reference" "#PWR394"
+		(uuid "8ec2aa5f-356f-5fbf-8187-9e514056b052")
+		(property "Reference" "#PWR389"
 			(at 30.48 -99.06 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13378,8 +13293,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR394")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR389")
 					(unit 1)
 				)
 			)
@@ -13393,8 +13308,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "01a49ce1-ccf8-5a7b-95ab-27067b03d5c6")
-		(property "Reference" "#PWR396"
+		(uuid "71035c47-7344-5512-9fc4-4f83721fba99")
+		(property "Reference" "#PWR391"
 			(at 213.36 82.55 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13444,8 +13359,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR396")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR391")
 					(unit 1)
 				)
 			)
@@ -13459,8 +13374,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "21881158-5452-5116-a5b9-b1b8519c91a3")
-		(property "Reference" "#PWR398"
+		(uuid "b51593b2-34f4-5e93-bf7d-e39272d82fa8")
+		(property "Reference" "#PWR393"
 			(at 213.36 100.33 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13510,8 +13425,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR398")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR393")
 					(unit 1)
 				)
 			)
@@ -13525,8 +13440,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "6e5aeedf-5e69-51fb-bbcb-c7290f7cfa72")
-		(property "Reference" "#PWR400"
+		(uuid "eb05711c-8b60-550f-a3bf-12f158913d65")
+		(property "Reference" "#PWR395"
 			(at 238.76 82.55 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13576,8 +13491,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR400")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR395")
 					(unit 1)
 				)
 			)
@@ -13591,8 +13506,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "488535a4-57bf-5224-b1ea-7235d87a8935")
-		(property "Reference" "#PWR402"
+		(uuid "1ef2586b-66a1-5eb7-bca5-3d7585fc246c")
+		(property "Reference" "#PWR397"
 			(at 238.76 100.33 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13642,8 +13557,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR402")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR397")
 					(unit 1)
 				)
 			)
@@ -13657,8 +13572,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "0971f1b6-1f37-5e2d-9849-77ac19e12dc0")
-		(property "Reference" "#PWR404"
+		(uuid "239bc29d-84ec-5013-8343-e3ff2710bafd")
+		(property "Reference" "#PWR399"
 			(at 264.16 82.55 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13708,8 +13623,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR404")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR399")
 					(unit 1)
 				)
 			)
@@ -13723,8 +13638,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "436271f6-dc62-5911-8644-d0c8ee11f31f")
-		(property "Reference" "#PWR406"
+		(uuid "7e0d79e0-86fa-5ee9-ae14-5bb5d2e7ba1b")
+		(property "Reference" "#PWR401"
 			(at 264.16 100.33 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13774,8 +13689,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR406")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR401")
 					(unit 1)
 				)
 			)
@@ -13789,8 +13704,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "fce77d20-3594-538f-b6fb-317249854e93")
-		(property "Reference" "#PWR408"
+		(uuid "6ad10bcd-2288-5630-83b3-2a63f65ffbf4")
+		(property "Reference" "#PWR403"
 			(at 393.7 154.94 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13840,8 +13755,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR408")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR403")
 					(unit 1)
 				)
 			)
@@ -13855,8 +13770,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "ca50479c-bb51-588d-ba3b-1b624bfec5c5")
-		(property "Reference" "#PWR410"
+		(uuid "f98221ee-5fdc-5c30-a40c-69012c135031")
+		(property "Reference" "#PWR405"
 			(at 436.88 158.75 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13906,8 +13821,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR410")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR405")
 					(unit 1)
 				)
 			)
@@ -13921,8 +13836,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "c39b5806-eefc-5274-b6c0-76daa22bf345")
-		(property "Reference" "#PWR412"
+		(uuid "f2d15fab-ef65-55ca-87b6-6e6934cbe056")
+		(property "Reference" "#PWR407"
 			(at 462.28 194.31 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -13972,8 +13887,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR412")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR407")
 					(unit 1)
 				)
 			)
@@ -13987,8 +13902,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "d34e4282-bea8-55dc-95b5-0cc3603332a1")
-		(property "Reference" "#PWR414"
+		(uuid "27483b66-80dc-5068-882d-04fb45192010")
+		(property "Reference" "#PWR409"
 			(at 462.28 168.91 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14038,8 +13953,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR414")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR409")
 					(unit 1)
 				)
 			)
@@ -14053,8 +13968,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "8dfefb0e-36b9-5827-aaa8-417ca0d95e51")
-		(property "Reference" "#PWR416"
+		(uuid "41f321bb-e2c7-5741-86bc-e5bd832e3499")
+		(property "Reference" "#PWR411"
 			(at 487.68 165.1 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14104,8 +14019,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR416")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR411")
 					(unit 1)
 				)
 			)
@@ -14119,8 +14034,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "dea09321-f59c-5280-a922-a8c8f8d6cf06")
-		(property "Reference" "#PWR418"
+		(uuid "8734e876-cb29-5618-89ce-4f4b20f4be20")
+		(property "Reference" "#PWR413"
 			(at 510.54 173.99 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14170,8 +14085,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR418")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR413")
 					(unit 1)
 				)
 			)
@@ -14185,8 +14100,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "8fe636e9-d851-5eb4-a054-770646c0203b")
-		(property "Reference" "#PWR420"
+		(uuid "f983bc17-485a-5e06-91d6-96546fce792d")
+		(property "Reference" "#PWR415"
 			(at 393.7 226.06 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14236,8 +14151,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR420")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR415")
 					(unit 1)
 				)
 			)
@@ -14251,8 +14166,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "2d1adc7d-ed90-54fd-831f-96e9b3bc6bc6")
-		(property "Reference" "#PWR422"
+		(uuid "51b8a9f5-fa6a-5328-bbc3-a635e439d6e1")
+		(property "Reference" "#PWR417"
 			(at 378.46 237.49 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -14302,8 +14217,8 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/f6c954df-12db-477f-a256-b88d0e676e13"
-					(reference "#PWR422")
+				(path "/6a38fa7e-000b-4f9d-bec4-6c6c10e53d8b"
+					(reference "#PWR417")
 					(unit 1)
 				)
 			)
