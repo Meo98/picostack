@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "5e362e48-895c-4b31-b63d-057cf69d0536")
+	(uuid "a7103c62-fb72-452a-bde0-aca1e23da6c8")
 	(paper "A3")
 	(title_block
 		(title "Modulsockel (Vorschau)")
@@ -1636,7 +1636,7 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "Connector_Generic:Conn_02x20_Odd_Even"
+		(symbol "Connector_Generic:Conn_01x20"
 			(pin_names
 				(offset 1.016)
 				(hide yes)
@@ -1647,7 +1647,7 @@
 			(in_pos_files yes)
 			(duplicate_pin_numbers_are_jumpers no)
 			(property "Reference" "J"
-				(at 1.27 25.4 0)
+				(at 0 25.4 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -1656,8 +1656,8 @@
 					)
 				)
 			)
-			(property "Value" "Conn_02x20_Odd_Even"
-				(at 1.27 -27.94 0)
+			(property "Value" "Conn_01x20"
+				(at 0 -27.94 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -1688,7 +1688,7 @@
 					)
 				)
 			)
-			(property "Description" "Generic connector, double row, 02x20, odd/even pin numbering scheme (row 1 odd numbers, row 2 even numbers), script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(property "Description" "Generic connector, single row, 01x20, script generated (kicad-library-utils/schlib/autogen/connector/)"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -1710,7 +1710,7 @@
 					)
 				)
 			)
-			(property "ki_fp_filters" "Connector*:*_2x??_*"
+			(property "ki_fp_filters" "Connector*:*_1x??_*"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -1721,10 +1721,10 @@
 					)
 				)
 			)
-			(symbol "Conn_02x20_Odd_Even_1_1"
+			(symbol "Conn_01x20_1_1"
 				(rectangle
 					(start -1.27 24.13)
-					(end 3.81 -26.67)
+					(end 1.27 -26.67)
 					(stroke
 						(width 0.254)
 						(type default)
@@ -1953,226 +1953,6 @@
 						(type none)
 					)
 				)
-				(rectangle
-					(start 3.81 22.987)
-					(end 2.54 22.733)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 20.447)
-					(end 2.54 20.193)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 17.907)
-					(end 2.54 17.653)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 15.367)
-					(end 2.54 15.113)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 12.827)
-					(end 2.54 12.573)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 10.287)
-					(end 2.54 10.033)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 7.747)
-					(end 2.54 7.493)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 5.207)
-					(end 2.54 4.953)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 2.667)
-					(end 2.54 2.413)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 0.127)
-					(end 2.54 -0.127)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 -2.413)
-					(end 2.54 -2.667)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 -4.953)
-					(end 2.54 -5.207)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 -7.493)
-					(end 2.54 -7.747)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 -10.033)
-					(end 2.54 -10.287)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 -12.573)
-					(end 2.54 -12.827)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 -15.113)
-					(end 2.54 -15.367)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 -17.653)
-					(end 2.54 -17.907)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 -20.193)
-					(end 2.54 -20.447)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 -22.733)
-					(end 2.54 -22.987)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(rectangle
-					(start 3.81 -25.273)
-					(end 2.54 -25.527)
-					(stroke
-						(width 0.1524)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
 				(pin passive line
 					(at -5.08 22.86 0)
 					(length 3.81)
@@ -2192,7 +1972,7 @@
 					)
 				)
 				(pin passive line
-					(at 7.62 22.86 180)
+					(at -5.08 20.32 0)
 					(length 3.81)
 					(name "Pin_2"
 						(effects
@@ -2210,7 +1990,7 @@
 					)
 				)
 				(pin passive line
-					(at -5.08 20.32 0)
+					(at -5.08 17.78 0)
 					(length 3.81)
 					(name "Pin_3"
 						(effects
@@ -2228,7 +2008,7 @@
 					)
 				)
 				(pin passive line
-					(at 7.62 20.32 180)
+					(at -5.08 15.24 0)
 					(length 3.81)
 					(name "Pin_4"
 						(effects
@@ -2246,7 +2026,7 @@
 					)
 				)
 				(pin passive line
-					(at -5.08 17.78 0)
+					(at -5.08 12.7 0)
 					(length 3.81)
 					(name "Pin_5"
 						(effects
@@ -2264,7 +2044,7 @@
 					)
 				)
 				(pin passive line
-					(at 7.62 17.78 180)
+					(at -5.08 10.16 0)
 					(length 3.81)
 					(name "Pin_6"
 						(effects
@@ -2282,7 +2062,7 @@
 					)
 				)
 				(pin passive line
-					(at -5.08 15.24 0)
+					(at -5.08 7.62 0)
 					(length 3.81)
 					(name "Pin_7"
 						(effects
@@ -2300,7 +2080,7 @@
 					)
 				)
 				(pin passive line
-					(at 7.62 15.24 180)
+					(at -5.08 5.08 0)
 					(length 3.81)
 					(name "Pin_8"
 						(effects
@@ -2318,7 +2098,7 @@
 					)
 				)
 				(pin passive line
-					(at -5.08 12.7 0)
+					(at -5.08 2.54 0)
 					(length 3.81)
 					(name "Pin_9"
 						(effects
@@ -2336,7 +2116,7 @@
 					)
 				)
 				(pin passive line
-					(at 7.62 12.7 180)
+					(at -5.08 0 0)
 					(length 3.81)
 					(name "Pin_10"
 						(effects
@@ -2354,7 +2134,7 @@
 					)
 				)
 				(pin passive line
-					(at -5.08 10.16 0)
+					(at -5.08 -2.54 0)
 					(length 3.81)
 					(name "Pin_11"
 						(effects
@@ -2372,7 +2152,7 @@
 					)
 				)
 				(pin passive line
-					(at 7.62 10.16 180)
+					(at -5.08 -5.08 0)
 					(length 3.81)
 					(name "Pin_12"
 						(effects
@@ -2390,7 +2170,7 @@
 					)
 				)
 				(pin passive line
-					(at -5.08 7.62 0)
+					(at -5.08 -7.62 0)
 					(length 3.81)
 					(name "Pin_13"
 						(effects
@@ -2408,7 +2188,7 @@
 					)
 				)
 				(pin passive line
-					(at 7.62 7.62 180)
+					(at -5.08 -10.16 0)
 					(length 3.81)
 					(name "Pin_14"
 						(effects
@@ -2426,7 +2206,7 @@
 					)
 				)
 				(pin passive line
-					(at -5.08 5.08 0)
+					(at -5.08 -12.7 0)
 					(length 3.81)
 					(name "Pin_15"
 						(effects
@@ -2444,7 +2224,7 @@
 					)
 				)
 				(pin passive line
-					(at 7.62 5.08 180)
+					(at -5.08 -15.24 0)
 					(length 3.81)
 					(name "Pin_16"
 						(effects
@@ -2462,7 +2242,7 @@
 					)
 				)
 				(pin passive line
-					(at -5.08 2.54 0)
+					(at -5.08 -17.78 0)
 					(length 3.81)
 					(name "Pin_17"
 						(effects
@@ -2480,7 +2260,7 @@
 					)
 				)
 				(pin passive line
-					(at 7.62 2.54 180)
+					(at -5.08 -20.32 0)
 					(length 3.81)
 					(name "Pin_18"
 						(effects
@@ -2498,7 +2278,7 @@
 					)
 				)
 				(pin passive line
-					(at -5.08 0 0)
+					(at -5.08 -22.86 0)
 					(length 3.81)
 					(name "Pin_19"
 						(effects
@@ -2516,7 +2296,7 @@
 					)
 				)
 				(pin passive line
-					(at 7.62 0 180)
+					(at -5.08 -25.4 0)
 					(length 3.81)
 					(name "Pin_20"
 						(effects
@@ -2526,366 +2306,6 @@
 						)
 					)
 					(number "20"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 -2.54 0)
-					(length 3.81)
-					(name "Pin_21"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "21"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 7.62 -2.54 180)
-					(length 3.81)
-					(name "Pin_22"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "22"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 -5.08 0)
-					(length 3.81)
-					(name "Pin_23"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "23"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 7.62 -5.08 180)
-					(length 3.81)
-					(name "Pin_24"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "24"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 -7.62 0)
-					(length 3.81)
-					(name "Pin_25"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "25"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 7.62 -7.62 180)
-					(length 3.81)
-					(name "Pin_26"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "26"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 -10.16 0)
-					(length 3.81)
-					(name "Pin_27"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "27"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 7.62 -10.16 180)
-					(length 3.81)
-					(name "Pin_28"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "28"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 -12.7 0)
-					(length 3.81)
-					(name "Pin_29"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "29"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 7.62 -12.7 180)
-					(length 3.81)
-					(name "Pin_30"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "30"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 -15.24 0)
-					(length 3.81)
-					(name "Pin_31"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "31"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 7.62 -15.24 180)
-					(length 3.81)
-					(name "Pin_32"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "32"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 -17.78 0)
-					(length 3.81)
-					(name "Pin_33"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "33"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 7.62 -17.78 180)
-					(length 3.81)
-					(name "Pin_34"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "34"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 -20.32 0)
-					(length 3.81)
-					(name "Pin_35"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "35"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 7.62 -20.32 180)
-					(length 3.81)
-					(name "Pin_36"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "36"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 -22.86 0)
-					(length 3.81)
-					(name "Pin_37"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "37"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 7.62 -22.86 180)
-					(length 3.81)
-					(name "Pin_38"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "38"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -5.08 -25.4 0)
-					(length 3.81)
-					(name "Pin_39"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "39"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 7.62 -25.4 180)
-					(length 3.81)
-					(name "Pin_40"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "40"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -3641,99 +3061,99 @@
 		)
 	)
 	(no_connect
-		(at 7.62 17.78)
+		(at -5.08 22.86)
 		(uuid "4a7f6456-1a9d-5694-92e1-8c9cfdc8869f")
 	)
 	(no_connect
-		(at -5.08 27.94)
+		(at -5.08 40.64)
 		(uuid "2bd53562-9279-54a2-88d5-64fd220a5dd9")
 	)
 	(no_connect
-		(at 7.62 27.94)
+		(at -5.08 43.18)
 		(uuid "f96c61ca-5379-5713-acad-4bd70c639335")
 	)
 	(no_connect
-		(at 7.62 30.48)
+		(at -5.08 48.26)
 		(uuid "38fac419-466e-5432-8b82-69f5b07cdf70")
 	)
 	(no_connect
-		(at -5.08 33.02)
+		(at -5.08 50.8)
 		(uuid "753d4c6f-d866-5f6b-9fa1-0033a7d81ea7")
 	)
 	(no_connect
-		(at 7.62 33.02)
+		(at -5.08 53.34)
 		(uuid "47121c76-8ff2-50a7-b058-19ddfd957400")
 	)
 	(no_connect
-		(at -5.08 35.56)
+		(at -5.08 55.88)
 		(uuid "60dfd3bd-88c2-5dd2-b5a4-bebfc815a7b6")
 	)
 	(no_connect
-		(at -5.08 38.1)
+		(at -5.08 60.96)
 		(uuid "f7ed07cb-bdf2-5441-b755-599cc5343c56")
 	)
 	(no_connect
-		(at 7.62 38.1)
+		(at -5.08 63.5)
 		(uuid "ebbf0a03-880e-53de-8bb8-10ba4c581ffc")
 	)
 	(no_connect
-		(at -5.08 40.64)
+		(at 25.4 15.24)
 		(uuid "57a06361-d613-56da-88fd-78e5d173e573")
 	)
 	(no_connect
-		(at 7.62 40.64)
+		(at 25.4 17.78)
 		(uuid "d5d7d511-3034-5944-b4e3-a9aa1ad90e70")
 	)
 	(no_connect
-		(at 7.62 43.18)
+		(at 25.4 22.86)
 		(uuid "a992ad42-20bf-5206-8d8e-29864235a6ad")
 	)
 	(no_connect
-		(at -5.08 45.72)
+		(at 25.4 25.4)
 		(uuid "51a2d671-572c-5b0d-bfdc-ec85d58b5496")
 	)
 	(no_connect
-		(at 7.62 45.72)
+		(at 25.4 27.94)
 		(uuid "01f2f359-1e19-5eeb-8d9d-62a7988a7ec8")
 	)
 	(no_connect
-		(at -5.08 48.26)
+		(at 25.4 30.48)
 		(uuid "951d8d6f-4e4d-52ea-8aba-a8df20d0382b")
 	)
 	(no_connect
-		(at -5.08 50.8)
+		(at 25.4 35.56)
 		(uuid "226c85d7-a586-5475-83b1-0cdaaefb0c6d")
 	)
 	(no_connect
-		(at 7.62 50.8)
+		(at 25.4 38.1)
 		(uuid "6d8e666e-b8d4-5d74-9b71-d957426f0660")
 	)
 	(no_connect
-		(at -5.08 53.34)
+		(at 25.4 40.64)
 		(uuid "d38bc2f2-ba4f-5ff1-a730-595cc9a45aef")
 	)
 	(no_connect
-		(at 7.62 53.34)
+		(at 25.4 43.18)
 		(uuid "af389f11-09ca-51f0-abd7-11c04b059b21")
 	)
 	(no_connect
-		(at 7.62 55.88)
+		(at 25.4 48.26)
 		(uuid "36a3ec0f-3598-5567-a053-a0ec8e479700")
 	)
 	(no_connect
-		(at -5.08 58.42)
+		(at 25.4 50.8)
 		(uuid "e8efdc52-eca5-53bc-9c4d-fbb7ab094d0d")
 	)
 	(no_connect
-		(at -5.08 60.96)
+		(at 25.4 55.88)
 		(uuid "0f964865-bb33-5e16-ac5c-3b48400664ad")
 	)
 	(no_connect
-		(at -5.08 63.5)
+		(at 25.4 60.96)
 		(uuid "c6480844-a1c6-534f-a595-64dc06609cde")
 	)
 	(no_connect
-		(at 7.62 63.5)
+		(at 25.4 63.5)
 		(uuid "86913915-684a-5f5c-9192-c67da7b7caad")
 	)
 	(no_connect
@@ -3788,7 +3208,7 @@
 	)
 	(wire
 		(pts
-			(xy 7.62 15.24) (xy 12.7 15.24)
+			(xy -5.08 17.78) (xy -10.16 17.78)
 		)
 		(stroke
 			(width 0)
@@ -3798,7 +3218,7 @@
 	)
 	(wire
 		(pts
-			(xy -5.08 17.78) (xy -10.16 17.78)
+			(xy -5.08 20.32) (xy -10.16 20.32)
 		)
 		(stroke
 			(width 0)
@@ -3808,7 +3228,7 @@
 	)
 	(wire
 		(pts
-			(xy -5.08 20.32) (xy -10.16 20.32)
+			(xy -5.08 25.4) (xy -10.16 25.4)
 		)
 		(stroke
 			(width 0)
@@ -3818,7 +3238,7 @@
 	)
 	(wire
 		(pts
-			(xy 7.62 20.32) (xy 12.7 20.32)
+			(xy -5.08 27.94) (xy -10.16 27.94)
 		)
 		(stroke
 			(width 0)
@@ -3828,7 +3248,7 @@
 	)
 	(wire
 		(pts
-			(xy -5.08 22.86) (xy -10.16 22.86)
+			(xy -5.08 30.48) (xy -10.16 30.48)
 		)
 		(stroke
 			(width 0)
@@ -3838,7 +3258,7 @@
 	)
 	(wire
 		(pts
-			(xy 7.62 22.86) (xy 12.7 22.86)
+			(xy -5.08 33.02) (xy -10.16 33.02)
 		)
 		(stroke
 			(width 0)
@@ -3848,7 +3268,7 @@
 	)
 	(wire
 		(pts
-			(xy -5.08 25.4) (xy -10.16 25.4)
+			(xy -5.08 35.56) (xy -10.16 35.56)
 		)
 		(stroke
 			(width 0)
@@ -3858,7 +3278,7 @@
 	)
 	(wire
 		(pts
-			(xy 7.62 25.4) (xy 12.7 25.4)
+			(xy -5.08 38.1) (xy -10.16 38.1)
 		)
 		(stroke
 			(width 0)
@@ -3868,7 +3288,7 @@
 	)
 	(wire
 		(pts
-			(xy -5.08 30.48) (xy -10.16 30.48)
+			(xy -5.08 45.72) (xy -10.16 45.72)
 		)
 		(stroke
 			(width 0)
@@ -3878,7 +3298,7 @@
 	)
 	(wire
 		(pts
-			(xy 7.62 35.56) (xy 12.7 35.56)
+			(xy -5.08 58.42) (xy -10.16 58.42)
 		)
 		(stroke
 			(width 0)
@@ -3888,7 +3308,7 @@
 	)
 	(wire
 		(pts
-			(xy -5.08 43.18) (xy -10.16 43.18)
+			(xy 25.4 20.32) (xy 30.48 20.32)
 		)
 		(stroke
 			(width 0)
@@ -3898,7 +3318,7 @@
 	)
 	(wire
 		(pts
-			(xy 7.62 48.26) (xy 12.7 48.26)
+			(xy 25.4 33.02) (xy 30.48 33.02)
 		)
 		(stroke
 			(width 0)
@@ -3908,7 +3328,7 @@
 	)
 	(wire
 		(pts
-			(xy -5.08 55.88) (xy -10.16 55.88)
+			(xy 25.4 45.72) (xy 30.48 45.72)
 		)
 		(stroke
 			(width 0)
@@ -3918,7 +3338,7 @@
 	)
 	(wire
 		(pts
-			(xy 7.62 58.42) (xy 12.7 58.42)
+			(xy 25.4 53.34) (xy 30.48 53.34)
 		)
 		(stroke
 			(width 0)
@@ -3928,7 +3348,7 @@
 	)
 	(wire
 		(pts
-			(xy 7.62 60.96) (xy 12.7 60.96)
+			(xy 25.4 58.42) (xy 30.48 58.42)
 		)
 		(stroke
 			(width 0)
@@ -4548,18 +3968,18 @@
 		(uuid "5fce3b1c-a8c5-5d8a-b692-0fc4603c9bb7")
 	)
 	(label "FLASH_RX"
-		(at 12.7 15.24 0)
+		(at -10.16 17.78 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "8733631a-06b2-53d8-b71e-160801202a5d")
 	)
 	(label "FLASH_MODE"
-		(at -10.16 20.32 180)
+		(at -10.16 25.4 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -4570,18 +3990,18 @@
 		(uuid "285a8527-36b7-5567-b859-7b7cd8ea2f9e")
 	)
 	(label "I2C_SDA"
-		(at 12.7 20.32 0)
+		(at -10.16 27.94 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "20233de0-1c3d-5041-aaa4-2ba20ab2e106")
 	)
 	(label "I2C_SCL"
-		(at -10.16 22.86 180)
+		(at -10.16 30.48 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -4592,7 +4012,7 @@
 		(uuid "602a0b01-e664-53d0-9025-d42f8f0a1f28")
 	)
 	(label "NOTAUS"
-		(at -10.16 25.4 180)
+		(at -10.16 35.56 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
@@ -4603,13 +4023,13 @@
 		(uuid "f599d64b-760f-5c1e-91e7-bab741227d88")
 	)
 	(label "SEL_CLK"
-		(at 12.7 25.4 0)
+		(at -10.16 38.1 180)
 		(fields_autoplaced yes)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "2b113072-d8f8-5ba3-90b3-adbaee196307")
 	)
@@ -5090,7 +4510,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "#FLG101")
 					(unit 1)
 				)
@@ -5156,7 +4576,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "#FLG102")
 					(unit 1)
 				)
@@ -5164,7 +4584,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Connector_Generic:Conn_02x20_Odd_Even")
+		(lib_id "Connector_Generic:Conn_01x20")
 		(at 0 38.1 0)
 		(unit 1)
 		(exclude_from_sim no)
@@ -5183,7 +4603,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "Stapelstecker 2x20"
+		(property "Value" "Stapelstecker links, Pico-Pins 1..20 (Buchse)"
 			(at -5.08 66.04 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5194,7 +4614,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_2x20_P2.54mm_Vertical"
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x20_P2.54mm_Vertical"
 			(at 0 38.1 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5220,8 +4640,72 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "J100")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Connector_Generic:Conn_01x20")
+		(at 30.48 38.1 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "09455da2-f65d-5100-8f54-81269c5101e9")
+		(property "Reference" "J105"
+			(at 25.4 63.5 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "Stapelstecker rechts, Pico-Pins 21..40 (Buchse)"
+			(at 25.4 66.04 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x20_P2.54mm_Vertical"
+			(at 30.48 38.1 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 30.48 38.1 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(instances
+			(project "modulsockel_vorschau"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "J105")
 					(unit 1)
 				)
 			)
@@ -5235,7 +4719,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "09455da2-f65d-5100-8f54-81269c5101e9")
+		(uuid "7e155147-fa88-5b4a-81e2-923c02034bca")
 		(property "Reference" "J101"
 			(at -5.08 -16.51 0)
 			(show_name no)
@@ -5284,7 +4768,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "J101")
 					(unit 1)
 				)
@@ -5299,7 +4783,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "7e155147-fa88-5b4a-81e2-923c02034bca")
+		(uuid "781fc3bd-dcbb-5f66-bb15-7382ed746e04")
 		(property "Reference" "J102"
 			(at -5.08 -26.67 0)
 			(show_name no)
@@ -5348,7 +4832,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "J102")
 					(unit 1)
 				)
@@ -5363,7 +4847,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "781fc3bd-dcbb-5f66-bb15-7382ed746e04")
+		(uuid "338b969c-286a-5965-b138-715c64300837")
 		(property "Reference" "J103"
 			(at 248.92 24.13 0)
 			(show_name no)
@@ -5412,7 +4896,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "J103")
 					(unit 1)
 				)
@@ -5427,7 +4911,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "338b969c-286a-5965-b138-715c64300837")
+		(uuid "508eccca-76e4-5624-94db-001fc9537026")
 		(property "Reference" "J104"
 			(at 248.92 16.51 0)
 			(show_name no)
@@ -5476,7 +4960,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "J104")
 					(unit 1)
 				)
@@ -5491,7 +4975,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "508eccca-76e4-5624-94db-001fc9537026")
+		(uuid "b2125daf-71fb-52d6-ac85-f3f0c21688a7")
 		(property "Reference" "U100"
 			(at 71.12 25.4 0)
 			(show_name no)
@@ -5540,7 +5024,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "U100")
 					(unit 1)
 				)
@@ -5555,7 +5039,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "b2125daf-71fb-52d6-ac85-f3f0c21688a7")
+		(uuid "464f1808-bb7d-5aa4-a17f-d4afbdf28003")
 		(property "Reference" "C100"
 			(at 111.76 21.59 0)
 			(show_name no)
@@ -5604,7 +5088,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "C100")
 					(unit 1)
 				)
@@ -5619,7 +5103,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "464f1808-bb7d-5aa4-a17f-d4afbdf28003")
+		(uuid "73b66026-2fb4-5314-b267-28c3db28892b")
 		(property "Reference" "U101"
 			(at 127 35.56 0)
 			(show_name no)
@@ -5668,7 +5152,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "U101")
 					(unit 1)
 				)
@@ -5683,7 +5167,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "73b66026-2fb4-5314-b267-28c3db28892b")
+		(uuid "9007e9b4-7e26-54e1-a3cd-cee6bab1c98b")
 		(property "Reference" "R102"
 			(at 162.56 29.21 0)
 			(show_name no)
@@ -5732,7 +5216,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "R102")
 					(unit 1)
 				)
@@ -5747,7 +5231,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "9007e9b4-7e26-54e1-a3cd-cee6bab1c98b")
+		(uuid "71c1609e-65b2-53a5-840e-ae2327189819")
 		(property "Reference" "C101"
 			(at 175.26 29.21 0)
 			(show_name no)
@@ -5796,7 +5280,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "C101")
 					(unit 1)
 				)
@@ -5811,7 +5295,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "71c1609e-65b2-53a5-840e-ae2327189819")
+		(uuid "32b5db90-044f-5268-b24f-481f48a510ac")
 		(property "Reference" "U102"
 			(at 160.02 5.08 0)
 			(show_name no)
@@ -5860,7 +5344,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "U102")
 					(unit 1)
 				)
@@ -5875,7 +5359,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "32b5db90-044f-5268-b24f-481f48a510ac")
+		(uuid "4ed99f04-e8af-5457-9e0b-9df5362d4e2e")
 		(property "Reference" "U102"
 			(at 160.02 -25.4 0)
 			(show_name no)
@@ -5924,7 +5408,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "U102")
 					(unit 2)
 				)
@@ -5939,7 +5423,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "4ed99f04-e8af-5457-9e0b-9df5362d4e2e")
+		(uuid "80b581eb-5ec0-5bb1-9f33-1773f2c4d6b4")
 		(property "Reference" "U102"
 			(at 195.58 -25.4 0)
 			(show_name no)
@@ -5988,7 +5472,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "U102")
 					(unit 3)
 				)
@@ -6003,7 +5487,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "80b581eb-5ec0-5bb1-9f33-1773f2c4d6b4")
+		(uuid "1d899940-c28e-5ea1-934d-03bc0d6b8b13")
 		(property "Reference" "U103"
 			(at 132.08 2.54 0)
 			(show_name no)
@@ -6052,7 +5536,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "U103")
 					(unit 1)
 				)
@@ -6067,7 +5551,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "1d899940-c28e-5ea1-934d-03bc0d6b8b13")
+		(uuid "1a1fe7de-7daa-5eee-944b-fc2583bb08e1")
 		(property "Reference" "R104"
 			(at 22.86 -31.75 0)
 			(show_name no)
@@ -6116,7 +5600,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "R104")
 					(unit 1)
 				)
@@ -6131,7 +5615,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "1a1fe7de-7daa-5eee-944b-fc2583bb08e1")
+		(uuid "2e8374f2-da3f-58ab-9d08-13e4f07d1cf1")
 		(property "Reference" "R100"
 			(at 22.86 -41.91 0)
 			(show_name no)
@@ -6180,7 +5664,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "R100")
 					(unit 1)
 				)
@@ -6195,7 +5679,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "2e8374f2-da3f-58ab-9d08-13e4f07d1cf1")
+		(uuid "10793125-cc29-502d-a55b-b78595822e9b")
 		(property "Reference" "R105"
 			(at 38.1 -31.75 0)
 			(show_name no)
@@ -6244,7 +5728,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "R105")
 					(unit 1)
 				)
@@ -6259,7 +5743,7 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "10793125-cc29-502d-a55b-b78595822e9b")
+		(uuid "5ac662b1-2000-5e9f-92c1-65abeab53273")
 		(property "Reference" "R101"
 			(at 38.1 -41.91 0)
 			(show_name no)
@@ -6308,7 +5792,7 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
 					(reference "R101")
 					(unit 1)
 				)
@@ -6323,8 +5807,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "fd37c3c5-fe02-5288-81cc-b76ac1345e10")
-		(property "Reference" "#PWR173"
+		(uuid "ead89cca-b001-5ab5-902e-f25804e7de78")
+		(property "Reference" "#PWR174"
 			(at -20.32 40.64 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6374,8 +5858,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR173")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR174")
 					(unit 1)
 				)
 			)
@@ -6389,8 +5873,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "a5fe157f-93f3-525b-91ac-0413b395f621")
-		(property "Reference" "#PWR175"
+		(uuid "bff652b7-1c23-57ab-a57d-a4b8ec958bfc")
+		(property "Reference" "#PWR176"
 			(at -20.32 33.02 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6440,8 +5924,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR175")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR176")
 					(unit 1)
 				)
 			)
@@ -6449,15 +5933,15 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at -10.16 17.78 270)
+		(at -10.16 20.32 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "f9650de3-bdf7-58cf-8197-58c6431150f4")
-		(property "Reference" "#PWR177"
-			(at -10.16 15.24 90)
+		(uuid "52d95295-4633-5b3c-a2b7-172a41b303c7")
+		(property "Reference" "#PWR178"
+			(at -10.16 17.78 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6469,6 +5953,18 @@
 			)
 		)
 		(property "Value" "GND"
+			(at -10.16 22.86 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" ""
 			(at -10.16 20.32 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6480,20 +5976,8 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
-			(at -10.16 17.78 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
 		(property "Datasheet" ""
-			(at -10.16 17.78 90)
+			(at -10.16 20.32 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6506,8 +5990,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR177")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR178")
 					(unit 1)
 				)
 			)
@@ -6515,15 +5999,15 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 12.7 22.86 90)
+		(at -10.16 33.02 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "d93b71d2-7478-5ff4-a746-4ef672192509")
-		(property "Reference" "#PWR179"
-			(at 12.7 20.32 270)
+		(uuid "1d20edf5-d6d3-53d1-abeb-8a67cbd23fe1")
+		(property "Reference" "#PWR180"
+			(at -10.16 30.48 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6535,7 +6019,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 12.7 25.4 270)
+			(at -10.16 35.56 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6547,60 +6031,6 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 12.7 22.86 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 12.7 22.86 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(instances
-			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR179")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at -10.16 30.48 270)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "d95b9e00-0f74-562c-b8ca-e8621026058e")
-		(property "Reference" "#PWR181"
-			(at -10.16 27.94 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
 			(at -10.16 33.02 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6612,20 +6042,8 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
-			(at -10.16 30.48 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
 		(property "Datasheet" ""
-			(at -10.16 30.48 90)
+			(at -10.16 33.02 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6638,8 +6056,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR181")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR180")
 					(unit 1)
 				)
 			)
@@ -6647,15 +6065,15 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 12.7 35.56 90)
+		(at -10.16 45.72 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "c2b9f0b4-c4c0-535d-b279-8f88ece8afc9")
-		(property "Reference" "#PWR183"
-			(at 12.7 33.02 270)
+		(uuid "3b7c00cf-05ea-5a90-ac13-5811ce3f25f6")
+		(property "Reference" "#PWR182"
+			(at -10.16 43.18 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6667,7 +6085,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 12.7 38.1 270)
+			(at -10.16 48.26 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6679,60 +6097,6 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 12.7 35.56 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 12.7 35.56 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(instances
-			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR183")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at -10.16 43.18 270)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "9a28cc1c-c356-5c59-ac6f-2e88dd919927")
-		(property "Reference" "#PWR185"
-			(at -10.16 40.64 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
 			(at -10.16 45.72 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6744,20 +6108,8 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
-			(at -10.16 43.18 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
 		(property "Datasheet" ""
-			(at -10.16 43.18 90)
+			(at -10.16 45.72 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6770,8 +6122,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR185")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR182")
 					(unit 1)
 				)
 			)
@@ -6779,15 +6131,15 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 12.7 48.26 90)
+		(at -10.16 58.42 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "cb56e804-b069-5267-bf2b-07c2f3439ca3")
-		(property "Reference" "#PWR187"
-			(at 12.7 45.72 270)
+		(uuid "18150827-25f6-50de-afd2-663e65902ec6")
+		(property "Reference" "#PWR184"
+			(at -10.16 55.88 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6799,7 +6151,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 12.7 50.8 270)
+			(at -10.16 60.96 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6811,60 +6163,6 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 12.7 48.26 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 12.7 48.26 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(instances
-			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR187")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at -10.16 55.88 270)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "ac6aaf36-fd62-59c5-9885-4bd897349a2d")
-		(property "Reference" "#PWR189"
-			(at -10.16 53.34 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
 			(at -10.16 58.42 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6876,20 +6174,8 @@
 				(hide yes)
 			)
 		)
-		(property "Footprint" ""
-			(at -10.16 55.88 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
 		(property "Datasheet" ""
-			(at -10.16 55.88 90)
+			(at -10.16 58.42 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6902,74 +6188,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR189")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:+3V3")
-		(at 12.7 58.42 90)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "46df9980-18bb-555c-bb44-c8bdd7156438")
-		(property "Reference" "#PWR191"
-			(at 12.7 55.88 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Value" "3V3"
-			(at 12.7 60.96 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Footprint" ""
-			(at 12.7 58.42 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 12.7 58.42 270)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-				(hide yes)
-			)
-		)
-		(instances
-			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR191")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR184")
 					(unit 1)
 				)
 			)
@@ -6977,15 +6197,15 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 12.7 60.96 90)
+		(at 30.48 20.32 90)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "5a776efb-11bf-5664-b20f-b3f898359a03")
-		(property "Reference" "#PWR193"
-			(at 12.7 58.42 270)
+		(uuid "7ed448f8-3a51-5f95-9213-2227eb7c9939")
+		(property "Reference" "#PWR186"
+			(at 30.48 17.78 270)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6997,7 +6217,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 12.7 63.5 270)
+			(at 30.48 22.86 270)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -7009,7 +6229,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 12.7 60.96 270)
+			(at 30.48 20.32 270)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -7021,7 +6241,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 12.7 60.96 270)
+			(at 30.48 20.32 270)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -7034,8 +6254,272 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR193")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR186")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 30.48 33.02 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "44c6d5b7-56fe-5097-be4d-93921cca28a7")
+		(property "Reference" "#PWR188"
+			(at 30.48 30.48 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 30.48 35.56 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" ""
+			(at 30.48 33.02 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 30.48 33.02 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(instances
+			(project "modulsockel_vorschau"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR188")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 30.48 45.72 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "7e929af3-af30-512c-8b44-fba91149c4bc")
+		(property "Reference" "#PWR190"
+			(at 30.48 43.18 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 30.48 48.26 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" ""
+			(at 30.48 45.72 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 30.48 45.72 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(instances
+			(project "modulsockel_vorschau"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR190")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:+3V3")
+		(at 30.48 53.34 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "d0b69cb1-172f-5281-bea8-3826f637956b")
+		(property "Reference" "#PWR192"
+			(at 30.48 50.8 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Value" "3V3"
+			(at 30.48 55.88 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" ""
+			(at 30.48 53.34 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 30.48 53.34 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(instances
+			(project "modulsockel_vorschau"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR192")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 30.48 58.42 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "2164b4d5-99ae-56a5-9e18-cc2a3d259b0e")
+		(property "Reference" "#PWR194"
+			(at 30.48 55.88 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 30.48 60.96 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Footprint" ""
+			(at 30.48 58.42 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 30.48 58.42 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
+		(instances
+			(project "modulsockel_vorschau"
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR194")
 					(unit 1)
 				)
 			)
@@ -7049,8 +6533,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "717d8cae-5856-5bb5-984b-5048adb092da")
-		(property "Reference" "#PWR195"
+		(uuid "2cf907ed-16d1-5cb3-b03b-5d597cc62240")
+		(property "Reference" "#PWR196"
 			(at -10.16 -20.32 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7100,8 +6584,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR195")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR196")
 					(unit 1)
 				)
 			)
@@ -7115,8 +6599,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "a631278b-64e8-5be9-a505-5ed932658405")
-		(property "Reference" "#PWR197"
+		(uuid "8e7451df-5b4b-5f91-a43d-eb8cb40c826d")
+		(property "Reference" "#PWR198"
 			(at -10.16 -30.48 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7166,8 +6650,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR197")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR198")
 					(unit 1)
 				)
 			)
@@ -7181,8 +6665,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "d6e57056-886c-5e68-af8f-20e97637dfd1")
-		(property "Reference" "#PWR199"
+		(uuid "7b7065d3-72b4-5830-bad7-0ca2bf598da4")
+		(property "Reference" "#PWR200"
 			(at 266.7 17.78 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7232,8 +6716,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR199")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR200")
 					(unit 1)
 				)
 			)
@@ -7247,8 +6731,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "249be959-c52d-540a-aa26-8a1791fb5e41")
-		(property "Reference" "#PWR201"
+		(uuid "33c9a4b0-c374-59f3-8950-caeb09b070db")
+		(property "Reference" "#PWR202"
 			(at 266.7 20.32 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7298,8 +6782,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR201")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR202")
 					(unit 1)
 				)
 			)
@@ -7313,8 +6797,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "035e9091-d4dd-5fe5-9005-1e7fd7577245")
-		(property "Reference" "#PWR203"
+		(uuid "cb385b9c-4f79-5ff6-a40e-99c2d69e555c")
+		(property "Reference" "#PWR204"
 			(at 266.7 10.16 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7364,8 +6848,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR203")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR204")
 					(unit 1)
 				)
 			)
@@ -7379,8 +6863,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "e724ca5e-4ca0-5cee-91f4-f4d7e7af0a7d")
-		(property "Reference" "#PWR205"
+		(uuid "35dc60f5-6d88-5e34-92bb-697b0d2c0883")
+		(property "Reference" "#PWR206"
 			(at 266.7 12.7 270)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7430,8 +6914,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR205")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR206")
 					(unit 1)
 				)
 			)
@@ -7445,8 +6929,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "95da4120-36e8-59a5-8b9a-d68314b8e137")
-		(property "Reference" "#PWR207"
+		(uuid "dff1c653-7e76-5419-bfeb-656d8f1cb185")
+		(property "Reference" "#PWR208"
 			(at 88.9 -30.48 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7496,8 +6980,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR207")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR208")
 					(unit 1)
 				)
 			)
@@ -7511,8 +6995,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "c56b5dd2-868c-533b-a8dd-430d15fcf84a")
-		(property "Reference" "#PWR209"
+		(uuid "2041e49c-6c43-5b23-b6cf-760f99a90ba8")
+		(property "Reference" "#PWR210"
 			(at 88.9 25.4 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7562,8 +7046,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR209")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR210")
 					(unit 1)
 				)
 			)
@@ -7577,8 +7061,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "fa540634-3017-5829-a601-563e69a9b36d")
-		(property "Reference" "#PWR211"
+		(uuid "babb60fc-57d7-564e-9d07-0e775e32b169")
+		(property "Reference" "#PWR212"
 			(at 109.22 11.43 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7628,8 +7112,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR211")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR212")
 					(unit 1)
 				)
 			)
@@ -7643,8 +7127,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "354f2013-f3b9-50e3-8077-5255d07394dd")
-		(property "Reference" "#PWR213"
+		(uuid "d9ab73cb-0d6d-52f5-961b-4753393be1e2")
+		(property "Reference" "#PWR214"
 			(at 109.22 29.21 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7694,8 +7178,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR213")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR214")
 					(unit 1)
 				)
 			)
@@ -7709,8 +7193,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "2e8ff7fe-b224-56b6-9656-d6d4fdde132d")
-		(property "Reference" "#PWR215"
+		(uuid "7c1a9b0a-d48f-5ef6-8a4c-2ffd7625dfce")
+		(property "Reference" "#PWR216"
 			(at 139.7 35.56 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7760,8 +7244,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR215")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR216")
 					(unit 1)
 				)
 			)
@@ -7775,8 +7259,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "134f9609-6495-56ca-88f3-9eeb63e10621")
-		(property "Reference" "#PWR217"
+		(uuid "afb0ea18-e2c6-530d-8ca9-e729ec540e41")
+		(property "Reference" "#PWR218"
 			(at 139.7 0 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7826,8 +7310,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR217")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR218")
 					(unit 1)
 				)
 			)
@@ -7841,8 +7325,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "30e93836-396b-53d8-8ea9-810d2400d261")
-		(property "Reference" "#PWR219"
+		(uuid "43088981-4b81-58a9-a179-a8cca18dcafb")
+		(property "Reference" "#PWR220"
 			(at 160.02 19.05 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7892,8 +7376,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR219")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR220")
 					(unit 1)
 				)
 			)
@@ -7907,8 +7391,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "58fb46ec-f28e-5568-9db9-e8f46b54d926")
-		(property "Reference" "#PWR221"
+		(uuid "a60f2cc9-f81d-5d5c-829f-e60f4cfb89da")
+		(property "Reference" "#PWR222"
 			(at 172.72 36.83 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7958,8 +7442,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR221")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR222")
 					(unit 1)
 				)
 			)
@@ -7973,8 +7457,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "10e18cca-b006-579a-88e4-e8671b02f9b6")
-		(property "Reference" "#PWR223"
+		(uuid "891c3546-661c-5ce7-864b-201d384709f5")
+		(property "Reference" "#PWR224"
 			(at 200.66 0 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8024,8 +7508,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR223")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR224")
 					(unit 1)
 				)
 			)
@@ -8039,8 +7523,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "286887ea-cca2-561f-a7e3-dafcd974ae86")
-		(property "Reference" "#PWR225"
+		(uuid "008ff0ba-cb0e-5fa0-90b3-2c9e5e6c6405")
+		(property "Reference" "#PWR226"
 			(at 200.66 -30.48 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8090,8 +7574,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR225")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR226")
 					(unit 1)
 				)
 			)
@@ -8105,8 +7589,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "47e8ee2a-727b-59d9-80e0-e198c76f8e43")
-		(property "Reference" "#PWR227"
+		(uuid "78b4c7fe-663d-5a3d-962f-2f258bab03cf")
+		(property "Reference" "#PWR228"
 			(at 139.7 2.54 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8156,8 +7640,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR227")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR228")
 					(unit 1)
 				)
 			)
@@ -8171,8 +7655,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "4057b9cb-749c-5b45-a8c0-5209cc2b8a95")
-		(property "Reference" "#PWR229"
+		(uuid "6c2c72e8-db6a-51ed-916e-faa9b942ad4f")
+		(property "Reference" "#PWR230"
 			(at 139.7 -27.94 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8222,8 +7706,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR229")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR230")
 					(unit 1)
 				)
 			)
@@ -8237,8 +7721,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "dc1f0073-6a5b-5bc4-806a-9e27688c67bc")
-		(property "Reference" "#PWR231"
+		(uuid "cc098804-e9bc-5505-b781-2b802432535b")
+		(property "Reference" "#PWR232"
 			(at 20.32 -41.91 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8288,8 +7772,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR231")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR232")
 					(unit 1)
 				)
 			)
@@ -8303,8 +7787,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "22973ebc-6a14-5e4c-8883-741533dfc9c4")
-		(property "Reference" "#PWR233"
+		(uuid "9f52f5b1-fa32-5658-b5f4-2eac0cd565b4")
+		(property "Reference" "#PWR234"
 			(at 20.32 -34.29 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8354,8 +7838,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR233")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR234")
 					(unit 1)
 				)
 			)
@@ -8369,8 +7853,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "096a0528-1d2c-5f0c-960e-947a3f402e40")
-		(property "Reference" "#PWR235"
+		(uuid "1e255ea6-0336-5761-82e9-88a1de667b22")
+		(property "Reference" "#PWR236"
 			(at 35.56 -41.91 180)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8420,8 +7904,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR235")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR236")
 					(unit 1)
 				)
 			)
@@ -8435,8 +7919,8 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "9658d4b6-f7ae-5788-a828-7f273f909126")
-		(property "Reference" "#PWR237"
+		(uuid "b4ba527a-cd05-52ff-8067-fa2d6c4bd201")
+		(property "Reference" "#PWR238"
 			(at 35.56 -34.29 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -8486,8 +7970,8 @@
 		)
 		(instances
 			(project "modulsockel_vorschau"
-				(path "/5e362e48-895c-4b31-b63d-057cf69d0536"
-					(reference "#PWR237")
+				(path "/a7103c62-fb72-452a-bde0-aca1e23da6c8"
+					(reference "#PWR238")
 					(unit 1)
 				)
 			)

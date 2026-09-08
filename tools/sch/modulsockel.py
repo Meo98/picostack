@@ -72,14 +72,25 @@ Inhalt (mit_flipflop=True, der Normalfall fuer ein Modul):
         Kennwiderstaende, deren Wert den Modultyp verraet (stack_spec.
         ID_WIDERSTAENDE) -- Wert wird je Modultyp in dessen eigener
         Stueckliste gesetzt, hier nur als Platzhalter eingetragen.
-  J100  Stapelstecker 2x20 (STECKER_STAPEL) -- EIN Bauteil, seit der
-        Umstellung auf den durchgehenden Stift kein Buchse/Stift-Paar
-        mehr. Pin-Rollen kommen ausschliesslich aus stack_spec.PIN_ROLLE.
+  J100/J105  Stapelstecker (STECKER_STAPEL) -- seit v2 ZWEI 1x20-Buchsen-
+        reihen statt eines einzelnen 2x20-Blocks (stack_spec.py,
+        "v2: der Pico ist der Stapel"): J100 traegt Pico-Pin 1..20
+        (STECKER_POS["stapel_links"]), J105 Pico-Pin 21..40
+        (STECKER_POS["stapel_rechts"]). Pin-Rollen kommen weiterhin
+        ausschliesslich aus stack_spec.PIN_ROLLE, nur die Formel, welcher
+        footprint-lokale Kontakt welchen Pico-Pin traegt, ist jetzt
+        zweigeteilt -- s. _stapelstecker()-Docstring.
   J101/J102  Kettenstecker (STECKER_KETTE), Buchse oben / Stift unten --
         dieser EINE Stecker muss die Kette auftrennen koennen und bleibt
         deshalb ein normales, nicht durchgehendes Paar.
   J103/J104  Leistungsstecker, durchgereicht (Buchse oben / Stift unten,
         gleiche Familie wie der urspruengliche Signalstecker).
+  J95/J96  Randpads (stack_spec.RANDPADS, v2) -- unbestueckte THT-Loet-
+        pads an der unteren Plattenkante fuer die 18 freien GPIO plus
+        2x 3V3/2x GND, s. randpads() weiter unten. Kein Pin-Rollen-Bezug
+        zu J100..J104: randpads() ist ein eigener, von einbauen()
+        UNABHAENGIGER Aufruf (s. dort), damit ein Aufrufer selbst
+        entscheidet, ob sein Board die Kante braucht.
 
 mit_flipflop=False (die Sockelplatine, Aufgabe 4) laesst U100..U103 und
 alle Kennwiderstaende weg -- der Sockel ist kein Modul, hat keinen
@@ -109,7 +120,13 @@ FP_SOT353 = "Package_TO_SOT_SMD:SOT-353_SC-70-5"
 # Ausgang) + VCC + GND). Verifiziert auf der LCSC-Produktseite
 # (lcsc.com/product-detail/C206109.html): Gehaeuse "VSSOP-8-0.5mm".
 FP_VSSOP8 = "Package_SO:VSSOP-8_2.3x2mm_P0.5mm"
-FP_HDR_2X20 = "Connector_PinHeader_2.54mm:PinHeader_2x20_P2.54mm_Vertical"
+# v2: der 2x20-Block (FP_HDR_2X20) ist Geschichte -- zwei 1x20-
+# Buchsenreihen ersetzen ihn (S.STECKER_POS["stapel_links"/"stapel_rechts"]),
+# in echter Pico-Geometrie statt freiem 2,54-mm-Raster. Footprints kommen
+# jetzt AUS DEM VERTRAG (nicht mehr lokal dupliziert) -- genau die
+# Forderung dieser Aufgabe, "footprints from the contract entry".
+FP_STAPEL_LINKS = S.STECKER_POS["stapel_links"]["footprints"][0]
+FP_STAPEL_RECHTS = S.STECKER_POS["stapel_rechts"]["footprints"][0]
 # Ketten- und Leistungsstecker sind seit Aufgabe 5e (2026-08-31)
 # SMD-PAARE: Buchse oben, Stiftleiste unten, am selben Ort. Zwei
 # bedrahtete Haelften am selben Ort brauchten dieselben Bohrungen und
@@ -218,65 +235,146 @@ def _load_libs(sch):
     sch.lib("74xGxx:74LVC1G175", "74xGxx.kicad_sym", "74LVC1G175")
     sch.lib("74xGxx:74LVC2G00", "74xGxx.kicad_sym", "74LVC2G00", multiunit=True)
     sch.lib("74xGxx:74LVC1G08", "74xGxx.kicad_sym", "74LVC1G08")
-    sch.lib("Connector_Generic:Conn_02x20_Odd_Even", "Connector_Generic.kicad_sym",
-            "Conn_02x20_Odd_Even")
+    sch.lib("Connector_Generic:Conn_01x20", "Connector_Generic.kicad_sym", "Conn_01x20")
     sch.lib("Connector_Generic:Conn_01x02", "Connector_Generic.kicad_sym", "Conn_01x02")
     sch.lib("Connector_Generic:Conn_02x02_Odd_Even", "Connector_Generic.kicad_sym",
             "Conn_02x02_Odd_Even")
 
 
-def _stapelstecker(sch, ref, ox, oy, frei_durchreichen=False):
-    """J100/J2: der 2x20-Stapelstecker, Pin fuer Pin aus stack_spec.PIN_ROLLE.
+# Schematischer x-Abstand zwischen den beiden 1x20-Reihen im Schaltplan
+# -- rein optisch, damit die Symbole sich nicht ueberlappen. Die reale
+# 17,78-mm-Pico-Geometrie (Reihenabstand) gilt fuers PCB-Layout
+# (stack_spec.STECKER_POS-Kommentar), nicht fuer diese Zeichnung.
+STAPEL_SCH_ABSTAND = 30.48
 
-    frei_durchreichen=False (Vorgabe, jedes Modul -- J100): freie GPIO
-    bleiben no_connect. Ein Modul, das einen freien GPIO tatsaechlich
-    braucht, verdrahtet ihn selbst in seinem eigenen Schaltplan -- eine
-    stumme Stichleitung mit demselben Label wie auf der Sockelplatine
-    waere sonst auf jedem Modul unbenutzter Ballast.
 
-    frei_durchreichen=True (nur die Sockelplatine, J2): dieselben Pins
-    werden stattdessen unter ihrem GPIO-Namen (PIN_GPIO_NAME) auf ein
-    Label gelegt. Der Sockel ist die einzige Platine, die den Pico
-    selbst traegt -- reicht er einen freien GPIO nicht durch, erreicht
-    ihn ueberhaupt kein Modul im Stapel (Befund 1, Aufgabe-4-Fix-1:
-    der Stapelstecker leitet zwar mechanisch durch, aber ohne einen
-    Draht vom Pico dorthin haengt an dem Leiter nichts). Absichtlich
-    verschieden von der Modulseite, kein Versehen -- NICHT durch
-    Vereinheitlichen "aufraeumen": s. sockelplatine.py fuer die
-    Gegenseite dieser Entscheidung.
+def _stapelstecker(sch, ref_links, ref_rechts, ox, oy, frei_durchreichen=False):
+    """J100/J105 (Modul) bzw. die Sockel-Entsprechung: die beiden
+    1x20-Buchsenreihen aus stack_spec.STECKER_POS["stapel_links"/
+    "stapel_rechts"], Pin fuer Pin aus stack_spec.PIN_ROLLE.
+
+    v1 hatte hier EINEN 2x20-Stecker (Kontakt k == Pico-Pin k fuer den
+    gesamten Block); v2 zerlegt ihn in zwei physische 1x20-Reihen in
+    echter Pico-Geometrie (stack_spec.py, "v2: der Pico ist der Stapel").
+    Die Netzbelegung JEDES Pico-Pins bleibt dabei woertlich wie in v1 --
+    nur die Formel, welcher footprint-lokale Kontakt welchen Pico-Pin
+    traegt, ist jetzt zweigeteilt (dieselbe Formel, die stack_spec.py bei
+    STECKER_POS["stapel_rechts"] dokumentiert):
+        ref_links,  Kontakt k (1..20) -> Pico-Pin k
+        ref_rechts, Kontakt k (1..20) -> Pico-Pin k + 20
+
+    frei_durchreichen=False (Vorgabe, jedes Modul -- J100/J105): freie
+    GPIO bleiben no_connect. Ein Modul, das einen freien GPIO
+    tatsaechlich braucht, verdrahtet ihn selbst in seinem eigenen
+    Schaltplan -- eine stumme Stichleitung mit demselben Label wie auf
+    der Sockelplatine waere sonst auf jedem Modul unbenutzter Ballast.
+
+    frei_durchreichen=True (bisher nur die Sockelplatine): dieselben
+    Pins werden stattdessen unter ihrem GPIO-Namen (PIN_GPIO_NAME) auf
+    ein Label gelegt -- GENAU das Netz, das modulsockel.randpads() an
+    der unteren Plattenkante wieder aufgreift (s. dort): zwei
+    sch.netz()-Aufrufe mit demselben Namen verbinden sich elektrisch,
+    auch ohne gemeinsamen Draht (gen.Schaltplan.netz-Docstring). Ein
+    Board, das seine Randpads tatsaechlich speisen will, ruft deshalb
+    BEIDE Funktionen mit frei_durchreichen=True auf.
     """
-    sch.bauteil(ref, "Connector_Generic:Conn_02x20_Odd_Even", (ox, oy),
-                "Stapelstecker 2x20", FP_HDR_2X20, rot=0,
+    sch.bauteil(ref_links, "Connector_Generic:Conn_01x20", (ox, oy),
+                "Stapelstecker links, Pico-Pins 1..20 (Buchse)",
+                FP_STAPEL_LINKS, rot=0,
                 roff=(-5.08, 25.4), voff=(-5.08, 27.94))
-    for pin in range(1, 41):
-        rolle = S.PIN_ROLLE[pin]
-        richtung = "L" if pin % 2 else "R"
-        if rolle == "SEL_OUT":
-            # SEL_OUT ist seit Befund 2 (Aufgabe-4-Fix-1) eine echte
-            # Vertragsrolle (stack_spec.RESERVIERT), aber KEIN Pin
-            # dieses 2x20-Stapelsteckers -- die Auswahlkette laeuft
-            # ueber den eigenen STECKER_KETTE (stack_spec.py). Deshalb
-            # ausdruecklich no_connect statt eines STECKER_NETZE[rolle]-
-            # Nachschlags: STECKER_NETZE fuehrt "SEL_OUT" absichtlich
-            # nicht (s. dort), ein unveraenderter Nachschlag liefe hier
-            # in einen KeyError.
-            sch.nc(ref, str(pin))
-        elif rolle == "frei":
-            if frei_durchreichen and pin in PIN_GPIO_NAME:
-                sch.netz(ref, str(pin), richtung, PIN_GPIO_NAME[pin])
+    sch.bauteil(ref_rechts, "Connector_Generic:Conn_01x20",
+                (ox + STAPEL_SCH_ABSTAND, oy),
+                "Stapelstecker rechts, Pico-Pins 21..40 (Buchse)",
+                FP_STAPEL_RECHTS, rot=0,
+                roff=(-5.08, 25.4), voff=(-5.08, 27.94))
+
+    for ref, richtung, versatz in ((ref_links, "L", 0), (ref_rechts, "R", 20)):
+        for kontakt in range(1, 21):
+            pin = kontakt + versatz    # footprint-lokaler Kontakt -> Pico-Pin
+            rolle = S.PIN_ROLLE[pin]
+            if rolle == "SEL_OUT":
+                # SEL_OUT ist seit Befund 2 (Aufgabe-4-Fix-1) eine echte
+                # Vertragsrolle (stack_spec.RESERVIERT), aber KEIN Pin
+                # dieses Stapelsteckers -- die Auswahlkette laeuft ueber
+                # den eigenen STECKER_KETTE (stack_spec.py). Deshalb
+                # ausdruecklich no_connect statt eines STECKER_NETZE[rolle]-
+                # Nachschlags: STECKER_NETZE fuehrt "SEL_OUT" absichtlich
+                # nicht (s. dort), ein unveraenderter Nachschlag liefe hier
+                # in einen KeyError.
+                sch.nc(ref, str(kontakt))
+            elif rolle == "frei":
+                if frei_durchreichen and pin in PIN_GPIO_NAME:
+                    sch.netz(ref, str(kontakt), richtung, PIN_GPIO_NAME[pin])
+                else:
+                    sch.nc(ref, str(kontakt))
+            elif not S.IST_BELEGBAR(pin):
+                # Bis 2026-09-01 stand hier die Liste
+                # ("3V3_EN", "VSYS", "VBUS", "RUN", "ADC_VREF") als Literal.
+                # Fuer RUN und ADC_VREF war sie begruendet, fuer die drei
+                # anderen nicht -- und der Vertrag wusste von keiner davon.
+                # Jetzt kommt sie aus stack_spec.NICHT_BELEGBAR, samt
+                # Begruendung je Pin, und tools/vertrag_doku.py zeigt sie.
+                # tests/test_modulsockel.py haelt beide Seiten zusammen.
+                sch.nc(ref, str(kontakt))
             else:
-                sch.nc(ref, str(pin))
-        elif not S.IST_BELEGBAR(pin):
-            # Bis 2026-09-01 stand hier die Liste
-            # ("3V3_EN", "VSYS", "VBUS", "RUN", "ADC_VREF") als Literal.
-            # Fuer RUN und ADC_VREF war sie begruendet, fuer die drei
-            # anderen nicht -- und der Vertrag wusste von keiner davon.
-            # Jetzt kommt sie aus stack_spec.NICHT_BELEGBAR, samt
-            # Begruendung je Pin, und tools/vertrag_doku.py zeigt sie.
-            # tests/test_modulsockel.py haelt beide Seiten zusammen.
-            sch.nc(ref, str(pin))
-        else:
-            sch.netz(ref, str(pin), richtung, STECKER_NETZE[rolle])
+                sch.netz(ref, str(kontakt), richtung, STECKER_NETZE[rolle])
+
+
+FP_RANDPAD_GPIO = "Connector_PinHeader_2.54mm:PinHeader_1x18_P2.54mm_Vertical"
+FP_RANDPAD_VERSORGUNG = "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
+
+
+def randpads(sch):
+    """J95/J96: die 22 Loetpads an der unteren Plattenkante (stack_spec.
+    RANDPADS, v2) -- UNBESTUECKT (dnp=True): es sind reine THT-Kontakt-
+    flaechen fuer ein Multimeter oder eine eigene Draht-/Pfostenverbindung,
+    kein zu bestueckender Steckverbinder. Die Silk-Beschriftung je Pad
+    ist Sache des Layouts (Aufgabe 6/7 dieser Etappe, s. Aufgabenbrief);
+    hier zaehlt nur die Netzzuordnung.
+
+    UNABHAENGIG von einbauen() -- wer die Randpads tatsaechlich gespeist
+    haben will, ruft zusaetzlich _stapelstecker(..., frei_durchreichen=
+    True) (oder einbauen() mit einem entsprechenden Schalter, sobald eine
+    Folgeaufgabe das braucht) im selben Schaltplan auf: zwei
+    sch.netz()-Aufrufe mit demselben Namen verbinden sich elektrisch,
+    auch ohne gemeinsamen Draht (s. gen.Schaltplan.netz-Docstring) --
+    "GP8" an J100 Kontakt 11 UND "GP8" an J95 Kontakt 1 sind damit
+    dasselbe Netz, ohne dass randpads() irgendetwas ueber J100/J105
+    wissen muss.
+
+    Aufgeteilt in zwei Bauteile statt einer 22er-Reihe, wie im
+    Aufgabenbrief vorgeschlagen: J95 traegt die 18 GPIO-Pads (RANDPADS-
+    Eintraege mit Label "GPxx"), J96 die vier Versorgungspads (2x 3V3,
+    2x GND) -- in genau der Reihenfolge, in der stack_spec.RANDPADS sie
+    fuehrt, nur in zwei Gruppen zerlegt statt einer.
+    """
+    sch.lib("Connector_Generic:Conn_01x18", "Connector_Generic.kicad_sym", "Conn_01x18")
+    sch.lib("Connector_Generic:Conn_01x04", "Connector_Generic.kicad_sym", "Conn_01x04")
+
+    gpio = [(pin, label) for pin, label, _xy in S.RANDPADS if label.startswith("GP")]
+    versorgung = [(pin, label) for pin, label, _xy in S.RANDPADS if not label.startswith("GP")]
+    assert len(gpio) == 18 and len(versorgung) == 4, (
+        "S.RANDPADS hat nicht mehr 18 GPIO- + 4 Versorgungs-Eintraege -- "
+        "randpads() muss der neuen Aufteilung angepasst werden")
+
+    # Feste, rein kosmetische Schaltplan-Lage, weit unterhalb von
+    # einbauen()s Bloecken (die hoechsten reichen bis knapp ueber
+    # oy=60, s. _stapelstecker()), damit beide Aufrufe im selben Blatt
+    # nicht kollidieren.
+    ox, oy = 0.0, -101.6
+    sch.bauteil("J95", "Connector_Generic:Conn_01x18", (ox, oy),
+                "Randpads GPIO, unbestueckt (THT-Loetpad)", FP_RANDPAD_GPIO,
+                rot=0, dnp=True, roff=(-5.08, 22.86), voff=(-5.08, 25.4))
+    for kontakt, (_pin, label) in enumerate(gpio, start=1):
+        sch.netz("J95", str(kontakt), "L", label)
+
+    sch.bauteil("J96", "Connector_Generic:Conn_01x04",
+                (ox + STAPEL_SCH_ABSTAND, oy),
+                "Randpads Versorgung: 2x 3V3 + 2x GND, unbestueckt "
+                "(THT-Loetpad)", FP_RANDPAD_VERSORGUNG,
+                rot=0, dnp=True, roff=(-5.08, 5.08), voff=(-5.08, 7.62))
+    for kontakt, (_pin, label) in enumerate(versorgung, start=1):
+        sch.netz("J96", str(kontakt), "R", label)
 
 
 def _kettenstecker(sch, ref_oben, ref_unten, ox, oy):
@@ -390,7 +488,7 @@ def einbauen(sch, ox, oy, mit_flipflop=True, zusatz_pins=None):
     sch.bauteil("#FLG102", "power:PWR_FLAG", (ox - 20.32, oy + 30.48), "PWR_FLAG", "")
     sch.netz("#FLG102", "1", "D", "3V3")
 
-    _stapelstecker(sch, "J100", ox, oy + 38.1)
+    _stapelstecker(sch, "J100", "J105", ox, oy + 38.1)
     _kettenstecker(sch, "J101", "J102", ox, oy - 20.32)
     _leistungsstecker(sch, "J103", "J104", ox + 254.0, oy + 20.32)
 

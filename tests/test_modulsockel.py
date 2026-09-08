@@ -4,13 +4,26 @@ Der Block sitzt auf jedem Modul. Ein Fehler darin ist ein Fehler in
 jedem kuenftigen Modul -- deshalb wird er gegen tools/stack_spec.py
 geprueft und nicht gegen sich selbst.
 
-Stand 2026-08-31: SEL laeuft nicht mehr ueber den 2x20-Stapelstecker
-(der ist seit der Umstellung auf den durchgehenden Stift EIN Bauteil
-je Modul, kein Buchse/Stift-Paar mehr), sondern ueber den eigenen,
-zweipoligen Kettenstecker (stack_spec.STECKER_KETTE). Deshalb ist "SEL"
-absichtlich NICHT in stack_spec.RESERVIERT und darf auch nicht in
+Stand 2026-08-31: SEL laeuft nicht mehr ueber den Stapelstecker (der ist
+seit der Umstellung auf den durchgehenden Stift EIN Bauteil je Reihe,
+kein Buchse/Stift-Paar mehr), sondern ueber den eigenen, zweipoligen
+Kettenstecker (stack_spec.STECKER_KETTE). Deshalb ist "SEL" absichtlich
+NICHT in stack_spec.RESERVIERT und darf auch nicht in
 modulsockel.STECKER_NETZE auftauchen -- die Pruefung unten spiegelt
 das.
+
+Stand 2026-09-08 (Aufgabe 4, v2): der 2x20-Block ist Geschichte. Der
+Stapelstecker ist jetzt J100/J105, zwei 1x20-Buchsenreihen in echter
+Pico-Geometrie (stack_spec.STECKER_POS["stapel_links"/"stapel_rechts"]);
+footprint-lokale Kontakte 1..20 tragen Pico-Pin 1..20 (J100) bzw. 21..40
+(J105, Kontakt = Pico-Pin - 20). Neu dazugekommen ist randpads()
+(J95/J96): unbestueckte Loetpads an der unteren Plattenkante fuer die
+18 freien GPIO plus 2x 3V3/2x GND (stack_spec.RANDPADS) -- die alten
+2x20-spezifischen Geometrie-Pruefungen dieser Datei sind ersatzlos
+entfallen (das Vorbild dafuer ist jetzt tests/test_stack_spec.py, das
+die reale Flaechenrechnung gegen den Vertrag haelt); dieser Test prueft
+nur noch, dass der GENERATOR (modulsockel.py) die Rollen/Netze richtig
+auf die zwei Reihen und die Randpads verteilt.
 
 Zwei Pruefungen unten (Polaritaet an NRST, ERC-Lauf) bauen den Block
 tatsaechlich per `modulsockel.einbauen()` auf, was ueber `gen.py` ->
@@ -135,13 +148,17 @@ else:
     # Gegenprobe zu Befund 1/2 (Aufgabe-4-Fix-1, s. tests/
     # test_sockelplatine.py): die Sockelplatine reicht freie GPIO durch
     # und behandelt SEL_OUT als Vertragsrolle, die Modulseite
-    # (modulsockel._stapelstecker(), hier ueber J100) bleibt dabei
-    # ausdruecklich unveraendert -- beide Faelle no_connect.
-    check("J100 Pin 4 (SEL_OUT) bleibt no_connect",
+    # (modulsockel._stapelstecker(), hier ueber J100/J105) bleibt dabei
+    # ausdruecklich unveraendert -- beide Faelle no_connect. v2: Pico-Pin
+    # 4 und die freien Pins <= 20 sitzen auf J100 (Kontakt == Pico-Pin,
+    # s. _stapelstecker()-Docstring), die freien Pins > 20 auf J105
+    # (Kontakt == Pico-Pin - 20).
+    check("J100 Kontakt 4 (Pico-Pin 4, SEL_OUT) bleibt no_connect",
           _sch.pinpos("J100", "4") in _sch.NOCONN, True)
-    for _p in ("11", "12", "20", "29", "31", "34"):
-        check("J100 Pin %s (freier GPIO) bleibt no_connect" % _p,
-              _sch.pinpos("J100", _p) in _sch.NOCONN, True)
+    for _ref, _p in (("J100", "11"), ("J100", "12"), ("J100", "20"),
+                      ("J105", "9"), ("J105", "11"), ("J105", "14")):
+        check("%s Kontakt %s (freier GPIO) bleibt no_connect" % (_ref, _p),
+              _sch.pinpos(_ref, _p) in _sch.NOCONN, True)
 
     # ------------------------------------------------------------- ERC
     # Aufgabe 3, Nachtrag (Pruefer-Befund #2): drei echte Fehler (Phantom-
@@ -245,33 +262,119 @@ check("IST_BELEGBAR stimmt mit NICHT_BELEGBAR ueberein",
 # beschriftet -- ein erster Versuch dieser Pruefung lief genau darauf
 # hinein und stand fuenfmal falsch rot.
 class _Mitschrift:
-    """Nimmt entgegen, was _stapelstecker() verdrahten wuerde."""
+    """Nimmt entgegen, was _stapelstecker()/randpads() verdrahten wuerden.
+
+    v2: zwei Bauteile (stapel_links/stapel_rechts, spaeter auch J95/J96)
+    teilen sich footprint-lokale Kontaktnummern (1..20 je Reihe) -- ohne
+    den `ref` mitzuschreiben waeren Kontakt 5 von JL und Kontakt 5 von JR
+    ununterscheidbar. Deshalb ist der Schluessel jetzt (ref, Kontakt),
+    nicht mehr nur der Kontakt wie in der v1-Fassung dieses Tests."""
 
     def __init__(self):
         self.netze, self.offen = {}, set()
+
+    def lib(self, *a, **k):
+        pass
 
     def bauteil(self, *a, **k):
         pass
 
     def netz(self, ref, num, richtung, name, laenge=None):
-        self.netze[int(num)] = name
+        self.netze[(ref, int(num))] = name
 
     def nc(self, ref, num):
-        self.offen.add(int(num))
+        self.offen.add((ref, int(num)))
 
 
-for _name, _durchreichen in (("Modul J100", False), ("Sockel J2", True)):
+def _pico_pin_status(m, ref_links="JL", ref_rechts="JR"):
+    """(ref, Kontakt) -> Pico-Pin, nach der im Vertrag/Docstring
+    festgehaltenen Formel (Kontakt k auf ref_links == Pico-Pin k,
+    Kontakt k auf ref_rechts == Pico-Pin k+20) -- unabhaengig von
+    _stapelstecker()s eigener Implementierung noch einmal hingeschrieben,
+    damit dieser Test eine wirkliche Gegenprobe ist, keine Tautologie."""
+    aus = {}
+    for kontakt in range(1, 21):
+        for ref, versatz in ((ref_links, 0), (ref_rechts, 20)):
+            pico = kontakt + versatz
+            schluessel = (ref, kontakt)
+            if schluessel in m.netze:
+                aus[pico] = ("netz", m.netze[schluessel])
+            elif schluessel in m.offen:
+                aus[pico] = ("offen", None)
+    return aus
+
+
+for _name, _durchreichen in (("Modul (J100/J105)", False),
+                              ("Sockel (frei_durchreichen)", True)):
     _m = _Mitschrift()
-    modulsockel._stapelstecker(_m, "JX", 0.0, 0.0,
+    modulsockel._stapelstecker(_m, "JL", "JR", 0.0, 0.0,
                                frei_durchreichen=_durchreichen)
-    check("%s: alle 40 Pins entschieden" % _name,
-          sorted(set(_m.netze) | _m.offen), list(range(1, 41)))
+    _status = _pico_pin_status(_m)
+    check("%s: alle 40 Pico-Pins entschieden (20 je Reihe)" % _name,
+          sorted(_status), list(range(1, 41)))
+    _offen = {p for p, (art, _n) in _status.items() if art == "offen"}
     check("%s: nicht benutzbare Pins sind offen" % _name,
-          sorted(p for p in S.NICHT_BELEGBAR if p not in _m.offen), [])
+          sorted(p for p in S.NICHT_BELEGBAR if p not in _offen), [])
     check("%s: kein offener Pin ohne Grund im Vertrag" % _name,
-          sorted(p for p in _m.offen
+          sorted(p for p in _offen
                  if p not in S.NICHT_BELEGBAR
                  and S.PIN_ROLLE[p] not in ("frei", "SEL_OUT")), [])
+
+# Und die Geometrie selbst: Pico-Pin 1..20 sitzt auf der LINKEN Reihe
+# (Kontakt == Pico-Pin), 21..40 auf der RECHTEN (Kontakt == Pico-Pin-20)
+# -- das ist die "Mapping-Tabelle" aus dem Aufgabenbrief, hier als
+# Pruefung statt nur als Kommentar.
+_mg0 = _Mitschrift()
+modulsockel._stapelstecker(_mg0, "JL", "JR", 0.0, 0.0)
+_orte = {}
+for (_ref, _k) in list(_mg0.netze) + list(_mg0.offen):
+    _orte.setdefault(_ref, set()).add(_k)
+check("JL (stapel_links) traegt genau die Kontakte 1..20",
+      sorted(_orte.get("JL", set())), list(range(1, 21)))
+check("JR (stapel_rechts) traegt genau die Kontakte 1..20",
+      sorted(_orte.get("JR", set())), list(range(1, 21)))
+
+# --- randpads(): jeder RANDPADS-Eintrag hat genau einen Pad-Pin --------
+_mr = _Mitschrift()
+modulsockel.randpads(_mr)
+check("randpads(): 22 Eintraege im Vertrag (18 GPIO + 2x 3V3 + 2x GND)",
+      len(S.RANDPADS), 22)
+check("randpads(): kein Pad-Pin bleibt offen (alle sind Loetpads mit Netz)",
+      _mr.offen, set())
+check("randpads(): so viele verdrahtete Pad-Pins wie RANDPADS-Eintraege",
+      len(_mr.netze), len(S.RANDPADS))
+check("randpads(): die verdrahteten Netznamen sind GENAU die "
+      "RANDPADS-Labels (mit Wiederholung, GND/3V3 kommen doppelt vor)",
+      sorted(_mr.netze.values()),
+      sorted(label for _pin, label, _xy in S.RANDPADS))
+
+# --- Jeder freie Stapelpin erreicht sein Randpad -----------------------
+# frei_durchreichen=True UND randpads() im selben (fiktiven) Blatt:
+# Label-Gleichheit IST die elektrische Verbindung (zwei sch.netz()-
+# Aufrufe mit demselben Namen verbinden sich, auch ohne gemeinsamen
+# Draht -- s. gen.Schaltplan.netz-Docstring). Es genuegt deshalb ein
+# Netznamen-Abgleich zwischen den beiden unabhaengig aufgerufenen
+# Funktionen, kein echter Drahtverfolg.
+_mg = _Mitschrift()
+modulsockel._stapelstecker(_mg, "JL", "JR", 0.0, 0.0, frei_durchreichen=True)
+modulsockel.randpads(_mg)
+_frei_pico = {p for p, r in S.PIN_ROLLE.items() if r == "frei"}
+_stapel_status = _pico_pin_status(_mg)
+_stapel_gp_netz = {p: art_name[1] for p, art_name in _stapel_status.items()
+                    if p in _frei_pico}
+check("jeder freie Pico-Pin traegt bei frei_durchreichen=True ein Netz "
+      "(kein 'offen' mehr)",
+      sorted(p for p, n in _stapel_gp_netz.items() if n is None), [])
+check("jedes GPxx-Netz eines freien Stapelpins traegt sein "
+      "PIN_GPIO_NAME und ist damit dasselbe Netz wie ein Randpad-Label",
+      sorted((p, n) for p, n in _stapel_gp_netz.items()
+             if n != modulsockel.PIN_GPIO_NAME[p]), [])
+_rand_gp_labels = {label for _pin, label, _xy in S.RANDPADS
+                    if label.startswith("GP")}
+check("jedes am Stapelstecker verdrahtete GPxx-Netz hat ein "
+      "gleichnamiges Randpad", set(_stapel_gp_netz.values()) - _rand_gp_labels, set())
+check("jedes GPxx-Randpad hat einen gleichnamigen freien Stapelpin",
+      _rand_gp_labels - set(_stapel_gp_netz.values()), set())
 
 if fails:
     print("FEHLGESCHLAGEN:")

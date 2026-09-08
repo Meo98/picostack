@@ -108,6 +108,7 @@ class Schaltplan:
         self._geladen = set()
 
         self.COMPS = []         # (ref, libid, pos, rot, wert, fp, roff, voff, einheit)
+        self.FELDER = []        # dict je COMPS-Eintrag (gleicher Index), s. bauteil()
         self.WIRES = []
         self.JUNCTIONS = []
         self.LABELS = []
@@ -173,7 +174,7 @@ class Schaltplan:
 
     # ---------------------------------------------------------- Bauteile
     def bauteil(self, ref, libid, pos, wert, footprint, rot=0, einheit=1,
-                roff=(0, 0), voff=(0, 0), dnp=False):
+                roff=(0, 0), voff=(0, 0), dnp=False, felder=None):
         """Platziert ein Bauteil. `einheit` waehlt bei Multi-Unit-Symbolen
         (siehe `lib(..., multiunit=True)`) die gezeichnete Teil-Einheit --
         fuer alle anderen Bauteile bleibt sie bei ihrem Vorgabewert 1.
@@ -189,12 +190,23 @@ class Schaltplan:
         DNP-Bauteil normal verdrahtet (nur die Bestueckung entfaellt) --
         das entspricht dem, was das Altprojekt fuer sein eigenes R10
         tatsaechlich in der .kicad_sch stehen hat (eigene Pruefung:
-        `(dnp yes)` bei sonst unveraenderter Verdrahtung)."""
+        `(dnp yes)` bei sonst unveraenderter Verdrahtung).
+
+        `felder`: optionales dict zusaetzlicher Symbol-Eigenschaften (z.B.
+        `{"LCSC": "C7830", "MPN": "..."}`), fuer Bauteile mit belegter
+        Stueckliste (Aufgabe 4, Vorbereitung fuer MPN/LCSC-Felder in
+        spaeteren Aufgaben). Genau wie `dnp` ein SEPARATER Speicher
+        (`self.FELDER`, parallel zu `self.COMPS`, gleicher Index) statt
+        eines weiteren COMPS-Feldes -- aus demselben Grund wie oben bei
+        `dnp` erklaert. Jede Eigenschaft wird wie "Footprint"/"Datasheet"
+        als eigene, versteckte `(property ...)` emittiert (s. `sym()` in
+        `_emit()`); `felder=None` (Vorgabe) aendert an der Ausgabe nichts."""
         if dnp:
             self.DNP.add(ref)
         self.COMPS.append((ref, libid, pos, rot, wert, footprint,
                             (pos[0] + roff[0], pos[1] + roff[1]),
                             (pos[0] + voff[0], pos[1] + voff[1]), einheit))
+        self.FELDER.append(dict(felder) if felder else {})
         return pos
 
     def _finde(self, ref, num=None):
@@ -336,7 +348,7 @@ class Schaltplan:
               '\t\t\t(justify left bottom)\n\t\t)\n\t\t(uuid "%s")\n\t)'
               % (txt, x, y, size, size, "\t\t\t\t(bold yes)\n" if bold else "", self._uuid()))
 
-        def sym(ref, libid, pos, rot, value, fp, rpos, vpos, einheit):
+        def sym(ref, libid, pos, rot, value, fp, rpos, vpos, einheit, felder=None):
             dnp_flag = "yes" if ref in self.DNP else "no"
             s = ['\t(symbol\n\t\t(lib_id "%s")\n\t\t(at %g %g %d)\n\t\t(unit %d)'
                  % (libid, pos[0], pos[1], rot, einheit),
@@ -344,11 +356,18 @@ class Schaltplan:
                  % dnp_flag,
                  '\t\t(uuid "%s")' % self._uuid()]
             hidden = ref.startswith("#")
+            felder_liste = [(k, v) for k, v in (felder or {}).items()]
             for pname, pval, ppos, hide in (
-                    ("Reference", ref, rpos, hidden),
-                    ("Value", value, vpos, hidden),
-                    ("Footprint", fp, pos, True),
-                    ("Datasheet", "", pos, True)):
+                    [("Reference", ref, rpos, hidden),
+                     ("Value", value, vpos, hidden),
+                     ("Footprint", fp, pos, True),
+                     ("Datasheet", "", pos, True)]
+                    # Zusatzfelder (felder=... an bauteil(), z.B. LCSC/MPN):
+                    # genau wie Footprint/Datasheet versteckte Eigenschaften
+                    # am Bauteilanker, keine eigene Platzierung -- die
+                    # Stueckliste liest sie ueber die Property, nicht das
+                    # Blatt.
+                    + [(k, v, pos, True) for k, v in felder_liste]):
                 s.append('\t\t(property "%s" "%s"\n\t\t\t(at %g %g %d)\n\t\t\t(show_name no)\n'
                          '\t\t\t(do_not_autoplace no)\n\t\t\t(effects\n\t\t\t\t(font\n'
                          '\t\t\t\t\t(size 1.27 1.27)\n\t\t\t\t)\n\t\t\t\t(justify left)\n%s\t\t\t)\n\t\t)'
@@ -359,8 +378,8 @@ class Schaltplan:
                      % (self.projekt, self.sheet_uuid, ref, einheit))
             return "\n".join(s)
 
-        for c in self.COMPS:
-            a(sym(*c))
+        for i, c in enumerate(self.COMPS):
+            a(sym(*c, felder=self.FELDER[i]))
         for libid, pos, rot, value in self.POWERS:
             self._u += 1
             ref = "#PWR%03d" % self._u
