@@ -14,17 +14,37 @@ def check(label, got, want):
         fails.append("{}: {!r} != {!r}".format(label, got, want))
 
 
+# --- v2: der Pico ist der Stapel (Aufgabe 2, TDD Schritt 1) ----------
+# Fuenf Pruefungen, woertlich aus dem Aufgabenzettel uebernommen, BEVOR
+# der Vertrag geaendert wird -- sie muessen zuerst rot sehen (S.
+# STECKER_POS["stapel"] existiert noch, S.VERTRAG_VERSION gibt es noch
+# nicht), sonst pruefen sie nichts.
+check("Vertragsversion 2", getattr(S, "VERTRAG_VERSION", 1), 2)
+check("Stapelreihen in Pico-Geometrie",
+      round(abs(S.STECKER_POS["stapel_links"]["mitte"][0]
+                - S.STECKER_POS["stapel_rechts"]["mitte"][0]), 2), 17.78)
+check("alter 2x20-Block ist weg", "stapel" in S.STECKER_POS, False)
+check("jeder freie Pin hat genau ein Randpad",
+      sorted(p for p, _, _ in S.RANDPADS if S.PIN_ROLLE.get(p) == "frei"),
+      sorted(p for p, r in S.PIN_ROLLE.items() if r == "frei"))
+check("Versorgungszusagen vorhanden",
+      S.VERSORGUNG["schutz_drain_an"], "PWR_IN")
+
 # --- Umriss und Lochbild ---
-check("Breite", S.BOARD_W, 64.0)
-check("Hoehe", S.BOARD_H, 60.0)
+# v2 (Aufgabe 1/2): 64x60 -> 75x65, hergeleitet in tools/platzprobe_v2.py
+# (s. Kommentar bei S.BOARD_W). Das Lochbild folgt derselben 4-mm-
+# Randlogik wie v1, nur auf das neue Mass angewendet: 75-2*4=67,
+# 65-2*4=57.
+check("Breite", S.BOARD_W, 75.0)
+check("Hoehe", S.BOARD_H, 65.0)
 check("vier M3", len(S.M3_HOLES), 4)
-check("Lochbild 56 mm", S.M3_HOLES[2][0] - S.M3_HOLES[0][0], 56.0)
-check("Lochbild 52 mm", S.M3_HOLES[1][1] - S.M3_HOLES[0][1], 52.0)
+check("Lochbild 67 mm", S.M3_HOLES[2][0] - S.M3_HOLES[0][0], 67.0)
+check("Lochbild 57 mm", S.M3_HOLES[1][1] - S.M3_HOLES[0][1], 57.0)
 
 # Alle vier Ecken einzeln, nicht nur zwei Differenzen: sonst darf die
 # vierte Bohrung irgendwo liegen und der Test merkt es nicht.
 check("Lochbild vollstaendig", sorted(S.M3_HOLES),
-      [(4.0, 4.0), (4.0, 56.0), (60.0, 4.0), (60.0, 56.0)])
+      [(4.0, 4.0), (4.0, 61.0), (71.0, 4.0), (71.0, 61.0)])
 
 # Masse, die die Spezifikation zusichert und die bisher niemand prueft.
 check("Eckenradius", S.CORNER_R, 3.0)
@@ -251,14 +271,22 @@ check("Stufen mindestens 3 % auseinander", min(abstaende) > 0.03, True)
 # schlagen an, sobald jemand einen Stecker verschiebt, ohne die Folgen
 # nachzurechnen.
 
-STECKER = ["stapel", "kette", "leistung"]
-check("drei Vertragsstecker", sorted(S.STECKER_POS), sorted(STECKER))
+# v2: aus drei Steckerplaetzen werden vier -- der 2x20-Block "stapel"
+# wird zu zwei 1x20-Reihen "stapel_links"/"stapel_rechts" (s.
+# STECKER_POS-Kommentar in stack_spec.py).
+STECKER = ["stapel_links", "stapel_rechts", "kette", "leistung"]
+check("vier Vertragsstecker", sorted(S.STECKER_POS), sorted(STECKER))
 
 # Jede eingetragene Flaeche wird aus Footprint-Hof, Pin-1-Lage und
 # Drehung nachgerechnet -- ein Zahlendreher in "flaeche" faellt damit
 # auf, statt still ein Layout zu vergiften.
-for name in STECKER + ["pico"]:
-    e = S.STECKER_POS[name] if name in S.STECKER_POS else S.PICO_POS
+#
+# v2: KEIN "pico"-Eintrag mehr (PICO_POS ist mit der Sockelplatine
+# entfallen, s. stack_spec.py-Kommentar bei "PICO_POS / ... gibt es in
+# v2 NICHT mehr") -- die vier STECKER_POS-Eintraege sind jetzt alles,
+# was hier nachzurechnen ist.
+for name in STECKER:
+    e = S.STECKER_POS[name]
     check("%s: Flaeche stimmt mit Footprint+Pin1+Drehung" % name,
           e["flaeche"], S.HOEFE(e["footprints"], e["pin1"], e["drehung"]))
     check("%s: Mitte stimmt mit der Flaeche" % name,
@@ -266,15 +294,12 @@ for name in STECKER + ["pico"]:
     check("%s: Drehung ist ein rechter Winkel" % name,
           e["drehung"] in (0, 90, 180, 270), True)
 
-# Der Antennen-Sperrbereich wird ebenso aus dem Pico-eigenen Mass
-# gedreht statt abgeschrieben.
-check("Antennen-Sperrbereich aus PICO_POS gerechnet",
-      S.ANTENNE_SPERRBEREICH,
-      S.LAGE(S.PICO_ANTENNE_HOF, S.PICO_POS["pin1"], S.PICO_POS["drehung"]))
-# 14,2 x 9,0 mm, um 90 Grad gedreht also 9,0 x 14,2.
-_a = S.ANTENNE_SPERRBEREICH
-check("Antennen-Sperrbereich ist 9,0 x 14,2 mm",
-      (round(_a[2] - _a[0], 2), round(_a[3] - _a[1], 2)), (9.0, 14.2))
+# v2: KEIN Antennen-Sperrbereich mehr in diesem Vertrag (s. Kommentar
+# oben) -- die zugehoerigen v1-Pruefungen (Antenne aus PICO_POS
+# gerechnet, Antenne gegen die Stecker, Antenne im Pico-Hof) entfallen
+# hier ersatzlos, nicht abgeschwaecht: es gibt in stack_spec.py nichts
+# mehr, wogegen sie noch pruefen koennten. Offener Punkt fuer eine
+# Folgeaufgabe, s. Bericht zu Aufgabe 2.
 
 
 def _ueberlappt(a, b, luft=0.0):
@@ -284,10 +309,9 @@ def _ueberlappt(a, b, luft=0.0):
 
 LUFT = 0.6   # COURTYARD_GAP, Vorgabe von tools/pcb/geometry.py
 
-# 1. Die drei Stecker untereinander -- und gegen den Pico, denn auf der
-#    Sockelplatine liegen alle vier auf derselben Platine.
+# 1. Die vier Steckerplaetze untereinander (v2: kein Pico mehr dazu,
+#    s.o.).
 _flaechen = {n: S.STECKER_POS[n]["flaeche"] for n in STECKER}
-_flaechen["pico"] = S.PICO_POS["flaeche"]
 _namen = sorted(_flaechen)
 for i in range(len(_namen)):
     for j in range(i + 1, len(_namen)):
@@ -295,30 +319,22 @@ for i in range(len(_namen)):
         check("kein Ueberlapp %s / %s" % (a, b),
               _ueberlappt(_flaechen[a], _flaechen[b], LUFT), False)
 
-# 2. Der Antennen-Sperrbereich gegen die drei Stecker. Gegen den Pico
-#    NICHT: er liegt naturgemaess innerhalb von dessen Hof.
-for n in STECKER:
-    check("Antenne kollidiert nicht mit %s" % n,
-          _ueberlappt(S.ANTENNE_SPERRBEREICH, _flaechen[n], LUFT), False)
-check("Antennen-Sperrbereich liegt im Hof des Pico",
-      _ueberlappt(S.ANTENNE_SPERRBEREICH, S.PICO_POS["flaeche"]), True)
-
-# 3. Freihaltebereiche der M3-Bohrungen. Das ist der Platz fuer
+# 2. Freihaltebereiche der M3-Bohrungen. Das ist der Platz fuer
 #    Schraubenkopf und Abstandsbolzen -- ein Stecker darin liesse sich
 #    nicht verschrauben.
 _r = S.M3_KEEPOUT / 2.0
-for n in list(_flaechen) + ["antenne"]:
-    q = S.ANTENNE_SPERRBEREICH if n == "antenne" else _flaechen[n]
+for n in list(_flaechen):
+    q = _flaechen[n]
     for hx, hy in S.M3_HOLES:
         check("%s frei von M3 (%s|%s)" % (n, hx, hy),
               q[0] - _r < hx < q[2] + _r and q[1] - _r < hy < q[3] + _r,
               False)
 
-# 4. Platinenrand. 0,5 mm Randabstand, dieselbe Vorgabe wie in
+# 3. Platinenrand. 0,5 mm Randabstand, dieselbe Vorgabe wie in
 #    tools/pcb/geometry.py.
 RAND = 0.5
-for n in list(_flaechen) + ["antenne"]:
-    q = S.ANTENNE_SPERRBEREICH if n == "antenne" else _flaechen[n]
+for n in list(_flaechen):
+    q = _flaechen[n]
     check("%s bleibt auf der Platine" % n,
           (q[0] >= RAND and q[1] >= RAND and
            q[2] <= S.BOARD_W - RAND and q[3] <= S.BOARD_H - RAND), True)
@@ -329,16 +345,25 @@ for n in list(_flaechen) + ["antenne"]:
 # PC104-Stapelstecker und die XFCN-Paarung -- brauchen eigene
 # .kicad_mod und koennen breiter bauen. Wer den Footprint austauscht,
 # muss die Lage neu nachrechnen; dieser Test zwingt ihn dazu.
+#
+# v2: der Kreuz-Check gegen modulsockel.FP_HDR_2X20 (fuer "stapel") und
+# gegen sockelplatine.FP_PICO entfaellt hier ERSATZLOS. Beide Module
+# sind v1-Erzeuger, die noch den 2x20-Block bzw. eine eigene
+# Sockelplatine kennen (Aufgabe 2 darf Erzeuger/Verbraucher-Dateien
+# nicht anfassen, s. Aufgabenbrief) -- ihre eigenen Suiten
+# (tests/test_modulsockel.py, tests/test_sockelplatine.py) stehen
+# deshalb bewusst auf der Rot-Liste dieser Aufgabe, bis eine
+# Folgeaufgabe sie auf stapel_links/stapel_rechts umstellt. kette und
+# leistung sind von diesem Bruch NICHT betroffen (dieselbe SMD-Paar-
+# Geometrie wie in v1), ihr Kreuz-Check bleibt deshalb stehen.
 sys.path.insert(0, os.path.join(HERE, "..", "tools", "sch"))
 import modulsockel      # zieht kein KiCad nach, nur stack_spec
-import sockelplatine
 # Jeder Steckerplatz nennt jetzt ALLE Footprints, die dort sitzen --
 # bei den SMD-Paaren zwei (Buchse oben, Stiftleiste unten). Wuerde nur
 # einer genannt, verschwaende die andere Haelfte stillschweigend aus
 # der Flaechenrechnung; genau so ist der Fehler von Aufgabe 5c
 # entstanden.
-for name, konstanten in (("stapel", ("FP_HDR_2X20",)),
-                         ("kette", ("FP_SKT_1X02", "FP_HDR_1X02")),
+for name, konstanten in (("kette", ("FP_SKT_1X02", "FP_HDR_1X02")),
                          ("leistung", ("FP_SKT_2X02", "FP_HDR_2X02"))):
     check("%s: Footprints wie in modulsockel.%s"
           % (name, "/".join(konstanten)),
@@ -347,8 +372,13 @@ for name, konstanten in (("stapel", ("FP_HDR_2X20",)),
     for fp in S.STECKER_POS[name]["footprints"]:
         check("%s: Hof von %s ist bekannt" % (name, fp.split(":")[-1]),
               fp in S.FOOTPRINT_HOF, True)
-check("Pico: Footprint wie in sockelplatine.FP_PICO",
-      (sockelplatine.FP_PICO,), tuple(S.PICO_POS["footprints"]))
+# stapel_links/stapel_rechts kennen ihren eigenen Footprint zwar noch
+# nicht in modulsockel.py (s.o.), aber wenigstens der Hof muss bekannt
+# sein, sonst faellt schon die Flaechenrechnung weiter oben aus.
+for name in ("stapel_links", "stapel_rechts"):
+    for fp in S.STECKER_POS[name]["footprints"]:
+        check("%s: Hof von %s ist bekannt" % (name, fp.split(":")[-1]),
+              fp in S.FOOTPRINT_HOF, True)
 
 # --- Es bleibt noch Platz --------------------------------------------
 # Die Untergrenze ist hergeleitet, nicht gesetzt: Hofsumme des
@@ -369,47 +399,61 @@ check("Modul: freie Flaeche am Stueck ueber der Untergrenze",
 check("Modul: groesstes freies Rechteck traegt die Hofsumme",
       _modul_rechteck > S.MODUL_HOF_SUMME_MM2, True)
 
-_sockel, _sockel_rechteck = geometry.freie_flaeche(
-    S, [S.STECKER_POS[n]["flaeche"] for n in STECKER]
-       + [S.PICO_POS["flaeche"], S.ANTENNE_SPERRBEREICH])
-check("Sockel: freie Flaeche traegt die eigenen Bauteile",
-      _sockel > S.SOCKEL_HOF_SUMME_MM2 / S.BELEGUNGSGRAD_ERPROBT, True)
-check("Sockel: groesstes freies Rechteck traegt die eigene Hofsumme",
-      _sockel_rechteck > S.SOCKEL_HOF_SUMME_MM2, True)
+# v2: KEIN separater "Sockel"-Check mehr. Er pruefte in v1 die freie
+# Flaeche der EINEN Sockelplatine (Stecker + Pico + Antennen-
+# Sperrbereich abgezogen) gegen deren eigene, kleinere Bauteilliste
+# (SOCKEL_HOF_SUMME_MM2). Diese Sonderrolle gibt es in v2 nicht mehr --
+# jede Platine ist jetzt ein "Modul" im obigen Sinn (traegt Pico +
+# Vertragsstecker + eigene Bauteile), der "Modul:"-Check oben deckt sie
+# also bereits ab. S.SOCKEL_HOF_SUMME_MM2 bleibt in stack_spec.py als
+# historischer Messwert stehen (s. dortiger Kommentar), wird hier aber
+# nicht mehr abgefragt -- ersatzlos entfernt, nicht abgeschwaecht: eine
+# Platine, die es nicht mehr gibt, hat auch keine Flaeche mehr, die man
+# gegen ihre alte Bauteilliste pruefen koennte.
 
 # --- Kontaktnummerierung der SMD-Paare -------------------------------
 # Kontakt 1 des 2x02-Leistungssteckers liegt in der RECHTEN Spalte des
 # Gitters (SPALTEN_GESPIEGELT): die Buchse hat Pad 1 rechts, und die
 # Stiftleiste sitzt laut Vertrag gespiegelt auf der Unterseite -- in
-# Platinenkoordinaten landet ihr Kontakt 1 damit ebenfalls rechts. An
-# der gebauten Sockelplatine gemessen (J4 Pad 1 = /PWR24V bei x=57,24),
-# nicht aus der Bibliothek abgeleitet. Die alte Fassung veroeffentlichte
-# das spiegelverkehrt; wer danach einen eigenen Footprint zeichnete,
-# haette 24 V auf GND gesetzt.
+# Platinenkoordinaten landet ihr Kontakt 1 damit ebenfalls rechts. Das
+# ist eine Eigenschaft der BIBLIOTHEKS-Footprints (Aufgabe 6/Ruling
+# 2026-09-01), unabhaengig von pin1 -- v2 verschiebt "leistung" nur
+# (neue Plattengroesse, s. STECKER_POS-Kommentar), die absoluten Zahlen
+# unten sind deshalb einfach um denselben Versatz mitgewandert
+# (pin1 (54.70, 42.00) -> (62.50, 45.50), Versatz (+7.80, +3.50)).
 _L = S.STECKER_POS["leistung"]
 for _fp in _L["footprints"]:
     _lag = S.PAD_LAGEN(_fp, _L["pin1"], _L["drehung"])
     check("Kontakt 1 (%s) rechte Spalte" % _fp.split(":")[1][:9],
-          _lag[1], (57.24, 42.0))
+          _lag[1], (65.04, 45.5))
     check("Kontakt 2 (%s) linke Spalte" % _fp.split(":")[1][:9],
-          _lag[2], (54.7, 42.0))
+          _lag[2], (62.5, 45.5))
     check("Kontakt 3 unter Kontakt 1 (%s)" % _fp.split(":")[1][:9],
-          _lag[3], (57.24, 44.54))
+          _lag[3], (65.04, 48.04))
 # Beide Haelften muessen DIESELBE Zuordnung liefern -- sonst traefe im
 # Stapel Kontakt k auf Kontakt j.
 check("beide Leistungs-Haelften nummerieren gleich",
       S.PAD_LAGEN(_L["footprints"][0], _L["pin1"], _L["drehung"]),
       S.PAD_LAGEN(_L["footprints"][1], _L["pin1"], _L["drehung"]))
 # Der Kettenstecker (eine Spalte) ist NICHT gespiegelt: Kontakt 1 auf
-# dem Anker, an der gebauten Platine gegengeprueft (J3 Pad 1 = SEL_OUT).
+# dem Anker. v2 verschiebt "kette" seitlich (s. STECKER_POS-Kommentar),
+# pin1 wandert von (12.50, 2.75) auf (20.59, 2.75) -- Kontakt 1 bleibt
+# per Definition auf dem Anker, unabhaengig von dessen Lage.
 _K = S.STECKER_POS["kette"]
 for _fp in _K["footprints"]:
     check("Kette: Kontakt 1 auf dem Anker (%s)" % _fp.split(":")[1][:9],
-          S.PAD_LAGEN(_fp, _K["pin1"], _K["drehung"])[1], (12.5, 2.75))
-# Und der 2x20-THT auch nicht (Pad 1 wirklich links oben).
-check("Stapelstecker nicht gespiegelt",
-      S.STECKER_POS["stapel"]["footprints"][0] in S.SPALTEN_GESPIEGELT,
-      False)
+          S.PAD_LAGEN(_fp, _K["pin1"], _K["drehung"])[1], (20.59, 2.75))
+# stapel_links ist bei Drehung 0 nicht gespiegelt (Kontakt 1 wirklich
+# oben, s. STECKER_POS-Kommentar); stapel_rechts steht dagegen absichtlich
+# bei Drehung 180 (nicht gespiegelt im SPALTEN_GESPIEGELT-Sinn -- das
+# gilt nur fuer die 2x02-SMD-Footprints -- sondern um ihre eigene
+# Zaehlrichtung umzukehren, s. Kommentar "v2: footprint-lokale
+# Kontakte -> Pico-Pin"). Beide 1x20-Footprints stehen deshalb NICHT
+# in SPALTEN_GESPIEGELT.
+for _name in ("stapel_links", "stapel_rechts"):
+    check("%s nicht in SPALTEN_GESPIEGELT" % _name,
+          S.STECKER_POS[_name]["footprints"][0] in S.SPALTEN_GESPIEGELT,
+          False)
 
 # --- Verdreht aufgesteckt --------------------------------------------
 # Das Lochbild ist punktsymmetrisch, ein Modul laesst sich also um

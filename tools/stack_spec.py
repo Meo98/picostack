@@ -9,17 +9,61 @@ Aendert sich etwas davon, sind fremde Module unbrauchbar. Alles andere
 im System darf sich aendern.
 
 Grundlage: docs/superpowers/specs/2026-08-28-picostack-design.md
+
+--- v2: der Pico ist der Stapel (2026-09-0x, Commit 7daaad3) -----------
+v1 hatte eine eigene Sockelplatine, die EINEN Pico trug und seine 40
+Pins ueber einen gemeinsamen 2x20-Stapelstecker (STECKER_POS["stapel"],
+Bauform "Buchse mit durchgehendem Stift") an den Rest des Stapels
+weiterreichte. v2 streicht diese Sonderrolle: JEDES Modul bekommt seine
+zwei eigenen 1x20-Buchsenreihen in echter Pico-Geometrie (Reihenabstand
+17,78 mm -- das Pico-Datenblattmass, nicht mehr ein beliebiges
+2,54-mm-Raster) und damit seinen eigenen, dort eingesteckten Pico.
+STECKER_POS["stapel"] gibt es deshalb nicht mehr; an seiner Stelle
+stehen STECKER_POS["stapel_links"] und ["stapel_rechts"] (eine Reihe je
+Pico-Seite, s. Kommentar dort). VERTRAG_VERSION haelt diesen Bruch
+maschinenlesbar fest, damit ein Werkzeug, das noch mit v1 rechnet, sich
+selbst erkennt, statt still falsche Koordinaten zu benutzen.
+
+Aus demselben Grund sind PICO_POS, PICO_ANTENNE_HOF und
+ANTENNE_SPERRBEREICH in v2 nicht mehr Teil dieses Vertrags: sie
+beschrieben die Lage EINES bestimmten, huebsch aufgeloeteten Pico auf
+GENAU EINER Platine (der Sockelplatine). Wenn stattdessen jedes Modul
+seinen Pico selbst traegt, gibt es keine einzelne, ausgezeichnete
+Pico-Position mehr, gegen die sich das pruefen liesse -- die Flaeche,
+die der Pico einnimmt, IST jetzt die Flaeche von stapel_links/rechts
+zusammen. Was dabei verloren geht: der WLAN-Antennen-Sperrbereich des
+Pico ist eine reale Pflicht (Datenblatt, Abschnitt 2.2.1), die v1 hier
+maschinenlesbar hielt. Sie ist in v2 NICHT neu hergeleitet -- das
+haette eine eigene, nicht in Aufgabe 2 verlangte Entscheidung ueber die
+Pico-Orientierung auf dem neuen Umriss gebraucht (liegt die Antenne
+ueber freiem Rand oder ueber Kupfer?). Offener Punkt fuer eine
+Folgeaufgabe, s. Bericht zu Aufgabe 2.
 """
 
-BOARD_W = 64.0
-BOARD_H = 60.0
+VERTRAG_VERSION = 2
+
+BOARD_W = 75.0
+BOARD_H = 65.0
+# Hergeleitet in tools/platzprobe_v2.py (Aufgabe 1): das alte Mass
+# (64x60) wurde nie gegen die v2-Zusatzlast gerechnet (zwei
+# Pico-Buchsenreihen, eigene 6-30-V-Versorgungszelle, 22 Randpads).
+# platzprobe_v2.pruefe() rechnet drei Kandidaten (70x60, 75x65, 80x70)
+# durch: 70x60 scheitert an der Geometrie (die Versorgungszelle und die
+# Randpad-Kante sind breiter als der Rand neben den M3-Eckloechern
+# zulaesst), 75x65 und 80x70 bestehen beide; 75x65 ist der kleinere der
+# beiden bestandenen Kandidaten und damit das Ergebnis
+# (`python3 tools/platzprobe_v2.py` druckt "EINHEITSMASS: 75x65").
 CORNER_R = 3.0
 
 PLATINE_DICKE = 1.6      # mm, Standard-PCB-Dicke (JLCPCB); auch Grundlage
 # der Spaltrechnung unten und der Gehaeuse-Konstruktion (Aufgabe 9).
 
 M3_DRILL = 3.2
-M3_HOLES = [(4.0, 4.0), (4.0, 56.0), (60.0, 4.0), (60.0, 56.0)]
+# Wie v1: 4,0 mm Abstand von jeder Kante (dieselbe Herleitung, nur auf
+# das neue Mass angewendet -- v1 rechnete ebenfalls nicht von der Mitte,
+# sondern zog 4,0 mm von jeder der vier Kanten ab/dazu). Bei 75x65 also
+# (4, 4), (4, 65-4), (75-4, 4), (75-4, 65-4).
+M3_HOLES = [(4.0, 4.0), (4.0, 61.0), (71.0, 4.0), (71.0, 61.0)]
 
 STAPEL_ABSTAND = 13.6     # mm zwischen zwei Platinen (Platinenoberkante
 # zu Platinenoberkante). Vierte Runde, 2026-08-31 -- ersetzt 13,5 mm,
@@ -253,15 +297,138 @@ PIN_ROLLE.update({
     35: "ADC_VREF",
 })
 
-# --- Die drei Steckverbinder -----------------------------------------
-# Drei Stecker, zwei Bauprinzipien. Der Unterschied ist keine
+# --- v2: footprint-lokale Kontakte -> Pico-Pin (stapel_links/rechts) --
+# PIN_ROLLE oben ist UNVERAENDERT: sie kennt nur Pico-Pin-Nummern
+# (1..40), keine Steckerplaetze. Was sich mit v2 aendert, ist allein,
+# WELCHER footprint-lokale Kontakt (PAD_LAGEN(), s. unten) welchen
+# Pico-Pin traegt -- in v1 galt Kontakt k == Pico-Pin k fuer den
+# gesamten 2x20-Block; in v2 gilt das nur noch INNERHALB je einer
+# Reihe, und die Zuordnung ist bewusst so gewaehlt, dass eine einzige
+# Formel je Reihe reicht (keine Tabelle, kein Umdrehen von Hand):
+#
+#   stapel_links,  Drehung 0   : Pico-Pin == footprint-lokaler Kontakt
+#                                 (k = 1..20)
+#   stapel_rechts, Drehung 180 : Pico-Pin == footprint-lokaler Kontakt
+#                                 + 20 (k = 1..20 -> Pico-Pin 21..40)
+#
+# Das ist keine neue Zusage -- es folgt zwingend aus der Pin-1-Lage,
+# die STECKER_POS["stapel_rechts"] bereits eintraegt (Kontakt 1 unten,
+# waechst nach oben, s. dortiger Kommentar) und aus der geforderten
+# Zaehlrichtung "21-40 rechts unten->oben". Ein Modullayout, das
+# PAD_LAGEN(footprint, pin1, drehung) fuer stapel_rechts aufruft, muss
+# also 20 zum zurueckgegebenen Kontaktschluessel addieren, um den
+# Pico-Pin (und damit die PIN_ROLLE) zu bekommen.
+
+# --- v2: freie GPIO an den Rand -- RANDPADS ---------------------------
+# Jeder der 18 Pico-Pins mit PIN_ROLLE == "frei" bekommt ein eigenes,
+# beschriftetes Loetpad an der UNTEREN Plattenkante -- damit ein
+# Modulautor, der einen freien GPIO braucht, ihn ohne eigene
+# Durchkontaktierung von den beiden Pico-Buchsenreihen abgreifen kann,
+# genau wie in v1 (dort lagen die freien Pins einfach unbenutzt im
+# 2x20-Block, ohne eigenen Zugriffspunkt). Dazu vier Versorgungspads
+# (2x 3V3, 2x GND), die die GPIO-Strecke an beiden Enden einrahmen --
+# uebliche Header-Praxis, und praktisch fuer ein Multimeter oder einen
+# Pull-up/-down-Widerstand in Griffnaehe zum jeweiligen GPIO.
+#
+# Lage: 2,54-mm-Raster (RAND_RASTER), y nahe der unteren Kante
+# (BOARD_H - 2,0 mm, Aufgabenzettel), x beginnend bei 8,0 mm -- knapp
+# ausserhalb der M3-Eckloch-Reichweite (M3_KEEPOUT/2 + 4,0 mm
+# Lochabstand = 7,5 mm, s. platzprobe_v2.M3_REICHWEITE), damit das
+# erste Randpad nicht mit dem Freihaltebereich des linken unteren
+# Eckochs kollidiert. 22 Pads x 2,54 mm = 53,34 mm Gesamtbreite, endet
+# bei x = 61,34 mm -- bleibt mit 13,66 mm klar innerhalb der
+# 75-mm-Breite und weit vor der M3-Eckloch-Reichweite auf der rechten
+# Seite (67,5 mm).
+RAND_RASTER = 2.54
+RAND_X0 = 8.0
+RAND_Y = round(BOARD_H - 2.0, 3)
+
+# Pico-Pin -> GPIO-Nummer, NUR fuer die frei bleibenden Pins. Aus dem
+# offiziellen Pico-Pinout (Raspberry Pi Pico Datasheet, Release 21,
+# Abschnitt 2 "Pinout"): die Pins zaehlen GP0..GP22 lueckenlos durch
+# (unterbrochen nur von den acht GND-Pins und Pin 30/RUN), dann folgen
+# GP26/ADC0 (Pin 31), GP27/ADC1 (Pin 32), GND/AGND (Pin 33), GP28/ADC2
+# (Pin 34), ADC_VREF (Pin 35) -- exakt das Bild, das PIN_ROLLE oben
+# schon unveraendert traegt. Diese Tabelle ordnet den 18 frei
+# bleibenden Pins nur noch ihre GPIO-Nummer zu, sie vergibt keine neue
+# Rolle.
+_GP_NUMMER = {
+    11: 8, 12: 9, 14: 10, 15: 11, 16: 12, 17: 13,
+    19: 14, 20: 15, 21: 16, 22: 17, 24: 18, 25: 19,
+    26: 20, 27: 21, 29: 22, 31: 26, 32: 27, 34: 28,
+}
+
+# Reihenfolge auf der Kante: GND, 3V3, dann die 18 GPIO aufsteigend
+# nach Pico-Pin, dann noch einmal 3V3, GND -- die Versorgung rahmt die
+# GPIO-Strecke symmetrisch ein. Pin 3 und Pin 38 sind zwei
+# VERSCHIEDENE GND-Pico-Pins (beide ohnehin dasselbe Netz, s.
+# IST_VERSORGUNG/_GND oben); Pin 36 (3V3) versorgt beide 3V3-Randpads,
+# weil es am Pico nur diesen einen 3V3-Ausgangspin gibt.
+_RAND_REIHENFOLGE = (
+    [(3, "GND"), (36, "3V3")]
+    + [(p, "GP%d" % _GP_NUMMER[p]) for p in sorted(_GP_NUMMER)]
+    + [(36, "3V3"), (38, "GND")]
+)
+
+RANDPADS = tuple(
+    (pin, label, (round(RAND_X0 + i * RAND_RASTER, 2), RAND_Y))
+    for i, (pin, label) in enumerate(_RAND_REIHENFOLGE)
+)
+
+# --- v2: Verpolschutz-Zusagen an jedes Modul --------------------------
+# Jedes Modul hat jetzt seine eigene Einspeisung (6..30 V, ueber
+# STECKER_LEISTUNG) UND seinen eigenen Pico -- also auch seinen eigenen
+# Verpolschutz, statt dass ihn (wie in v1) nur die Sockelplatine traegt.
+# VERSORGUNG haelt fest, WAS jedes Modul an dieser Stelle zusagen muss;
+# WIE (welches Bauteil, welcher Footprint) ist Sache der jeweiligen
+# spec_*.py und bleibt dort -- dieser Vertrag zwingt nur die Topologie
+# fest, nicht die Stueckliste.
+#
+#   schutz_drain_an = "PWR_IN"    : der P-Kanal-MOSFET (oder aequivalente
+#     Schutzschaltung), der Verpolung an der Einspeisung abfaengt, haengt
+#     mit seinem Drain-Anschluss AN DER EINSPEISUNG (STECKER_LEISTUNG,
+#     vor jeder eigenen Schutz-/Reglerstufe) -- nicht irgendwo dahinter.
+#     Nur so schuetzt er auch alles, was danach kommt.
+#   gate_teiler_an = "+24V_LOKAL" : der Spannungsteiler, der das Gate
+#     dieses MOSFETs ansteuert, haengt an der LOKALEN, bereits
+#     verpolungsrichtigen 24-V-Schiene des Moduls (hinter dem Schutz)
+#     -- nicht an der rohen Einspeisung. Haenge er dort, koennte eine
+#     verpolte Einspeisung das Gate direkt falsch ansteuern und den
+#     Schutz umgehen, den er herstellen soll.
+#   vsys_diode = True             : zwischen dem lokalen Regler-Ausgang
+#     und Pico-VSYS sitzt eine Schottky-Diode (in Sperrichtung fuer den
+#     Fall, dass der Pico stattdessen ueber USB versorgt wird) -- ohne
+#     sie speisten zwei Quellen (Modul-Regler und USB-VBUS-Pico-
+#     Regler) denselben Knoten gegeneinander.
+#   eingang_v = (6.0, 30.0)       : das Fenster, in dem die
+#     Eingangsspannung liegen darf. Untergrenze 6 V: der lokale
+#     Linearregler (K7805-1000R3, s. STAPEL_ABSTAND-Kommentar oben,
+#     "K7805_HOEHE_MM") braucht laut Datenblatt mindestens Ausgangs-
+#     spannung + 2 V Dropout, hier grosszuegig auf 6 V aufgerundet.
+#     Obergrenze 30 V: die K7805-1000R3-Familie ist bis 30 V
+#     Eingangsspannung spezifiziert (DEXU Electronics "K78xx-1000R3"
+#     Datenblatt, "Absolute Maximum Ratings", "Input Voltage: 30V");
+#     mehr wuerde den Regler ausserhalb seines Datenblatts betreiben.
+VERSORGUNG = {
+    "schutz_drain_an": "PWR_IN",
+    "gate_teiler_an": "+24V_LOKAL",
+    "vsys_diode": True,
+    "eingang_v": (6.0, 30.0),
+}
+
+# --- Die vier Steckerplaetze ------------------------------------------
+# Vier Steckerplaetze (v2: stapel_links, stapel_rechts, kette,
+# leistung), zwei Bauprinzipien. Der Unterschied ist keine
 # Geschmacksfrage, sondern folgt aus genau einer Frage: fuehren die
 # Haelfte OBEN und die Haelfte UNTEN dasselbe Netz?
 #
 #   ja   -> EIN durchgehender Stapelstecker (Buchse oben und langer
 #           Stift unten sind derselbe Leiter, ein einziges Bauteil).
-#           So der 2x20-Signalstecker: alle 40 Leitungen sind im ganzen
-#           Stapel dasselbe Netz.
+#           So die beiden 1x20-Signalstecker (stapel_links/rechts, seit
+#           v2 zwei Plaetze statt eines 2x20-Platzes, s. STECKER_POS-
+#           Kommentar): alle 40 Leitungen sind im ganzen Stapel
+#           dasselbe Netz, nur eben auf zwei Reihen verteilt statt auf
+#           eine.
 #   nein -> ZWEI getrennte Haelften, die trotzdem am SELBEN Ort sitzen
 #           muessen. So der Kettenstecker: SEL kommt von oben als
 #           SEL_IN herein und geht nach unten als SEL_OUT weiter.
@@ -307,13 +474,38 @@ PIN_ROLLE.update({
 # in "typ" zu erzaehlen.
 
 STECKER_STAPEL = {
-    "typ": "Buchse mit durchgehendem Stift (Stapelstecker), 2x20, 2,54 mm",
+    "typ": "Buchse mit durchgehendem Stift (PC104-Prinzip), 1x20, "
+           "2,54 mm -- je EINE Reihe (stapel_links ODER stapel_rechts, "
+           "s. STECKER_POS), nicht mehr die ganze 2x20-Pico-Bahn wie "
+           "in v1",
     "durchgehend": True,           # EIN Bauteil, Buchse und Stift sind
                                    # derselbe Leiter -> beide Seiten
                                    # zwangslaeufig dasselbe Netz.
     "montage_oben": "THT",
     "montage_unten": "THT",
     "haelften_gleiche_netze": True,
+    # BESTUECKUNGS-LUECKE, offen gelassen und nicht verschwiegen: ein
+    # ECHTES 1x20-PC104-Teil (Buchse mit durchgehendem Stift, wie
+    # C35165 es fuer 2x20 ist) wurde bei dieser Aufgabe NICHT mit einer
+    # offenen Produktseite gefunden -- die PC104-Reihe bei LCSC/JLCPCB
+    # fuehrt laut hardware/bauteile-1b.md (Beleg 13) nur 2x20 (C35165,
+    # C5307344) und 2x40 (C5307345), keine einreihige Variante. Zwei
+    # Weg bleiben: (1) das bestehende, bereits verifizierte 2x20-Teil
+    # C35165 einsetzen und je Reihenplatz nur EINE seiner beiden
+    # Kontaktspalten bestuecken (die andere bleibt unbenutzt -- gleiche
+    # Bauhoehe, doppelte Stueckzahl); (2) sobald eine einreihige
+    # PC104-Buchse mit eigener Produktseite gefunden ist, zwei
+    # 1x10-Stuecke stumpf aneinandergesetzt fuer eine Reihe verwenden
+    # (Arduino-Stapelheader-Prinzip: 1x8/1x10-Buchsen mit langem,
+    # durchgehendem Stift sind bei diesem Bauformtyp die gaengige
+    # Stueckelung, s. Recherche zu dieser Aufgabe -- ohne bestaetigte
+    # LCSC-Nummer aber nicht als Beleg eingetragen). Bis eine der beiden
+    # Optionen mit echter Produktseite belegt ist, steht hier Option 1:
+    # dieselbe C35165, mit dem Vorbehalt aus diesem Kommentar. Aendert
+    # nichts an gehaeusehoehe_mm/stiftlaenge_unter_gehaeuse_mm/
+    # strom_pro_kontakt_a unten -- das sind Datenblattwerte DIESES
+    # Bauteils, unabhaengig davon, wie viele seiner Kontakte benutzt
+    # werden.
     "buchse_lcsc": "C35165",       # BOOMELE "2.54-2*20PPC104"
     "stift_lcsc": "C35165",        # dasselbe Bauteil
     "buchse_mpn": "BOOMELE 2.54-2*20PPC104",
@@ -322,7 +514,9 @@ STECKER_STAPEL = {
                                    # "Current Rating: 3A"
     "gehaeusehoehe_mm": 8.5,       # Datenblatt, Masszeichnung "8.5+-0.2"
     "stiftlaenge_unter_gehaeuse_mm": 12.46,  # Datenblatt, "12.46+-0.2"
-    "quelle": "hardware/bauteile-1b.md, Beleg 1 (Fassung 2026-08-31)",
+    "quelle": "hardware/bauteile-1b.md, Beleg 1 (Fassung 2026-08-31); "
+              "Sourcing-Vorbehalt fuer 1x20 s. Kommentar oben (Aufgabe 2, "
+              "v2, 2026-09-08)",
 }
 
 # --- Die beiden kleinen Stecker: SMD-Paare ---------------------------
@@ -619,6 +813,20 @@ FOOTPRINT_HOF = {
     # bedrahtet: Kontakt 1 == Pad 1
     "Connector_PinHeader_2.54mm:PinHeader_2x20_P2.54mm_Vertical":
         (-1.77, -1.78, 4.32, 50.03),     # 6,09 x 51,81 mm
+    # v2-Stapelbuchse (eine Reihe, 1x20, echte Pico-Geometrie). Kontakt 1
+    # == Pad 1 (bedrahtet). Pinspanne 19 x 2,54 = 48,26 mm (Pin 1 bis
+    # Pin 20, Mitte-zu-Mitte -- das Pico-Datenblattmass); Hof lt.
+    # Aufgabenzettel/tools/platzprobe_v2.py PICO_REIHE_L/B = 50,8 x
+    # 5,1 mm, also 1,27 mm Ueberstand an jedem Ende der Pinreihe
+    # (50,8 - 48,26 = 2,54, geteilt durch zwei Enden) und 2,55 mm
+    # beidseits der Kontaktachse (5,1 / 2). Kein gemessener .kicad_mod
+    # (noch kein Bauteil verifiziert bestellt, s. STECKER_STAPEL-
+    # Kommentar) -- deshalb aus dem Aufgabenzettelmass abgeleitet statt
+    # aus einer echten Footprint-Datei gelesen, wie es bei den anderen
+    # Eintraegen hier der Fall ist. Rot-Nachweis wird nachgeholt, sobald
+    # das Bauteil feststeht (s. Bericht zu Aufgabe 2, Bedenken).
+    "Connector_PinSocket_2.54mm:PinSocket_1x20_P2.54mm_Vertical":
+        (-2.55, -1.27, 2.55, 49.53),     # 5,10 x 50,80 mm
     # SMD-Paar Kettenstecker (1x2). Kontakt 1 liegt im Footprint bei
     # (0 | -1,27), die Pads bei (-1,655 | -1,27) und (1,655 | 1,27).
     "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical_SMD_Pin1Left":
@@ -722,6 +930,9 @@ RASTER = 2.54      # mm Rastermass aller drei Stecker (2,54 mm / 0,1")
 # beziehen sich auf denselben Anker.
 FOOTPRINT_RASTER = {
     "Connector_PinHeader_2.54mm:PinHeader_2x20_P2.54mm_Vertical": (2, 20),
+    # Eine Spalte, 20 Reihen -- eine einzelne 1x20-Pinreihe (s.
+    # FOOTPRINT_HOF oben).
+    "Connector_PinSocket_2.54mm:PinSocket_1x20_P2.54mm_Vertical": (1, 20),
     "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical_SMD_Pin1Left":
         (1, 2),
     "Connector_PinSocket_2.54mm:PinSocket_1x02_P2.54mm_Vertical_SMD_Pin1Left":
@@ -813,57 +1024,117 @@ def VERDREHT(flaeche):
             round(BOARD_W - x0, 3), round(BOARD_H - y0, 3))
 
 
-# Die drei Vertragsstecker. `mitte`, `drehung` und `flaeche` (der
-# belegte Hof) sind das, was jede Platine einhalten muss; `pin1`
-# (Kontakt 1) und `footprints` sind die Herleitung dazu.
+# Die vier Vertragsstecker (v2: aus drei werden vier -- der 2x20-Block
+# wird zu zwei 1x20-Reihen, s. Modul-Docstring). `mitte`, `drehung` und
+# `flaeche` (der belegte Hof) sind das, was jede Platine einhalten
+# muss; `pin1` (Kontakt 1) und `footprints` sind die Herleitung dazu.
 #
-# `footprints` ist eine Liste, weil zwei der drei Plaetze ZWEI Bauteile
+# `footprints` ist eine Liste, weil zwei der vier Plaetze ZWEI Bauteile
 # tragen: die SMD-Buchse oben und die SMD-Stiftleiste unten, auf
 # demselben Kontaktraster (Begruendung im Block bei STECKER_KETTE).
 # `flaeche` ist die Vereinigung beider Hoefe -- HOEFE() rechnet sie
 # nach.
 #
-# Warum genau diese drei Plaetze:
+# stapel_links/stapel_rechts: ZWEI 1x20-Buchsenreihen in echter
+# Pico-Geometrie statt eines 2x20-Blocks in freiem Raster. Die Namen
+# folgen der PICO-eigenen Seite, nicht einer Himmelsrichtung auf
+# unserer Platine: "links" traegt die Pico-Pins 1..20 (auf dem
+# Original-Pico die linke Stiftreihe, USB-Buchse oben gedacht),
+# "rechts" die Pins 21..40 (die rechte Reihe). Auf UNSERER Platine
+# liegen beide Reihen SENKRECHT (Pins laufen von oben nach unten,
+# genau wie auf dem Pico selbst -- keine 90-Grad-Drehung wie beim
+# alten 2x20-Block noetig, weil eine einzelne 1x20-Reihe mit 50,8 mm
+# Laenge bequem hochkant in die 65 mm Plattenhoehe passt) und stehen
+# nebeneinander, Mittenabstand GENAU 17,78 mm (Pico-Datenblatt,
+# Reihenabstand) -- das ist der Wert, den
+# tests/test_stack_spec.py als "Stapelreihen in Pico-Geometrie" prueft.
+# NICHT exakt ueber die Plattenbreite (75 mm) zentriert, sondern um
+# 2,0 mm nach rechts verschoben -- und das ist keine Geschmacksfrage,
+# sondern dieselbe Verdreh-Probe wie beim v1-Leistungsstecker (s.
+# Kommentar dort, "gescannt ... nicht geraten"): stapel_links und
+# stapel_rechts sind exakte Spiegelbilder voneinander (Reihenabstand
+# 17,78 mm = 7 x RASTER, s.o.), UND beide Reihen liegen auf demselben
+# Y-Raster (dieselben 20 Kontakthoehen, nur mit vertauschter
+# Zaehlrichtung). Eine exakt MITTIGE Platzierung (Rand links/rechts je
+# (75 - 22,88) / 2 = 26,06 mm) macht die 180-Grad-Drehung dadurch zur
+# perfekten X-Deckung: ein verdreht aufgestecktes Modul traefe
+# stapel_links exakt auf stapel_rechts in X, und der einzige
+# verbleibende Schutz waere der Y-Versatz -- der bei diesem Raster nie
+# ueber die haelfte des Rastermasses (1,27 mm) hinauskommt, weit unter
+# der 2,5-mm-Reissleine, die tests/test_stack_spec.py seit Aufgabe 5e
+# fuer jede Steckerlage verlangt (Nachrechnung ergab dort real nur
+# 0,50 mm -- ROT). Um 2,0 mm aus der Mitte verschoben ergibt dagegen
+# einen X-Versatz von 2 x 2,0 = 4,0 mm (die Verschiebung wirkt doppelt,
+# weil sie BEIDE Reihen der gespiegelten Paarung gegeneinander
+# versetzt) -- allein das haelt die Verdreh-Probe komfortabel ueber der
+# Reissleine, unabhaengig vom Y-Versatz (nachgerechnet: 4,03 mm). Der
+# Rand zur linken Kante (28,06 mm, s. "flaeche" von stapel_links unten)
+# bleibt dabei weiterhin weit ueber der M3-Eckloch-Reichweite
+# (7,5 mm) -- das Reihenpaar kann so oder so nicht in ein Eckloch
+# hineinragen.
+# Oben angeschlagen (1,0 mm Rand zur Plattenkante, mehr als das
+# vertragliche RAND-Minimum von 0,5 mm, damit an der Buchse noch
+# Lötstopplack/Silk Platz hat) -- die Reihe reicht dann von y = 1,0 bis
+# y = 51,8 mm, deutlich innerhalb der 65 mm Plattenhoehe und mit reichlich
+# Abstand zu den unteren M3-Loechern (y = 61).
 #
-# * Der Stapelstecker liegt QUER (Drehung 90 Grad) und oben. Quer, weil
-#   er 51,81 mm lang ist: laege er laengs, belegte er fast die ganzen
-#   60 mm Hoehe und zerschnitte jede Platine in zwei schmale Spalten.
-#   Oben, weil die untere Kante allen Modulen fuer die Schraubklemmen
-#   gehoert (12,20 mm tief, Footprint-Hof der DB128L-Klemmen) -- so
-#   bleibt unter ihm EINE grosse zusammenhaengende Flaeche statt zweier
-#   halber. Sein Hof haelt 1,18 mm Abstand zum Freihaltebereich der
-#   oberen M3-Bohrungen.
-# * Der Leistungsstecker sitzt unten rechts, so weit vom Signalstecker
-#   weg, wie es auf 64 x 60 mm geht (Design-Doc, Abschnitt "Die beiden
-#   Stecker": "Getrennt vom Signalstecker gefuehrt, damit Motorstroeme
-#   nicht neben empfindlichen Leitungen liegen"). Er liegt zugleich
-#   ausserhalb des Antennen-Sperrbereichs des Pico und knapp ueber dem
-#   Klemmenstreifen. Kontakt 1 ist am 2026-08-31 (Aufgabe 5e) von
-#   x = 57,50 auf x = 54,70 gewandert -- NICHT aus Geschmack: das
-#   SMD-Paar baut 11,74 statt 6,09 mm breit (die Loetpads liegen
-#   seitlich neben den Stiften), und an der alten Stelle haette sein
-#   Hof bei x = 64,64 ueber die Platinenkante gestanden. Von den
-#   Stellen, die auf die Platine passen, ist 54,70 die am weitesten
-#   rechts liegende, an der die Verdreh-Probe noch ueber der
-#   2,5-mm-Reissleine bleibt (2,755 mm; bei x = 56,00 waeren es nur
-#   2,460 mm gewesen) -- gescannt in 0,1-mm-Schritten ueber alle
-#   zulaessigen Lagen, nicht geraten.
-# * Der Kettenstecker sitzt im schmalen Streifen ueber dem Stapel-
-#   stecker, links. SEL laeuft von dort auf kurzem Weg zum D-Flipflop
-#   des Moduls, das seinerseits neben dem Stapelstecker liegt. Kontakt 1
-#   bleibt an seinem Platz; nur sein Hof waechst von 3,54 auf 6,82 mm
-#   Breite, und das passt dort ohne Verschiebung.
+# Zaehlrichtung UND Drehung sind gekoppelt (s. auch den Kommentar
+# weiter oben, gleich nach PIN_ROLLE, "v2: footprint-lokale Kontakte ->
+# Pico-Pin"): stapel_links
+# steht bei Drehung 0, ihr footprint-lokaler Kontakt 1 liegt oben und
+# waechst nach unten (Pico-Pin k == Kontakt k, k=1..20, "oben->unten"
+# wie im Aufgabenzettel gefordert). stapel_rechts steht bei Drehung
+# 180 -- NICHT 0 --, damit ihr footprint-lokaler Kontakt 1 physisch UNTEN
+# landet und mit wachsendem Kontakt nach OBEN laeuft: genau das
+# "unten->oben" der Pico-Pins 21..40, und zwar OHNE dass irgendein
+# Aufrufer footprint-lokale Nummern erst umdrehen muesste (Pico-Pin
+# (20+k) == footprint-lokaler Kontakt k, k=1..20 -- dieselbe simple
+# Formel wie bei stapel_links, nur mit Offset 20). Die beiden Reihen
+# sind dazu exakt end-zu-end ausgerichtet: pin1 von stapel_rechts liegt
+# 48,26 mm (= Pinspanne, 19 x 2,54) unterhalb von pin1 von stapel_links,
+# sodass beide Hoefe denselben Y-Bereich [1,0 .. 51,8] belegen.
+#
+# kette und leistung wandern gegenueber v1 nur soweit, wie es die neue
+# Lage der Stapelzone erzwingt -- dieselbe Herleitungslogik wie in v1
+# (Kettenstecker nah am Stapel/D-Flipflop, links; Leistungsstecker so
+# weit wie moeglich vom Signalstecker weg, unten rechts), neu
+# angewendet auf den 75x65-Umriss und die jetzt SEITLICH statt oben
+# liegende Stapelzone:
+#
+# * Der Kettenstecker sitzt links NEBEN stapel_links (statt darueber
+#   wie in v1, weil "darueber" auf dem neuen Umriss die Plattenkante
+#   waere) -- 2,06 mm Luft zu dessen Hof (S.LUFT-Reissleine der
+#   Ueberlapp-Probe ist 0,6 mm), Hoehe unveraendert aus v1 uebernommen
+#   (0,87 .. 7,17 relativ zu pin1, s. FOOTPRINT_HOF), weil sich an der
+#   SMD-Paar-Geometrie selbst nichts geaendert hat.
+# * Der Leistungsstecker sitzt unten rechts, so weit vom naechsten
+#   Signalstecker (stapel_rechts) weg wie es der 75x65-Umriss erlaubt,
+#   und bleibt dabei mit 5,36 mm Rand zur rechten Kante (75 - 69,64)
+#   klar innerhalb des Vertrags-Randmasses (RAND = 0,5 mm) und weit
+#   ausserhalb der M3-Eckloch-Reichweite (7,5 mm) an allen vier Ecken
+#   -- nachgerechnet in tests/test_stack_spec.py wie in v1.
 STECKER_POS = {
-    "stapel": {
-        "zweck": "2x20-Stapelstecker, Pico-Pinbild (PIN_ROLLE)",
+    "stapel_links": {
+        "zweck": "1x20-Buchsenreihe, Pico-Pins 1..20 (links, oben->unten)",
         "stecker": "STECKER_STAPEL",
         "footprints": (
-            "Connector_PinHeader_2.54mm:PinHeader_2x20_P2.54mm_Vertical",
+            "Connector_PinSocket_2.54mm:PinSocket_1x20_P2.54mm_Vertical",
         ),
-        "pin1": (8.00, 13.00),
-        "drehung": 90,
-        "mitte": (32.125, 11.725),
-        "flaeche": (6.22, 8.68, 58.03, 14.77),
+        "pin1": (30.61, 2.27),
+        "drehung": 0,
+        "mitte": (30.61, 26.4),
+        "flaeche": (28.06, 1.0, 33.16, 51.8),
+    },
+    "stapel_rechts": {
+        "zweck": "1x20-Buchsenreihe, Pico-Pins 21..40 (rechts, unten->oben)",
+        "stecker": "STECKER_STAPEL",
+        "footprints": (
+            "Connector_PinSocket_2.54mm:PinSocket_1x20_P2.54mm_Vertical",
+        ),
+        "pin1": (48.39, 50.53),
+        "drehung": 180,
+        "mitte": (48.39, 26.4),
+        "flaeche": (45.84, 1.0, 50.94, 51.8),
     },
     "kette": {
         "zweck": "zweipoliger Kettenstecker, SEL + GND (STECKER_KETTE)",
@@ -873,10 +1144,10 @@ STECKER_POS = {
             "Connector_PinSocket_2.54mm:PinSocket_1x02_P2.54mm_Vertical_SMD_Pin1Left",
             "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical_SMD_Pin1Left",
         ),
-        "pin1": (12.50, 2.75),
+        "pin1": (20.59, 2.75),
         "drehung": 0,
-        "mitte": (12.5, 4.02),
-        "flaeche": (9.09, 0.87, 15.91, 7.17),
+        "mitte": (20.59, 4.02),
+        "flaeche": (17.18, 0.87, 24.0, 7.17),
     },
     "leistung": {
         "zweck": "2x2-Leistungsstecker, 24 V und GND je doppelt",
@@ -885,76 +1156,36 @@ STECKER_POS = {
             "Connector_PinSocket_2.54mm:PinSocket_2x02_P2.54mm_Vertical_SMD",
             "Connector_PinHeader_2.54mm:PinHeader_2x02_P2.54mm_Vertical_SMD",
         ),
-        "pin1": (54.70, 42.00),
+        "pin1": (62.50, 45.50),
         "drehung": 0,
-        "mitte": (55.97, 43.27),
-        "flaeche": (50.1, 40.22, 61.84, 46.32),
+        "mitte": (63.77, 46.77),
+        "flaeche": (57.9, 43.72, 69.64, 49.82),
     },
 }
 
-# Der Pico -- NUR auf der Sockelplatine.
-# Drehung 90 Grad legt seine Laengsachse nach rechts: die USB-Buchse
-# zeigt zur linken Platinenkante (ihre Stirnflaeche liegt 1,10 mm
-# hinter der Kante, der Stecker erreicht sie also), die Antenne zeigt
-# nach rechts. Das ist die Gegenrichtung zur unteren Klemmenkante --
-# das USB-Kabel kommt damit nicht dort heraus, wo die Exponat-
-# Verkabelung liegt.
-PICO_POS = {
-    "zweck": "Raspberry Pi Pico, nur auf der Sockelplatine",
-    "footprints": ("Module:RaspberryPi_Pico_Common_THT",),
-    "pin1": (3.80, 36.00),
-    "drehung": 90,
-    "mitte": (27.555, 27.11),
-    "flaeche": (0.63, 15.57, 54.48, 38.65),
-}
-
-# Sperrbereich unter der WLAN-Antenne des Pico: kein Kupfer, keine
-# Bauteile. Auf der Sockelplatine wird daraus im Layout entweder eine
-# Kupferfreihaltung oder (wie im Vorlaeuferprojekt) ein gefraester
-# Schlitz.
+# PICO_POS / PICO_ANTENNE_HOF / ANTENNE_SPERRBEREICH gibt es in v2
+# NICHT mehr. Sie beschrieben in v1 die Lage EINES aufgeloeteten Pico
+# auf GENAU EINER Platine (der Sockelplatine) -- eine Sonderrolle, die
+# der Modul-Docstring oben ("v2: der Pico ist der Stapel") auf-
+# hebt: jedes Modul bekommt seinen eigenen Pico, gesteckt in
+# STECKER_POS["stapel_links"]/["stapel_rechts"]. Deren Flaeche
+# ZUSAMMEN ist jetzt das, was frueher PICO_POS["flaeche"] war -- ein
+# eigener Eintrag dafuer waere eine doppelte Buchhaltung derselben
+# zwei Rechtecke.
 #
-# Das ist die teuerste Lektion des Vorgaengerprojekts: die Antenne
-# sitzt ZWISCHEN den beiden Pin-Reihen, nicht am Rand -- ein Ueberhang,
-# der sie ins Freie bringen soll, nimmt zwangslaeufig acht Pins mit
-# hinaus (PecheAuxCanards, docs/.../2026-08-27-board-redesign-design.md,
-# "Nachtrag 2026-08-28: Schlitz statt Ueberhang").
-#
-# Masse, belegt statt geschaetzt -- (x0, y0, x1, y1) relativ zu Pad 1
-# des Pico-Footprints:
-#
-# 1. Groesse aus dem Datenblatt: "Raspberry Pi Pico W Datasheet",
-#    Raspberry Pi Ltd, Release 7, Build date 03/07/2026, Abschnitt
-#    2.2.1 "Keep-out area": "There is a cutout for the antenna
-#    (14 mm x 9 mm). If anything is placed close to the antenna (in any
-#    dimension) the effectiveness of the antenna is reduced."
-#    Wortgleich im "Raspberry Pi Pico 2 W Datasheet", Release 2,
-#    Build date 03/07/2026, ebenfalls Abschnitt 2.2.1.
-# 2. Lage: Abschnitt 2 "Mechanical specification" desselben
-#    Datenblatts -- "a single sided 51 mm x 21 mm x 1 mm PCB with a
-#    micro USB port overhanging the top edge ... The onboard wireless
-#    antenna is located on the bottom edge." Der Ausschnitt liegt also
-#    buendig an der der USB-Buchse gegenueberliegenden Kante und mittig
-#    ueber die 21 mm Breite. Im Footprint Module:RaspberryPi_Pico_
-#    Common_THT liegt diese Platinenkante bei y = 49,63 und die Mitte
-#    der 21 mm bei x = 8,89 (F.Fab-Umriss x -1,61..19,39,
-#    y -1,37..49,63, relativ zu Pad 1).
-# 3. Breite: die offizielle KiCad-Fassung des Pico W
-#    (Module:RaspberryPi_Pico_W_SMD.kicad_mod, kicad-footprints
-#    a2d01395d2) traegt eine benannte Sperrzone "Antenna Copper Keep
-#    Out"; ihr umschliessendes Rechteck ist 14,2 x 8,0 mm -- 0,2 mm
-#    breiter, aber 1,0 mm flacher als die Datenblattangabe. Der Vertrag
-#    nimmt die VEREINIGUNG beider Angaben: 14,2 mm breit (KiCad),
-#    9,0 mm tief (Datenblatt). Keine der beiden Zahlen ist geraten.
-#
-#    -> x: 8,89 +- 7,1  = 1,79 .. 15,99
-#    -> y: 49,63 - 9,00 = 40,63 .. 49,63
-PICO_ANTENNE_HOF = (1.79, 40.63, 15.99, 49.63)
-
-# Derselbe Bereich in Platinenkoordinaten der Sockelplatine, aus
-# PICO_POS gedreht (9,00 x 14,20 mm, weil PICO_POS 90 Grad gedreht
-# ist). Geprueft in tests/test_stack_spec.py: er ueberschneidet weder
-# einen der drei Stecker noch einen Freihaltebereich der M3-Bohrungen.
-ANTENNE_SPERRBEREICH = (44.43, 20.01, 53.43, 34.21)
+# WAS DABEI OFFEN BLEIBT (nicht stillschweigend fallengelassen,
+# sondern ausdruecklich vertagt): der WLAN-Antennen-Sperrbereich des
+# Pico ist eine reale Pflicht aus dem Datenblatt (Abschnitt 2.2.1,
+# "Keep-out area", 14 x 9 mm -- dieselbe Quelle, die v1 hier zitierte),
+# keine v1-Besonderheit. Sie braucht aber eine Entscheidung, die
+# Aufgabe 2 nicht trifft: WELCHE der beiden 1x20-Reihen traegt das
+# Pico-Pin-1-Ende (und damit, ueber die USB-Buchsen-Lage im Pico-
+# Datenblatt, an welcher Kante die Antenne herausschaut) -- das ist
+# eine Frage an das MODUL-Layout (wo auf der Platine ist noch Platz,
+# wo sitzen andere Bauteile), nicht an diesen Vertrag. Bis eine
+# Folgeaufgabe das entscheidet, gibt es keinen ANTENNE_SPERRBEREICH in
+# stack_spec.py; ein Modullayout muss die 14 x 9 mm Keep-out-Zone bis
+# dahin von Hand gegen seine eigene Pico-Orientierung pruefen.
 
 # --- Wieviel Platz bleibt uebrig ------------------------------------
 # Ein Vertrag, der die Stecker so hinlegt, dass kein Modul mehr
@@ -962,8 +1193,15 @@ ANTENNE_SPERRBEREICH = (44.43, 20.01, 53.43, 34.21)
 #
 # MODUL_HOF_SUMME_MM2 ist die Summe der Bauteil-Hoefe des heute
 # anspruchsvollsten Moduls (Motormodul, hardware/kicad/motor/
-# Motormodul.kicad_sch, 43 Bauteile) OHNE die drei Vertragsstecker --
-# gemessen aus denselben echten Footprints wie FOOTPRINT_HOF oben.
+# Motormodul.kicad_sch, 43 Bauteile) OHNE die Vertragsstecker (in v1
+# drei, in v2 vier -- die Zahl selbst ist unveraendert aus v1
+# uebernommen, s. Aufgabe 2, weil ihre Herleitung -- Motormodul minus
+# Vertragsstecker -- unabhaengig davon gilt, wie viele Vertragsstecker
+# es gerade sind) -- gemessen aus denselben echten Footprints wie
+# FOOTPRINT_HOF oben. tools/platzprobe_v2.py rechnet fuer Aufgabe 1
+# unabhaengig davon dieselbe Motor-Nutzlast neu nach (935,3 mm2 vor
+# Reserve) und bestaetigt damit dieselbe Groessenordnung, statt sie nur
+# abzuschreiben.
 MODUL_HOF_SUMME_MM2 = 956.8
 # BELEGUNGSGRAD_ERPROBT ist der Anteil der Platinenflaeche, den die
 # Hoefe auf einer WIRKLICH gebauten, verlegten und DRC-sauberen
@@ -974,12 +1212,16 @@ MODUL_HOF_SUMME_MM2 = 956.8
 BELEGUNGSGRAD_ERPROBT = 0.566
 # Daraus die Untergrenze: 956,8 / 0,566 = 1690,5 mm2, aufgerundet.
 FREIE_FLAECHE_MINDEST = 1700.0
-# Dieselbe Rechnung fuer die Sockelplatine, die zusaetzlich den Pico
-# und dessen Antennen-Sperrbereich verliert: ihre eigenen acht Bauteile
-# (J1, D1, C3, C1, C2, R1, R2, U2 -- ohne die drei Vertragsstecker und
-# ohne den Pico selbst) summieren sich auf 437,8 mm2 Hof, das sind bei
-# demselben erprobten Belegungsgrad 773,5 mm2 Bedarf. Sie hat nach
-# Abzug von Pico und Sperrbereich noch 1711,5 mm2 am Stueck.
+# SOCKEL_HOF_SUMME_MM2 war in v1 dieselbe Rechnung fuer die
+# Sockelplatine, die zusaetzlich den Pico und dessen Antennen-
+# Sperrbereich verlor: ihre eigenen acht Bauteile (J1, D1, C3, C1, C2,
+# R1, R2, U2 -- ohne die drei Vertragsstecker und ohne den Pico selbst)
+# summierten sich auf 437,8 mm2 Hof. Der Wert bleibt hier stehen (kein
+# Beleg wird geloescht), ist aber in v2 UNBENUTZT: es gibt keine
+# Sockelplatine mehr, gegen die er noch etwas pruefen koennte (s.
+# Modul-Docstring, "der Pico ist der Stapel") -- die zugehoerige
+# Pruefung ("Sockel: ...") ist deshalb aus
+# tests/test_stack_spec.py entfernt, nicht abgeschwaecht.
 SOCKEL_HOF_SUMME_MM2 = 437.8
 # Die hier festgelegte Anordnung laesst einem Modul 3013,0 mm2 am
 # Stueck (78,5 % der Platine), groesstes freies Rechteck 1852,2 mm2
@@ -990,36 +1232,43 @@ SOCKEL_HOF_SUMME_MM2 = 437.8
 # mit tools/pcb/geometry.freie_flaeche().
 
 # --- Verdreht aufgesteckt --------------------------------------------
-# M3_HOLES ist punktsymmetrisch zur Platinenmitte: (4|4) und (60|56)
-# tauschen unter einer 180-Grad-Drehung die Plaetze, (4|56) und (60|4)
-# ebenso. Ein Modul laesst sich also seitenrichtig, aber um 180 Grad
-# verdreht auf die Abstandsbolzen schrauben. Auf dem Stapelstecker
-# wuerde das Pin 1 auf Pin 40 legen -- VBUS auf FLASH_TX -- und den
-# Stapel zerstoeren. Der Umriss ist Vertrag und laesst sich nicht
-# unsymmetrisch machen; die Steckerlage dagegen schon, und genau dafuer
-# liegen die drei Stecker oben BEWUSST UNSYMMETRISCH:
+# M3_HOLES ist punktsymmetrisch zur Platinenmitte (v2: (4|4) und
+# (71|61) tauschen unter einer 180-Grad-Drehung die Plaetze, (4|61) und
+# (71|4) ebenso). Ein Modul laesst sich also seitenrichtig, aber um
+# 180 Grad verdreht auf die Abstandsbolzen schrauben. Auf den beiden
+# Stapelreihen wuerde das Pico-Pin 1 auf Pico-Pin 40 legen -- VBUS auf
+# FLASH_TX -- und den Stapel zerstoeren. Der Umriss ist Vertrag und
+# laesst sich nicht unsymmetrisch machen; die Steckerlage dagegen
+# schon, und genau dafuer liegen die vier Steckerplaetze oben BEWUSST
+# UNSYMMETRISCH:
 #
-#   VERDREHT(...) der drei Flaechen ergibt
-#     stapel   -> (5.97, 45.23, 57.78, 51.32)
-#     kette    -> (48.09, 52.83, 54.91, 59.13)
-#     leistung -> (2.16, 13.68, 13.90, 19.78)
+#   VERDREHT(...) der vier Flaechen ergibt
+#     stapel_links  -> (41.84, 13.2, 46.94, 64.0)
+#     stapel_rechts -> (24.06, 13.2, 29.16, 64.0)
+#     kette         -> (51.0, 57.83, 57.82, 64.13)
+#     leistung      -> (5.36, 15.18, 17.1, 21.28)
 #
-#   Keine dieser drei Flaechen deckt sich mit der eines Steckers.
+#   Keine dieser vier Flaechen deckt sich mit der eines Steckers.
 #   Entscheidend ist aber nicht die Flaeche, sondern das Raster: der
 #   kleinste Abstand zwischen einem verdrehten Kontakt und irgendeinem
-#   Kontakt betraegt 2,755 mm (bis Aufgabe 5e: 2,881 mm -- der
-#   Leistungsstecker mussten fuer sein breiteres SMD-Paar umziehen).
-#   Das ist mehr als das halbe Raster (1,27 mm), das
-#   ein Stift braucht, um in einen Buchsenkontakt zu finden -- ein
-#   verdreht aufgesetztes Modul steckt NIRGENDS. Es bleibt tot, statt
-#   kaputtzugehen. tests/test_stack_spec.py rechnet beides nach, damit
-#   eine kuenftige Verschiebung das nicht stillschweigend aufhebt.
+#   Kontakt betraegt 4,031 mm (v1, bis Aufgabe 5e: 2,755 mm). Der
+#   groesste Teil davon kommt NICHT aus dem Y-Versatz (der ist beim
+#   2,54-mm-Raster niemals mehr als die Haelfte, 1,27 mm), sondern aus
+#   dem bewussten seitlichen Versatz von stapel_links/rechts um 2,0 mm
+#   aus der Plattenmitte (s. Kommentar bei STECKER_POS,
+#   "stapel_links"/"stapel_rechts": 2 x 2,0 mm X-Versatz zwischen einer
+#   Reihe und dem verdrehten Abbild der jeweils anderen). Das ist mehr
+#   als das halbe Raster (1,27 mm), das ein Stift braucht, um in einen
+#   Buchsenkontakt zu finden -- ein verdreht aufgesetztes Modul steckt
+#   NIRGENDS. Es bleibt tot, statt kaputtzugehen.
+#   tests/test_stack_spec.py rechnet beides nach, damit eine kuenftige
+#   Verschiebung das nicht stillschweigend aufhebt.
 #
 # Tot ist besser als kaputt, aber nicht gut genug: sichtbar wird der
 # Fehler dadurch nicht. Die zugehoerige Layout-Auflage steht in
 # AUFLAGEN unten (Pin-1-Kennzeichnung, kein freiliegendes Kupfer in den
-# drei verdrehten Flaechen).
-VERDREHT_MINDESTABSTAND_MM = 2.755   # gerechnet, s. Test
+# vier verdrehten Flaechen).
+VERDREHT_MINDESTABSTAND_MM = 4.031   # gerechnet, s. Test
 
 # --- Belegte Bauhoehen im Stapelspalt (gegen STAPEL_ABSTAND) --------
 # Beide Werte aus echten Datenblaettern gelesen, nicht geschaetzt --
@@ -1064,11 +1313,15 @@ AUFLAGEN = (
 #
 # Physisch drueckt aber keine Flaeche, sondern es druecken STIFTE, und
 # die landen an ausrechenbaren PUNKTEN: an VERDREHT() jedes einzelnen
-# Kontakts der drei Stecker (46 Punkte). Der bestehende Vertragstest
+# Kontakts der (v2: vier) Steckerplaetze -- weiterhin 46 Punkte
+# (20 + 20 + 2 + 4, s. STECKER_POS). Der bestehende Vertragstest
 # sichert bereits, dass jeder Landepunkt mindestens
-# VERDREHT_MINDESTABSTAND_MM = 2,755 mm von jedem Kontakt entfernt
+# VERDREHT_MINDESTABSTAND_MM (v2: 4,031 mm) von jedem Kontakt entfernt
 # bleibt; bis zur KUPFERKANTE des naechsten Steckerpads sind es
-# 1,90 mm (Padradius 0,85 abgezogen, nachgerechnet). Die Regel wird
+# mindestens ebenso viel abzueglich des Padradius (v1: 1,90 mm bei
+# 0,85 mm Padradius -- fuer v2 nicht neu nachgerechnet, da
+# LANDE_SPERRRADIUS unten konservativ unter dem v1-Wert bleibt). Die
+# Regel wird
 # deshalb: kein freiliegendes Kupfer naeher als LANDE_SPERRRADIUS an
 # einem Landepunkt. 1,5 mm lassen dem stumpfen Stiftende (0,64 mm
 # Vierkant, halbe Diagonale 0,45 mm) rund 1 mm Montagetoleranz.
