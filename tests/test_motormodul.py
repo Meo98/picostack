@@ -509,6 +509,13 @@ else:
     check("VSYS nur ueber die Diode D91, nicht direkt vom Regler U90",
           ("D91", "1") in _an_vsys and not any(r == "U90" for r, _ in _an_vsys),
           True)
+    # Fix-Runde 1 (Task-5-Review, 2026-09-08): VSYS (Pico-Pin 39, J105
+    # Kontakt 19) ist seit stack_spec.IST_BELEGBAR(39) == True kein
+    # no_connect mehr, sondern erreicht ueber den Stapelstecker denselben
+    # Knoten wie D91 -- genau der Verbraucher, dessen Fehlen vorher die
+    # isolated_pin_label-ERC-Warnung ausloeste (s. ERC-Abschnitt unten).
+    check("J105 Kontakt 19 (Pico-Pin 39, VSYS) erreicht D91 statt "
+          "no_connect zu bleiben", ("J105", "19") in _an_vsys, True)
 
     # -------------------- Task 5: Stapel-PWR24V speist die lokale Schiene
     # `_stapel_speist_lokal()` bindet "PWR24V" (Leistungsstecker J103/
@@ -1241,30 +1248,33 @@ else:
 
     # ------------------------------------------------------------- ERC
     ERWARTETE_ERC_FEHLER = 0
-    # Drei Warnungen sind erwartet, alle drei eine bekannte, dokumentierte
+    # Zwei Warnungen sind erwartet, beide eine bekannte, dokumentierte
     # Folge davon, dass dieses Modul seit Task 5 versorgung.bauen()
     # einbindet -- kein neuer Befund an DIESER Datei:
     #   1. lib_symbol_mismatch fuer "R-78B5.0-2.0" (U90) -- dieselbe
     #      unvermeidliche Folge von gen.Schaltplan.lib_extends() wie in
     #      tests/test_sockelplatine.py (dort ebenfalls genau EINE
     #      Warnung dafuer erwartet, s. dortiger Kommentar).
-    #   2. isolated_pin_label fuer das Label "VSYS" -- D91 (versorgung.py)
-    #      speist VSYS in JEDEM Modul, das die Zelle einbindet, aber nur
-    #      die Sockelplatine hat einen echten Pico mit einem VSYS-Pin, an
-    #      den D91 andocken koennte. Auf dem Motormodul bleibt VSYS
-    #      deshalb ein einzelner, folgenloser Diodenausgang -- architek-
-    #      turell so vorgesehen (stack_spec.PIN_ROLLE/NICHT_BELEGBAR
-    #      geben VSYS gar nicht erst an ein Modul weiter, s.
-    #      modulsockel.py, PIN_GPIO_NAME-Kommentar), nicht behebbar ohne
-    #      versorgung.py selbst zu aendern (ausserhalb dieser Aufgabe).
-    #   3. multiple_net_names fuer "+24V"/"PWR24V" -- die ABSICHTLICHE
+    #   2. multiple_net_names fuer "+24V"/"PWR24V" -- die ABSICHTLICHE
     #      Verbindung aus `_stapel_speist_lokal()` (dieses Modul ist die
     #      "gespeiste Platine", die den Rest des Stapels ueber den
     #      Leistungsstecker mitversorgt). KiCad markiert jede Stelle, an
     #      der zwei verschiedene Labelnamen denselben Knoten tragen, als
     #      Warnung -- unabhaengig davon, ob das beabsichtigt ist; hier
     #      ist es das.
-    ERWARTETE_ERC_WARNUNGEN = 3
+    #
+    # Eine dritte Warnung (isolated_pin_label fuer "VSYS") stand hier bis
+    # Fix-Runde 1 (Task-5-Review, 2026-09-08): D91 (versorgung.py) speiste
+    # VSYS, aber stack_spec.NICHT_BELEGBAR verbot genau diesen Pin auf dem
+    # Stapelstecker -- ein echter Vertragswiderspruch, den diese Warnung
+    # sichtbar machte (D91 erreichte nie ein zweites Bauteil). Behoben in
+    # tools/stack_spec.py (Pin 39/VSYS ist jetzt IST_BELEGBAR() ueber die
+    # Entkopplungsdiode der Versorgungszelle) -- `_stapelstecker()` in
+    # modulsockel.py verdrahtet den Pin seither automatisch auf "VSYS"
+    # (derselbe generische Rollen-Zweig wie jede andere Netzrolle, KEINE
+    # Sonderbehandlung noetig, s. dortiger Kommentar). Auf dem Motormodul
+    # schliesst das jetzt J105 Kontakt 19 (Pico-Pin 39) an D91 an.
+    ERWARTETE_ERC_WARNUNGEN = 2
 
     _tmp = tempfile.mkdtemp(prefix="motormodul_erc_")
     try:
@@ -1305,8 +1315,16 @@ else:
                     (_errors if _v["severity"] == "error" else _warnings).append(_v)
             check("ERC-Fehler auf dem Motormodul", len(_errors), ERWARTETE_ERC_FEHLER)
             check("ERC-Warnungen auf dem Motormodul", len(_warnings), ERWARTETE_ERC_WARNUNGEN)
-            _erwartete_warnungstypen = {"lib_symbol_mismatch", "isolated_pin_label",
-                                         "multiple_net_names"}
+            # Review-Minor (Fix-Runde 1): nicht nur die Anzahl, sondern das
+            # SORTIERTE SET der tatsaechlichen Warnungstypen pruefen -- eine
+            # blosse Anzahl liesse zwei ZUFAELLIG gleich viele, aber andere
+            # Warnungen unbemerkt durch (z.B. eine neue Warnung, die genau
+            # die verschwundene VSYS-Warnung zahlenmaessig ersetzt).
+            _erwartete_warnungstypen = {"lib_symbol_mismatch", "multiple_net_names"}
+            check("ERC-Warnungstypen auf dem Motormodul sind GENAU die "
+                  "erwarteten (lib_symbol_mismatch, multiple_net_names)",
+                  sorted({_w.get("type") for _w in _warnings}),
+                  sorted(_erwartete_warnungstypen))
             for _e in _errors:
                 print("  ERC-Fehler:", _e.get("type"), "-", _e.get("description"))
             for _w in _warnings:

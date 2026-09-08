@@ -315,6 +315,20 @@ def _stapelstecker(sch, ref_links, ref_rechts, ox, oy, frei_durchreichen=False):
                 # Jetzt kommt sie aus stack_spec.NICHT_BELEGBAR, samt
                 # Begruendung je Pin, und tools/vertrag_doku.py zeigt sie.
                 # tests/test_modulsockel.py haelt beide Seiten zusammen.
+                #
+                # Pin 39 (VSYS) stand hier bis Fix-Runde 1 (Task-5-Review,
+                # 2026-09-08) noch mit drin (S.NICHT_BELEGBAR[39]) -- seit
+                # stack_spec.IST_BELEGBAR(39) auf True steht (VERSORGUNG
+                # ["vsys_diode"] verlangt genau diese Einspeisung, s. dort),
+                # faellt Pin 39 durch DIESEN elif-Zweig hindurch in den
+                # `else`-Zweig unten. KEIN Code hier musste dafuer geaendert
+                # werden: STECKER_NETZE["VSYS"] existierte bereits (rolle
+                # "VSYS" stand schon vorher in stack_spec.PIN_ROLLE und in
+                # keiner NICHT_AM_STAPELSTECKER-Ausnahme), nur IST_BELEGBAR
+                # liess den Pin vorher gar nicht bis dorthin kommen. Eigene
+                # Pruefung (Rec-Mitschrift wie im Testvorbild): J105 Kontakt
+                # 19 (Pico-Pin 39) liefert nach der Vertragsaenderung
+                # `sch.netz(..., "VSYS")`, ganz ohne diese Datei anzufassen.
                 sch.nc(ref, str(kontakt))
             else:
                 sch.netz(ref, str(kontakt), richtung, STECKER_NETZE[rolle])

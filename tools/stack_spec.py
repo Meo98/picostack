@@ -232,6 +232,27 @@ def IST_VERSORGUNG(pin):
 # Kosten wenn falsch: eine Bahn auf dem Sockel und eine Vertragszeile,
 # solange keine Platine gefertigt ist. Genau deshalb wird sie
 # aufgeschoben und nicht vorweggenommen.
+#
+# TEILWEISE AUFGEHOBEN fuer Pin 39 (VSYS), Fix-Runde 1, Task-5-Review,
+# 2026-09-08. Das RULING oben stammt aus Aufgabe 6 (v1) und ging davon
+# aus, dass niemand VSYS speist -- Grund (1) war "es gibt heute keinen
+# Verbraucher". Das stimmt seit der v2-VERSORGUNG-Zusage
+# (VERSORGUNG["vsys_diode"] == True) nicht mehr: JEDES Modul bekommt
+# ueber tools/sch/versorgung.py eine Schottky-Diode (D91), die genau
+# dafuer gebaut ist, VSYS zu speisen -- der Verbraucher, dessen Fehlen
+# Grund (1) trug, existiert jetzt in jeder Modul-Stueckliste. Grund (2)
+# ("dann muss der Vertrag zusaetzlich regeln, dass kein Modul VSYS
+# OHNE Diode speisen darf") ist damit nicht entfallen, sondern GENAU
+# das, was diese Runde regelt: erlaubt ist ausschliesslich die
+# Einspeisung UEBER die Entkopplungsdiode der Versorgungszelle (s.
+# vsys_diode-Kommentar bei VERSORGUNG oben), eine direkte, ungeschuetzte
+# Verbindung bleibt verboten. Gefunden wurde die Luecke, weil ein zuerst
+# fehlender Verbindungspunkt fuer VSYS in einem generierten Schaltplan
+# als `isolated_pin_label`-ERC-Warnung sichtbar wurde (Task 5,
+# Motormodul) -- der Vertrag verbot genau das Netz, das die eigene
+# VERSORGUNG-Zusage verlangt. RUN/ADC_VREF/3V3_EN/VBUS sind von diesem
+# Ruling nicht betroffen und bleiben unveraendert nicht belegbar (keiner
+# von ihnen hat ein Gegenstueck in VERSORGUNG).
 NICHT_BELEGBAR = {
     30: "RUN -- Reset des RP2040, aktiv-LOW mit eigenem Pullup "
         "(Pico Datasheet Rel. 21, Abschnitt 2.1). Ein Modul, das ihn "
@@ -241,12 +262,14 @@ NICHT_BELEGBAR = {
     37: "3V3_EN -- schaltet den internen Regler des Pico ab. Nach "
         "aussen gefuehrt waere das ein Ausschalter fuer den ganzen "
         "Stapel, den jedes Modul versehentlich ziehen koennte.",
-    39: "VSYS -- Versorgungs-EINGANG des Pico. Der Sockel treibt ihn "
-        "heute nicht (s. Ruling oben); ein Modul darf ihn nicht "
-        "speisen, solange das nicht geregelt ist.",
     40: "VBUS -- liegt nur an, wenn am Pico ein USB-Kabel steckt. Eine "
         "Schiene, die von einem Zufall abhaengt, ist keine Zusage.",
 }
+# Pin 39 (VSYS) stand hier bis Fix-Runde 1 (Task-5-Review, 2026-09-08)
+# ebenfalls drin -- s. Absatz oben. Er ist jetzt belegbar, aber NUR
+# ueber die Entkopplungsdiode der Versorgungszelle (VERSORGUNG
+# ["vsys_diode"]); eine direkte Verbindung waere trotzdem falsch, das
+# regelt IST_BELEGBAR() alleine nicht (s. dortiger Docstring).
 
 
 def IST_BELEGBAR(pin):
@@ -400,6 +423,17 @@ RANDPADS = tuple(
 #     Fall, dass der Pico stattdessen ueber USB versorgt wird) -- ohne
 #     sie speisten zwei Quellen (Modul-Regler und USB-VBUS-Pico-
 #     Regler) denselben Knoten gegeneinander.
+#     ZUSATZ (Fix-Runde 1, Task-5-Review, 2026-09-08): genau DESHALB ist
+#     Pin 39 (VSYS) seit dieser Runde belegbar (s. NICHT_BELEGBAR unten)
+#     -- aber NUR auf diesem Weg. Die v1-Sperre galt der DIREKTEN,
+#     ungeschuetzten Einspeisung (Rueckspeisegefahr in den internen
+#     Pico-Regler, kein Verbraucher, keine Diode); diese Zusage erlaubt
+#     ausschliesslich die Einspeisung UEBER die Entkopplungsdiode der
+#     Versorgungszelle. Ein Modul, das VSYS ohne diese Diode direkt
+#     ansteuert, verletzt die Zusage genauso, wie es sie vor dieser
+#     Runde verletzt haette -- IST_BELEGBAR(39) prueft nur, ob der Pin
+#     ueberhaupt eine Rolle tragen darf, nicht WIE er verdrahtet wird;
+#     das bleibt Sache des Generators (s. tools/sch/versorgung.py: D91).
 #   eingang_v = (6.0, 30.0)       : das Fenster, in dem die
 #     Eingangsspannung liegen darf. Untergrenze 6 V: der lokale
 #     Linearregler (K7805-1000R3, s. STAPEL_ABSTAND-Kommentar oben,

@@ -30,6 +30,33 @@ check("jeder freie Pin hat genau ein Randpad",
 check("Versorgungszusagen vorhanden",
       S.VERSORGUNG["schutz_drain_an"], "PWR_IN")
 
+# --- Fix-Runde 1 (Task-5-Review, 2026-09-08): VSYS ist v2-belegbar ---
+# BEFUND: v1 verbot jede Einspeisung auf VSYS (Pin 39), weil niemand sie
+# trieb -- s. NICHT_BELEGBAR[39]-Kommentar (Stand vor dieser Aenderung).
+# Die v2-VERSORGUNG-Zusage (VERSORGUNG["vsys_diode"] == True) verlangt
+# aber genau das Gegenteil: JEDE Versorgungszelle (tools/sch/
+# versorgung.py, D91) speist VSYS ueber eine Entkopplungsdiode. Ohne
+# diesen Vertragswechsel haette der generierte Schaltplan (motormodul.py)
+# eine Diode auf einen Pin gelegt, den der Vertrag als "nicht belegbar"
+# fuehrt -- ein echter Widerspruch, der als isolated_pin_label-ERC-
+# Warnung sichtbar wurde (VSYS erreichte nie ein zweites Bauteil).
+# Dieser Check war vor der Aenderung an NICHT_BELEGBAR ROT (2026-09-08):
+# S.IST_BELEGBAR(39) lieferte False.
+check("VSYS ist v2-belegbar (Einspeisung ueber Schottky)",
+      S.IST_BELEGBAR(39), True)
+# Die direkte, ungeschuetzte Verbindung bleibt trotzdem verboten -- nur
+# der Weg UEBER die Entkopplungsdiode der Versorgungszelle ist erlaubt.
+# Das steht jetzt als Zusatz-Satz bei der VERSORGUNG-Zusage im
+# Vertragstext (s. tools/stack_spec.py, VERSORGUNG-Kommentar).
+check("VBUS bleibt nicht belegbar (unveraendert)",
+      S.IST_BELEGBAR(40), False)
+check("RUN bleibt nicht belegbar (unveraendert)",
+      S.IST_BELEGBAR(30), False)
+check("3V3_EN bleibt nicht belegbar (unveraendert)",
+      S.IST_BELEGBAR(37), False)
+check("ADC_VREF bleibt nicht belegbar (unveraendert)",
+      S.IST_BELEGBAR(35), False)
+
 # --- Umriss und Lochbild ---
 # v2 (Aufgabe 1/2): 64x60 -> 75x65, hergeleitet in tools/platzprobe_v2.py
 # (s. Kommentar bei S.BOARD_W). Das Lochbild folgt derselben 4-mm-
