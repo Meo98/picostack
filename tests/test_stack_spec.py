@@ -179,14 +179,24 @@ check("Kettenstecker fuehrt oben und unten verschiedene Netze",
 # Sie prueft absichtlich NUR "nicht leer" und "sieht aus wie eine
 # LCSC-Nummer", nicht die konkrete Nummer: welches Teil es ist, darf
 # sich aendern (Abkuendigung, Lagerbestand), dass es EINES gibt, nicht.
-for _name, _st in (("Stapelstecker", S.STECKER_STAPEL),
-                   ("Kettenstecker", S.STECKER_KETTE),
+#
+# Der Stapelstecker (v2) ist davon ausgenommen -- RULING (Fix-Runde 1,
+# 2026-09-08): kein 1x20/1x10-Teil mit offener Produktseite gefunden,
+# die Felder bleiben deshalb bewusst leer bis zur Fertigungs-Sichtung
+# (Aufgabe 9), s. Kommentar bei STECKER_STAPEL. Das ist eine
+# dokumentierte Luecke, keine vergessene -- die Pruefung unten haelt
+# genau DAS fest (explizit None, nicht irgendein falscher Wert).
+for _name, _st in (("Kettenstecker", S.STECKER_KETTE),
                    ("Leistungsstecker", S.STECKER_LEISTUNG)):
     for _seite in ("buchse_lcsc", "stift_lcsc"):
         _nr = _st[_seite]
         check("%s: %s ist belegt" % (_name, _seite), bool(_nr), True)
         check("%s: %s sieht aus wie eine LCSC-Nummer" % (_name, _seite),
               _nr.startswith("C") and _nr[1:].isdigit(), True)
+
+for _seite in ("buchse_lcsc", "stift_lcsc", "buchse_mpn", "stift_mpn"):
+    check("Stapelstecker: %s bewusst offen (Sourcing-Ruling, T9)" % _seite,
+          S.STECKER_STAPEL[_seite], None)
 
 # Der Leistungsstecker traegt Motorstrom. Sein Nennstrom je Kontakt
 # muss mindestens so gross sein wie der der Buchse des Signalsteckers
@@ -294,12 +304,43 @@ for name in STECKER:
     check("%s: Drehung ist ein rechter Winkel" % name,
           e["drehung"] in (0, 90, 180, 270), True)
 
-# v2: KEIN Antennen-Sperrbereich mehr in diesem Vertrag (s. Kommentar
-# oben) -- die zugehoerigen v1-Pruefungen (Antenne aus PICO_POS
-# gerechnet, Antenne gegen die Stecker, Antenne im Pico-Hof) entfallen
-# hier ersatzlos, nicht abgeschwaecht: es gibt in stack_spec.py nichts
-# mehr, wogegen sie noch pruefen koennten. Offener Punkt fuer eine
-# Folgeaufgabe, s. Bericht zu Aufgabe 2.
+# v2 (Fix-Runde 1, RULING): der Antennen-Sperrbereich ist zurueck --
+# nicht mehr aus einem eigenen PICO_POS, sondern aus stapel_links/
+# stapel_rechts hergeleitet (PICO_SCHATTEN/ANTENNE_FREI, s. dortiger
+# Kommentar in stack_spec.py). Zwei Pruefungen dazu:
+#
+#   1. ANTENNE_FREI muss VOLLSTAENDIG innerhalb PICO_SCHATTEN liegen --
+#      sie ist per Definition ein Teilstreifen davon; faellt sie
+#      hinaus, ist entweder PICO_SCHATTEN zu klein oder ANTENNE_FREI
+#      falsch platziert.
+#   2. PICO_SCHATTEN muss BEIDE Buchsenreihen ueberdecken -- geprueft
+#      an den tatsaechlichen KONTAKTEN (PAD_LAGEN), nicht am vollen
+#      mechanischen Hof: der Hof der beiden Buchsen ist zusammen
+#      22,88 mm breit (Gehaeusebreite je Reihe kommt oben drauf),
+#      PICO_SCHATTEN aber nur 21 mm -- das ist die reale Pico-
+#      Platinenbreite und bewusst schmaler als der Buchsenhof (die
+#      Buchsengehaeuse duerfen seitlich etwas ueber den Rand der
+#      aufgesteckten Pico-Platine hinausragen, das ist normal bei
+#      einer Buchse, die breiter baut als der Steckling). Was
+#      PICO_SCHATTEN wirklich abdecken muss, sind die KONTAKTE selbst
+#      (dort, wo die Pico-Pins tatsaechlich einstecken) -- und genau
+#      das prueft PAD_LAGEN.
+_pico_schatten_kontakte = []
+for _n in ("stapel_links", "stapel_rechts"):
+    _e = S.STECKER_POS[_n]
+    _pico_schatten_kontakte.extend(
+        S.PAD_LAGEN(_e["footprints"][0], _e["pin1"], _e["drehung"]).values())
+check("PICO_SCHATTEN ueberdeckt jeden Kontakt von stapel_links/rechts",
+      all(S.PICO_SCHATTEN[0] <= x <= S.PICO_SCHATTEN[2]
+          and S.PICO_SCHATTEN[1] <= y <= S.PICO_SCHATTEN[3]
+          for x, y in _pico_schatten_kontakte),
+      True)
+check("ANTENNE_FREI liegt vollstaendig innerhalb PICO_SCHATTEN",
+      (S.ANTENNE_FREI[0] >= S.PICO_SCHATTEN[0]
+       and S.ANTENNE_FREI[1] >= S.PICO_SCHATTEN[1]
+       and S.ANTENNE_FREI[2] <= S.PICO_SCHATTEN[2]
+       and S.ANTENNE_FREI[3] <= S.PICO_SCHATTEN[3]),
+      True)
 
 
 def _ueberlappt(a, b, luft=0.0):

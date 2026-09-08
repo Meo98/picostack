@@ -474,49 +474,70 @@ VERSORGUNG = {
 # in "typ" zu erzaehlen.
 
 STECKER_STAPEL = {
-    "typ": "Buchse mit durchgehendem Stift (PC104-Prinzip), 1x20, "
-           "2,54 mm -- je EINE Reihe (stapel_links ODER stapel_rechts, "
-           "s. STECKER_POS), nicht mehr die ganze 2x20-Pico-Bahn wie "
-           "in v1",
+    "typ": "1x20 (oder 2x 1x10 in Reihe), 2,54 mm, Buchse mit "
+           "durchgehendem Stift (PC104/Arduino-Stapelleisten-Prinzip) "
+           "-- je EINE Reihe (stapel_links ODER stapel_rechts, s. "
+           "STECKER_POS), nicht mehr die ganze 2x20-Pico-Bahn wie in "
+           "v1",
     "durchgehend": True,           # EIN Bauteil, Buchse und Stift sind
                                    # derselbe Leiter -> beide Seiten
                                    # zwangslaeufig dasselbe Netz.
     "montage_oben": "THT",
     "montage_unten": "THT",
     "haelften_gleiche_netze": True,
-    # BESTUECKUNGS-LUECKE, offen gelassen und nicht verschwiegen: ein
-    # ECHTES 1x20-PC104-Teil (Buchse mit durchgehendem Stift, wie
-    # C35165 es fuer 2x20 ist) wurde bei dieser Aufgabe NICHT mit einer
-    # offenen Produktseite gefunden -- die PC104-Reihe bei LCSC/JLCPCB
-    # fuehrt laut hardware/bauteile-1b.md (Beleg 13) nur 2x20 (C35165,
-    # C5307344) und 2x40 (C5307345), keine einreihige Variante. Zwei
-    # Weg bleiben: (1) das bestehende, bereits verifizierte 2x20-Teil
-    # C35165 einsetzen und je Reihenplatz nur EINE seiner beiden
-    # Kontaktspalten bestuecken (die andere bleibt unbenutzt -- gleiche
-    # Bauhoehe, doppelte Stueckzahl); (2) sobald eine einreihige
-    # PC104-Buchse mit eigener Produktseite gefunden ist, zwei
-    # 1x10-Stuecke stumpf aneinandergesetzt fuer eine Reihe verwenden
-    # (Arduino-Stapelheader-Prinzip: 1x8/1x10-Buchsen mit langem,
-    # durchgehendem Stift sind bei diesem Bauformtyp die gaengige
-    # Stueckelung, s. Recherche zu dieser Aufgabe -- ohne bestaetigte
-    # LCSC-Nummer aber nicht als Beleg eingetragen). Bis eine der beiden
-    # Optionen mit echter Produktseite belegt ist, steht hier Option 1:
-    # dieselbe C35165, mit dem Vorbehalt aus diesem Kommentar. Aendert
-    # nichts an gehaeusehoehe_mm/stiftlaenge_unter_gehaeuse_mm/
-    # strom_pro_kontakt_a unten -- das sind Datenblattwerte DIESES
-    # Bauteils, unabhaengig davon, wie viele seiner Kontakte benutzt
-    # werden.
-    "buchse_lcsc": "C35165",       # BOOMELE "2.54-2*20PPC104"
-    "stift_lcsc": "C35165",        # dasselbe Bauteil
-    "buchse_mpn": "BOOMELE 2.54-2*20PPC104",
-    "stift_mpn": "BOOMELE 2.54-2*20PPC104",
-    "strom_pro_kontakt_a": 3.0,    # LCSC-Produktseite C35165,
-                                   # "Current Rating: 3A"
-    "gehaeusehoehe_mm": 8.5,       # Datenblatt, Masszeichnung "8.5+-0.2"
-    "stiftlaenge_unter_gehaeuse_mm": 12.46,  # Datenblatt, "12.46+-0.2"
-    "quelle": "hardware/bauteile-1b.md, Beleg 1 (Fassung 2026-08-31); "
-              "Sourcing-Vorbehalt fuer 1x20 s. Kommentar oben (Aufgabe 2, "
-              "v2, 2026-09-08)",
+    # RULING (Fix-Runde 1, 2026-09-08): der urspruengliche Vorschlag
+    # dieser Aufgabe -- ein fertiges 2x20-PC104-Teil (C35165) nehmen und
+    # je Reihenplatz nur EINE seiner beiden Kontaktspalten bestuecken --
+    # ist MECHANISCH NICHT BAUBAR. C35165 ist ein einziges, durch-
+    # gespritztes Gehaeuse mit ZWEI Pinreihen 2,54 mm auseinander; die
+    # zweite (elektrisch unbenutzte) Reihe braucht trotzdem ihre eigenen
+    # Bohrungen/ihren eigenen Platz im Lochbild -- ein 1x20-Lochbild
+    # (nur EINE Bohrreihe, s. FOOTPRINT_HOF oben) haelt dafuer keinen
+    # Platz vor. Das waere kein "eine Spalte bleibt frei", sondern ein
+    # Gehaeuse, das gar nicht erst aufsteckbar ist.
+    #
+    # Der Vertrag geht deshalb auf den Plan-Fallback: eine ECHTE
+    # EINREIHIGE Stapelleiste (Buchse oben, langer durchgehender Stift
+    # unten), entweder als fertiges 1x20-Teil oder als zwei 1x10-Stuecke
+    # stumpf hintereinander (dieselbe Bauform, gaengig als "Arduino-
+    # Stapelheader" -- lange Buchsenstifte mit 2,54-mm-Raster, in
+    # 1x6/1x8/1x10 verbreitet). Ein solches Teil mit OFFENER
+    # Produktseite wurde waehrend dieser Aufgabe NICHT gefunden (LCSC/
+    # JLCPCB-Websuche, Fix-Runde 1, 2026-09-08) -- die eingesehene
+    # PC104-Reihe fuehrt dort nur die zweireihigen C35165/C5307344
+    # (2x20) und C5307345 (2x40), hardware/bauteile-1b.md Beleg 13.
+    # buchse_lcsc/stift_lcsc/buchse_mpn/stift_mpn bleiben deshalb LEER,
+    # bis die Fertigungs-Sichtung (Aufgabe 9 dieser Etappe) ein
+    # tatsaechlich bestellbares 1x20- oder 1x10-Teil gefunden hat --
+    # eine erfundene Nummer waere schlimmer als eine ehrliche Luecke.
+    #
+    # C35165 taucht hier trotzdem noch auf, aber nur noch als BAUFORM-
+    # BELEG: es beweist, dass "Buchse mit durchgehendem Stift" (PC104-
+    # Prinzip) als Bauform real existiert und mit einer offenen
+    # Produktseite bestellbar ist (s. hardware/bauteile-1b.md, Beleg 1)
+    # -- NICHT als das hier zu bestueckende Teil. gehaeusehoehe_mm und
+    # stiftlaenge_unter_gehaeuse_mm unten sind deshalb ZIELWERTE
+    # (von C35165 als bauformaehnlicher Platzhalter uebernommen, weil
+    # STAPEL_ABSTAND/EINSTECKTIEFE_STAPEL() ohne irgendeine Zahl gar
+    # nicht rechnen koennten), keine Messwerte DIESES Teils -- ein
+    # gefundenes 1x20/1x10-Teil muss gegen sie geprueft werden, nicht
+    # umgekehrt.
+    "buchse_lcsc": None,           # offen bis Fertigungs-Sichtung (T9)
+    "stift_lcsc": None,            # offen bis Fertigungs-Sichtung (T9)
+    "buchse_mpn": None,            # offen bis Fertigungs-Sichtung (T9)
+    "stift_mpn": None,             # offen bis Fertigungs-Sichtung (T9)
+    "strom_pro_kontakt_a": 3.0,    # Zielwert, uebernommen von C35165
+                                   # (LCSC-Produktseite, "Current
+                                   # Rating: 3A") als Bauform-Platzhalter
+    "gehaeusehoehe_mm": 8.5,       # Zielwert, uebernommen von C35165
+                                   # (Datenblatt, Masszeichnung
+                                   # "8.5+-0.2") als Bauform-Platzhalter
+    "stiftlaenge_unter_gehaeuse_mm": 12.46,  # Zielwert, uebernommen von
+                                   # C35165 (Datenblatt, "12.46+-0.2")
+                                   # als Bauform-Platzhalter
+    "quelle": "hardware/bauteile-1b.md, Beleg 1 (Fassung 2026-08-31, "
+              "C35165 als Bauform-Beleg); Sourcing-Ruling fuer 1x20 s. "
+              "Kommentar oben (Aufgabe 2, Fix-Runde 1, 2026-09-08)",
 }
 
 # --- Die beiden kleinen Stecker: SMD-Paare ---------------------------
@@ -1074,7 +1095,7 @@ def VERDREHT(flaeche):
 # hineinragen.
 # Oben angeschlagen (1,0 mm Rand zur Plattenkante, mehr als das
 # vertragliche RAND-Minimum von 0,5 mm, damit an der Buchse noch
-# Lötstopplack/Silk Platz hat) -- die Reihe reicht dann von y = 1,0 bis
+# Loetstopplack/Silk Platz hat) -- die Reihe reicht dann von y = 1,0 bis
 # y = 51,8 mm, deutlich innerhalb der 65 mm Plattenhoehe und mit reichlich
 # Abstand zu den unteren M3-Loechern (y = 61).
 #
@@ -1103,7 +1124,8 @@ def VERDREHT(flaeche):
 #
 # * Der Kettenstecker sitzt links NEBEN stapel_links (statt darueber
 #   wie in v1, weil "darueber" auf dem neuen Umriss die Plattenkante
-#   waere) -- 2,06 mm Luft zu dessen Hof (S.LUFT-Reissleine der
+#   waere) -- 4,06 mm Luft zu dessen Hof (stapel_links.flaeche[0] -
+#   kette.flaeche[2] = 28,06 - 24,0 = 4,06 mm; die S.LUFT-Reissleine der
 #   Ueberlapp-Probe ist 0,6 mm), Hoehe unveraendert aus v1 uebernommen
 #   (0,87 .. 7,17 relativ zu pin1, s. FOOTPRINT_HOF), weil sich an der
 #   SMD-Paar-Geometrie selbst nichts geaendert hat.
@@ -1163,29 +1185,76 @@ STECKER_POS = {
     },
 }
 
-# PICO_POS / PICO_ANTENNE_HOF / ANTENNE_SPERRBEREICH gibt es in v2
-# NICHT mehr. Sie beschrieben in v1 die Lage EINES aufgeloeteten Pico
-# auf GENAU EINER Platine (der Sockelplatine) -- eine Sonderrolle, die
-# der Modul-Docstring oben ("v2: der Pico ist der Stapel") auf-
-# hebt: jedes Modul bekommt seinen eigenen Pico, gesteckt in
-# STECKER_POS["stapel_links"]/["stapel_rechts"]. Deren Flaeche
-# ZUSAMMEN ist jetzt das, was frueher PICO_POS["flaeche"] war -- ein
-# eigener Eintrag dafuer waere eine doppelte Buchhaltung derselben
-# zwei Rechtecke.
+# PICO_POS gibt es in v2 NICHT mehr: es beschrieb in v1 die Lage EINES
+# aufgeloeteten Pico auf GENAU EINER Platine (der Sockelplatine) -- eine
+# Sonderrolle, die der Modul-Docstring oben ("v2: der Pico ist der
+# Stapel") aufhebt. Jedes Modul bekommt stattdessen seinen eigenen
+# Pico, gesteckt in STECKER_POS["stapel_links"]/["stapel_rechts"].
 #
-# WAS DABEI OFFEN BLEIBT (nicht stillschweigend fallengelassen,
-# sondern ausdruecklich vertagt): der WLAN-Antennen-Sperrbereich des
-# Pico ist eine reale Pflicht aus dem Datenblatt (Abschnitt 2.2.1,
-# "Keep-out area", 14 x 9 mm -- dieselbe Quelle, die v1 hier zitierte),
-# keine v1-Besonderheit. Sie braucht aber eine Entscheidung, die
-# Aufgabe 2 nicht trifft: WELCHE der beiden 1x20-Reihen traegt das
-# Pico-Pin-1-Ende (und damit, ueber die USB-Buchsen-Lage im Pico-
-# Datenblatt, an welcher Kante die Antenne herausschaut) -- das ist
-# eine Frage an das MODUL-Layout (wo auf der Platine ist noch Platz,
-# wo sitzen andere Bauteile), nicht an diesen Vertrag. Bis eine
-# Folgeaufgabe das entscheidet, gibt es keinen ANTENNE_SPERRBEREICH in
-# stack_spec.py; ein Modullayout muss die 14 x 9 mm Keep-out-Zone bis
-# dahin von Hand gegen seine eigene Pico-Orientierung pruefen.
+# Der WLAN-Antennen-Sperrbereich des Pico ist dagegen KEINE
+# v1-Besonderheit, sondern eine reale Pflicht aus dem Datenblatt --
+# RULING (Fix-Runde 1, 2026-09-08): er kommt zurueck in den Vertrag,
+# jetzt aus stapel_links/stapel_rechts hergeleitet statt aus einem
+# eigenen PICO_POS.
+#
+# PICO_SCHATTEN: der Umriss des STECKENDEN Pico selbst (51 x 21 mm,
+# Datenblatt "Raspberry Pi Pico W Datasheet", Raspberry Pi Ltd,
+# RP-008312-DS-2, Abschnitt 2 "Mechanical specification": "a single
+# sided 51 mm x 21 mm x 1 mm PCB" -- geprueft per Direktzugriff auf
+# https://datasheets.raspberrypi.com/picow/pico-w-datasheet.pdf,
+# Fix-Runde 1, 2026-09-08), zentriert auf dieselbe Achse wie die beiden
+# Buchsenreihen:
+#   Mitte X = Mittelpunkt der beiden Reihen-Mitten
+#           = (30,61 + 48,39) / 2 = 39,5
+#           -> X-Bereich 39,5 +- 21/2 = 29,0 .. 50,0
+#   Mitte Y = gemeinsame Reihenmitte (beide Reihen liegen exakt auf
+#             demselben Y-Bereich, s. STECKER_POS-Kommentar) = 26,4
+#           -> Y-Bereich 26,4 +- 51/2 = 0,9 .. 51,9
+# Nachprobe: weil PICO_SCHATTEN auf der eigenen Mitte des Reihenpaars
+# sitzt (39,5), nicht auf der Plattenmitte (37,5, die der 2,0-mm-
+# Verdreh-Versatz aus STECKER_POS gerade verlassen hat), liegt jede
+# Reihenmitte GENAU 1,61 mm von der ihr zugewandten PICO_SCHATTEN-Kante
+# entfernt: stapel_links 30,61 - 29,0 = 1,61 mm, stapel_rechts
+# 50,0 - 48,39 = 1,61 mm. Das ist kein Zufall, sondern die
+# Datenblattangabe selbst nachgerechnet: Boardbreite 21 mm minus
+# Reihenabstand 17,78 mm, halbiert -> (21 - 17,78) / 2 = 1,61 mm Rand
+# je Seite zwischen Kontaktachse und Pico-Kante.
+PICO_SCHATTEN = (29.0, 0.9, 50.0, 51.9)
+
+# ANTENNE_FREI: Teilstreifen von PICO_SCHATTEN am Pico-Ende der
+# Onboard-Antenne. Laut Datenblatt (Abschnitt 2, "Mechanical
+# specification"): "a ... PCB with a micro USB port overhanging the
+# top edge, and dual castellated/through-hole pins around the two long
+# edges. The onboard wireless antenna is located on the bottom edge."
+# -- die Antenne sitzt also am ENDE gegenueber der USB-Buchse, entlang
+# der Pinreihen. Pico-Pin 1 (stapel_links, s. STECKER_POS) liegt beim
+# echten Pico neben der USB-Buchse; das Antennen-Ende ist deshalb das
+# GEGENUEBERLIEGENDE Ende der Reihen, in unseren Platinenkoordinaten
+# also das obere Ende von PICO_SCHATTEN (y = 51.9), nicht das untere
+# (y = 0.9, wo Pin 1 sitzt).
+#
+# Streifentiefe: Abschnitt 2.2.1 "Keep-out area": "There is a cutout
+# for the antenna (14 mm x 9 mm)." -- 9,0 mm ist die Tiefe senkrecht
+# zur Kante (die 14 mm sind die Breite ENTLANG der Kante, schmaler als
+# die vollen 21 mm PICO_SCHATTEN-Breite; dieser Vertrag rundet
+# grosszuegig auf die volle Breite auf statt ein schmaleres
+# Teilrechteck zu fuehren -- dieselbe bewusste Uebervorsicht wie beim
+# quadratischen statt kreisrunden M3_KEEPOUT oben). Direkt aus der
+# offiziellen PDF-Quelle gelesen (nicht aus einer Sekundaerquelle
+# zitiert), s. Zeile oben bei PICO_SCHATTEN -- KEIN konservativer
+# Default noetig.
+ANTENNE_FREI = (29.0, 42.9, 50.0, 51.9)
+
+# Semantik, bindend fuer die Layout-Aufgaben: in ANTENNE_FREI darf auf
+# der Seite, auf der der Pico steckt, weder Kupfer noch ein Bauteil
+# liegen (keine Leiterbahn, kein Loetpad, kein Footprint-Hof) -- sonst
+# verstimmt es die Antenne (Datenblatt: "If anything is placed close
+# to the antenna (in any dimension) the effectiveness of the antenna
+# is reduced."). Auf der GEGENUEBERLIEGENDEN Seite der Platine gilt die
+# Regel nicht (die Antenne sitzt auf dem aufgesteckten Pico selbst,
+# nicht auf unserer Platine) -- eine Folgeaufgabe traegt diese
+# Unterscheidung in AUFLAGEN/LAYOUT_AUFLAGEN nach, sobald ein
+# Modul-Layout sie wirklich braucht.
 
 # --- Wieviel Platz bleibt uebrig ------------------------------------
 # Ein Vertrag, der die Stecker so hinlegt, dass kein Modul mehr
