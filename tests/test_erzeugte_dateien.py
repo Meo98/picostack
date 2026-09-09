@@ -42,7 +42,6 @@ sys.path.insert(0, os.path.join(HERE, "..", "tools"))
 sys.path.insert(0, os.path.join(HERE, "..", "tools", "sch"))
 
 import motormodul
-import sockelplatine
 import vertrag_doku
 
 fails = []
@@ -57,8 +56,16 @@ fails = []
 # abweichen kann, ohne dass es jemandem auffaellt. Und es ist das
 # Dokument, das fremde Modulbauer lesen; eine veraltete Fassung davon
 # ist teurer als ein veralteter Schaltplan.
+#
+# sockelplatine ABSICHTLICH NICHT hier: die Sockelplatine ist seit
+# VERTRAG_VERSION = 2 (stack_spec.py) v1-only und eingefroren (s.
+# tools/sch/sockelplatine.py-Docstring). Ihr Generator importiert
+# stack_spec.STECKER_POS["stapel"], das es im v2-Vertrag nicht mehr gibt
+# ("stapel_links"/"stapel_rechts" ersetzen es) -- ihn hier gegen sich
+# selbst zu pruefen wuerde nur die bekannte v1/v2-Vertragsluecke erneut
+# melden, nicht einen neuen Fehler. Siehe tests/test_sockelplatine.py
+# und tests/test_spec_sockel.py fuer denselben Entscheid.
 GENERATOREN = (
-    (sockelplatine, "python3 tools/sch/sockelplatine.py"),
     (motormodul, "python3 tools/sch/motormodul.py"),
     (vertrag_doku, "python3 tools/vertrag_doku.py"),
 )

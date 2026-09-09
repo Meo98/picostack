@@ -55,7 +55,7 @@ def erzeugen(ziel=None):
              "Die Zusagen rund um das Flashen -- die Leitungen "
              "`FLASH_TX`, `FLASH_RX`, `SEL`, `SEL_CLK` und `FLASH_MODE` "
              "(SEL seit 2026-08-31 auf dem eigenen Kettenstecker, alle "
-             "anderen auf dem 2x20-Stapelstecker) und alles, "
+             "anderen auf den beiden 1x20-Stapelstecker-Reihen) und alles, "
              "was daran haengt -- ruhen auf einer Annahme, die noch "
              "**nicht auf Hardware belegt** ist: dass der Pico einen "
              "Modul-MCU ueber dessen ROM-Bootlader wirklich beschreiben "
@@ -101,11 +101,23 @@ def erzeugen(ziel=None):
              "",
              "## Stapelstecker und Kettenstecker",
              "",
-             "Der 2x20-Signalstecker (Steckerbelegung oben) ist ein "
-             "**Stapelstecker**: %s. Bauteil: LCSC `%s`, "
+             "Die Steckerbelegung oben laeuft seit Vertragsversion %d "
+             "nicht mehr ueber einen einzelnen 2x20-Block, sondern ueber "
+             "**zwei 1x20-Buchsenreihen in echter Pico-Geometrie** "
+             "(Reihenabstand 17,78 mm, Raster 2,54 mm): `stapel_links` "
+             "traegt Pico-Pin 1..20, `stapel_rechts` Pico-Pin 21..40. "
+             "Der Pico steckt dadurch direkt oben in den Stapel; die "
+             "Pin-Rollen aus der Tabelle oben aendern sich dadurch NICHT, "
+             "nur ihre Steckergeometrie. Beide Reihen sind "
+             "**Stapelstecker**: %s. Bauteil: %s, "
              "Gehaeusehoehe %.2f mm, Stiftlaenge unterhalb des Gehaeuses "
              "%.2f mm. Quelle: %s." % (
-                 S.STECKER_STAPEL["typ"], S.STECKER_STAPEL["buchse_lcsc"],
+                 S.VERTRAG_VERSION,
+                 S.STECKER_STAPEL["typ"],
+                 ("LCSC `%s`" % S.STECKER_STAPEL["buchse_lcsc"]
+                  if S.STECKER_STAPEL["buchse_lcsc"]
+                  else "offen bis Fertigungs-Sichtung (1x20-Sourcing-"
+                       "Ruling s. Kommentar oben)"),
                  S.STECKER_STAPEL["gehaeusehoehe_mm"],
                  S.STECKER_STAPEL["stiftlaenge_unter_gehaeuse_mm"],
                  S.STECKER_STAPEL["quelle"]),
@@ -170,7 +182,8 @@ def erzeugen(ziel=None):
                        "%d Grad" % S.STECKER_POS[name]["drehung"],
                        " ".join("%.2f" % v
                                 for v in S.STECKER_POS[name]["flaeche"]))
-                      for name in ("stapel", "kette", "leistung")]),
+                      for name in ("stapel_links", "stapel_rechts",
+                                   "kette", "leistung")]),
              "",
              "Die belegte Flaeche ist die Vereinigung der Hoefe "
              "(F.CrtYd) aller Footprints an diesem Platz, nach der "
@@ -180,18 +193,21 @@ def erzeugen(ziel=None):
              "**denselben** Platz, sonst treffen sie sich im Stapel "
              "nicht.",
              "",
-             "Der Pico sitzt nur auf der Sockelplatine, mit Mitte "
-             "(%.2f | %.2f), Drehung %d Grad, Flaeche %s. Unter seiner "
-             "WLAN-Antenne liegt der Sperrbereich %s (%.1f x %.1f mm) "
-             "-- dort darf kein Kupfer und kein Bauteil liegen "
-             "(Raspberry Pi Pico W Datasheet, Release 7, Abschnitt "
-             "2.2.1 \"Keep-out area\": Ausschnitt 14 x 9 mm)." % (
-                 S.PICO_POS["mitte"][0], S.PICO_POS["mitte"][1],
-                 S.PICO_POS["drehung"],
-                 " ".join("%.2f" % v for v in S.PICO_POS["flaeche"]),
-                 " ".join("%.2f" % v for v in S.ANTENNE_SPERRBEREICH),
-                 S.ANTENNE_SPERRBEREICH[2] - S.ANTENNE_SPERRBEREICH[0],
-                 S.ANTENNE_SPERRBEREICH[3] - S.ANTENNE_SPERRBEREICH[1]),
+             "Seit Vertragsversion %d steckt der Pico nicht mehr nur auf "
+             "einer eigenen Sockelplatine, sondern oben auf **jedem** "
+             "Modul, in `stapel_links`/`stapel_rechts`. Sein Umriss "
+             "(`PICO_SCHATTEN`, 51 x 21 mm laut Datenblatt) liegt bei "
+             "%s. Am Pico-Ende gegenueber der USB-Buchse liegt der "
+             "WLAN-Antennen-Sperrbereich `ANTENNE_FREI` %s (%.1f x "
+             "%.1f mm) -- dort darf auf der Seite, auf der der Pico "
+             "steckt, weder Kupfer noch ein Bauteil liegen (Raspberry Pi "
+             "Pico W Datasheet, RP-008312-DS-2, Abschnitt 2.2.1 "
+             "\"Keep-out area\": Ausschnitt 14 x 9 mm)." % (
+                 S.VERTRAG_VERSION,
+                 " ".join("%.2f" % v for v in S.PICO_SCHATTEN),
+                 " ".join("%.2f" % v for v in S.ANTENNE_FREI),
+                 S.ANTENNE_FREI[2] - S.ANTENNE_FREI[0],
+                 S.ANTENNE_FREI[3] - S.ANTENNE_FREI[1]),
              "",
              "Um jede M3-Bohrung bleibt ein Freihaltebereich von "
              "%.1f mm Durchmesser fuer Schraubenkopf und "
@@ -217,6 +233,39 @@ def erzeugen(ziel=None):
              "%d Landepunkte aus `LANDEPUNKTE_VERDREHT()` (das sind die "
              "um 180 Grad gedrehten Lagen aller Steckerkontakte)."
              % (S.LANDE_SPERRRADIUS, len(S.LANDEPUNKTE_VERDREHT())),
+             "",
+             "## Versorgung je Board",
+             "",
+             "Seit Vertragsversion %d hat jedes Modul seine eigene "
+             "Versorgungszelle statt einer gemeinsamen Sockelplatine: "
+             "Klemme (%.1f-%.1f V), Verpolschutz (P-FET, Drain am Netz "
+             "`%s`), TVS, K7805-1000R3 und ein Schottky-OR%s vor VSYS. "
+             "Beliebig viele bestueckte Regler koennen im selben Stapel "
+             "koexistieren; ein einziges eingespeistes Board versorgt "
+             "die ganze Kette. Der Gate-Teiler des Verpolschutzes haengt "
+             "an `%s`, nicht an der Einspeisung selbst -- das ist der "
+             "aus v1 uebernommene Blocker-Fix: lag der Teiler am "
+             "Eingang, bildeten Bodydiode und TVS bei verpolter "
+             "Einspeisung einen Kurzschluss statt zu sperren." % (
+                 S.VERTRAG_VERSION,
+                 S.VERSORGUNG["eingang_v"][0], S.VERSORGUNG["eingang_v"][1],
+                 S.VERSORGUNG["schutz_drain_an"],
+                 " (vsys_diode)" if S.VERSORGUNG["vsys_diode"] else "",
+                 S.VERSORGUNG["gate_teiler_an"]),
+             "",
+             "## Randpads",
+             "",
+             "Jeder als \"frei\" deklarierte Pico-Pin (und mehrere "
+             "3V3-/GND-Pads) liegt zusaetzlich als beschriftetes "
+             "Loetpad auf der Plattenkante -- Position vertraglich "
+             "fixiert, identisch auf jedem Modul, auf der "
+             "Unterseite (B.Cu), damit die Verdreh-Sicherheit der "
+             "Landepunkte unangetastet bleibt. %d Pads insgesamt." % (
+                 len(S.RANDPADS)),
+             "",
+             tabelle(["Pico-Pin", "Beschriftung", "x", "y"],
+                     [(p, label, x, y)
+                      for p, label, (x, y) in S.RANDPADS]),
              "",
              "## Montage",
              "",
