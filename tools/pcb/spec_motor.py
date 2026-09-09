@@ -883,16 +883,23 @@ PRE_TRACKS = (
     # (44,70|19,70) auf 0,83 mm heran -- eine 1,0-mm-Bahn und ein Via
     # brauchen 1,00 (0,5 + 0,2 + 0,3). Auf x = 46,80 sind es 2,10 mm,
     # und zur J105-Reihe (Padkante 47,54) bleiben 0,24 mm.
-    # Nordspur auf x = 45,80 (nicht 46,30): oestlich davon bleibt bis zur
-    # J105-Padkante (47,54) ein Korridor von 1,24 mm. Genau dort fuehrt
-    # der Router /CPH und /CPL nach Sueden -- in Lauf r7 nachgemessen
-    # (B.Cu-Spur x = 47,17). Zwei 0,25-mm-Bahnen brauchen 1,10 mm; mit der
-    # Spur auf 46,30 blieben nur 0,74 mm, es passte also nur EINE, und
-    # /CPL blieb in ALLEN ACHT Wuerfen des Laufs r offen, waehrend /CPH
-    # in fuenf davon durchkam. Zum /VCP-Via bei (44,70|19,70) sind es so
-    # noch 1,10 mm (noetig 1,00).
-    ("/+24V", "B.Cu", ((_m(46.03), 23.225), (_m(46.30), 22.955),
-                       (_m(46.30), 17.30), (_m(40.10), 17.30)), _LEISTUNG),
+    # Der Nordast weicht bei (46,03) erst nach OSTEN aus, bevor er
+    # hochlaeuft: bliebe er auf der Trassenspur, kaeme das /VCP-Via bei
+    # (44,70|19,70) auf 0,83 mm heran -- eine 1,0-mm-Bahn und ein Via
+    # brauchen 1,00 (0,5 + 0,2 + 0,3).
+    #
+    # WARUM 46,80 UND NICHT WEITER WESTLICH: ein Versuch mit 46,30
+    # (Lauf s) sollte den Korridor zwischen dieser Spur und der
+    # J105-Padreihe von 0,74 auf 1,24 mm verbreitern, weil der Router
+    # /CPH und /CPL genau dort nach Sueden fuehrt (in r7 nachgemessen,
+    # B.Cu-Spur x = 47,17) und dort nur EINE 0,25-mm-Bahn Platz hat.
+    # Gemessen wurde das Gegenteil: die offenen Posten stiegen von 4
+    # (r6/r8) auf 9..11 (s1..s3), und /CPL blieb trotzdem offen. Die
+    # Spur draengt auf 46,30 zu dicht an die F.Cu-Trasse (45,53) und das
+    # /VCP-Via und nimmt dem Router mehr, als der breitere Korridor
+    # einbringt. Zurueckgenommen -- s. Bericht, G5.
+    ("/+24V", "B.Cu", ((_m(46.03), 23.225), (_m(46.80), 22.455),
+                       (_m(46.80), 17.30), (_m(40.10), 17.30)), _LEISTUNG),
     ("/+24V", "F.Cu", ((_m(40.10), 17.30), (_m(39.58), 16.78),
                        ("PAD", "C11", "2")), _LEISTUNG),
 
