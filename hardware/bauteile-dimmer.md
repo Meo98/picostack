@@ -57,3 +57,46 @@ sind in `bauteile.md` / `bauteile-1b.md` bzw. im LED-Dimmer-Altprojekt
 belegt und in `tools/jlc.py` als Konstanten übernommen. Der dort
 belegte NCE6050KA (C96013) bleibt als Referenz stehen, wird aber seit
 dem Nachtrag oben nicht mehr bestückt.
+
+## Nachtrag 2026-09-09: v2-Versorgungszelle (Task 9, Fertigungsdaten)
+
+Mit v2 trägt **jedes** Modul (Motor, Dimmer1/3/4) die Versorgungszelle
+aus `tools/sch/versorgung.py` (J90/Q90/R90/R91/D90/C90/U90/C91/D91,
+löst den bisherigen board-eigenen Verpolschutz Q1/Q10/D1/D10/C12 ab —
+per `pos.csv` nachgemessen, keiner dieser alten Bezeichner existiert
+mehr). Für `tools/jlc.py` neu **zusammengesetzt**, aber **keine neue
+LCSC-Sichtung** nötig — alle vier Nummern sind bereits an anderer
+Stelle in diesem Projekt mit Produktseite belegt:
+
+| Bauteil (Zelle) | LCSC | bereits belegt in |
+|---|---|---|
+| J90 KF350-3.5-2P | C474892 | `tools/jlc.py` (Bestellrunde 2026-09-04) |
+| U90 K7805-1000R3 | C909765 | `tools/sch/sockelplatine.py` / `tools/jlc.py` (Sockel-U2) |
+| D91 SS36C | C16237 | `tools/jlc.py` (Dimmer-Kanaldioden D1–D4) |
+| C90 220µF Elko | C45078 | `tools/jlc.py` (Sockel-C3 / bisheriges C12) |
+
+Q90 (IRFR5305, C2624), D90 (SMCJ30A, C340696), R90/R91 (10 kΩ,
+C17414), C91 (22µF, C45783) sind ebenfalls reine Wiederverwendungen
+bereits belegter Nummern (s. Konstanten in `tools/jlc.py`).
+
+**Eine echte neue Sichtung diese Runde:** U6/U7 (Motormodul) wechseln
+von SN74LVC1G06 (C7828, invertierend — für den Ruhestrom-Notaus falsch
+gepolt, s. `tools/sch/motormodul.py::INVERTER_WERT`) auf **SN74LVC1G07
+(C7830)**, nichtinvertierender Puffer mit Open-Drain-Ausgang,
+pinidentisch (SOT-353/SC-70-5, gleicher Footprint wie U3/U103). Die
+Quelle in `motormodul.py` leitet C7830 aus der LCSC-Nummernfolge der
+Nachbartypen her (C7828 = 1G06, C7832 = 1G08) statt aus einer selbst
+gesichteten Produktseite — das wäre nach der bindenden Regel dieses
+Projekts eigentlich ein Lückenfall (Feld leer lassen). Für diese
+Aufgabe **selbst nachgesehen** (WebFetch auf
+`lcsc.com/product-detail/C7830.html`, 2026-09-09): Seite bestätigt
+MPN **SN74LVC1G07DCKR**, Gehäuse **SC-70-5**, Beschreibung „Single
+Buffer/Driver With Open-Drain Output", 1,65–5,5 V, 32 mA Senkstrom —
+die Nummer ist korrekt, die Herleitung war nur unvollständig belegt.
+`tools/jlc.py` führt C7830 jetzt als `LCSC_1G07`-Konstante.
+
+Unbestückt und ohne LCSC-Bedarf: J95/J96 (Randpad-Reihen, SMD-Lötpads
+auf B.Cu, `stack_spec.RANDPADS`) und J105 (zweiter Stapelstecker,
+Pico-Pins 21–40 — vorher Teil eines einzelnen 2×20-Steckers J100,
+jetzt zwei 1×20-Buchsen) — beide von Hand im gesteckten Verbund
+bestückt, s. `hardware/fertigung/*/UNBESTUECKT.txt`.

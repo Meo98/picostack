@@ -1,31 +1,41 @@
 Ref,Val,Package,PosX,PosY,Rot,Side
-"J102","Kettenstecker, Stift unten (SMD)","PinHeader_1x02_P2.54mm_Vertical_SMD_Pin1Left",12.500000,-4.020000,180.000000,bottom
-"J104","Leistungsstecker, Stift unten (SMD)","PinHeader_2x02_P2.54mm_Vertical_SMD",55.970000,-43.270000,180.000000,bottom
-"C12","220u","CP_Radial_D8.0mm_P3.50mm",51.502479,-33.751238,0.000000,top
-"C100","100n","C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",6.880000,-28.080000,0.000000,top
-"C101","1000n","C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",6.880000,-25.180000,0.000000,top
-"D1","SS36","D_SMC",18.600000,-32.550000,0.000000,top
-"D10","SMCJ30A","D_SMC",29.100000,-25.150000,0.000000,top
+"J95","Randpads GPIO, unbestueckt (THT-Loetpad)","Randpad_Reihe_1x18",18.160000,-63.000000,180.000000,bottom
+"J96","Randpads Versorgung: 2x 3V3 + 2x GND, unbestueckt (THT-Loetpad)","Randpad_Reihe_1x04",8.000000,-63.000000,180.000000,bottom
+"J102","Kettenstecker, Stift unten (SMD)","PinHeader_1x02_P2.54mm_Vertical_SMD_Pin1Left",20.590000,-4.020000,180.000000,bottom
+"J104","Leistungsstecker, Stift unten (SMD)","PinHeader_2x02_P2.54mm_Vertical_SMD",63.770000,-46.770000,180.000000,bottom
+"C90","220u","CP_Radial_D8.0mm_P3.50mm",54.042479,-26.751238,0.000000,top
+"C91","22u","C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",53.420000,-33.080000,0.000000,top
+"C100","100n","C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",5.880000,-28.080000,0.000000,top
+"C101","1000n","C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",5.880000,-25.180000,0.000000,top
+"C102","100n","C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",1.530000,-9.880000,90.000000,top
+"C103","100n","C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",1.530000,-14.240000,90.000000,top
+"C104","100n","C_0805_2012Metric_Pad1.18x1.45mm_HandSolder",1.530000,-18.599999,90.000000,top
+"D1","SS36C","D_SMC",39.500000,-4.350000,0.000000,top
+"D90","SMCJ30A","D_SMC",56.440000,-18.550000,0.000000,top
+"D91","SS36C","D_SMC",66.900000,-18.550000,0.000000,top
 "H1","M3","",4.000000,-4.000000,0.000000,top
-"H2","M3","",4.000000,-56.000000,0.000000,top
-"H3","M3","",60.000000,-4.000000,0.000000,top
-"H4","M3","",60.000000,-56.000000,0.000000,top
-"J5","LED-Kanal 1","TerminalBlock_Phoenix_PT-1,5-2-3.5-H_1x02_P3.50mm_Horizontal",10.250000,-53.600000,0.000000,top
-"J100","Stapelstecker 2x20","PinHeader_2x20_P2.54mm_Vertical",8.000000,-13.000000,90.000000,top
-"J101","Kettenstecker, Buchse oben (SMD)","PinSocket_1x02_P2.54mm_Vertical_SMD_Pin1Left",12.500000,-4.020000,0.000000,top
-"J103","Leistungsstecker, Buchse oben (SMD)","PinSocket_2x02_P2.54mm_Vertical_SMD",55.920000,-43.270000,0.000000,top
-"Q1","NCE6050KA","TO-252-3_TabPin2",8.090000,-40.000000,0.000000,top
-"Q10","IRFR5305","TO-252-3_TabPin2",51.390000,-25.000000,0.000000,top
-"R11","10k","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",45.850000,-16.450000,0.000000,top
-"R12","10k","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",50.550000,-16.450000,0.000000,top
-"R100","Kennwiderstand (Modultyp)","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",6.850000,-30.950000,0.000000,top
-"R101","Kennwiderstand (Modultyp)","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",11.150000,-30.950000,0.000000,top
-"R102","100k","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",11.250000,-25.150000,0.000000,top
-"R104","10000 (ID_OBEN)","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",6.850000,-33.850000,0.000000,top
-"R105","10000 (ID_OBEN)","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",11.150000,-33.850000,0.000000,top
-"RG1","100","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",25.850000,-16.450000,0.000000,top
-"RP1","100k","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",25.850000,-19.550000,0.000000,top
-"U100","STM32C011F6P6","TSSOP-20_4.4x6.5mm_P0.65mm",18.850000,-20.000000,0.000000,top
-"U101","SN74LVC1G175","SOT-363_SC-70-6",6.450000,-22.100000,0.000000,top
-"U102","SN74LVC2G00DCUR","VSSOP-8_2.3x2mm_P0.5mm",17.280000,-25.750000,0.000000,top
-"U103","SN74LVC1G08","SOT-353_SC-70-5",22.050000,-25.600000,0.000000,top
+"H2","M3","",4.000000,-61.000000,0.000000,top
+"H3","M3","",71.000000,-4.000000,0.000000,top
+"H4","M3","",71.000000,-61.000000,0.000000,top
+"J5","LED-Kanal 1","TerminalBlock_Phoenix_PT-1,5-2-3.5-H_1x02_P3.50mm_Horizontal",35.850000,-23.600000,0.000000,top
+"J90","Versorgung Eingang","TerminalBlock_Phoenix_PT-1,5-2-3.5-H_1x02_P3.50mm_Horizontal",53.790000,-6.600000,0.000000,top
+"J100","Stapelstecker links, Pico-Pins 1..20 (Buchse)","PinSocket_1x20_P2.54mm_Vertical",30.610000,-2.270000,0.000000,top
+"J101","Kettenstecker, Buchse oben (SMD)","PinSocket_1x02_P2.54mm_Vertical_SMD_Pin1Left",20.590000,-4.020000,0.000000,top
+"J103","Leistungsstecker, Buchse oben (SMD)","PinSocket_2x02_P2.54mm_Vertical_SMD",63.720000,-46.770000,0.000000,top
+"J105","Stapelstecker rechts, Pico-Pins 21..40 (Buchse)","PinSocket_1x20_P2.54mm_Vertical",48.390000,-50.530000,180.000000,top
+"Q1","NCE6020AK","TO-252-3_TabPin2",37.500000,-13.010000,90.000000,top
+"Q90","IRFR5305","TO-252-3_TabPin2",66.530000,-11.100000,0.000000,top
+"R90","10k","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",53.390000,-1.450000,0.000000,top
+"R91","10k","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",57.690000,-1.450000,0.000000,top
+"R100","Kennwiderstand (Modultyp)","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",5.850000,-30.950000,0.000000,top
+"R101","Kennwiderstand (Modultyp)","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",10.150000,-30.950000,0.000000,top
+"R102","100k","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",10.250000,-25.150000,0.000000,top
+"R104","10000 (ID_OBEN)","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",5.850000,-33.850000,0.000000,top
+"R105","10000 (ID_OBEN)","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",10.150000,-33.850000,0.000000,top
+"RG1","100","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",35.450000,-30.150000,0.000000,top
+"RP1","100k","R_0805_2012Metric_Pad1.20x1.40mm_HandSolder",39.750000,-30.150000,0.000000,top
+"U90","K7805-1000R3","Converter_DCDC_RECOM_R-78B-2.0_THT",64.100000,-24.750000,0.000000,top
+"U100","STM32C011F6P6","TSSOP-20_4.4x6.5mm_P0.65mm",17.850000,-20.000000,0.000000,top
+"U101","SN74LVC1G175","SOT-363_SC-70-6",5.450000,-22.100000,0.000000,top
+"U102","SN74LVC2G00DCUR","VSSOP-8_2.3x2mm_P0.5mm",16.280000,-25.750000,0.000000,top
+"U103","SN74LVC1G08","SOT-353_SC-70-5",21.050000,-25.600000,0.000000,top

@@ -51,7 +51,25 @@ LCSC_MCU = "C5456198"             # STM32C011F6P6, TSSOP-20
 LCSC_1G175 = "C202238"            # SN74LVC1G175DCKR, SC-70-6
 LCSC_2G00 = "C206109"             # SN74LVC2G00DCUR, VSSOP-8
 LCSC_1G08 = "C7832"               # SN74LVC1G08DCKR, SC-70-5
+LCSC_1G07 = "C7830"               # SN74LVC1G07DCKR, SC-70-5, Buffer/
+                                  # Driver mit Open-Drain-Ausgang -- der
+                                  # NOTAUS-FIX (Aufgabe 5d/2026-09-08):
+                                  # ersetzt auf U6/U7 den 1G06 unten, weil
+                                  # dessen invertierender Ausgang bei
+                                  # offenem Notaus-Kontakt (Ruhestrom-
+                                  # Umbau) die Sammelleitung staendig auf
+                                  # LOW zoege statt HIGH -- Herleitung und
+                                  # TI-Datenblattzitat in
+                                  # tools/sch/motormodul.py (INVERTER_WERT,
+                                  # felder={"LCSC": "C7830"})
 LCSC_1G06 = "C7828"               # SN74LVC1G06DCKR, SC-70-5, Open-Drain
+                                  # -- NICHT MEHR VERBAUT (v2): v1 setzte
+                                  # dies auf U6/U7 des Motormoduls ein,
+                                  # das war fuer den Ruhestrom-Notaus
+                                  # FALSCH gepolt (s. LCSC_1G07 oben).
+                                  # Konstante bleibt fuer den Beleg in
+                                  # hardware/bauteile-1b.md erhalten, wird
+                                  # in BOARDS aber nirgends mehr benutzt.
 LCSC_PMOS_TO252 = "C2624"         # IRFR5305PbF, P-Kanal, D-Pak
 LCSC_PC817 = "C97308"             # PC817X1CSP9F, SMD-Gullwing
 LCSC_R3K3_1206 = "C26032"         # 1206W4F3301T5E, 3,3 kOhm 250 mW
@@ -150,12 +168,28 @@ _STECKER_HAND = ("von Hand - im gesteckten Verbund ausgerichtet, damit "
                  "die Stapelkontakte ohne Zwang fluchten (MONTAGE_REGEL)")
 
 def _dimmer(kanaele, typcode):
-    """BOM/Unbestueckt-Definition einer Dimmer-Variante."""
+    """BOM/Unbestueckt-Definition einer Dimmer-Variante (v2).
+
+    Gegenueber v1 (Etappe 1b) neu: die Versorgungszelle aus
+    tools/sch/versorgung.py (J90/Q90/R90/R91/D90/C90/U90/C91/D91) ersetzt
+    den vorherigen board-eigenen Verpolschutz -- J4+n/Q10/D10/C12 aus der
+    alten Fassung dieser Funktion existieren auf der Platine nicht mehr
+    (per pos.csv nachgemessen, nicht angenommen), Q10 wurde zu Q90, D10 zu
+    D90, C12 zu C90. Neu dazu: die Gate-Entstoerkondensatoren C102-C104
+    (gleicher Wert wie C100, in dieselbe BOM-Zeile gemergt, da identisches
+    Bauteil) und die unbestueckten Randpad-Reihen J95/J96
+    (stack_spec.RANDPADS) sowie der zweite Stapelstecker J105 (Pico-Pins
+    21-40, vorher Teil eines einzelnen 2x20-Steckers J100).
+    """
     bom = [
-        ("100nF 50V X7R 0805",                ["C100"], LCSC_C100N_0805,
-         True),
+        ("100nF 50V X7R 0805",
+         ["C100", "C102", "C103", "C104"], LCSC_C100N_0805, True),
         ("1uF 50V X7R 0805",                  ["C101"], LCSC_C1U_0805,
          True),
+        ("22uF 25V X5R 0805",                 ["C91"], LCSC_C22U_0805,
+         True),
+        ("220uF 35V Elko radial D8 RM3.5",    ["C90"],
+         LCSC_ELKO_220U35, True),
         ("100kOhm 0805 1%",
          ["R102"] + ["RP%d" % n for n in range(1, kanaele + 1)],
          LCSC_R100K_0805, True),
@@ -163,22 +197,22 @@ def _dimmer(kanaele, typcode):
          ["RG%d" % n for n in range(1, kanaele + 1)],
          LCSC_R100R_0805, True),
         ("10kOhm 0805 1%",
-         ["R11", "R12", "R104", "R105"],       LCSC_R10K_0805, True),
-        ("220uF 35V Elko radial D8 RM3.5",    ["C12"],
-         LCSC_ELKO_220U35, True),
-        ("SMCJ30A TVS unidirektional DO-214AB", ["D10"],
+         ["R90", "R91", "R104", "R105"],       LCSC_R10K_0805, True),
+        ("SMCJ30A TVS unidirektional DO-214AB", ["D90"],
          LCSC_SMCJ30A, True),
         ("SS36C Schottky 60V 3A DO-214AB (SMC)",
-         ["D%d" % n for n in range(1, kanaele + 1)],
+         ["D91"] + ["D%d" % n for n in range(1, kanaele + 1)],
          LCSC_SS36C, True),
-        ("IRFR5305 P-MOSFET -55V TO-252",     ["Q10"],
+        ("IRFR5305 P-MOSFET -55V TO-252",     ["Q90"],
          LCSC_PMOS_TO252, True),
         ("NCE6020AK N-MOSFET 60V 20A TO-252",
          ["Q%d" % n for n in range(1, kanaele + 1)],
          LCSC_NMOS_TO252, True),
         ("KF350-3.5-2P Klemme 3.5mm 2P 10A",
-         ["J%d" % (4 + n) for n in range(1, kanaele + 1)],
+         ["J90"] + ["J%d" % (4 + n) for n in range(1, kanaele + 1)],
          LCSC_KLEMME_35_2P, True),
+        ("K7805-1000R3 DC/DC 5V 1A 6-30V SIP-3", ["U90"], LCSC_K7805,
+         True),
         ("SN74LVC1G08DCKR AND SC-70-5",       ["U103"], LCSC_1G08, True),
         ("SN74LVC1G175DCKR D-Flipflop SC-70-6", ["U101"],
          LCSC_1G175, True),
@@ -186,7 +220,14 @@ def _dimmer(kanaele, typcode):
         ("STM32C011F6P6 MCU TSSOP-20",        ["U100"], LCSC_MCU, True),
     ] + _kenn(typcode)
     unbestueckt = {
-        "J100": "Stapelstecker 2x20 " + _STECKER_HAND,
+        "J95": "Randpads GPIO 1x18, unbestueckt (SMD-Loetpad, "
+               "Rueckseite, B.Cu)",
+        "J96": "Randpads Versorgung 1x04 (2x 3V3 + 2x GND), "
+               "unbestueckt (SMD-Loetpad, Rueckseite, B.Cu)",
+        "J100": "Stapelstecker links, Pico-Pins 1-20 (Buchse) "
+                + _STECKER_HAND,
+        "J105": "Stapelstecker rechts, Pico-Pins 21-40 (Buchse) "
+                + _STECKER_HAND,
         "J101": "Kettenstecker Buchse (SMD) " + _STECKER_HAND,
         "J102": "Kettenstecker Stift (SMD) " + _STECKER_HAND,
         "J103": "Leistungsstecker Buchse (SMD) " + _STECKER_HAND,
@@ -200,6 +241,18 @@ BOARDS = {
     "dimmer1": None,   # unten gefuellt (braucht _kenn/_STECKER_HAND)
     "dimmer3": None,
     "dimmer4": None,
+    # ------------------------------------------------------------------
+    # DEPRECATED (v1-Archiv): die Sockelplatine ist mit v2 nicht mehr Teil
+    # der Produktlinie (ersetzt durch die Versorgungszelle, die jetzt in
+    # JEDEM Modul steckt -- tools/sch/versorgung.py). Dieser Eintrag bleibt
+    # nur, damit ein alter v1-Auftrag aus dem Repo heraus nachvollziehbar
+    # bleibt; er wird von keinem v2-Liefergegenstand mehr erzeugt oder
+    # bestellt. python3 tools/jlc.py sockel LAEUFT NOCH (die BOM/CPL-Logik
+    # ist unveraendert), aber pos.csv/zentroide.csv unter
+    # hardware/fertigung/sockel/ sind der letzte v1-Stand -- fuer sie gibt
+    # es kein v2-Board, gegen das sie neu erzeugt werden koennten
+    # (tests/test_sockelplatine.py und tests/test_spec_sockel.py sind aus
+    # demselben Grund bereits ROT, s. tests/run_all.py-Restliste).
     "sockel": {
         "pcb": "Sockelplatine",
         "bom": [
@@ -226,25 +279,37 @@ BOARDS = {
             "J4": "Leistungsstecker (SMD-Stift) " + _STECKER_HAND,
         },
     },
+    # v2: Versorgungszelle (J90/Q90/R90/R91/D90/C90/U90/C91/D91) ersetzt
+    # das alte Q1/D1/C12 (nachgemessen in pos.csv -- keiner dieser drei
+    # Bezeichner existiert mehr auf der Platine); neu dazu die
+    # Gate-Entstoerkondensatoren C17-C19 (gleicher Wert wie C100, gleiche
+    # BOM-Zeile) und J95/J96/J105 wie beim Dimmer (s. _dimmer()-Docstring).
     "motor": {
         "pcb": "Motormodul",
         "bom": [
             ("22nF 50V X7R 0805",                 ["C10"],       "", False),
             ("100nF 50V X7R 0805",
-             ["C9", "C11", "C13", "C14", "C15", "C16", "C100"],
+             ["C9", "C11", "C13", "C14", "C15", "C16", "C17", "C18",
+              "C19", "C100"],
              LCSC_C100N_0805, True),
             ("1uF 50V X7R 0805",                  ["C101"],
              LCSC_C1U_0805, True),
+            ("22uF 25V X5R 0805",                 ["C91"],
+             LCSC_C22U_0805, True),
             ("100kOhm 0805 1%",                   ["R102"],
              LCSC_R100K_0805, True),
-            ("220uF 35V Elko radial D8 RM3.5",    ["C12"],
+            ("220uF 35V Elko radial D8 RM3.5",    ["C90"],
              LCSC_ELKO_220U35, True),
-            ("SMCJ30A TVS unidirektional DO-214AB", ["D1"],
+            ("SMCJ30A TVS unidirektional DO-214AB", ["D90"],
              LCSC_SMCJ30A, True),
+            ("SS36C Schottky 60V 3A DO-214AB (SMC)", ["D91"],
+             LCSC_SS36C, True),
             ("DB128L-5.08-2P-GN-S Klemme 16A 300V", ["J5"],
              LCSC_KLEMME_508_2P, True),
+            ("KF350-3.5-2P Klemme 3.5mm 2P 10A",  ["J90"],
+             LCSC_KLEMME_35_2P, True),
             ("Stiftleiste 1x04 2.54mm THT",       ["J3"],        "", False),
-            ("IRFR5305 P-MOSFET -55V TO-252",     ["Q1"],
+            ("IRFR5305 P-MOSFET -55V TO-252",     ["Q90"],
              LCSC_PMOS_TO252, True),
             ("100Ohm 0805 1%",                    ["R7", "R8", "R9"],
              LCSC_R100R_0805, True),
@@ -254,13 +319,15 @@ BOARDS = {
             ("4.7kOhm 0805 1%",                   ["R20", "R21"],
              LCSC_R4K7_0805, True),
             ("10kOhm 0805 1%",
-             ["R11", "R12", "R13", "R15", "R104", "R105"],
+             ["R13", "R15", "R90", "R91", "R104", "R105"],
              LCSC_R10K_0805, True),
+            ("K7805-1000R3 DC/DC 5V 1A 6-30V SIP-3", ["U90"],
+             LCSC_K7805, True),
             ("DRV8876PWPR H-Bruecke HTSSOP-16 PowerPAD", ["U1"],  "", False),
             ("SN74LVC1G08DCKR AND SC-70-5",       ["U3", "U103"],
              LCSC_1G08, True),
-            ("SN74LVC1G06DCKR Inverter OD SC-70-5", ["U6", "U7"],
-             LCSC_1G06, True),
+            ("SN74LVC1G07DCKR Buffer OD SC-70-5", ["U6", "U7"],
+             LCSC_1G07, True),
             ("SN74LVC1G175DCKR D-Flipflop SC-70-6", ["U101"],
              LCSC_1G175, True),
             ("SN74LVC2G00DCUR Dual-NAND VSSOP-8", ["U102"],
@@ -271,7 +338,14 @@ BOARDS = {
         ] + _kenn(0x01),
         "unbestueckt": {
             "R10": "Stromgrenze, ab Werk unbestueckt",
-            "J100": "Stapelstecker 2x20 " + _STECKER_HAND,
+            "J95": "Randpads GPIO 1x18, unbestueckt (SMD-Loetpad, "
+                   "Rueckseite, B.Cu)",
+            "J96": "Randpads Versorgung 1x04 (2x 3V3 + 2x GND), "
+                   "unbestueckt (SMD-Loetpad, Rueckseite, B.Cu)",
+            "J100": "Stapelstecker links, Pico-Pins 1-20 (Buchse) "
+                    + _STECKER_HAND,
+            "J105": "Stapelstecker rechts, Pico-Pins 21-40 (Buchse) "
+                    + _STECKER_HAND,
             "J101": "Kettenstecker Buchse (SMD) " + _STECKER_HAND,
             "J102": "Kettenstecker Stift (SMD) " + _STECKER_HAND,
             "J103": "Leistungsstecker Buchse (SMD) " + _STECKER_HAND,
