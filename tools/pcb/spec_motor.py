@@ -883,8 +883,16 @@ PRE_TRACKS = (
     # (44,70|19,70) auf 0,83 mm heran -- eine 1,0-mm-Bahn und ein Via
     # brauchen 1,00 (0,5 + 0,2 + 0,3). Auf x = 46,80 sind es 2,10 mm,
     # und zur J105-Reihe (Padkante 47,54) bleiben 0,24 mm.
-    ("/+24V", "B.Cu", ((_m(46.03), 23.225), (_m(46.80), 22.455),
-                       (_m(46.80), 17.30), (_m(40.10), 17.30)), _LEISTUNG),
+    # Nordspur auf x = 45,80 (nicht 46,30): oestlich davon bleibt bis zur
+    # J105-Padkante (47,54) ein Korridor von 1,24 mm. Genau dort fuehrt
+    # der Router /CPH und /CPL nach Sueden -- in Lauf r7 nachgemessen
+    # (B.Cu-Spur x = 47,17). Zwei 0,25-mm-Bahnen brauchen 1,10 mm; mit der
+    # Spur auf 46,30 blieben nur 0,74 mm, es passte also nur EINE, und
+    # /CPL blieb in ALLEN ACHT Wuerfen des Laufs r offen, waehrend /CPH
+    # in fuenf davon durchkam. Zum /VCP-Via bei (44,70|19,70) sind es so
+    # noch 1,10 mm (noetig 1,00).
+    ("/+24V", "B.Cu", ((_m(46.03), 23.225), (_m(46.30), 22.955),
+                       (_m(46.30), 17.30), (_m(40.10), 17.30)), _LEISTUNG),
     ("/+24V", "F.Cu", ((_m(40.10), 17.30), (_m(39.58), 16.78),
                        ("PAD", "C11", "2")), _LEISTUNG),
 
@@ -1028,14 +1036,25 @@ def _naehte():
 # Die Regionen stammen aus den Heiler-Meldungen von 30 Wuerfellaeufen;
 # jede Zeile deckt die Stuecke ab, die dort wiederholt auftraten:
 STITCH_EXTRA = (
-    (14.20, 24.30),   # grosses Nest-Mittelstueck (x 11,5..17,9 y 17,6..30,8)
+    # (14,20|24,30) ersetzt: der Punkt lag in der Tasche zwischen U100s
+    # Padreihe (endet y 23,575) und U102 (ab 24,825) -- geometrisch
+    # zulaessig, aber der Guss fuellt dort nicht hinein, und das Via
+    # haing in JEDEM Wuerfellauf isoliert in der Luft (DRC: Via gegen
+    # Zone). Ein Naehpunkt muss nicht nur PLATZ haben, sondern auch
+    # Kupfer, das ihn erreicht.
+    # y = 23,20, nicht 23,40: die /ID1-Diagonale (14,30|21,625)->
+    # (9,15|26,775) laeuft hier durch, und ein Via braucht zu ihr
+    # 0,62 mm (0,3 Via + 0,2 Luft + 0,125 Bahn). Bei 23,40 waren es
+    # 0,583 -- vom Gate gefangen, nicht vom Auge.
+    (11.70, 23.20),   # Westband neben U100 (x 10,5..14,0 y 17,0..31,0)
     (13.70, 19.10),   # B.Cu-Insel unter dem Nest (x 11,6..17,4 y 18,2..20,0)
     (21.50, 27.20),   # Nest-Ost (x 19,5..29,3 y 24,6..29,9)
     (21.30, 33.40),   # Zeile 4/5 (x 19,0..23,6 y 31,4..34,0)
     (18.10, 32.10),   # Zwickel westlich davon (x 15,6..18,8 y 31,4..32,9)
     (8.10, 28.50),    # Kennwiderstands-Nest West (x 5,1..15,0 y 22,3..35,3)
     (3.00, 31.00),    # Westband (x 1,0..5,0 y 26,0..36,0)
-    (26.80, 17.70),   # Streifen unter dem Kettenstecker (x 24,0..29,1 y 16,7..19,0)
+    (26.00, 18.20),   # Streifen unter dem Kettenstecker (war 26,80|17,70,
+                      # ebenfalls ohne Gussanbindung)
     (25.70, 21.50),   # Ostband am Stapelrand (x 22,3..32,0 y 18,6..24,1)
     (13.50, 39.20),   # Band zwischen Nest und Notaus (x 8,9..18,1 y 35,3..45,2)
     (8.60, 47.70),        # Notaus-Zeile Mitte (x 6,6..11,1 y 46,1..49,5)
