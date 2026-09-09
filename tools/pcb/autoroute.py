@@ -78,15 +78,15 @@ _HALTEN = []          # gegen die Zeiger-Fallen der Bindings
 # aufrufen -- die Zeitgrenze hat dort also nicht einen Fehler gemeldet,
 # sondern gute Arbeit weggeworfen.
 #
-# EHRLICHE MESSUNG dazu (Aufgabe 8b, 30 Wuerfe ueber Dimmer1/3/4,
-# gui.enabled=false, ein Thread, gemessen mit `time` um den
-# Unterprozess): 20..380 s, Median rund 120 s. Auf den DIMMER-Platinen
-# waeren die 420 s also fast nie eng geworden -- die Zahl steigt hier
-# NICHT, weil dieser Auftrag sie gerissen haette, sondern weil sie im
-# einen dokumentierten Fall, in dem sie griff, das Falsche tat. 2700 s
-# = 45 min laesst den laengsten hier gemessenen Wurf um Faktor sieben
-# hinter sich; wer sie erreicht, hat ein echtes Problem und kein
-# wartendes Fenster.
+# EHRLICHE MESSUNG dazu (Aufgabe 8b, 38 gueltige Wuerfe ueber
+# Dimmer1/3/4, gui.enabled=false, ein Thread, `time` um den
+# Unterprozess gelegt): 19,6 s bis 205,4 s, Median 39,0 s -- also
+# WEIT unter den 420 s. Auf den Dimmer-Platinen waere die alte Grenze
+# nie eng geworden; sie steigt hier NICHT, weil dieser Auftrag sie
+# gerissen haette, sondern weil sie in dem einen dokumentierten Fall,
+# in dem sie griff, das Falsche tat. 2700 s = 45 min laesst den
+# laengsten hier gemessenen Wurf um Faktor 13 hinter sich; wer sie
+# erreicht, hat ein echtes Problem und kein wartendes Fenster.
 ZEITGRENZE = 2700
 
 # freerouting MUSS ohne Oberflaeche laufen, sonst schreibt es nie.
