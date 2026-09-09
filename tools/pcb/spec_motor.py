@@ -1124,6 +1124,13 @@ STITCH_EXTRA = (
     # zulaessige Stellen, (7,70|47,70) ist die mittigste davon.
     (7.70, 47.70),
     (3.20, 49.50),        # Notaus-Zeile West (x 0,5..6,0 y 47,3..51,6)
+    # Dritte Runde, an dem Wurf gesucht, der als erster ALLE Netze
+    # verlegt hatte (w8): dort blieben nur noch vier Massestuecke ohne
+    # Heilpunkt. Diese drei Punkte decken sie ab -- die Notaus-Ecke
+    # oben und unten und der Zwickel westlich von U100.
+    (8.90, 48.60),        # Notaus-Zeile, zwischen U6/U7 und U4/U5
+    (7.30, 54.00),        # B.Cu-Insel unter U4/U5 (x 7,4..11,9 y 47..57,7)
+    (16.70, 19.10),       # Zwickel westlich von U100 (B.Cu x 10,4..17,1)
 )
 
 STITCH_VIAS = _naehte() + STITCH_EXTRA
