@@ -29,7 +29,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
 import pcbnew
-import fertigung, geometry, kicadlibs
+import fertigung, geometry, gusslage, kicadlibs
 
 
 def mm(v):
@@ -591,14 +591,46 @@ def stitching_vias(board, beschreibung):
     der freien Flaeche der jeweiligen Platine abhaengt; sie werden VOR
     dem Verlegen gesetzt, damit der Router sie als Hindernis kennt statt
     hinterher darueber zu stolpern.
+
+    NAEHPUNKT-FILTER (Aufgabe 7c). `beschreibung._naht_erlaubt()` (falls
+    vorhanden -- der 7,5-mm-Raster in _naehte()) und STITCH_EXTRA (die
+    von Hand gesuchten Zusatzpunkte) pruefen beide nur Abstand zu
+    Bauteil-Hoefen -- KEINER von beiden weiss, ob der Guss die Stelle
+    ueberhaupt FUELLT. Der Fund, der diese Aufgabe ausgeloest hat: ein
+    STITCH_EXTRA-Punkt des Motormoduls (18,10|32,10) sass 0,07 mm neben
+    dem Pad R5-1 (Netz /IPROPI) -- der Kommentar dort behauptete
+    ">= 0,50 mm zu jedem Pad", gemessen war es nicht. `board.
+    BuildConnectivity()` "heilt" so ein Ueberlappen nicht als DRC-Fehler,
+    sondern zieht das Via STILLSCHWEIGEND auf das fremde Netz -- aus dem
+    GND-Naehvia wird ein IPROPI-Via, ohne jede Meldung, und die
+    Massflaeche bleibt an der Stelle unvernaeht.
+    Deshalb jetzt HIER, am gebauten Brett gemessen statt an der
+    Beschreibung geschaetzt (dasselbe Prinzip wie masseheiler.py):
+    ein Punkt kommt nur durch, wenn (1) beide Guss-Lagen ihn nach dem
+    bisherigen Baustand (Bauteile + Regelflaechen + Vorverdrahtung,
+    OHNE die Naehvias selbst) tatsaechlich fuellen UND (2) kein fremdes
+    Netz in Via-Abstand liegt. Gilt fuer JEDEN Punkt aus STITCH_VIAS
+    gleichermassen -- ob er aus dem festen Raster stammt oder von Hand
+    gesucht wurde, s. Bericht Aufgabe 7c.
     """
     stellen = getattr(beschreibung, "STITCH_VIAS", ())
     code = board.GetNetcodeFromNetname("GND")
     if not stellen or code < 0:
         return 0
+    zonen = gusslage.gnd_zonen(board, code)
+    radius = mm(fertigung.VIA_PAD) // 2
+    verworfen = []
+    gesetzt = 0
     for x, y in stellen:
+        px, py = mm(x), mm(y)
+        if not gusslage.erreicht(zonen, px, py):
+            verworfen.append((x, y, "Guss erreicht die Stelle nicht"))
+            continue
+        if not gusslage.frei(board, px, py, radius, code):
+            verworfen.append((x, y, "fremdes Kupfer zu nah"))
+            continue
         v = pcbnew.PCB_VIA(board)
-        v.SetPosition(pcbnew.VECTOR2I(mm(x), mm(y)))
+        v.SetPosition(pcbnew.VECTOR2I(px, py))
         v.SetWidth(mm(fertigung.VIA_PAD))
         v.SetDrill(mm(fertigung.VIA_DRILL))
         v.SetViaType(pcbnew.VIATYPE_THROUGH)
@@ -613,7 +645,13 @@ def stitching_vias(board, beschreibung):
         v.SetFrontTentingMode(pcbnew.TENTING_MODE_TENTED)
         v.SetBackTentingMode(pcbnew.TENTING_MODE_TENTED)
         board.Add(v)
-    return len(stellen)
+        gesetzt += 1
+    if verworfen:
+        print("stitching_vias: %d von %d Naehpunkt(en) verworfen:"
+              % (len(verworfen), len(stellen)))
+        for x, y, grund in verworfen:
+            print("    (%.2f|%.2f) -- %s" % (x, y, grund))
+    return gesetzt
 
 
 def courtyard_bbox(fp):
@@ -985,17 +1023,24 @@ def bauen(beschreibung, board_pfad, sch_pfad, kicad_dir=None,
         antenna_slot(board, beschreibung)
         antenna_slot_keepout(board, beschreibung)
     n_regel = rule_areas(board, beschreibung)
-    n_stich = stitching_vias(board, beschreibung)
     n_vor = pre_tracks(board, beschreibung)
     n_vorvia = pre_vias(board, beschreibung)
     if n_vorvia:
         print("%d Vorverdrahtungs-Vias gesetzt" % n_vorvia)
+    # Zonen JETZT anlegen und einmal fuellen -- VOR den Naehvias, nicht
+    # danach. Der Naehpunkt-Filter in stitching_vias() muss gegen den
+    # tatsaechlich gefuellten Guss pruefen koennen (Aufgabe 7c); ohne
+    # diesen Vorablauf gaebe es beim Filtern noch gar keine Zone.
     add_zones(board, beschreibung)
     board.BuildListOfNets()
     board.BuildConnectivity()
     pcbnew.ZONE_FILLER(board).Fill(list(board.Zones()))
+    n_stich = stitching_vias(board, beschreibung)
     problems += np_
+    # Zweiter Fuelllauf: bezieht die (gefilterten) Naehvias mit ein.
     board.BuildListOfNets()
+    board.BuildConnectivity()
+    pcbnew.ZONE_FILLER(board).Fill(list(board.Zones()))
     board.Save(board_pfad)
 
     bb = board.GetBoardEdgesBoundingBox()

@@ -15,11 +15,28 @@ Dieses Werkzeug arbeitet deshalb NACH dem Verlegen am fertigen Board:
    Lagen, Vias, Pads (THT verbindet beide Lagen), Bahnsegmente
    (verbunden ueber gemeinsame Endpunkte und die Stuecke, in denen
    ihre Endpunkte liegen).
-2. Jeder Cluster ohne Verbindung zum Hauptcluster (dem groessten)
-   bekommt ein Via an einer Stelle, an der BEIDE Lagen im jeweils
-   richtigen Stueck liegen und die frei von fremdem Kupfer ist
-   (Pads, Bahnen, Vias, Regelflaechen, M3, Rand -- am Board gemessen,
-   nicht an der Beschreibung geschaetzt).
+2. Jeder Cluster ohne Verbindung zum Hauptcluster (dem groessten) wird
+   in dieser Reihenfolge versucht zu heilen -- jede Stufe misst am
+   GEBAUTEN Board, keine schaetzt aus der Beschreibung:
+     a) Via ueber dem Hauptcluster: eine Stelle, an der BEIDE Lagen im
+        Hauptstueck liegen und frei von fremdem Kupfer sind.
+     b) Via ueber einem FREMDEN Cluster (Kette waechst, bis sie
+        irgendwo Hauptkupfer beruehrt -- die Clusterzahl sinkt trotzdem
+        um eins).
+     c) Bahnbruecke auf der EIGENEN Lage: ein freier 3-mm-Korridor vom
+        Splitter zu einem anderen Cluster derselben Lage.
+     d) Gegenlage-Bruecke (Aufgabe 7c): wenn (a)-(c) an der eigenen
+        Lage scheitern, weil sie dort zu eng ist -- ein Via HINEIN in
+        den Splitter, dann eine kurze Bahn auf der GEGENLAGE zum
+        naechsten erreichbaren Stueck. Fuer den Fall, dass die eigene
+        Lage ueberfuellt, die andere an derselben Stelle aber offen ist.
+     e) Via-in-Pad: wenn selbst das nicht greift, weil der Splitter nur
+        aus dem Kupferkragen um ein Massepad besteht (keine eigene
+        Flaeche fuer eine Punktsuche) -- ein Via im Pad-Zentrum.
+     f) Sackgasse: Cluster ohne Massepads sind toter Zierrat (nur eigene
+        Naehvias halten sie am Leben) -- deren Vias werden geloescht,
+        die Inselentfernung des Fuellers raeumt den Rest ab. Cluster MIT
+        Massepads bleiben ROT und werden benannt (Layoutfehler).
 3. Zonen neu fuellen, von vorn -- bis kein isolierter Cluster mehr da
    ist oder sich nichts mehr heilen laesst (dann Fehler, ROT).
 
@@ -36,32 +53,19 @@ sys.path.insert(0, HERE)
 
 import pcbnew
 import fertigung
+import gusslage
 
 mm = lambda v: int(round(v * 1e6))
 
 FREI = 0.2          # Abstand zu fremdem Kupfer (Netzklassen-Clearance)
 VIA_R = None        # gesetzt in main aus fertigung
 
-
-def _gnd_zonen(board, gnd):
-    zonen = {}
-    for z in board.Zones():
-        if z.GetNetCode() != gnd or z.GetIsRuleArea():
-            continue
-        for lage in (pcbnew.F_Cu, pcbnew.B_Cu):
-            if z.IsOnLayer(lage):
-                zonen[lage] = z.GetFilledPolysList(lage)
-    return zonen
-
-
-def _stueck(zonen, lage, x, y):
-    polys = zonen.get(lage)
-    if polys is None:
-        return None
-    for i in range(polys.OutlineCount()):
-        if polys.Contains(pcbnew.VECTOR2I(int(x), int(y)), i):
-            return i
-    return None
+# _gnd_zonen/_stueck: die Polygon-Logik liegt jetzt in gusslage.py, weil
+# build.py sie seit Aufgabe 7c fuer denselben Zweck VOR dem Verlegen
+# braucht (Naehpunkt-Filter). Duenne Alias-Namen statt Umschreiben aller
+# Aufrufe hier -- das Verhalten bleibt bitidentisch.
+_gnd_zonen = gusslage.gnd_zonen
+_stueck = gusslage.stueck
 
 
 def cluster(board):
@@ -148,43 +152,16 @@ def isolierte(board):
     return zonen, aus, wurzel, find
 
 
-def _frei(board, x, y, radius=None):
-    """Darf hier GND-Kupfer mit diesem Radius hin? Am Board gemessen."""
+def _frei(board, x, y, radius=None, nur_lage=None):
+    """Darf hier GND-Kupfer mit diesem Radius hin? Am Board gemessen.
+
+    Duenner Alias auf gusslage.frei() (s. dortiger Docstring) -- nur die
+    GND-Netzcode-Aufloesung und der VIA_R-Standardwert bleiben hier, weil
+    beide von diesem Modul (Aufruf-Reihenfolge in heilen()) abhaengen.
+    """
     gnd = board.GetNetcodeFromNetname("GND")
-    pos = pcbnew.VECTOR2I(int(x), int(y))
-    kante = (VIA_R if radius is None else radius) + mm(FREI)
-    bb = board.GetBoardEdgesBoundingBox()
-    if not (bb.GetLeft() + mm(0.8) < x < bb.GetRight() - mm(0.8)
-            and bb.GetTop() + mm(0.8) < y < bb.GetBottom() - mm(0.8)):
-        return False
-    for f in board.GetFootprints():
-        for p in f.Pads():
-            d = p.GetBoundingBox()
-            d.Inflate(kante)
-            if d.Contains(pos) and p.GetNetCode() != gnd:
-                return False
-            if (p.GetAttribute() != pcbnew.PAD_ATTRIB_SMD
-                    and d.Contains(pos)):
-                return False        # Loecher auch bei gleichem Netz meiden
-    for t in board.Tracks():
-        if t.GetNetCode() == gnd:
-            if t.Type() == pcbnew.PCB_VIA_T:
-                d = t.GetBoundingBox()
-                d.Inflate(mm(0.2))
-                if d.Contains(pos):
-                    return False    # nicht auf ein vorhandenes Via
-            continue
-        d = t.GetBoundingBox()
-        d.Inflate(kante)
-        if d.Contains(pos) and t.HitTest(pos, kante):
-            return False
-    for z in board.Zones():
-        if z.GetIsRuleArea() and z.GetDoNotAllowVias():
-            d = z.GetBoundingBox()
-            d.Inflate(kante)
-            if d.Contains(pos):
-                return False
-    return True
+    return gusslage.frei(board, x, y, VIA_R if radius is None else radius,
+                         gnd, FREI, nur_lage)
 
 
 def _bruecke_suchen(board, zonen, offen, wurzel, find):
@@ -194,6 +171,11 @@ def _bruecke_suchen(board, zonen, offen, wurzel, find):
     3 mm laufen; erreicht der Strahl einen Punkt im Haupt-Stueck
     derselben Lage und ist der ganze Korridor frei von fremdem Kupfer,
     ist das die Bruecke.
+
+    `_frei(..., lage)` NUR gegen Kupfer DIESER Lage pruefen (Aufgabe
+    7c): eine Bahn auf F.Cu kann an Kupfer auf B.Cu nicht scheitern --
+    vorher blockte fremdes Kupfer der jeweils ANDEREN Lage Korridore,
+    die es nie beruehrt haette.
     """
     halb = mm(fertigung.TRACK_SIGNAL) // 2
     for lage, i, bb in offen:
@@ -204,20 +186,74 @@ def _bruecke_suchen(board, zonen, offen, wurzel, find):
             x = bb.GetLeft() + schritt
             while x < bb.GetRight():
                 if (polys.Contains(pcbnew.VECTOR2I(int(x), int(y)), i)
-                        and _frei(board, x, y, halb)):
+                        and _frei(board, x, y, halb, lage)):
                     for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1),
                                    (1, 1), (1, -1), (-1, 1), (-1, -1)):
                         n = 1
                         while n * 0.25 <= 3.0:
                             px = x + dx * n * schritt
                             py = y + dy * n * schritt
-                            if not _frei(board, px, py, halb):
+                            if not _frei(board, px, py, halb, lage):
                                 break
                             s2 = _stueck(zonen, lage, px, py)
                             if (s2 is not None
                                     and find((lage, s2)) == wurzel):
                                 return (x, y), (px, py), lage
                             n += 1
+                x += schritt
+            y += schritt
+    return None
+
+
+def _gegenlage_bruecke_suchen(board, zonen, offen, wurzel, find):
+    """((xv,yv),(xb,yb),lage_splitter,lage_bruecke) -- Via + kurze
+    GND-Bahn auf der GEGENLAGE, wenn weder ein einfaches Via noch eine
+    Bahnbruecke auf der EIGENEN Lage etwas findet (Aufgabe 7c).
+
+    Greift den Fall, den `_bruecke_suchen` nicht loesen kann: der
+    Splitter ist auf seiner EIGENEN Lage so zerschnitten (dicht an dicht
+    liegende fremde Pads/Bahnen), dass dort kein 3-mm-Korridor frei
+    bleibt -- die GEGENLAGE an derselben Stelle ist aber offenes Gebiet.
+    Erst ein Via HINEIN in den Splitter (auf dessen eigener Lage, wie
+    bei der einfachen Via-Suche), dann eine kurze Bahn AUF DER
+    GEGENLAGE vom Via zum naechsten erreichbaren Stueck: das Via allein
+    verbindet noch nichts (unter dem Ankerpunkt liegt auf der Gegenlage
+    haeufig gar kein Kupfer), erst die Bahn traegt zum Ziel.
+
+    Wie bei der Haupt-Suche in heilen(): zuerst nur zum HAUPTcluster
+    versuchen, sonst zu irgendeinem FREMDEN (Kette waechst, Clusterzahl
+    sinkt trotzdem um eins).
+    """
+    halb_via = VIA_R
+    halb_bahn = mm(fertigung.TRACK_SIGNAL) // 2
+    for lage, i, bb in offen:
+        andere = pcbnew.B_Cu if lage == pcbnew.F_Cu else pcbnew.F_Cu
+        polys = zonen[lage]
+        eigen = find((lage, i))
+        schritt = mm(0.25)
+        y = bb.GetTop() + schritt
+        while y < bb.GetBottom():
+            x = bb.GetLeft() + schritt
+            while x < bb.GetRight():
+                if (polys.Contains(pcbnew.VECTOR2I(int(x), int(y)), i)
+                        and _frei(board, x, y, halb_via)):
+                    for nur_haupt in (True, False):
+                        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1),
+                                       (1, 1), (1, -1), (-1, 1), (-1, -1)):
+                            n = 1
+                            while n * 0.25 <= 3.0:
+                                px = x + dx * n * schritt
+                                py = y + dy * n * schritt
+                                if not _frei(board, px, py, halb_bahn, andere):
+                                    break
+                                s2 = _stueck(zonen, andere, px, py)
+                                if s2 is not None:
+                                    dort = find((andere, s2))
+                                    passt = (dort == wurzel if nur_haupt
+                                             else dort != eigen)
+                                    if passt:
+                                        return (x, y), (px, py), lage, andere
+                                n += 1
                 x += schritt
             y += schritt
     return None
@@ -365,6 +401,38 @@ def heilen(board_pfad, nur_pruefen=False):
                 board.BuildConnectivity()
                 pcbnew.ZONE_FILLER(board).Fill(list(board.Zones()))
                 continue
+            # Gegenlage-Bruecke (Aufgabe 7c): der Splitter ist auf seiner
+            # EIGENEN Lage so eng, dass weder ein Via (ziel-Suche oben)
+            # noch eine Bahn (_bruecke_suchen) einen 3-mm-Korridor findet
+            # -- die GEGENLAGE an derselben Stelle ist aber offen. Via
+            # rein in den Splitter, kurze Bahn auf der Gegenlage weiter
+            # zum naechsten erreichbaren Stueck. Reduziert die
+            # Clusterzahl genau wie jede andere Stufe um eins (die
+            # Konvergenz-Wache oben prueft das so oder so nach).
+            gegenlage = _gegenlage_bruecke_suchen(
+                board, zonen, offen, wurzel, find)
+            if gegenlage is not None:
+                (x1, y1), (x2, y2), lage_via, lage_bruecke = gegenlage
+                gnd = board.GetNetcodeFromNetname("GND")
+                v = pcbnew.PCB_VIA(board)
+                v.SetPosition(pcbnew.VECTOR2I(int(x1), int(y1)))
+                v.SetWidth(mm(fertigung.VIA_PAD))
+                v.SetDrill(mm(fertigung.VIA_DRILL))
+                v.SetNetCode(gnd)
+                v.SetFrontTentingMode(pcbnew.TENTING_MODE_TENTED)
+                v.SetBackTentingMode(pcbnew.TENTING_MODE_TENTED)
+                board.Add(v)
+                t = pcbnew.PCB_TRACK(board)
+                t.SetStart(pcbnew.VECTOR2I(int(x1), int(y1)))
+                t.SetEnd(pcbnew.VECTOR2I(int(x2), int(y2)))
+                t.SetWidth(mm(fertigung.TRACK_SIGNAL))
+                t.SetLayer(lage_bruecke)
+                t.SetNetCode(gnd)
+                board.Add(t)
+                gesetzt.append(("gegenlage", (x1, y1, x2, y2)))
+                board.BuildConnectivity()
+                pcbnew.ZONE_FILLER(board).Fill(list(board.Zones()))
+                continue
             # Sackgasse. Cluster MIT Massepads sind ein Layoutfehler
             # (das Pad hinge in der Luft). Cluster OHNE Pads sind
             # toter Zierrat, den nur seine eigenen Naehvias am Leben
@@ -443,6 +511,7 @@ def heilen(board_pfad, nur_pruefen=False):
               % ", ".join(
                   ("%d Vias geloescht" % n) if a == "geloescht"
                   else ("Bruecke %s" % (n,)) if a == "bruecke"
+                  else ("Gegenlage-Bruecke %s" % (n,)) if a == "gegenlage"
                   else "(%.2f|%.2f)" % (a / 1e6, n / 1e6)
                   for a, n in gesetzt))
     else:

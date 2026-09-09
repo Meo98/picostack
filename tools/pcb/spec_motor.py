@@ -1108,7 +1108,17 @@ STITCH_EXTRA = (
     (13.70, 19.10),   # B.Cu-Insel unter dem Nest (x 11,6..17,4 y 18,2..20,0)
     (21.50, 27.20),   # Nest-Ost (x 19,5..29,3 y 24,6..29,9)
     (21.30, 33.40),   # Zeile 4/5 (x 19,0..23,6 y 31,4..34,0)
-    (18.10, 32.10),   # Zwickel westlich davon (x 15,6..18,8 y 31,4..32,9)
+    # (18.10|32.10) ENTFERNT (Aufgabe 7c): der Kommentar hier behauptete
+    # ">= 0,50 mm zu jedem Pad", gemessen war es 0,0707 mm zu Pad 1 von
+    # R5 (/IPROPI) -- eine Behauptung, die nie am Brett geprueft wurde.
+    # build.stitching_vias() haette das Via klaglos gesetzt, und
+    # board.BuildConnectivity() zog es danach STILLSCHWEIGEND auf das
+    # fremde Netz (aus GND wurde /IPROPI, 0 DRC-Verletzungen). Der neue
+    # Guss-Erreichbarkeitsfilter (s. Aufgabe-7c-Bericht) verwirft den
+    # Punkt jetzt zuverlaessig -- er bleibt trotzdem entfernt, denn ein
+    # Naehpunkt, der nie greift, ist toter Text. Der Zwickel selbst
+    # (x 15,6..18,8 y 31,4..32,9) bleibt ohne Ersatzpunkt: er lag noch
+    # nie unter den offenen Gussfragmenten eines Wuerfellaufs.
     (8.10, 28.50),    # Kennwiderstands-Nest West (x 5,1..15,0 y 22,3..35,3)
     (3.00, 31.00),    # Westband (x 1,0..5,0 y 26,0..36,0)
     (26.00, 18.20),   # Streifen unter dem Kettenstecker (war 26,80|17,70,
