@@ -630,8 +630,12 @@ RULE_AREAS = (
     # Stellen, an denen die Vorverdrahtung ihre eigenen Lagenwechsel
     # braucht -- sie soll aber nur EIN Naehvia verhindern, nicht eine
     # ganze Gasse.
+    # Kasten auf (45,15..45,25): so schliesst er den Rasterpunkt
+    # (45|21,25) immer noch aus (die Naht-Pruefung rechnet mit 0,5 mm
+    # Via-Radius, also 44,65..45,75), laesst aber das /CPH-Via bei
+    # (44,60|21,325) daneben zu -- dessen 0,5-mm-Kasten endet bei 45,10.
     ("Naehtfrei in der DRV8876-Ausleitung", ("F.Cu",),
-     (44.90, 21.15, 45.10, 21.35), frozenset(("vias",))),
+     (45.15, 21.15, 45.25, 21.35), frozenset(("vias",))),
 )
 
 # --- GND-Vorverdrahtung (nur das Nest; s. Moduldocstring) -------------
@@ -854,8 +858,9 @@ PRE_TRACKS = (
     # der Waermepfad-Regelflaeche (die beginnt erst bei x = 34,10) und
     # 1,34 mm neben den Kontakten von stapel_links -- und oben auf
     # y = 17,30 nach Osten, wo der Nordast ohnehin schon liegt.
-    ("/+24V", "B.Cu", ((_m(39.98), 28.60), (_m(33.80), 28.60),
-                       (_m(33.80), 17.30), (_m(40.10), 17.30)), _LEISTUNG),
+    ("/+24V", "B.Cu", ((_m(39.98), 28.60), (_m(39.28), 29.30),
+                       (_m(33.80), 29.30), (_m(33.80), 17.30),
+                       (_m(40.10), 17.30)), _LEISTUNG),
 
     # -- Ausfahrt von U1-12 (/VCP) --------------------------------------
     # Nur die AUSFAHRT, nicht der Weg. Pad 12 liegt zwischen Pad 11
@@ -886,10 +891,14 @@ PRE_TRACKS = (
     # bei y = 25,60 (0,20 mm unterhalb der Regelflaeche, die bei 25,40
     # endet) nach Westen unter der /Out2-Spur hindurch und kommt bei
     # x = 41,00 wieder hoch -- 0,63 mm neben C9s Pad.
+    # /VCPs Rueckseitenband liegt UNTER dem von /CPH (26,65 gegen 26,00).
+    # Andersherum kreuzen sie sich: /CPH faellt bei x = 44,15 nach
+    # Sueden und muesste /VCPs Band schneiden. Wer tiefer abbiegt, muss
+    # das weiter oestlich gelegene Band bekommen.
     ("/VCP", "F.Cu", (("PAD", "U1", "12"), (_m(46.25), 21.975),
-                      (_m(46.25), 26.00))),
-    ("/VCP", "B.Cu", ((_m(46.25), 26.00), (_m(41.10), 26.00))),
-    ("/VCP", "F.Cu", ((_m(41.10), 26.00), (_m(40.943), 25.843),
+                      (_m(46.25), 26.65))),
+    ("/VCP", "B.Cu", ((_m(46.25), 26.65), (_m(41.10), 26.65))),
+    ("/VCP", "F.Cu", ((_m(41.10), 26.65), (_m(41.10), 25.843),
                       ("PAD", "C9", "2"))),
 
     # -- /CPL U1-14 -> C10-2, VOLLSTAENDIG -------------------------------
@@ -925,11 +934,37 @@ PRE_TRACKS = (
     #      C9s Pads.
     #   5. Per Via zurueck auf die Vorderseite und in dieser Gasse nach
     #      Norden auf C10-2s Hoehe (0,585 mm Luft zu beiden Nachbarpads).
+    # SPURREIHENFOLGE. Die drei Cap-Netze faechern nach Osten auf. Zwei
+    # bekommen eine eigene VORDERSEITEN-Spur, und die muss in der
+    # Reihenfolge ihrer Pads liegen, sonst kreuzen sie einander: das
+    # suedlichere Pad biegt frueher (weiter westlich) nach Sueden ab.
+    #   /VCP (Pad 12, y = 21,975) -> Spur 45,75
+    #   /CPL (Pad 14, y = 20,675) -> Spur 46,40
+    # Fuer /CPH (Pad 13) ist auf der Vorderseite kein Platz mehr: zwischen
+    # den beiden Spuren bleiben 0,40 mm, oestlich von /CPL bis zur
+    # J105-Padkante 1,015 mm -- dorthin kaeme /CPH aber nur, indem es
+    # /CPLs Spur kreuzt. Es geht deshalb frueher auf die Rueckseite
+    # (s. unten).
     ("/CPL", "F.Cu", (("PAD", "U1", "14"), (_m(46.90), 20.675),
                       (_m(46.90), 27.50))),
     ("/CPL", "B.Cu", ((_m(46.90), 27.50), (_m(38.68), 27.50))),
     ("/CPL", "F.Cu", ((_m(38.68), 27.50), (_m(38.68), 25.843),
                       ("PAD", "C10", "2"))),
+
+    # /CPH U1-13 -> C10-1: Via schon bei (44,60|21,325), also NOERDLICH
+    # der /+24V-Ausleitung, und dann auf der Rueckseite nach Sueden. Die
+    # Rueckseitenspur liegt auf x = 44,15 -- 0,15 mm oestlich der
+    # Waermepfad-Regelflaeche (endet 43,90) und 0,85 mm von der
+    # /+24V-Rueckseitenbahn, die bei (45,00|22,625) beginnt (noetig
+    # 0,825). Querung nach Westen auf y = 26,65, zwischen den Baendern
+    # von /VCP (26,65) und den U1-Pads, und westlich von x = 38,18 ist
+    # auch /CPLs Band (27,50) zu Ende -- deshalb kann /CPH dort
+    # ungestoert auf C10-1s Pad-Hoehe hinunter.
+    ("/CPH", "F.Cu", (("PAD", "U1", "13"), (_m(45.10), 21.325))),
+    ("/CPH", "B.Cu", ((_m(45.10), 21.325), (_m(44.65), 21.775),
+                      (_m(44.65), 26.00), (_m(37.38), 26.00),
+                      (_m(37.38), 27.918))),
+    ("/CPH", "F.Cu", ((_m(37.38), 27.918), ("PAD", "C10", "1"))),
 
     # -- Masseanbindung der SOT-353-Notausgatter U6/U7 -------------------
     # masseheiler.py brach in JEDEM Wuerfellauf an einem dieser beiden
@@ -983,15 +1018,13 @@ PRE_VIAS = (
     # Lagenwechsel des /CPL-Wegs um C9 herum (s. PRE_TRACKS).
     ("/CPL", _m(46.90), 27.50),
     ("/CPL", _m(38.68), 27.50),
+    ("/CPH", _m(45.10), 21.325),
+    ("/CPH", _m(37.38), 27.918),
     # Nordast des /+24V zum Abblock-C11 (s. PRE_TRACKS).
     ("/+24V", _m(40.10), 17.30),
     # /VCP quert unter /Out2 hindurch.
-    ("/VCP", _m(46.25), 26.00),
-    # Endvia IM Pad von C9-2 (gleiches Netz): die Waermepfad-Flaeche
-    # verbietet Vias bis y = 25,40, C9s Pad reicht von 25,118 bis 26,568
-    # -- nur das untere Stueck ab 26,10 ist beides zugleich, frei und im
-    # Pad. Via-in-Pad ist bei Handloetung unbedenklich (wie in v1 bei R5).
-    ("/VCP", _m(41.10), 26.00),
+    ("/VCP", _m(46.25), 26.65),
+    ("/VCP", _m(41.10), 26.65),
     # /NOTAUS quert unter dem GND-Stummel von U6-3 hindurch.
     ("/NOTAUS", 3.70, 48.40),
     ("/NOTAUS", 5.90, 48.40),
