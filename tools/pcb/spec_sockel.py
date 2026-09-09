@@ -1,5 +1,12 @@
 """Platinenbeschreibung der Sockelplatine: Umriss, Lochbild, Platzierung.
 
+**v1-only, eingefroren** -- s. tools/sch/sockelplatine.py fuer die
+Begruendung. Diese Datei importiert `stack_spec.STECKER_POS["stapel"]`,
+das der v2-Vertrag nicht mehr kennt (ersetzt durch "stapel_links"/
+"stapel_rechts"); sie laeuft deshalb seit VERTRAG_VERSION = 2 nicht mehr
+(tests/test_spec_sockel.py ist dokumentiert rot). Nicht nachziehen -- die
+Sockelplatine bleibt als Archiv fuer Release v0.1.0 im Baum.
+
 Gelesen von tools/pcb/geometry.py (Pruefung), tools/pcb/build.py
 (Aufbau) und tools/pcb/netclasses.py (Bahnbreiten). Bewusst OHNE
 KiCad-Abhaengigkeit -- `python3 tools/pcb/geometry.py spec_sockel` muss

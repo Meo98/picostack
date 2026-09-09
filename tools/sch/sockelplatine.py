@@ -1,5 +1,14 @@
 """Die Sockelplatine: traegt den Pico, speist den Stapel, sitzt zuoberst.
 
+**v1-only, eingefroren.** v2 (VERTRAG_VERSION = 2 in stack_spec.py) hat die
+Aufgabe dieser Platine auf jedes Modul verlegt (Versorgungszelle J90/Q90/
+R90/R91/D90/C90/U90/C91/D91, zwei 1x20-Buchsenreihen statt einem 2x20-Block)
+-- ein Modul + ein Pico ist seither ein lauffaehiges Geraet, ohne Sockel.
+Dieser Generator ist NICHT auf den v2-Vertrag nachgezogen (modulsockel.py
+wurde fuer v2 umgestellt; der Aufruf hier unten passt nicht mehr zur neuen
+_stapelstecker()-Signatur -- absichtlich, s. tests/test_sockelplatine.py).
+Bleibt im Baum als Archiv fuer Release v0.1.0, wird nicht weiterentwickelt.
+
 Anders als jedes Modul hat der Sockel KEINEN eigenen Modultyp -- er ist
 kein Modul (Aufgabe-4-Brief, "Vier Dinge, die der Brief nicht sagen
 kann", Punkt 1). Er bekommt deshalb keinen Kleinst-MCU, kein Flipflop,
