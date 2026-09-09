@@ -2,4 +2,5 @@
 	(version 7)
 	(lib (name "DRV8876PWPR") (type "KiCad") (uri "${KIPRJMOD}/../components/footprints/DRV8876PWPR.pretty") (options "") (descr "TI DRV8876 Motor Driver, reparierter Waermepfad (Aufgabe 5)"))
 	(lib (name "Optocoupler_PC817") (type "KiCad") (uri "${KIPRJMOD}/../components/footprints/Optocoupler_PC817.pretty") (options "") (descr "SHARP PC817 SMT-Gullwing, Landflaeche aus D2-A03101EN (Aufgabe 5f)"))
+	(lib (name "Randpads") (type "KiCad") (uri "${KIPRJMOD}/../components/footprints/Randpads.pretty") (options "") (descr "Randpad-Reihen: Loetpads in EINER Reihe auf dem 2,54-Raster, fuer die Rueckseite (Aufgabe 7, Fix-Runde 2)"))
 )
