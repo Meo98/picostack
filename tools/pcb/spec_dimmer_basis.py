@@ -93,14 +93,17 @@ gestapelt statt nebeneinander -- die Gasse ist nur 6,54 mm breit, ein
 Widerstand nebeneinander braucht 8,0 mm). Kanal 4 bekommt seine eigenen
 RG/RP direkt in seiner Tasche.
 
-WAS DIESE AUFGABE NICHT MACHT: Verlegung. `PRE_TRACKS`/`PRE_VIAS`
-enthalten NUR die Nest-Vorverdrahtung, wortgleich vom Motormodul
-uebernommen und gegen tatsaechlich vorhandene Referenzen gefiltert
-(_pre_tracks_und_vias() unten) -- die U6/U7-Massestummel und der
-R102-1->R13-1-Steg des Motormoduls haengen an Bauteilen, die es im
-Dimmer nicht gibt, und werden deshalb NICHT mitgenommen (die alte
-v1-Fassung filterte nur nach NETZNAMEN, nicht nach Referenz -- das
-haette genau diese beiden an nicht existierende Pads gehaengt).
+VORVERDRAHTUNG. `PRE_TRACKS`/`PRE_VIAS` enthalten die Nest-Vorverdrahtung,
+wortgleich vom Motormodul uebernommen und gegen tatsaechlich vorhandene
+Referenzen gefiltert (_pre_tracks_und_vias() unten) -- die
+U6/U7-Massestummel und der R102-1->R13-1-Steg des Motormoduls haengen an
+Bauteilen, die es im Dimmer nicht gibt, und werden deshalb NICHT
+mitgenommen (die alte v1-Fassung filterte nur nach NETZNAMEN, nicht nach
+Referenz -- das haette genau diese beiden an nicht existierende Pads
+gehaengt). DAZU kommen seit Aufgabe 8b zwei EIGENE Bahnen
+(EIGENE_PRE_TRACKS unten, /SEL_OUT J102-1 und 3V3 R102-1->C100-1) -- die
+beiden Verbindungen, die der Router im Wuerfelspiel nachweislich nicht
+von selbst schafft; Zaehlung und Herleitung stehen dort.
 RULE_AREAS traegt nur die verbindliche ANTENNE_FREI-Sperre; eine eigene
 Waermepfad- oder Gassensperre wie beim DRV8876 braucht es hier nicht
 (diskrete FETs statt eines gehaeusten Treiberbausteins, keine bekannte
@@ -378,7 +381,62 @@ def _pre_tracks_und_vias():
             kept_points.add((netz, round(p[0], 3), round(p[1], 3)))
     vias = tuple(v for v in M.PRE_VIAS
                  if (v[0], round(v[1], 3), round(v[2], 3)) in kept_points)
-    return tracks, vias
+    return tracks + EIGENE_PRE_TRACKS, vias
+
+
+# Zwei Verbindungen, die der Router in Aufgabe 8b nachweislich NICHT
+# von selbst schafft -- beide aus dem Wuerfel-Protokoll, nicht geraten.
+#
+# Zaehlung ueber die erste Wuerfelserie (je vier Wuerfe pro Variante,
+# einer davon durch einen Bauabbruch ungueltig -- also 11 gueltige),
+# jeweils die Zeile "! n Verbindung(en) nicht verlegt":
+#   /SEL_OUT  J102-1 <-> Nest-Via   in 8 von 11 Wuerfen offen
+#   3V3       R102-1 <-> C100-1/U100-4 in 7 von 11 offen
+# Alles andere Offene wechselte von Wurf zu Wurf (Wuerfelglueck, s.
+# Aufgabe 7, Abschnitt 6: "was persistent offen bleibt, ist immer
+# geometrisch begruendet") und bleibt deshalb bewusst unverdrahtet.
+#
+# WOHER DIE KOORDINATEN KOMMEN: nicht aus einem Raster, sondern vom
+# FERTIG VERLEGTEN Motormodul (hardware/kicad/motor/Motormodul.kicad_pcb,
+# Commit 8c6c52a, DRC 0/0). Dort hat der Router genau diese beiden
+# Verbindungen erfolgreich gelegt, und das Nest ist bauteilgleich:
+# U100/U101/U102/U103/R102/C100/C101/J102 stehen im Dimmer auf
+# identischer Position (nachgemessen an den Bauteil-Rechtecken beider
+# Platinen). Das Kupfer eines Bretts mit 0 Verletzungen ist der
+# billigste vorhandene Beweis, dass die Gasse breit genug ist -- und
+# der Dimmer ist dort SCHWAECHER belegt als das Motormodul (kein
+# C14/C16/R7/R8/R9/R13), also nicht enger.
+#
+# Warum der Router sie hier trotzdem verfehlt: die Gasse ist in beiden
+# Faellen nur EINE Bahn breit, und wer sie zuerst betritt, gewinnt. Beim
+# Dimmer laeuft regelmaessig /FLASH_TX diagonal ueber B.Cu von
+# (30,24|3,45) nach (18,62|15,07) und schneidet den J102-Korridor ab,
+# bevor /SEL_OUT ihn erreicht (gemessen an Wurf d1_1).
+EIGENE_PRE_TRACKS = (
+    # /SEL_OUT: J102-1 (Kettenstecker-Spiegel, Pad nur auf B.Cu) am
+    # Ostrand des Nests hinunter bis an das BESTEHENDE Nest-Via
+    # (14,88|23,65). Damit haengt der Vertragsstecker am selben Netz-
+    # stueck wie U102/U103; U101-4 laesst der Router (er hat es in
+    # jedem der acht Wuerfe geschafft, kurzer Weg innerhalb des Nests).
+    # (Die x=22,245 ist die exakte Pad-Mitte von J102-1; das Motormodul
+    # hatte hier 22,25/3,58 stehen -- 5 um daneben, was build.pre_tracks
+    # als schiefes Segment abweist. Rot-Nachweis: genau daran ist der
+    # erste Bauversuch dieser Erweiterung gescheitert.)
+    ("/SEL_OUT", "B.Cu", (("PAD", "J102", "1"), (22.245, 3.585),
+                          (21.17, 4.66), (21.17, 16.49), (17.39, 20.27),
+                          (17.73, 20.61), (17.73, 22.18), (16.31, 23.60),
+                          (14.93, 23.60), (14.88, 23.65))),
+
+    # 3V3: R102-1 -> C100-1. Der einzige Weg ist die 0,89 mm schmale
+    # Gasse zwischen C101 (Hofunterkante 26,18) und C100 (Hofoberkante
+    # 27,07) auf y = 26,98; nach Sueden um R102 herum, weil R102-1 das
+    # NORD-Pad ist. Ohne diese Bahn blieb der vorverdrahtete
+    # 3V3-Stummel (R102-1 -> U101-5) in vier von vier Dimmer1-Wuerfen
+    # eine eigene, unverbundene Insel (Wurf d1_4 meldete dieselbe Insel
+    # als "U100-4 -> R102-1" -- anderes Gegenstueck, gleiche Ursache).
+    ("3V3", "F.Cu", (("PAD", "R102", "1"), (9.25, 28.05), (8.18, 26.98),
+                     (5.942, 26.98), ("PAD", "C100", "1"))),
+)
 
 
 def beschreibung(kanaele):

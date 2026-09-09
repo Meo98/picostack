@@ -9505,7 +9505,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x18_P2.54mm_Vertical"
+		(property "Footprint" "Randpads:Randpad_Reihe_1x18"
 			(at 0 -101.6 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -9569,7 +9569,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
+		(property "Footprint" "Randpads:Randpad_Reihe_1x04"
 			(at 30.48 -101.6 0)
 			(show_name no)
 			(do_not_autoplace no)

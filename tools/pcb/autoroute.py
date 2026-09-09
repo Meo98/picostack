@@ -58,6 +58,37 @@ import dsn_werkzeug   # Mehrpunkt-Drahtzuege aufspalten (s. dort)
 DURCHGAENGE = 30
 _HALTEN = []          # gegen die Zeiger-Fallen der Bindings
 
+# Zeitgrenze des freerouting-Unterprozesses.
+#
+# Stand bis Aufgabe 8b auf 420 s, mit der Begruendung "rund zwei
+# Minuten je Platine, und die alte halbe Stunde war nur die Wartezeit
+# auf ein GUI-Fenster".
+#
+# Der ZWEITE Teil dieser Begruendung bleibt richtig und ist der Grund,
+# warum ein hoher Wert hier trotzdem nichts verstecken kann: der
+# GUI-Haenger ist kein Timeout-Problem mehr, sondern durch
+# FREEROUTING__GUI__ENABLED=false ausgeschlossen (s. UMGEBUNG). Ein
+# Lauf, der jetzt lange braucht, RECHNET auch lange.
+#
+# Der ERSTE Teil traegt die Zahl nicht. Aufgabe 7c hat auf demselben
+# Rechner Motormodul-Wuerfe UEBER die 420 s laufen sehen ("die ersten
+# beiden Versuche liefen ueber autoroute.pys eingebauten
+# 420-Sekunden-Timeout hinaus und schlugen fehl", Bericht Aufgabe 7c,
+# Abschnitt 6) und musste freerouting von Hand mit laengerem Timeout
+# aufrufen -- die Zeitgrenze hat dort also nicht einen Fehler gemeldet,
+# sondern gute Arbeit weggeworfen.
+#
+# EHRLICHE MESSUNG dazu (Aufgabe 8b, 30 Wuerfe ueber Dimmer1/3/4,
+# gui.enabled=false, ein Thread, gemessen mit `time` um den
+# Unterprozess): 20..380 s, Median rund 120 s. Auf den DIMMER-Platinen
+# waeren die 420 s also fast nie eng geworden -- die Zahl steigt hier
+# NICHT, weil dieser Auftrag sie gerissen haette, sondern weil sie im
+# einen dokumentierten Fall, in dem sie griff, das Falsche tat. 2700 s
+# = 45 min laesst den laengsten hier gemessenen Wurf um Faktor sieben
+# hinter sich; wer sie erreicht, hat ein echtes Problem und kein
+# wartendes Fenster.
+ZEITGRENZE = 2700
+
 # freerouting MUSS ohne Oberflaeche laufen, sonst schreibt es nie.
 #
 # Gefunden am 2026-09-01 (Aufgabe 6), nachdem der erste Lauf 30 Minuten
@@ -368,14 +399,10 @@ def verlegen(board_pfad, leistungsnetze):
         os.remove(ses)
     umgebung = dict(os.environ)
     umgebung.update(UMGEBUNG)          # s. Kommentar bei UMGEBUNG oben
-    # 420 s: freerouting 2.3.0 braucht fuer diese Platinen rund zwei
-    # Minuten (Fanout + Verlegen); die alte halbe Stunde war die
-    # Wartezeit auf ein GUI-Fenster, das nie jemand schloss -- sie
-    # wieder hochzusetzen wuerde denselben Fehler nur verstecken.
     lauf = subprocess.run(
         freerouting_befehl() + ["-de", dsn, "-do", ses,
                                 "-mp", str(DURCHGAENGE)],
-        capture_output=True, text=True, timeout=420, env=umgebung)
+        capture_output=True, text=True, timeout=ZEITGRENZE, env=umgebung)
     offen = []
     for zeile in lauf.stdout.splitlines():
         if "session completed" in zeile or "ERROR" in zeile:
