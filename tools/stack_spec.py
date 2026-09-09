@@ -363,6 +363,26 @@ PIN_ROLLE.update({
 # 75-mm-Breite und weit vor der M3-Eckloch-Reichweite auf der rechten
 # Seite (67,5 mm).
 #
+# KORREKTUR (Fix-Runde 2 zu Aufgabe 7): die Rechnung oben vergleicht die
+# M3-Reichweite mit der Pad-MITTE. Ein Pad ist aber breit, und sein
+# Kupfer reicht RAND_PAD_B / 2 weiter nach links. Die Bedingung lautet
+# also nicht "RAND_X0 > 7,5", sondern
+#
+#     RAND_X0 - RAND_PAD_B / 2  >=  M3_REICHWEITE
+#
+# Mit RAND_X0 = 8,0 bleiben zwischen Mitte und Reichweite nur 0,5 mm --
+# ein Pad darf hier also hoechstens 1,0 mm breit sein. Bei einem
+# breiteren Pad laege Kupfer unter dem Abstandsbolzen; ist der aus
+# Metall, ist das ein Kurzschluss und kein Schoenheitsfehler. Der
+# Randpad-Footprint dieses Projekts benutzt deshalb 0,90 mm
+# (Kupferkante 7,55, also 0,05 mm ausserhalb).
+# tests/test_stack_spec.py rechnet die Bedingung nach -- vorher stand
+# nirgends eine Zahl, die einem breiteren Pad widersprochen haette.
+RAND_PAD_B = 0.90       # mm Padbreite quer zur Reihe, s. Rechnung oben
+# M3_REICHWEITE steht weiter unten, direkt bei M3_KEEPOUT -- die
+# Konstante wird erst dort definiert, und eine Rechnung davor waere ein
+# NameError (beim Schreiben dieser Pruefung prompt passiert).
+#
 # SEITE: DIE RANDPADS LIEGEN AUF DER RUECKSEITE (B.Cu), ALS SMD-PADS.
 #
 # RULING (2026-09-09, Fix-Runde 2 zu Aufgabe 7). Das ist keine
@@ -865,6 +885,13 @@ M3_KEEPOUT = 7.0   # mm Durchmesser Freihaltebereich um jede M3-Bohrung.
 # getattr aus der Platinenbeschreibung und faellt sonst auf dieselbe
 # 7,0 zurueck -- hier steht er, damit beide PicoStack-Platinen ihn aus
 # EINER Quelle bekommen.
+
+# Wie weit die Eckloch-Freihaltung von der linken Kante nach INNEN
+# reicht: Lochmitte plus halber Freihaltekreis. Gebraucht fuer die
+# Randpad-Rechnung oben (RAND_PAD_B) und dieselbe Zahl, die
+# platzprobe_v2.M3_REICHWEITE aus denselben zwei Groessen bildet -- hier
+# abgeleitet statt abgeschrieben.
+M3_REICHWEITE = round(min(x for x, _y in M3_HOLES) + M3_KEEPOUT / 2.0, 3)
 
 # Hoefe (F.CrtYd) der Footprints, jeweils (x0, y0, x1, y1) relativ zur
 # Mitte von KONTAKT 1 -- also zu der Achse, in die der Stift eines

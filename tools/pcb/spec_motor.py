@@ -778,6 +778,26 @@ PRE_TRACKS = (
     ("/Out2", "F.Cu", (("PAD", "U1", "10"), (_m(43.55), 23.275),
                        (_m(44.25), 23.975)), _HALS),
     ("/+24V", "F.Cu", (("PAD", "U1", "11"), (_m(44.30), 22.625)), _HALS),
+    # ... und dann SOFORT per Via auf die Rueckseite, statt als
+    # 1,0-mm-Trasse quer durch die Ostgasse.
+    #
+    # DAS IST DIE EIGENTLICHE LOESUNG FUER /CPL. Die alte Trasse lief von
+    # Pad 11 nach Osten bis x = 45,43 und dann nach Sueden -- und stand
+    # damit als Wand zwischen den Pads 12/13/14 (noerdlich davon) und
+    # ihren Kondensatoren (suedlich davon). JEDES Netz von dort musste
+    # sie kreuzen, und kreuzen liess sie sich nur an zwei Stellen: auf
+    # B.Cu im 1,13-mm-Fenster x 43,90..45,03 (Platz fuer EIN Via) oder
+    # oestlich von x = 46,03. Deshalb kam immer nur eines der drei
+    # Cap-Netze durch, und /CPL, das aeusserste, nie.
+    # Mit dem Via bei (45,00|22,625) endet die Vorderseiten-Fuehrung von
+    # /+24V nach 3,10 mm, und die Gasse ist ab x = 45,30 auf ganzer Hoehe
+    # frei. Zwischenstueck 0,60 mm statt 1,00: so bleibt zur
+    # /VCP-Ausfahrt auf Pad-12-Hoehe 0,225 mm Luft (bei 1,00 waeren es
+    # 0,025 gewesen). Unterbreite damit 1,90 mm bei 0,40 -- innerhalb der
+    # v1-Regel -- plus 1,20 mm bei 0,60.
+    ("/+24V", "F.Cu", ((_m(44.30), 22.625), (_m(45.50), 22.625)), 0.60),
+    ("/+24V", "B.Cu", ((_m(45.50), 22.625), (_m(46.80), 22.625),
+                       (_m(46.80), 17.30), (_m(40.10), 17.30)), _LEISTUNG),
 
     # /Out2 in Leistungsbreite weiter bis J5-2. Die Suedspur liegt bei
     # x = 43,90, NICHT bei 44,25: die Naehvia-Spalte des 7,5-mm-Rasters
@@ -819,20 +839,10 @@ PRE_TRACKS = (
     # beidseitigem Abstand 1,40 mm -- in JEDE Teilgasse passt genau
     # EINE, und die westliche gehoert schon /Out2.
     #
-    # /+24V bekommt deshalb die OESTLICHE Teilgasse, von Hand:
-    # unterhalb des oberen Naehvias (Unterkante 21,55) hinueber auf
-    # x = 46,03 (0,23 mm zum Naehvia, 0,23 mm zu den J105-Pads -- eng,
-    # aber ueber der Mindestluft 0,20), nach Sueden bis y = 26,50 und
-    # dort per Via auf die RUECKSEITE. Erst dort ist der Weg nach
-    # Westen frei: die Waermepfad-Regelflaeche sperrt B.Cu nur bis
-    # y = 25,40, und unter /Out2s Vorderseiten-Spur (x = 43,90)
-    # hindurch geht es nur auf der anderen Lage. Zurueck nach oben
-    # bei x = 41,40 (0,53 mm zum /VCP-Pad von C9) und schraeg in C9-1.
-    ("/+24V", "F.Cu", ((_m(44.30), 22.625), (_m(45.43), 22.625),
-                       (_m(46.03), 23.225), (_m(46.03), 27.40)), _LEISTUNG),
-    ("/+24V", "B.Cu", ((_m(46.03), 27.40), (_m(41.40), 27.40)), _LEISTUNG),
-    ("/+24V", "F.Cu", ((_m(41.40), 27.40), (_m(40.882), 27.918),
-                       ("PAD", "C9", "1")), _LEISTUNG),
+    # C9-1 (/+24V) ist hier NICHT mehr vorverdrahtet. Es haengt am
+    # selben Netz und der Router erreicht es von der Versorgungszelle
+    # aus; eine eigene Trasse dorthin war genau die Wand, die die
+    # Cap-Netze eingesperrt hat (Herleitung oben beim Via).
 
     # -- Ausfahrt von U1-12 (/VCP) --------------------------------------
     # Nur die AUSFAHRT, nicht der Weg. Pad 12 liegt zwischen Pad 11
@@ -863,59 +873,50 @@ PRE_TRACKS = (
     # bei y = 25,60 (0,20 mm unterhalb der Regelflaeche, die bei 25,40
     # endet) nach Westen unter der /Out2-Spur hindurch und kommt bei
     # x = 41,00 wieder hoch -- 0,63 mm neben C9s Pad.
-    ("/VCP", "F.Cu", (("PAD", "U1", "12"), (_m(43.60), 21.975),
-                      (_m(44.50), 21.075), (_m(44.50), 19.70),
-                      (_m(45.20), 19.70))),
-    ("/VCP", "B.Cu", ((_m(45.20), 19.70), (_m(44.70), 20.20),
-                      (_m(44.70), 26.10), (_m(39.98), 26.10))),
+    ("/VCP", "F.Cu", (("PAD", "U1", "12"), (_m(46.25), 21.975),
+                      (_m(46.25), 26.00))),
+    ("/VCP", "B.Cu", ((_m(46.25), 26.00), (_m(41.10), 26.00))),
+    ("/VCP", "F.Cu", ((_m(41.10), 26.00), (_m(40.943), 25.843),
+                      ("PAD", "C9", "2"))),
 
-    # /+24V U1-11 -> C11-2, ueber die RUECKSEITE im Norden. Auf der
-    # Oberseite gibt es keinen Weg zum Abblock-C: zwischen C11s Pads
-    # (Unterkante 17,505) und U1s Padreihe (Oberkante 19,15) sind
-    # 1,645 mm, eine 1,0-mm-Leistungsbahn braucht 1,40 -- das ginge --,
-    # aber sie muesste zuerst die Ostgasse queren, und die ist von
-    # /Out2, /VCP und den Cap-Netzen belegt. Auf B.Cu ist der Streifen
-    # noerdlich von y = 17,90 (Ende der Waermepfad-Regelflaeche) frei.
-    # Abzweig am vorhandenen Knick (45,53|23,225) -- gemeinsamer
-    # Endpunkt, kein Abzweig mitten in einer Bahn.
-    # Der Nordast weicht bei (46,03) erst nach OSTEN aus, bevor er
-    # hochlaeuft: bliebe er auf der Trassenspur, kaeme das /VCP-Via bei
-    # (44,70|19,70) auf 0,83 mm heran -- eine 1,0-mm-Bahn und ein Via
-    # brauchen 1,00 (0,5 + 0,2 + 0,3). Auf x = 46,80 sind es 2,10 mm,
-    # und zur J105-Reihe (Padkante 47,54) bleiben 0,24 mm.
-    # Der Nordast weicht bei (46,03) erst nach OSTEN aus, bevor er
-    # hochlaeuft: bliebe er auf der Trassenspur, kaeme das /VCP-Via bei
-    # (44,70|19,70) auf 0,83 mm heran -- eine 1,0-mm-Bahn und ein Via
-    # brauchen 1,00 (0,5 + 0,2 + 0,3).
+    # -- /CPL U1-14 -> C10-2, VOLLSTAENDIG -------------------------------
     #
-    # WARUM 46,80 UND NICHT WEITER WESTLICH: ein Versuch mit 46,30
-    # (Lauf s) sollte den Korridor zwischen dieser Spur und der
-    # J105-Padreihe von 0,74 auf 1,24 mm verbreitern, weil der Router
-    # /CPH und /CPL genau dort nach Sueden fuehrt (in r7 nachgemessen,
-    # B.Cu-Spur x = 47,17) und dort nur EINE 0,25-mm-Bahn Platz hat.
-    # Gemessen wurde das Gegenteil: die offenen Posten stiegen von 4
-    # (r6/r8) auf 9..11 (s1..s3), und /CPL blieb trotzdem offen. Die
-    # Spur draengt auf 46,30 zu dicht an die F.Cu-Trasse (45,53) und das
-    # /VCP-Via und nimmt dem Router mehr, als der breitere Korridor
-    # einbringt. Zurueckgenommen -- s. Bericht, G5.
-    ("/+24V", "B.Cu", ((_m(46.03), 23.225), (_m(46.80), 22.455),
-                       (_m(46.80), 17.30), (_m(40.10), 17.30)), _LEISTUNG),
-    ("/+24V", "F.Cu", ((_m(40.10), 17.30), (_m(39.58), 16.78),
-                       ("PAD", "C11", "2")), _LEISTUNG),
-
-    # /NOTAUS U3-2 -> U6-4: SOT-353-Fanout im 1,27-mm-Raster, seit der
-    # ersten Runde ein Wackelkandidat. U3-2 waagrecht aus dem Gehaeuse
-    # heraus (y = 46,98 trifft kein Nachbarpad), dann SENKRECHT durch die
-    # 0,80-mm-Gasse zwischen U3-4 (Ostkante 3,30) und U6-3 (Westkante
-    # 4,10) -- x = 3,70 haelt beidseitig 0,275 mm. Unterhalb der Zeile
-    # per Via auf die Rueckseite, damit der GND-Stummel von U6-3 (der
-    # bei x = 4,612 senkrecht nach unten laeuft) nicht gekreuzt wird,
-    # und oestlich davon wieder hoch in U6-4.
-    ("/NOTAUS", "F.Cu", (("PAD", "U3", "2"), (3.70, 46.98),
-                         (3.70, 48.40))),
-    ("/NOTAUS", "B.Cu", ((3.70, 48.40), (5.90, 48.40))),
-    ("/NOTAUS", "F.Cu", ((5.90, 48.40), (6.287, 48.013),
-                         ("PAD", "U6", "4"))),
+    # Die letzte offene Verbindung, und die zaeheste: sie blieb in ALLEN
+    # 26 Wuerfen der Laeufe r, s und t offen.
+    #
+    # KORREKTUR EINER VORGABE. Das Ruling lautete "C10 drehen und ~1 mm
+    # suedlich, damit die 0,625-mm-Luecke auf 0,650 kommt". Das kann nicht
+    # gehen: die 0,625 mm sind der Abstand zwischen C10s EIGENEN ZWEI
+    # PADS und damit Footprint-Geometrie (0805-HandSolder: Padraster
+    # 2,075 minus Padhoehe 1,450). Drehen oder Verschieben nimmt beide
+    # Pads mit -- die Luecke bleibt 0,625 mm, in jeder Lage.
+    #
+    # Der eigentliche Grund lag woanders und war meine eigene Bahn:
+    # C10-2 ist von Osten durch C9s Pads verdeckt (gleiche y-Lage), und
+    # das Band suedlich von C9 war durch meinen /+24V-Rueckweg (y = 27,40)
+    # belegt. Der ist jetzt auf y = 30,20 gewandert, und damit ist der
+    # Weg frei:
+    #
+    #   1. Von U1-14 nach Osten bis x = 43,55 -- weiter geht nicht, dort
+    #      steht die /VCP-Ausfahrt (x = 44,00; 0,20 mm Luft).
+    #   2. Nach NORDEN auf y = 18,90, oberhalb von U1s Padreihe und
+    #      0,375 mm unter dem /VCP-Via (44,70|19,70).
+    #   3. Nach Osten und per Via auf x = 44,68 auf die Rueckseite. Die
+    #      Spur ist die einzige, die dort passt: zwischen der
+    #      /VCP-Rueckseitenspur (Ostkante 44,325) und der
+    #      /+24V-Kappe (Westkante 45,03) liegen 0,705 mm, eine
+    #      0,25-mm-Bahn braucht 0,65.
+    #   4. Auf B.Cu nach Sueden bis y = 27,60 -- in dem Band, das der
+    #      verschobene /+24V-Rueckweg freigemacht hat -- und nach Westen
+    #      bis x = 38,18, mitten in die 1,42-mm-Gasse zwischen C10s und
+    #      C9s Pads.
+    #   5. Per Via zurueck auf die Vorderseite und in dieser Gasse nach
+    #      Norden auf C10-2s Hoehe (0,585 mm Luft zu beiden Nachbarpads).
+    ("/CPL", "F.Cu", (("PAD", "U1", "14"), (_m(46.90), 20.675),
+                      (_m(46.90), 27.50))),
+    ("/CPL", "B.Cu", ((_m(46.90), 27.50), (_m(38.68), 27.50))),
+    ("/CPL", "F.Cu", ((_m(38.68), 27.50), (_m(38.68), 25.843),
+                      ("PAD", "C10", "2"))),
 
     # -- Masseanbindung der SOT-353-Notausgatter U6/U7 -------------------
     # masseheiler.py brach in JEDEM Wuerfellauf an einem dieser beiden
@@ -962,18 +963,19 @@ PRE_VIAS = (
     ("GND", 4.612, 49.20),
     ("GND", 9.613, 49.20),
     # Lagenwechsel des /+24V-Wegs um /Out2 herum (s. PRE_TRACKS).
-    ("/+24V", _m(46.03), 27.40),
-    ("/+24V", _m(41.40), 27.40),
+    ("/+24V", _m(45.50), 22.625),
+    # Lagenwechsel des /CPL-Wegs um C9 herum (s. PRE_TRACKS).
+    ("/CPL", _m(46.90), 27.50),
+    ("/CPL", _m(38.68), 27.50),
     # Nordast des /+24V zum Abblock-C11 (s. PRE_TRACKS).
-    ("/+24V", _m(46.03), 23.225),
     ("/+24V", _m(40.10), 17.30),
     # /VCP quert unter /Out2 hindurch.
-    ("/VCP", _m(45.20), 19.70),
+    ("/VCP", _m(46.25), 26.00),
     # Endvia IM Pad von C9-2 (gleiches Netz): die Waermepfad-Flaeche
     # verbietet Vias bis y = 25,40, C9s Pad reicht von 25,118 bis 26,568
     # -- nur das untere Stueck ab 26,10 ist beides zugleich, frei und im
     # Pad. Via-in-Pad ist bei Handloetung unbedenklich (wie in v1 bei R5).
-    ("/VCP", _m(39.98), 26.10),
+    ("/VCP", _m(41.10), 26.00),
     # /NOTAUS quert unter dem GND-Stummel von U6-3 hindurch.
     ("/NOTAUS", 3.70, 48.40),
     ("/NOTAUS", 5.90, 48.40),
@@ -1065,6 +1067,13 @@ STITCH_EXTRA = (
     (25.70, 21.50),   # Ostband am Stapelrand (x 22,3..32,0 y 18,6..24,1)
     (13.50, 39.20),   # Band zwischen Nest und Notaus (x 8,9..18,1 y 35,3..45,2)
     (8.60, 47.70),        # Notaus-Zeile Mitte (x 6,6..11,1 y 46,1..49,5)
+    # Zweiter Punkt in derselben Zeile: die Insel dort (F.Cu x 6,9..11,0
+    # y 46,1..49,5 / B.Cu x 7,7..10,6 y 45,2..51,5) blieb am besten Board
+    # als EINZIGE ungeheilt. Die SOT-353-Escapes und die beiden
+    # GND-Stummel zerschneiden die Ecke so, dass ein Punkt allein nicht
+    # jede Wuerfelvariante trifft; im ganzen Bereich gibt es nur 14
+    # zulaessige Stellen, (7,70|47,70) ist die mittigste davon.
+    (7.70, 47.70),
     (3.20, 49.50),        # Notaus-Zeile West (x 0,5..6,0 y 47,3..51,6)
 )
 

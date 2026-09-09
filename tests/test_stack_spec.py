@@ -448,6 +448,31 @@ for name in ("stapel_links", "stapel_rechts"):
         check("%s: Hof von %s ist bekannt" % (name, fp.split(":")[-1]),
               fp in S.FOOTPRINT_HOF, True)
 
+# --- Randpads: das KUPFER muss aus dem M3-Freihaltebereich bleiben ----
+#
+# WARUM DIESE PRUEFUNG EXISTIERT (Fix-Runde 2 zu Aufgabe 7). Die
+# Herleitung von RAND_X0 im Vertrag verglich die M3-Eckloch-Reichweite
+# (7,5 mm) mit der Pad-MITTE (8,0 mm) und schloss daraus "knapp
+# ausserhalb". Ein Pad ist aber breit: sein Kupfer reicht RAND_PAD_B / 2
+# weiter nach links. Bei einem 1,6-mm-Pad -- der ersten Groesse, die ich
+# fuer den Randpad-Footprint gewaehlt hatte -- liegt die Kupferkante bei
+# 7,20 und damit 0,30 mm INNERHALB des Freihaltebereichs, unter dem
+# Abstandsbolzen. Bei einem Metallbolzen ist das ein Kurzschluss.
+#
+# Gefangen hat das damals `tests/test_spec_motor.py` ueber den Hof des
+# Bauteils -- also nur, WEIL der Hof dort zufaellig die Padflaeche war.
+# Ein Vertragsleser, der eigene Randpads baut, haette keine Zahl
+# gefunden, die ihm widerspricht. Jetzt steht die Bedingung im Vertrag
+# (RAND_PAD_B, M3_REICHWEITE) und wird hier nachgerechnet.
+check("Randpad-Kupfer bleibt aus dem M3-Freihaltebereich (%.2f - %.2f/2 "
+      ">= %.2f)" % (S.RAND_X0, S.RAND_PAD_B, S.M3_REICHWEITE),
+      S.RAND_X0 - S.RAND_PAD_B / 2.0 >= S.M3_REICHWEITE, True)
+# Und am anderen Ende der Reihe dasselbe gegen das RECHTE Eckloch.
+_rand_ende = S.RAND_X0 + (len(S.RANDPADS) - 1) * S.RAND_RASTER
+check("Randpad-Reihe endet vor dem rechten M3-Freihaltebereich",
+      _rand_ende + S.RAND_PAD_B / 2.0
+      <= max(x for x, _y in S.M3_HOLES) - S.M3_KEEPOUT / 2.0, True)
+
 # --- Der Hof umschliesst das Kontaktgitter mittig ---------------------
 #
 # WARUM DIESE PRUEFUNG EXISTIERT (Fix-Runde 1 zu Aufgabe 7).

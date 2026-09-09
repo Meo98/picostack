@@ -23,7 +23,7 @@ Aufruf ueber den kipy-Starter:
   ~/.claude/skills/kicad-pcbnew-scripting/scripts/kipy tools/pcb/build.py \\
       <spec_modul, z.B. spec_sockel> <board.kicad_pcb> <schaltplan.kicad_sch>
 """
-import math, os, re, subprocess, sys
+import math, os, re, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -44,11 +44,35 @@ def read_netlist(sch):
     bauteile: ref -> {"value":..., "footprint":...}
     netze:    netzname -> [(ref, pin), ...]
     """
-    out = "/tmp/build_netlist.net"
+    # Zielname EINDEUTIG je Schaltplan, und vorher weggeraeumt.
+    #
+    # WARUM (Fix-Runde 2 zu Aufgabe 7, Zusatz-Ruling). Hier stand ein
+    # FESTER Pfad /tmp/build_netlist.net, und geprueft wurde nur, ob die
+    # Datei EXISTIERT. Beides zusammen ist eine stille Falle: schlaegt
+    # der Export fehl (falscher Pfad, kaputter Schaltplan, kicad-cli
+    # nicht da), liegt die Datei vom LETZTEN Lauf noch da -- und
+    # build.py baut die Platine seelenruhig aus einer veralteten
+    # Netzliste weiter. Kein Fehler, keine Warnung, falsche Daten.
+    # Mir ist das in dieser Aufgabe einmal passiert: ich habe mit einem
+    # nicht existierenden Schaltplanpfad gebaut und trotzdem 252 Pads an
+    # 72 Netzen bekommen. Dieselbe Fehlerklasse wie die abstuerzende
+    # Steckerprobe -- falsche oder fehlende Pruefung, die als "in
+    # Ordnung" durchgeht.
+    #
+    # Jetzt: Name aus dem Schaltplan abgeleitet (zwei Platinen im selben
+    # Lauf koennen sich nicht mehr in die Quere kommen), Altbestand
+    # geloescht, UND der Rueckgabewert von kicad-cli ausgewertet.
+    out = os.path.join(
+        tempfile.gettempdir(),
+        "build_netlist_%s.net" % os.path.splitext(os.path.basename(sch))[0])
+    if os.path.exists(out):
+        os.remove(out)
     r = subprocess.run(["kicad-cli", "sch", "export", "netlist",
                         "--output", out, sch], capture_output=True, text=True)
-    if not os.path.exists(out):
-        raise SystemExit("Netzliste nicht exportierbar:\n" + r.stderr)
+    if r.returncode != 0 or not os.path.exists(out):
+        raise SystemExit(
+            "Netzliste nicht exportierbar (kicad-cli Rueckgabe %d) fuer %s\n"
+            "%s%s" % (r.returncode, sch, r.stdout[-800:], r.stderr[-800:]))
     if "annotation" in (r.stdout + r.stderr).lower():
         raise SystemExit("Schaltplan ist nicht sauber annotiert -- "
                          "erst die Annotation reparieren.")
