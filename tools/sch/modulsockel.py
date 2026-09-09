@@ -343,8 +343,18 @@ def _stapelstecker(sch, ref_links, ref_rechts, ox, oy, frei_durchreichen=False):
                 sch.netz(ref, str(kontakt), richtung, STECKER_NETZE[rolle])
 
 
-FP_RANDPAD_GPIO = "Connector_PinHeader_2.54mm:PinHeader_1x18_P2.54mm_Vertical"
-FP_RANDPAD_VERSORGUNG = "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
+# Randpad-Footprints: eigene Loetpad-Reihen auf der RUECKSEITE, nicht
+# die bedrahteten Stiftleisten von fruueher.
+#
+# GRUND (Fix-Runde 2 zu Aufgabe 7, Herleitung im Vertrag bei
+# stack_spec.RAND_Y): eine bedrahtete Stiftleiste legt zwangslaeufig auch
+# auf F.Cu Kupfer, und die Randpad-Reihe liegt genau auf dem Spiegelbild
+# der Stapelkontakte. Damit verletzt sie die Verdreh-Kupferregel des
+# Vertrags (1,5 mm um jeden Landepunkt), und zwar unheilbar: im
+# 2,54-mm-Raster sind hoechstens 0,42 mm zu holen. SMD-Pads auf B.Cu
+# loesen das, ohne die Schutzzusage anzutasten.
+FP_RANDPAD_GPIO = "Randpads:Randpad_Reihe_1x18"
+FP_RANDPAD_VERSORGUNG = "Randpads:Randpad_Reihe_1x04"
 
 
 def randpads(sch):
@@ -386,7 +396,8 @@ def randpads(sch):
     # nicht kollidieren.
     ox, oy = 0.0, -101.6
     sch.bauteil("J95", "Connector_Generic:Conn_01x18", (ox, oy),
-                "Randpads GPIO, unbestueckt (THT-Loetpad)", FP_RANDPAD_GPIO,
+                "Randpads GPIO, unbestueckt (SMD-Loetpad, Rueckseite)",
+                FP_RANDPAD_GPIO,
                 rot=0, dnp=True, roff=(-5.08, 22.86), voff=(-5.08, 25.4))
     for kontakt, (_pin, label) in enumerate(gpio, start=1):
         sch.netz("J95", str(kontakt), "L", label)
@@ -394,7 +405,7 @@ def randpads(sch):
     sch.bauteil("J96", "Connector_Generic:Conn_01x04",
                 (ox + STAPEL_SCH_ABSTAND, oy),
                 "Randpads Versorgung: 2x 3V3 + 2x GND, unbestueckt "
-                "(THT-Loetpad)", FP_RANDPAD_VERSORGUNG,
+                "(SMD-Loetpad, Rueckseite)", FP_RANDPAD_VERSORGUNG,
                 rot=0, dnp=True, roff=(-5.08, 5.08), voff=(-5.08, 7.62))
     for kontakt, (_pin, label) in enumerate(versorgung, start=1):
         sch.netz("J96", str(kontakt), "R", label)

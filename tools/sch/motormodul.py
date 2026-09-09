@@ -716,14 +716,22 @@ GEHAEUSE = {
         ("Buchse mit durchgehendem Stift, 2,54 mm", 20, 2.54, None,
          "stack_spec.py, STECKER_POS['stapel_rechts'] -- exaktes "
          "Spiegelbild von stapel_links, s. dort."),
-    "Randpads GPIO, unbestueckt (THT-Loetpad)":
-        ("Stiftleiste 1x18, Raster 2,54 mm", 18, 2.54, None,
-         "modulsockel.FP_RANDPAD_GPIO -- unbestueckter Platzhalter "
-         "(dnp=True), Polzahl/Raster stimmen mit stack_spec.RANDPADS "
-         "ueberein; die Silk-Beschriftung ist Sache des Layouts."),
-    "Randpads Versorgung: 2x 3V3 + 2x GND, unbestueckt (THT-Loetpad)":
-        ("Stiftleiste 1x04, Raster 2,54 mm", 4, 2.54, None,
-         "modulsockel.FP_RANDPAD_VERSORGUNG, sonst wie oben."),
+    "Randpads GPIO, unbestueckt (SMD-Loetpad, Rueckseite)":
+        ("Loetpadreihe 1x18, Raster 2,54 mm, Pad 0,90 x 2,60 mm", 18,
+         2.54, None,
+         "modulsockel.FP_RANDPAD_GPIO -> Randpads:Randpad_Reihe_1x18, "
+         "ein projekteigener Footprint (hardware/kicad/components/"
+         "footprints/Randpads.pretty). KEIN Bauteil: 18 blanke Loetpads "
+         "auf B.Cu, hier gar nicht bestueckt (dnp=True). "
+         "Polzahl und Raster stimmen mit stack_spec.RANDPADS ueberein. "
+         "Die Rueckseite ist Pflicht, nicht Geschmack -- auf F.Cu "
+         "verletzt eine 2,54-mm-Padreihe die Verdreh-Kupferregel "
+         "unheilbar (s. stack_spec.RAND_Y)."),
+    "Randpads Versorgung: 2x 3V3 + 2x GND, unbestueckt (SMD-Loetpad, Rueckseite)":
+        ("Loetpadreihe 1x04, Raster 2,54 mm, Pad 0,90 x 2,60 mm", 4,
+         2.54, None,
+         "modulsockel.FP_RANDPAD_VERSORGUNG -> Randpads:"
+         "Randpad_Reihe_1x04, sonst wie oben."),
     "Kettenstecker, Buchse oben (SMD)": ("Buchsenleiste 1x02, 2,54 mm", 2, 2.54, None,
                                          "LCSC C541849."),
     "Kettenstecker, Stift unten (SMD)": ("Stiftleiste 1x02, 2,54 mm", 2, 2.54, None,

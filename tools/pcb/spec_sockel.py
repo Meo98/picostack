@@ -103,10 +103,60 @@ class Platz:
 
 
 def _aus_vertrag(ref, flaeche, rot, tht, unten=False):
-    """Ein Bauteil, dessen Lage der Vertrag festlegt."""
+    """Ein Bauteil, dessen Lage der Vertrag festlegt.
+
+    `flaeche` MUSS der Hof DES FOOTPRINTS sein, der wirklich gebaut wird
+    -- also `S.HOF(footprint, pin1, drehung)` bzw. `S.HOEFE(...)`. Bequem
+    ist es, stattdessen ein fertiges Rechteck aus dem Vertrag zu nehmen
+    (`STECKER_POS[...]["flaeche"]`), und genau das ist eine Falle:
+
+    build.place() legt die Hof-ECKE des ECHTEN Footprints auf die Ecke
+    dieses Rechtecks. Stimmen die beiden Rechtecke nicht ueberein, wandert
+    das BAUTEIL um die halbe Differenz -- und zwar lautlos, weil jede
+    Pruefung, die aus derselben Tabelle rechnet, mitwandert.
+
+    So ist der Fehler entstanden, den Fix-Runde 1 zu Aufgabe 7 gefunden
+    hat: FOOTPRINT_HOF fuehrte fuer die 1x20-Stapelbuchse ein
+    Reservierungsmass (5,10 x 50,80) statt des echten Hofes
+    (3,54 x 51,80), und beide Stapelreihen des Motormoduls sassen
+    (-0,78|+0,50) mm neben dem Vertrag. Gefunden hat es erst
+    steckerprobe.py an der gebauten Platine.
+
+    Fuer Vertragsstecker deshalb `_vertragsstecker()` unten benutzen, das
+    diese Wahl gar nicht erst laesst.
+    """
     x0, y0, x1, y1 = flaeche
     return Platz(ref, x0, y0, round(x1 - x0, 3), round(y1 - y0, 3), rot, tht,
                  unten)
+
+
+# Referenz -> Vertragsplatz. steckerprobe.py liest das, statt die
+# Zuordnung ueber den Footprint-NAMEN zu raten -- was scheitert, sobald
+# zwei Vertragsplaetze denselben Footprint benutzen (in v2 tun
+# stapel_links und stapel_rechts genau das).
+VERTRAGSPLATZ = {}
+
+
+def _vertragsstecker(ref, slot, tht, index=0, unten=False):
+    """Eine Steckerhaelfte, ueber pin1 des Vertrags platziert.
+
+    Der Vertrag sagt fremden Modulbauern die Lage der KONTAKTE zu
+    (`pin1` plus Raster), nicht die eines Hof-Rechtecks. pin1 ist damit
+    die einzige maßgebliche Referenz, und diese Funktion rechnet den Hof
+    daraus aus -- statt ihn als zweite, handgepflegte Zahl mitzuschleppen.
+    Ein Zahlenfehler in STECKER_POS[...]["flaeche"] kann so kein Kupfer
+    mehr verschieben.
+
+    Gleichlautend in spec_motor.py. Die Doppelung ist bekannt und bleibt,
+    bis die Sockelplatine auf den v2-Vertrag gehoben ist und beide
+    Dateien sich wieder eine gemeinsame Quelle teilen koennen (s.
+    Kommentar bei Platz oben).
+    """
+    e = S.STECKER_POS[slot]
+    fp = e["footprints"][index]
+    VERTRAGSPLATZ[ref] = slot
+    return _aus_vertrag(ref, S.HOF(fp, e["pin1"], e["drehung"]),
+                        e["drehung"], tht, unten)
 
 
 # --- Umriss, Lochbild, Regeln: alles aus dem Vertrag -----------------
@@ -163,6 +213,17 @@ FOOTPRINTS = {
 # aber das ist eine Aussage des Vertrags, keine dieser Platine.
 _S = S.STECKER_POS
 PLACEMENT = {
+    # NOCH AUF DEM v1-VERTRAG, und zwar zweifach: den Platz "stapel"
+    # gibt es in v2 nicht mehr (er ist in stapel_links/stapel_rechts
+    # zerlegt), und die Lage kommt hier noch aus dem "flaeche"-Rechteck
+    # statt aus pin1 -- genau das Muster, das am Motormodul den
+    # (-0,78|+0,50)-mm-Versatz erzeugt hat (s. _aus_vertrag).
+    # Diese Zeile ist der Grund, warum tests/test_spec_sockel.py und
+    # tests/test_spec_dimmer.py auf der Rot-Liste stehen: das Modul
+    # laesst sich mit dem v2-Vertrag nicht einmal laden.
+    # Beim Heben auf v2 wird daraus ZWEIMAL _vertragsstecker(...,
+    # "stapel_links"/"stapel_rechts", True) -- dann ist der Versatz
+    # konstruktiv ausgeschlossen, statt nur nicht gemacht.
     "J2": _aus_vertrag("J2", _S["stapel"]["flaeche"],
                        _S["stapel"]["drehung"], True),
     # Anker bleibt HOF, obwohl beide gespiegelt auf der Rueckseite
@@ -173,14 +234,14 @@ PLACEMENT = {
     # regelt stack_spec.SPALTEN_GESPIEGELT (Kontakt 1 der 2x02-Paare
     # liegt rechts, nicht auf dem Anker); die Steckerprobe misst es an
     # der gebauten Platine nach.
-    "J3": _aus_vertrag("J3", S.HOF(FP_HDR_1X02_SMD,
-                                   _S["kette"]["pin1"],
-                                   _S["kette"]["drehung"]),
-                       _S["kette"]["drehung"], False, unten=True),
-    "J4": _aus_vertrag("J4", S.HOF(FP_HDR_2X02_SMD,
-                                   _S["leistung"]["pin1"],
-                                   _S["leistung"]["drehung"]),
-                       _S["leistung"]["drehung"], False, unten=True),
+    # Ueber _vertragsstecker(), also ueber pin1 -- s. dort. Inhaltlich
+    # unveraendert (diese beiden rechneten den Hof schon immer aus pin1
+    # aus); die Umstellung macht es zur EINEN Art, wie Vertragsstecker
+    # platziert werden, damit die naechste Platine nicht wieder das
+    # bequeme "flaeche"-Rechteck nimmt. Index 1 = Stiftseite: der Sockel
+    # traegt an den SMD-Plaetzen nur sie.
+    "J3": _vertragsstecker("J3", "kette", False, index=1, unten=True),
+    "J4": _vertragsstecker("J4", "leistung", False, index=1, unten=True),
     "U1": _aus_vertrag("U1", S.PICO_POS["flaeche"], S.PICO_POS["drehung"],
                        True),
 

@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "2f240fc6-bbed-462e-9756-063b9b776bc5")
+	(uuid "886974fd-df85-45d8-82a6-b66cafd833dd")
 	(paper "A2")
 	(title_block
 		(title "Motormodul")
@@ -10715,7 +10715,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#FLG101")
 					(unit 1)
 				)
@@ -10781,7 +10781,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#FLG102")
 					(unit 1)
 				)
@@ -10845,7 +10845,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "J100")
 					(unit 1)
 				)
@@ -10909,7 +10909,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "J105")
 					(unit 1)
 				)
@@ -10973,7 +10973,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "J101")
 					(unit 1)
 				)
@@ -11037,7 +11037,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "J102")
 					(unit 1)
 				)
@@ -11101,7 +11101,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "J103")
 					(unit 1)
 				)
@@ -11165,7 +11165,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "J104")
 					(unit 1)
 				)
@@ -11229,7 +11229,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "U100")
 					(unit 1)
 				)
@@ -11293,7 +11293,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "C100")
 					(unit 1)
 				)
@@ -11357,7 +11357,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "U101")
 					(unit 1)
 				)
@@ -11421,7 +11421,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R102")
 					(unit 1)
 				)
@@ -11485,7 +11485,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "C101")
 					(unit 1)
 				)
@@ -11549,7 +11549,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "U102")
 					(unit 1)
 				)
@@ -11613,7 +11613,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "U102")
 					(unit 2)
 				)
@@ -11677,7 +11677,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "U102")
 					(unit 3)
 				)
@@ -11741,7 +11741,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "U103")
 					(unit 1)
 				)
@@ -11805,7 +11805,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R104")
 					(unit 1)
 				)
@@ -11869,7 +11869,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R100")
 					(unit 1)
 				)
@@ -11933,7 +11933,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R105")
 					(unit 1)
 				)
@@ -11997,7 +11997,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R101")
 					(unit 1)
 				)
@@ -12024,7 +12024,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "Randpads GPIO, unbestueckt (THT-Loetpad)"
+		(property "Value" "Randpads GPIO, unbestueckt (SMD-Loetpad, Rueckseite)"
 			(at -5.08 -76.2 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12035,7 +12035,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x18_P2.54mm_Vertical"
+		(property "Footprint" "Randpads:Randpad_Reihe_1x18"
 			(at 0 -101.6 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12061,7 +12061,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "J95")
 					(unit 1)
 				)
@@ -12088,7 +12088,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "Randpads Versorgung: 2x 3V3 + 2x GND, unbestueckt (THT-Loetpad)"
+		(property "Value" "Randpads Versorgung: 2x 3V3 + 2x GND, unbestueckt (SMD-Loetpad, Rueckseite)"
 			(at 25.4 -93.98 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12099,7 +12099,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
+		(property "Footprint" "Randpads:Randpad_Reihe_1x04"
 			(at 30.48 -101.6 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -12125,7 +12125,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "J96")
 					(unit 1)
 				)
@@ -12201,7 +12201,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "C17")
 					(unit 1)
 				)
@@ -12277,7 +12277,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "C18")
 					(unit 1)
 				)
@@ -12353,7 +12353,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "C19")
 					(unit 1)
 				)
@@ -12419,7 +12419,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#FLG201")
 					(unit 1)
 				)
@@ -12485,7 +12485,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#FLG202")
 					(unit 1)
 				)
@@ -12549,7 +12549,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "J90")
 					(unit 1)
 				)
@@ -12615,7 +12615,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#FLG90")
 					(unit 1)
 				)
@@ -12679,7 +12679,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "Q90")
 					(unit 1)
 				)
@@ -12743,7 +12743,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R90")
 					(unit 1)
 				)
@@ -12807,7 +12807,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R91")
 					(unit 1)
 				)
@@ -12871,7 +12871,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "D90")
 					(unit 1)
 				)
@@ -12935,7 +12935,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "C90")
 					(unit 1)
 				)
@@ -12999,7 +12999,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "U90")
 					(unit 1)
 				)
@@ -13063,7 +13063,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "C91")
 					(unit 1)
 				)
@@ -13127,7 +13127,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "D91")
 					(unit 1)
 				)
@@ -13191,7 +13191,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "U1")
 					(unit 1)
 				)
@@ -13255,7 +13255,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "C9")
 					(unit 1)
 				)
@@ -13319,7 +13319,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "C10")
 					(unit 1)
 				)
@@ -13383,7 +13383,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "C11")
 					(unit 1)
 				)
@@ -13447,7 +13447,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R7")
 					(unit 1)
 				)
@@ -13511,7 +13511,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R8")
 					(unit 1)
 				)
@@ -13575,7 +13575,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R9")
 					(unit 1)
 				)
@@ -13639,7 +13639,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R13")
 					(unit 1)
 				)
@@ -13703,7 +13703,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R5")
 					(unit 1)
 				)
@@ -13767,7 +13767,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R10")
 					(unit 1)
 				)
@@ -13831,7 +13831,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "C13")
 					(unit 1)
 				)
@@ -13895,7 +13895,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "J5")
 					(unit 1)
 				)
@@ -13959,7 +13959,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "U3")
 					(unit 1)
 				)
@@ -14023,7 +14023,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "C14")
 					(unit 1)
 				)
@@ -14087,7 +14087,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R15")
 					(unit 1)
 				)
@@ -14151,7 +14151,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "J3")
 					(unit 1)
 				)
@@ -14215,7 +14215,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R16")
 					(unit 1)
 				)
@@ -14279,7 +14279,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R18")
 					(unit 1)
 				)
@@ -14343,7 +14343,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "U4")
 					(unit 1)
 				)
@@ -14407,7 +14407,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R20")
 					(unit 1)
 				)
@@ -14483,7 +14483,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "U6")
 					(unit 1)
 				)
@@ -14547,7 +14547,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "C15")
 					(unit 1)
 				)
@@ -14611,7 +14611,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R17")
 					(unit 1)
 				)
@@ -14675,7 +14675,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R19")
 					(unit 1)
 				)
@@ -14739,7 +14739,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "U5")
 					(unit 1)
 				)
@@ -14803,7 +14803,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "R21")
 					(unit 1)
 				)
@@ -14879,7 +14879,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "U7")
 					(unit 1)
 				)
@@ -14943,7 +14943,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "C16")
 					(unit 1)
 				)
@@ -15009,7 +15009,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR472")
 					(unit 1)
 				)
@@ -15075,7 +15075,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR474")
 					(unit 1)
 				)
@@ -15141,7 +15141,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR476")
 					(unit 1)
 				)
@@ -15207,7 +15207,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR478")
 					(unit 1)
 				)
@@ -15273,7 +15273,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR480")
 					(unit 1)
 				)
@@ -15339,7 +15339,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR482")
 					(unit 1)
 				)
@@ -15405,7 +15405,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR484")
 					(unit 1)
 				)
@@ -15471,7 +15471,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR486")
 					(unit 1)
 				)
@@ -15537,7 +15537,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR488")
 					(unit 1)
 				)
@@ -15603,7 +15603,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR490")
 					(unit 1)
 				)
@@ -15669,7 +15669,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR492")
 					(unit 1)
 				)
@@ -15735,7 +15735,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR494")
 					(unit 1)
 				)
@@ -15801,7 +15801,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR496")
 					(unit 1)
 				)
@@ -15867,7 +15867,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR498")
 					(unit 1)
 				)
@@ -15933,7 +15933,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR500")
 					(unit 1)
 				)
@@ -15999,7 +15999,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR502")
 					(unit 1)
 				)
@@ -16065,7 +16065,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR504")
 					(unit 1)
 				)
@@ -16131,7 +16131,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR506")
 					(unit 1)
 				)
@@ -16197,7 +16197,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR508")
 					(unit 1)
 				)
@@ -16263,7 +16263,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR510")
 					(unit 1)
 				)
@@ -16329,7 +16329,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR512")
 					(unit 1)
 				)
@@ -16395,7 +16395,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR514")
 					(unit 1)
 				)
@@ -16461,7 +16461,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR516")
 					(unit 1)
 				)
@@ -16527,7 +16527,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR518")
 					(unit 1)
 				)
@@ -16593,7 +16593,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR520")
 					(unit 1)
 				)
@@ -16659,7 +16659,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR522")
 					(unit 1)
 				)
@@ -16725,7 +16725,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR524")
 					(unit 1)
 				)
@@ -16791,7 +16791,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR526")
 					(unit 1)
 				)
@@ -16857,7 +16857,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR528")
 					(unit 1)
 				)
@@ -16923,7 +16923,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR530")
 					(unit 1)
 				)
@@ -16989,7 +16989,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR532")
 					(unit 1)
 				)
@@ -17055,7 +17055,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR534")
 					(unit 1)
 				)
@@ -17121,7 +17121,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR536")
 					(unit 1)
 				)
@@ -17187,7 +17187,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR538")
 					(unit 1)
 				)
@@ -17253,7 +17253,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR540")
 					(unit 1)
 				)
@@ -17319,7 +17319,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR542")
 					(unit 1)
 				)
@@ -17385,7 +17385,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR544")
 					(unit 1)
 				)
@@ -17451,7 +17451,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR546")
 					(unit 1)
 				)
@@ -17517,7 +17517,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR548")
 					(unit 1)
 				)
@@ -17583,7 +17583,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR550")
 					(unit 1)
 				)
@@ -17649,7 +17649,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR552")
 					(unit 1)
 				)
@@ -17715,7 +17715,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR554")
 					(unit 1)
 				)
@@ -17781,7 +17781,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR556")
 					(unit 1)
 				)
@@ -17847,7 +17847,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR558")
 					(unit 1)
 				)
@@ -17913,7 +17913,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR560")
 					(unit 1)
 				)
@@ -17979,7 +17979,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR562")
 					(unit 1)
 				)
@@ -18045,7 +18045,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR564")
 					(unit 1)
 				)
@@ -18111,7 +18111,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR566")
 					(unit 1)
 				)
@@ -18177,7 +18177,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR568")
 					(unit 1)
 				)
@@ -18243,7 +18243,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR570")
 					(unit 1)
 				)
@@ -18309,7 +18309,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR572")
 					(unit 1)
 				)
@@ -18375,7 +18375,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR574")
 					(unit 1)
 				)
@@ -18441,7 +18441,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR576")
 					(unit 1)
 				)
@@ -18507,7 +18507,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR578")
 					(unit 1)
 				)
@@ -18573,7 +18573,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR580")
 					(unit 1)
 				)
@@ -18639,7 +18639,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR582")
 					(unit 1)
 				)
@@ -18705,7 +18705,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR584")
 					(unit 1)
 				)
@@ -18771,7 +18771,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR586")
 					(unit 1)
 				)
@@ -18837,7 +18837,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR588")
 					(unit 1)
 				)
@@ -18903,7 +18903,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR590")
 					(unit 1)
 				)
@@ -18969,7 +18969,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR592")
 					(unit 1)
 				)
@@ -19035,7 +19035,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR594")
 					(unit 1)
 				)
@@ -19101,7 +19101,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR596")
 					(unit 1)
 				)
@@ -19167,7 +19167,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR598")
 					(unit 1)
 				)
@@ -19233,7 +19233,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR600")
 					(unit 1)
 				)
@@ -19299,7 +19299,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR602")
 					(unit 1)
 				)
@@ -19365,7 +19365,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR604")
 					(unit 1)
 				)
@@ -19431,7 +19431,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR606")
 					(unit 1)
 				)
@@ -19497,7 +19497,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR608")
 					(unit 1)
 				)
@@ -19563,7 +19563,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR610")
 					(unit 1)
 				)
@@ -19629,7 +19629,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR612")
 					(unit 1)
 				)
@@ -19695,7 +19695,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR614")
 					(unit 1)
 				)
@@ -19761,7 +19761,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR616")
 					(unit 1)
 				)
@@ -19827,7 +19827,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR618")
 					(unit 1)
 				)
@@ -19893,7 +19893,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR620")
 					(unit 1)
 				)
@@ -19959,7 +19959,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR622")
 					(unit 1)
 				)
@@ -20025,7 +20025,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR624")
 					(unit 1)
 				)
@@ -20091,7 +20091,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR626")
 					(unit 1)
 				)
@@ -20157,7 +20157,7 @@
 		)
 		(instances
 			(project "Motormodul"
-				(path "/2f240fc6-bbed-462e-9756-063b9b776bc5"
+				(path "/886974fd-df85-45d8-82a6-b66cafd833dd"
 					(reference "#PWR628")
 					(unit 1)
 				)

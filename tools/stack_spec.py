@@ -362,6 +362,41 @@ PIN_ROLLE.update({
 # bei x = 61,34 mm -- bleibt mit 13,66 mm klar innerhalb der
 # 75-mm-Breite und weit vor der M3-Eckloch-Reichweite auf der rechten
 # Seite (67,5 mm).
+#
+# SEITE: DIE RANDPADS LIEGEN AUF DER RUECKSEITE (B.Cu), ALS SMD-PADS.
+#
+# RULING (2026-09-09, Fix-Runde 2 zu Aufgabe 7). Das ist keine
+# Geschmacksfrage, sondern die Aufloesung eines Widerspruchs IM VERTRAG:
+#
+#   * LAYOUT_AUFLAGEN verlangt, dass um jeden Punkt aus
+#     LANDEPUNKTE_VERDREHT() im Radius LANDE_SPERRRADIUS (1,5 mm) KEIN
+#     freiliegendes Kupfer liegt -- dort setzen die Stifte eines
+#     VERDREHT aufgesteckten Aufbaus auf.
+#   * Die Randpad-Reihe liegt aber genau auf dem Spiegelbild der
+#     Stapelkontakte: ein Kontakt bei y = 2,27 spiegelt auf
+#     y = BOARD_H - 2,27 = 62,73, und RAND_Y ist 63,0.
+#   * Auf einem 2,54-mm-Raster liegt IMMER ein Pad <= 1,27 mm von jedem
+#     x entfernt. Minus 0,85 mm Padhalbbreite bleiben hoechstens
+#     0,42 mm -- die Regel verlangt 1,5 mm. Mit bedrahteten Pads auf der
+#     Oberseite ist sie also UNERFUELLBAR, bei jedem x-Versatz.
+#     Nachgerechnet gegen die Koordinaten unten: sechs der 22 Randpads
+#     brechen die Regel, drei davon mit Abstand 0,000 mm.
+#
+# Aufgeloest wurde das NICHT durch eine Ausnahme von der Klausel --
+# eine Sicherheitszusage aufzuweichen waere ein schlechter Praezedenzfall
+# --, sondern durch die Seite: SMD-Pads auf B.Cu. Die Schutzzusage bleibt
+# dabei voll erhalten, denn sie schuetzt gegen ein verdreht gestecktes
+# Modul, dessen Stifte von OBEN auf F.Cu treffen; Kupfer auf der
+# Unterseite ist in diesem Fehlerfall unerreichbar.
+#
+# Praktisch aendert sich fuer den Modulautor nichts: es sind und bleiben
+# Loetpads (keine Stiftleisten), die Beschriftung wandert auf
+# B.Silkscreen, und der Draht geht nach unten oder seitlich weg. Die 22
+# Koordinaten unten gelten UNVERAENDERT -- nur eben auf der Rueckseite.
+# Deshalb brauchen die Randpad-Reihen einen Footprint mit den Pads in
+# EINER Reihe genau auf dem Raster (hardware/kicad/components/footprints/
+# Randpads.pretty): die Bibliotheks-SMD-Stiftleisten versetzen ihre Pads
+# abwechselnd um +-1,655 mm und wuerden diese Zusage brechen.
 RAND_RASTER = 2.54
 RAND_X0 = 8.0
 RAND_Y = round(BOARD_H - 2.0, 3)
