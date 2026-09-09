@@ -17,22 +17,33 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/stack_hero.png" alt="PicoStack base board and motor module" width="720">
+  <img src="docs/assets/stack_hero.png" alt="PicoStack motor module with a Raspberry Pi Pico plugged directly into its own stacking headers" width="720">
 </p>
 
 ---
 
-PicoStack is a family of 64 × 60 mm boards that stack on top of a Raspberry
-Pi Pico base board. One base carries the Pico; every module above it gets
-power, I²C, emergency-stop and flashing signals through a single 2×20
-stacking connector — and any module can be flashed **through the stack**,
-selected by a hardware token chain, without touching a cable.
+**One board plus a Pico is a working device.** PicoStack v2 abolishes the
+separate base board that v1 needed: every 75 × 65 mm module now carries its
+own 6–30 V supply (reverse-polarity protection, TVS, a K7805-1000R3
+regulator, Schottky-OR into VSYS) and a pair of Pico-native 1×20 socket rows
+(17.78 mm apart, the Pico's own pinout) — the Pico plugs straight into the
+top of the stack and all 40 pins run down through it. Stack several fed
+boards and they coexist; one is enough to power the whole chain. Every
+module also breaks out its 18 spare Pico GPIOs plus 3V3/GND as labelled
+solder pads on the board edge.
+
+Power, I²C, emergency-stop and flashing signals run through the stack on
+the same contract pinout v1 defined — v2 changed the connector geometry,
+not a single pin's role — and any module can be flashed **through the
+stack**, selected by a hardware token chain, without touching a cable.
 
 The unusual part: **these boards are not drawn, they are built.** Schematics,
 placement, routing, ground stitching and the manufacturing checks all come
 from Python that runs headless against KiCad. The stack's mechanical and
-electrical rules live in a single machine-readable file — the *contract* —
-and every board is measured against it before it may exist.
+electrical rules live in a single machine-readable file — the *contract*
+(see the [design spec](docs/superpowers/specs/2026-09-07-picostack-v2-design.md)
+for the full v2 rationale) — and every board is measured against it before
+it may exist.
 
 ## Why you might care
 
@@ -44,26 +55,29 @@ and every board is measured against it before it may exist.
   copper-pour healing, DRC gates — all reproducible from the command line.
 - **You like tests that can actually fail.** Every check in this repository
   ships with a proof that it turns red when the thing it guards is broken.
-  ERC and DRC caught *none* of the ten real bugs found during development;
-  the custom gates caught all of them. That story is documented in the code.
+  ERC and DRC caught *none* of the 14+ real bugs found during development —
+  including a fail-unsafe emergency-stop gate (an intact loop blocked the
+  motor, a broken wire released it) and a reverse-polarity FET wired so
+  that reverse voltage crowbarred instead of being blocked. The custom
+  gates caught all of them; that story is documented in the code.
 
 ## The stack at a glance
 
 | Piece | What it is | State |
 |---|---|---|
-| **Contract** (`tools/stack_spec.py`) | Connector positions, pin roles, keep-outs, landing-point copper rules, mating rules — the single source of truth for anyone building a module | stable |
-| **Base board** (`hardware/kicad/sockel/`) | Pico socket, 24 V input, 5 V rail, token chain driver | routed, DRC-clean |
-| **Motor module** (`hardware/kicad/motor/`) | DRV8876 H-bridge, STM32C011 co-processor, opto-isolated dual-channel e-stop loop | routed, DRC-clean |
-| **Dimmer family** (`hardware/kicad/dimmer{1,3,4}/`) | 1/3/4-channel low-side LED dimmers from one parametric description | routed, DRC-clean |
+| **Contract** (`tools/stack_spec.py`) | Connector positions, pin roles, per-module supply rules, edge-pad positions, landing-point copper rules, mating rules — the single source of truth for anyone building a module | stable, v2 |
+| **Motor module** (`hardware/kicad/motor/`) | DRV8876 H-bridge, STM32C011 co-processor, opto-isolated dual-channel e-stop loop, own 6–30 V supply cell | 75 × 65 mm, routed, DRC-clean |
+| **Dimmer family** (`hardware/kicad/dimmer{1,3,4}/`) | 1/3/4-channel low-side LED dimmers from one parametric description, own supply cell each | 75 × 65 mm, routed, DRC-clean |
+| **Base board** (`hardware/kicad/sockel/`) | v1's Pico socket + 24 V input + 5 V rail board | **v1-only, archived** — see [release v0.1.0](https://github.com/Meo98/picostack/releases/tag/v0.1.0); not part of v2, not updated to the v2 contract |
 | **Toolchain** (`tools/`) | Schematic generators, board builder, autorouter driver, ground healer, contract probes | working, evolving |
 
 <p align="center">
-  <img src="docs/assets/base_turntable.gif" alt="Base board turntable" width="520">
+  <img src="docs/assets/motor_iso.png" alt="Motor module, isometric" width="400">
+  <img src="docs/assets/dimmer4_iso.png" alt="Four-channel LED dimmer module, isometric" width="400">
 </p>
-
 <p align="center">
-  <img src="docs/assets/motor_top.png" alt="Motor module, top side" width="400">
-  <img src="docs/assets/dimmer4_iso.png" alt="Four-channel LED dimmer module" width="400">
+  <img src="docs/assets/motor_top.png" alt="Motor module, top view" width="400">
+  <img src="docs/assets/dimmer4_top.png" alt="Four-channel LED dimmer module, top view" width="400">
 </p>
 
 ## How a board gets built
@@ -85,12 +99,16 @@ detail.
 
 The contract is deliberately small. A module must:
 
-1. use the 64 × 60 mm outline and M3 hole pattern from `stack_spec.py`,
-2. place the three connector pairs at the contract positions (the helpers
-   compute them for you — never type the coordinates),
-3. keep the landing-point areas free of exposed copper, so a stack that is
+1. use the 75 × 65 mm outline and M3 hole pattern from `stack_spec.py`,
+2. place the two Pico-native socket rows and the two connector pairs at the
+   contract positions (the helpers compute them for you — never type the
+   coordinates),
+3. give the board its own 6–30 V supply cell (reverse-polarity protection,
+   TVS, Schottky-OR into VSYS) and bring every unused Pico GPIO out as a
+   labelled edge pad,
+4. keep the landing-point areas free of exposed copper, so a stack that is
    assembled rotated cannot short anything,
-4. pass `tests/` and the contract probes against the built board.
+5. pass `tests/` and the contract probes against the built board.
 
 Start by copying `tools/pcb/spec_motor.py` and
 `tools/sch/motormodul.py`, then read
@@ -128,6 +146,16 @@ tools/pcb/kipy tools/pcb/build.py spec_motor \
 
 (`kipy` is a small launcher that runs a script inside KiCad's Python.
 See CONTRIBUTING for the full toolchain walkthrough.)
+
+## Getting boards made
+
+Gerbers, JLC-format BOM/CPL and pick-and-place files for all four v2 boards
+live under `hardware/fertigung/{motor,dimmer1,dimmer3,dimmer4}/`, and ship as
+ZIPs with every [release](https://github.com/Meo98/picostack/releases).
+[`hardware/fertigung/ORDERING.md`](hardware/fertigung/ORDERING.md) walks
+through ordering an assembled board at JLCPCB, including the traps that
+already cost real money in v1 (a diode package mix-up, a rotation-preview
+miss, a type-code encoding gotcha).
 
 ## License
 

@@ -25,9 +25,10 @@ exact board.
 ## Step by step
 
 1. **jlcpcb.com → "Instant Quote"** and upload `<board>-gerber-jlc.zip`.
-   JLC should detect the board outline (64 × 60 mm on all four v2 boards)
-   and 2 layers. Keep the defaults (FR-4, 1.6 mm, HASL, any colour,
-   qty 5 — that is the minimum).
+   JLC should detect the board outline (75 × 65 mm on all four v2 boards —
+   grown from v1's 64 × 60 mm to fit the second stacking row, the per-board
+   supply cell and the edge pads) and 2 layers. Keep the defaults (FR-4,
+   1.6 mm, HASL, any colour, qty 5 — that is the minimum).
 2. Toggle **"PCB Assembly"** on. Choose *Economic*, *Top side* — every
    populated part on all four boards sits on the top layer; nothing on
    the bottom is machine-placed (see "unpopulated by design" below).
