@@ -839,10 +839,23 @@ PRE_TRACKS = (
     # beidseitigem Abstand 1,40 mm -- in JEDE Teilgasse passt genau
     # EINE, und die westliche gehoert schon /Out2.
     #
-    # C9-1 (/+24V) ist hier NICHT mehr vorverdrahtet. Es haengt am
-    # selben Netz und der Router erreicht es von der Versorgungszelle
-    # aus; eine eigene Trasse dorthin war genau die Wand, die die
-    # Cap-Netze eingesperrt hat (Herleitung oben beim Via).
+    # C9-1 (/+24V) bekommt seinen Anschluss von WESTEN, nicht mehr durch
+    # die Ostgasse.
+    #
+    # Erst ganz weglassen und dem Router ueberlassen ging nicht: in Lauf u
+    # blieb /+24V dann in beiden Wuerfen offen. Kein Wunder -- C9-1 haette
+    # von der Versorgungszelle aus entweder durch die (jetzt den
+    # Cap-Netzen gehoerende) Ostgasse gemusst oder quer durch U1.
+    #
+    # Der Weg hier fuehrt stattdessen ueber die Rueckseite um U1 HERUM,
+    # und beruehrt die Ostgasse gar nicht: Via im eigenen Pad von C9-1,
+    # auf B.Cu nach Westen (y = 28,60, also 0,475 mm unter der
+    # /CPL-Rueckseitenbahn), dann bei x = 33,30 nach Norden -- westlich
+    # der Waermepfad-Regelflaeche (die beginnt erst bei x = 34,10) und
+    # 1,34 mm neben den Kontakten von stapel_links -- und oben auf
+    # y = 17,30 nach Osten, wo der Nordast ohnehin schon liegt.
+    ("/+24V", "B.Cu", ((_m(39.98), 28.60), (_m(33.80), 28.60),
+                       (_m(33.80), 17.30), (_m(40.10), 17.30)), _LEISTUNG),
 
     # -- Ausfahrt von U1-12 (/VCP) --------------------------------------
     # Nur die AUSFAHRT, nicht der Weg. Pad 12 liegt zwischen Pad 11
@@ -964,6 +977,9 @@ PRE_VIAS = (
     ("GND", 9.613, 49.20),
     # Lagenwechsel des /+24V-Wegs um /Out2 herum (s. PRE_TRACKS).
     ("/+24V", _m(45.50), 22.625),
+    # Via IM Pad von C9-1 (gleiches Netz): der Weg nach Westen um U1
+    # herum beginnt hier, s. PRE_TRACKS.
+    ("/+24V", _m(39.98), 28.60),
     # Lagenwechsel des /CPL-Wegs um C9 herum (s. PRE_TRACKS).
     ("/CPL", _m(46.90), 27.50),
     ("/CPL", _m(38.68), 27.50),
