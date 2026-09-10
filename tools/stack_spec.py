@@ -38,32 +38,108 @@ haette eine eigene, nicht in Aufgabe 2 verlangte Entscheidung ueber die
 Pico-Orientierung auf dem neuen Umriss gebraucht (liegt die Antenne
 ueber freiem Rand oder ueber Kupfer?). Offener Punkt fuer eine
 Folgeaufgabe, s. Bericht zu Aufgabe 2.
+
+--- v2.1: bedienbares Layout (2026-09-10, Aufgabe B) --------------------
+Der Audit `.superpowers/sdd/2026-09-07-picostack-v2/audit-layout-v2.md`
+fand einen Blocker (B1: die Kanal-1-/Motor-Klemme sitzt im PICO_SCHATTEN
+-- fuer eine Klemme war schlicht keine andere Flaeche mehr frei) und
+mehrere Wichtig-Befunde (Referenzen unsichtbar, keine Funktions-
+beschriftung, Randpads nur am obersten Stapelmodul erreichbar). Ursache
+war immer dieselbe: 75x65 mm hatte keine Reserve fuer eine kanten-
+buendige Klemmenreihe UND eine erreichbare Randpad-Zone gleichzeitig.
+v2.1 loest das durch WACHSTUM, nicht durch Umsortieren:
+
+  * STECKER_POS (beide Stapelreihen, Kette, Leistung) und PIN_ROLLE
+    bleiben eingefroren -- das ist der eigentliche Stapelvertrag, der
+    Module verschiedener Baugroesse trotzdem zusammenstecken laesst.
+  * BOARD_W/BOARD_H wachsen von 75x65 auf 82x73 mm (Herleitung in
+    tools/platzprobe_v2_1.py, Rot-Nachweis und Kandidatenrechnung in
+    .superpowers/sdd/2026-09-07-picostack-v2/task-v21a-report.md,
+    Abschnitt 9). Der Ursprung (0|0 = linke obere Ecke) bleibt stehen;
+    das Rechteck waechst nur nach rechts (+x) und unten (+y).
+  * M3_HOLES sind NICHT laenger eingefroren, sondern werden aus
+    M3_HOLES_FUER(w, h) hergeleitet (dieselbe "4,0 mm von jeder Kante"-
+    Regel wie v1/v2, jetzt als Funktion statt vier fester Zahlen) --
+    Begruendung des Controllers: kein v2-Board wurde je gefertigt,
+    Stapelkompatibilitaet mit einem nicht existierenden Board ist
+    wertlos, der Preis der Einfrierung (eine Klemmenzone, die um ein
+    starres Eckloch bei y=61 ausweichen muss) war dagegen real.
+  * LANDEPUNKTE_VERDREHT() ist UNVERAENDERT (die Funktion spiegelte
+    schon vorher an den jeweils aktuellen BOARD_W/BOARD_H-Modulwerten,
+    nicht an eingefrorenen Zahlen) -- sie liefert automatisch die 46
+    Punkte des NEUEN Umrisses.
+  * Neu: KLEMMENZONE (R1/R2/R4) und RANDPAD_ZONE (R5/R8), beide
+    hergeleitet in tools/platzprobe_v2_1.py und woertlich aus
+    task-v21a-report.md Abschnitt 9 uebernommen.
+  * RANDPADS wandern von B.Cu auf F.Cu (s. Kommentar dort) -- die
+    urspruengliche B.Cu-Entscheidung loeste einen Widerspruch mit der
+    Verdreh-Kupferklausel; v2.1 loest denselben Widerspruch jetzt
+    ANDERS, durch eine eigene, von den Landepunkten fern genug
+    liegende Zone (RANDPAD_ZONE), nicht mehr durch die Rueckseite.
+  * Neun pruefbare Layoutregeln (R1-R9, s. LAYOUT_REGELN unten) aus der
+    Recherche `.superpowers/sdd/2026-09-07-picostack-v2/
+    recherche-hat-layout.md` -- jede mit ihrem Belegstatus (belegt,
+    teilweise belegt, oder ausdruecklich nur Projektkonvention).
+
+VERTRAG_VERSION wird deshalb auf 3 angehoben: STECKER_POS/PIN_ROLLE
+(der Stapelvertrag im engeren Sinn) sind unveraendert, aber jedes
+Werkzeug, das BOARD_W/BOARD_H/M3_HOLES/RANDPADS hart gegen die v2-Zahlen
+prueft (z. B. eine gebaute v2-Platine), muss das jetzt erkennen koennen,
+statt still mit falschen Zahlen weiterzurechnen.
 """
 
-VERTRAG_VERSION = 2
+VERTRAG_VERSION = 3
 
-BOARD_W = 75.0
-BOARD_H = 65.0
-# Hergeleitet in tools/platzprobe_v2.py (Aufgabe 1): das alte Mass
-# (64x60) wurde nie gegen die v2-Zusatzlast gerechnet (zwei
-# Pico-Buchsenreihen, eigene 6-30-V-Versorgungszelle, 22 Randpads).
-# platzprobe_v2.pruefe() rechnet drei Kandidaten (70x60, 75x65, 80x70)
-# durch: 70x60 scheitert an der Geometrie (die Versorgungszelle und die
-# Randpad-Kante sind breiter als der Rand neben den M3-Eckloechern
-# zulaesst), 75x65 und 80x70 bestehen beide; 75x65 ist der kleinere der
-# beiden bestandenen Kandidaten und damit das Ergebnis
-# (`python3 tools/platzprobe_v2.py` druckt "EINHEITSMASS: 75x65").
+BOARD_W = 82.0
+BOARD_H = 73.0
+# v2.1 (Aufgabe B, 2026-09-10): 75x65 -> 82x73, hergeleitet in
+# tools/platzprobe_v2_1.py und nachvollziehbar in .superpowers/sdd/
+# 2026-09-07-picostack-v2/task-v21a-report.md, Abschnitt 9 (die
+# massgebliche, spaeter korrigierte Fassung -- die erste Fassung des
+# Berichts kam mit eingefrorenen M3_HOLES noch auf 85x80, s. Abschnitt 9
+# fuer die Begruendung der Korrektur). Der Zuwachs (+7,0 mm rechts,
+# +8,0 mm unten) traegt zwei neue Pflichtzonen, die im alten Umriss
+# keinen Platz mehr hatten: KLEMMENZONE (unten, 12,2 mm tief) und
+# RANDPAD_ZONE (rechts, 4,0 mm breit, zwischen den beiden wandernden
+# rechten M3-Eckloechern hindurch). S. Kommentare dort fuer die
+# vollstaendige Arithmetik.
 CORNER_R = 3.0
 
 PLATINE_DICKE = 1.6      # mm, Standard-PCB-Dicke (JLCPCB); auch Grundlage
 # der Spaltrechnung unten und der Gehaeuse-Konstruktion (Aufgabe 9).
 
 M3_DRILL = 3.2
-# Wie v1: 4,0 mm Abstand von jeder Kante (dieselbe Herleitung, nur auf
-# das neue Mass angewendet -- v1 rechnete ebenfalls nicht von der Mitte,
-# sondern zog 4,0 mm von jeder der vier Kanten ab/dazu). Bei 75x65 also
-# (4, 4), (4, 65-4), (75-4, 4), (75-4, 65-4).
-M3_HOLES = [(4.0, 4.0), (4.0, 61.0), (71.0, 4.0), (71.0, 61.0)]
+M3_RAND_ABSTAND = 4.0   # mm von jeder Kante -- die Zahl selbst ist seit
+# v1 unveraendert; v2.1 macht nur ihre ANWENDUNG variabel (s.
+# M3_HOLES_FUER unten), statt sie vier Mal fest in eine Zahlenliste zu
+# schreiben.
+
+
+def M3_HOLES_FUER(w, h):
+    """Die vier M3-Eckloecher eines w x h-Umrisses, 4,0 mm von jeder Kante.
+
+    Wie v1/v2: nicht von der Mitte aus, sondern 4,0 mm von jeder der vier
+    Kanten ab-/dazugezogen (M3_RAND_ABSTAND). v2.1 (Aufgabe B, Ruling des
+    Controllers, s. Moduldocstring) macht daraus eine Funktion statt vier
+    fester Zahlen, weil M3_HOLES nicht mehr an einem eingefrorenen Umriss
+    haengen soll, sondern mit BOARD_W/BOARD_H mitwaechst.
+
+    ROT-NACHWEIS DER HERLEITUNG (tests/test_stack_spec.py): diese Funktion
+    muss bei w=75, h=65 (dem alten v2-Mass) exakt die vier alten,
+    fest eingetragenen M3_HOLES reproduzieren --
+    [(4,4), (4,61), (71,4), (71,61)]. Das beweist, dass die Funktion die
+    alte v1/v2-Herleitung VERALLGEMEINERT, statt sie stillschweigend zu
+    ersetzen.
+    """
+    a = M3_RAND_ABSTAND
+    return [(a, a), (a, h - a), (w - a, a), (w - a, h - a)]
+
+
+M3_HOLES = M3_HOLES_FUER(BOARD_W, BOARD_H)
+# Bei 82x73 (v2.1): (4, 4), (4, 69), (78, 4), (78, 69). Lochbild damit
+# 74 x 65 mm (vorher 67 x 57 mm bei 75x65) -- die beiden rechten
+# Loecher WANDERN mit der Kante (s. Moduldocstring), die beiden linken
+# bleiben an ihrer alten Stelle (der Ursprung ist frozen).
 
 STAPEL_ABSTAND = 13.6     # mm zwischen zwei Platinen (Platinenoberkante
 # zu Platinenoberkante). Vierte Runde, 2026-08-31 -- ersetzt 13,5 mm,
@@ -344,82 +420,72 @@ PIN_ROLLE.update({
 
 # --- v2: freie GPIO an den Rand -- RANDPADS ---------------------------
 # Jeder der 18 Pico-Pins mit PIN_ROLLE == "frei" bekommt ein eigenes,
-# beschriftetes Loetpad an der UNTEREN Plattenkante -- damit ein
-# Modulautor, der einen freien GPIO braucht, ihn ohne eigene
-# Durchkontaktierung von den beiden Pico-Buchsenreihen abgreifen kann,
-# genau wie in v1 (dort lagen die freien Pins einfach unbenutzt im
-# 2x20-Block, ohne eigenen Zugriffspunkt). Dazu vier Versorgungspads
-# (2x 3V3, 2x GND), die die GPIO-Strecke an beiden Enden einrahmen --
-# uebliche Header-Praxis, und praktisch fuer ein Multimeter oder einen
-# Pull-up/-down-Widerstand in Griffnaehe zum jeweiligen GPIO.
+# beschriftetes Loetpad -- damit ein Modulautor, der einen freien GPIO
+# braucht, ihn ohne eigene Durchkontaktierung von den beiden
+# Pico-Buchsenreihen abgreifen kann, genau wie in v1 (dort lagen die
+# freien Pins einfach unbenutzt im 2x20-Block, ohne eigenen
+# Zugriffspunkt). Dazu vier Versorgungspads (2x 3V3, 2x GND), die die
+# GPIO-Strecke an beiden Enden einrahmen -- uebliche Header-Praxis, und
+# praktisch fuer ein Multimeter oder einen Pull-up/-down-Widerstand in
+# Griffnaehe zum jeweiligen GPIO.
 #
-# Lage: 2,54-mm-Raster (RAND_RASTER), y nahe der unteren Kante
-# (BOARD_H - 2,0 mm, Aufgabenzettel), x beginnend bei 8,0 mm -- knapp
-# ausserhalb der M3-Eckloch-Reichweite (M3_KEEPOUT/2 + 4,0 mm
-# Lochabstand = 7,5 mm, s. platzprobe_v2.M3_REICHWEITE), damit das
-# erste Randpad nicht mit dem Freihaltebereich des linken unteren
-# Eckochs kollidiert. 22 Pads x 2,54 mm = 53,34 mm Gesamtbreite, endet
-# bei x = 61,34 mm -- bleibt mit 13,66 mm klar innerhalb der
-# 75-mm-Breite und weit vor der M3-Eckloch-Reichweite auf der rechten
-# Seite (67,5 mm).
+# v2.1 (Aufgabe B, 2026-09-10): SEITENWECHSEL UND ACHSENWECHSEL. Bis
+# hierher lag die Reihe HORIZONTAL nahe der unteren Kante (RAND_X0 fest
+# wachsend, ein gemeinsames RAND_Y) auf B.Cu. Beides aendert sich:
 #
-# KORREKTUR (Fix-Runde 2 zu Aufgabe 7): die Rechnung oben vergleicht die
-# M3-Reichweite mit der Pad-MITTE. Ein Pad ist aber breit, und sein
-# Kupfer reicht RAND_PAD_B / 2 weiter nach links. Die Bedingung lautet
-# also nicht "RAND_X0 > 7,5", sondern
+#   SEITE (B.Cu -> F.Cu). Die alte RULING (Fix-Runde 2 zu Aufgabe 7,
+#   Historie s. Git) hatte einen echten Widerspruch aufgeloest: auf
+#   einem 2,54-mm-Raster nahe der unteren Kante liegt IMMER ein Pad
+#   innerhalb der LANDE_SPERRRADIUS-Reissleine (1,5 mm) um einen
+#   gespiegelten Stapelkontakt -- unloesbar auf F.Cu, deshalb B.Cu.
+#   v2.1 loest DENSELBEN Widerspruch nicht durch eine Ausnahme, sondern
+#   durch eine eigene Zone (RANDPAD_ZONE, s. dort): weit genug von jedem
+#   Punkt aus LANDEPUNKTE_VERDREHT() entfernt, dass F.Cu wieder zulaessig
+#   wird (nachgerechnet: der naechste Landepunkt ist >= 14,5 mm entfernt,
+#   s. RANDPAD_ZONE-Kommentar -- die 1,5-mm-Klausel gilt weiterhin ohne
+#   Ausnahme, s. Aufgabenbrief "wird NICHT aufgeweicht").
 #
-#     RAND_X0 - RAND_PAD_B / 2  >=  M3_REICHWEITE
+#   WARUM UEBERHAUPT ZURUECK AUF DIE OBERSEITE: Stapel-Erreichbarkeit
+#   (Audit-Befund K4). Auf B.Cu zeigt die Randpad-Reihe eines Moduls auf
+#   die OBERSEITE des Moduls darunter -- von Hand loet-/messbar nur am
+#   jeweils obersten Modul des Stapels. Auf F.Cu liegt sie dagegen unter
+#   dem naechsten Modul DARUEBER, mit STAPEL_ABSTAND (13,6 mm) Luft dazu
+#   -- an jedem einzelnen Modul im Stapel erreichbar, nicht nur am
+#   obersten.
 #
-# Mit RAND_X0 = 8,0 bleiben zwischen Mitte und Reichweite nur 0,5 mm --
-# ein Pad darf hier also hoechstens 1,0 mm breit sein. Bei einem
-# breiteren Pad laege Kupfer unter dem Abstandsbolzen; ist der aus
-# Metall, ist das ein Kurzschluss und kein Schoenheitsfehler. Der
-# Randpad-Footprint dieses Projekts benutzt deshalb 0,90 mm
-# (Kupferkante 7,55, also 0,05 mm ausserhalb).
-# tests/test_stack_spec.py rechnet die Bedingung nach -- vorher stand
-# nirgends eine Zahl, die einem breiteren Pad widersprochen haette.
-RAND_PAD_B = 0.90       # mm Padbreite quer zur Reihe, s. Rechnung oben
-# M3_REICHWEITE steht weiter unten, direkt bei M3_KEEPOUT -- die
-# Konstante wird erst dort definiert, und eine Rechnung davor waere ein
-# NameError (beim Schreiben dieser Pruefung prompt passiert).
-#
-# SEITE: DIE RANDPADS LIEGEN AUF DER RUECKSEITE (B.Cu), ALS SMD-PADS.
-#
-# RULING (2026-09-09, Fix-Runde 2 zu Aufgabe 7). Das ist keine
-# Geschmacksfrage, sondern die Aufloesung eines Widerspruchs IM VERTRAG:
-#
-#   * LAYOUT_AUFLAGEN verlangt, dass um jeden Punkt aus
-#     LANDEPUNKTE_VERDREHT() im Radius LANDE_SPERRRADIUS (1,5 mm) KEIN
-#     freiliegendes Kupfer liegt -- dort setzen die Stifte eines
-#     VERDREHT aufgesteckten Aufbaus auf.
-#   * Die Randpad-Reihe liegt aber genau auf dem Spiegelbild der
-#     Stapelkontakte: ein Kontakt bei y = 2,27 spiegelt auf
-#     y = BOARD_H - 2,27 = 62,73, und RAND_Y ist 63,0.
-#   * Auf einem 2,54-mm-Raster liegt IMMER ein Pad <= 1,27 mm von jedem
-#     x entfernt. Minus 0,85 mm Padhalbbreite bleiben hoechstens
-#     0,42 mm -- die Regel verlangt 1,5 mm. Mit bedrahteten Pads auf der
-#     Oberseite ist sie also UNERFUELLBAR, bei jedem x-Versatz.
-#     Nachgerechnet gegen die Koordinaten unten: sechs der 22 Randpads
-#     brechen die Regel, drei davon mit Abstand 0,000 mm.
-#
-# Aufgeloest wurde das NICHT durch eine Ausnahme von der Klausel --
-# eine Sicherheitszusage aufzuweichen waere ein schlechter Praezedenzfall
-# --, sondern durch die Seite: SMD-Pads auf B.Cu. Die Schutzzusage bleibt
-# dabei voll erhalten, denn sie schuetzt gegen ein verdreht gestecktes
-# Modul, dessen Stifte von OBEN auf F.Cu treffen; Kupfer auf der
-# Unterseite ist in diesem Fehlerfall unerreichbar.
-#
-# Praktisch aendert sich fuer den Modulautor nichts: es sind und bleiben
-# Loetpads (keine Stiftleisten), die Beschriftung wandert auf
-# B.Silkscreen, und der Draht geht nach unten oder seitlich weg. Die 22
-# Koordinaten unten gelten UNVERAENDERT -- nur eben auf der Rueckseite.
-# Deshalb brauchen die Randpad-Reihen einen Footprint mit den Pads in
-# EINER Reihe genau auf dem Raster (hardware/kicad/components/footprints/
-# Randpads.pretty): die Bibliotheks-SMD-Stiftleisten versetzen ihre Pads
-# abwechselnd um +-1,655 mm und wuerden diese Zusage brechen.
+#   ACHSE (horizontal -> vertikal). RANDPAD_ZONE ist ein schmaler,
+#   SENKRECHTER Streifen nahe der rechten Kante (4,0 mm breit, 55,88 mm
+#   hoch) -- ein waagrechter Streifen dieser Laenge haette dort keinen
+#   Platz mehr gehabt (die Kante ist nur 82 mm breit, die Zone muesste
+#   zwischen den beiden wandernden rechten M3-Freihaltequadraten
+#   hindurchpassen, s. RANDPAD_ZONE-Kommentar). Die 22 Pads laufen daher
+#   jetzt in Y statt in X: EIN gemeinsames RAND_X (statt vorher RAND_Y),
+#   RAND_Y0 als Start der laufenden Koordinate (statt vorher RAND_X0).
+#   Die Pin-/Label-Reihenfolge (_RAND_REIHENFOLGE unten) ist UNVERAENDERT
+#   -- nur die Richtung, in der sie ablaeuft, hat sich gedreht.
+RAND_PAD_B = 0.90       # mm Padbreite quer zur Reihe (jetzt in X, vorher
+                        # in Y) -- unveraendert aus v2 uebernommen, kein
+                        # neuer Grund, die Padbreite zu aendern.
+RAND_LAYER = "F.Cu"     # v2.1: vorher "B.Cu" -- s. Docstring-Absatz oben.
+RAND_LABEL_LAYER = "F.Silkscreen"   # die Beschriftung (R8) liegt auf
+                        # derselben Seite wie das Kupfer, nicht mehr
+                        # spiegelbildlich auf B.Silkscreen.
 RAND_RASTER = 2.54
-RAND_X0 = 8.0
-RAND_Y = round(BOARD_H - 2.0, 3)
+RAND_X = 77.60   # mm, fest fuer alle 22 Pads (quer zur Reihe). Mitte von
+                 # RANDPAD_ZONE: (75,60 + 79,60) / 2 = 77,60 -- damit
+                 # bleibt RAND_PAD_B/2 = 0,45 mm Kupferrand beidseitig
+                 # klar innerhalb der 4,0 mm Zonenbreite (Marge 1,55 mm
+                 # je Seite).
+RAND_Y0 = 9.83   # mm, erstes Pad (RAND_Y0 + i * RAND_RASTER fuer die
+                 # weiteren). = RANDPAD_ZONE-Kante (8,56) + RAND_RASTER/2
+                 # (1,27) -- dieselbe halbe-Raster-Marge wie am anderen
+                 # Ende: letztes Pad bei 9,83 + 21 x 2,54 = 63,17 mm,
+                 # RANDPAD_ZONE endet bei 64,44 -- ebenfalls 1,27 mm
+                 # Marge. Die Reihe sitzt damit symmetrisch IN der Zone,
+                 # nicht an ihrer Kante (anders als in v2, wo RAND_X0
+                 # bewusst nahe an die M3-Reichweite herangefahren war --
+                 # in v2.1 gibt die Zonenbreite/-hoehe diese Marge von
+                 # selbst her, s. RANDPAD_ZONE-Kommentar).
 
 # Pico-Pin -> GPIO-Nummer, NUR fuer die frei bleibenden Pins. Aus dem
 # offiziellen Pico-Pinout (Raspberry Pi Pico Datasheet, Release 21,
@@ -448,8 +514,11 @@ _RAND_REIHENFOLGE = (
     + [(36, "3V3"), (38, "GND")]
 )
 
+# v2.1: (x, y) je Pad ist jetzt (RAND_X, laufende y) statt (laufende x,
+# RAND_Y) -- Achsentausch, s. Docstring-Absatz oben. Der Pin/Label-Teil
+# jedes Eintrags (aus _RAND_REIHENFOLGE) ist BYTE-FUER-BYTE unveraendert.
 RANDPADS = tuple(
-    (pin, label, (round(RAND_X0 + i * RAND_RASTER, 2), RAND_Y))
+    (pin, label, (RAND_X, round(RAND_Y0 + i * RAND_RASTER, 2)))
     for i, (pin, label) in enumerate(_RAND_REIHENFOLGE)
 )
 
@@ -1385,6 +1454,84 @@ ANTENNE_FREI = (29.0, 42.9, 50.0, 51.9)
 # Unterscheidung in AUFLAGEN/LAYOUT_AUFLAGEN nach, sobald ein
 # Modul-Layout sie wirklich braucht.
 
+# --- v2.1: KLEMMENZONE (R1/R2/R4) ------------------------------------
+# Pflichtflaeche fuer ALLE Lastklemmen eines Moduls, an der unteren
+# Kante (y = BOARD_H), hergeleitet in tools/platzprobe_v2_1.py und
+# uebernommen aus task-v21a-report.md, Abschnitt 9. Muss BEIDE
+# Extremfaelle der vier Modultypen fassen (ein Rechteck im Vertrag,
+# unterschiedlich genutzt je Modultyp):
+#
+#   Dimmer4 (schlechtester Fall in der Breite): 4x KF350-3,5mm-Klemme
+#   (TerminalBlock_Phoenix_PT-1,5-2-3.5-H, 8,00 x 8,60 mm Hof) plus 3x
+#   Klemmenabstand R4 (0,8 mm, s. LAYOUT_REGELN["R4"]):
+#     4 x 8,00 + 3 x 0,80 = 34,40 mm breit, 8,60 mm tief.
+#   Motormodul (schlechtester Fall in der Tiefe): Motorklemme
+#   (TerminalBlock_Phoenix_MKDS-3-2-5.08, 11,17 x 12,20 mm Hof) plus
+#   Notaus-Stecker (11,16 x 3,54 mm Hof, 90 Grad gedreht) in derselben
+#   Reihe:
+#     11,17 + 0,80 + 11,16 = 23,13 mm breit, max(12,20, 3,54) = 12,20 mm
+#     tief.
+#   KLEMMENZONE_L/B = max(34,40; 23,13) x max(8,60; 12,20)
+#                   = 34,40 x 12,20 mm.
+#
+# Lage: an der unteren Kante (y1 = BOARD_H = 73,0), in x mittig auf der
+# NEUEN Gesamtbreite (82 mm) zentriert -- NICHT auf der alten 75-mm-
+# Breite (anders als in der ersten, spaeter korrigierten Fassung von
+# task-v21a-report.md, s. dort Abschnitt 9 fuer die Korrektur). Weil die
+# beiden unteren M3-Eckloecher mit M3_HOLES_FUER ebenfalls auf der neuen
+# Breite sitzen, bleibt eine auf w = BOARD_W zentrierte Zone
+# automatisch symmetrisch zu ihnen:
+#   x0 = (82 - 34,40) / 2 = 23,80, x1 = 23,80 + 34,40 = 58,20.
+#
+# ROT-NACHWEIS (Audit-Befund B1, Kanal-1-Klemme im PICO_SCHATTEN):
+# KLEMMENZONE beginnt bei y = 60,80 (73,00 - 12,20), PICO_SCHATTEN endet
+# bei y = 51,9 -- 8,9 mm Luft, die Zone liegt vollstaendig ausserhalb.
+# tests/test_stack_spec.py rechnet das nach (R1: kein Klemmen-Hof
+# schneidet PICO_SCHATTEN).
+#
+# ROT-NACHWEIS gegen die M3-Eckloecher (jetzt BEWEGLICH, s.
+# M3_HOLES_FUER): Luft zum linken unteren Loch (4|69) = 23,80 -
+# (4 + M3_KEEPOUT/2) = 23,80 - 7,50 = 16,30 mm; zum rechten (78|69) =
+# (78 - 3,50) - 58,20 = 16,30 mm -- beide weit ueber 0.
+KLEMMENZONE = (23.80, 60.80, 58.20, 73.00)   # 34,40 x 12,20 mm
+
+# --- v2.1: RANDPAD_ZONE (R5/R8) ---------------------------------------
+# Pflichtflaeche fuer die 22 RANDPADS auf F.Cu, nahe der rechten Kante.
+# Hergeleitet in tools/platzprobe_v2_1.py, task-v21a-report.md
+# Abschnitt 9. Lauflaenge: 22 Loecher x RAND_RASTER (2,54 mm) = 55,88 mm
+# (bewusst n x Raster statt (n-1) x Raster -- das laesst ein halbes
+# Rastermass (1,27 mm) Marge an JEDEM Ende fuer Padbreite und
+# Silk-Label, s. RAND_Y0-Kommentar). Zonentiefe 4,0 mm (RAND_PAD_B plus
+# Silk-Label-Platz).
+#
+# Lage in x: unmittelbar rechts der ALTEN Kante (x = 75,0, w0 des
+# Wachstums) plus 0,6 mm Puffer, dann 4,0 mm Zonentiefe, dann mindestens
+# R5 = 2,0 mm Kupferabstand zur NEUEN Kante (x = 82,0):
+#   x0 = 75,60, x1 = 79,60. Kantenabstand = 82,0 - 79,60 = 2,40 mm >= 2,0
+#   (R5 erfuellt, mit 0,40 mm Reserve).
+#
+# Lage in y: DAS ist der eigentliche Engpass von v2.1 (s. Moduldocstring
+# und tools/platzprobe_v2_1.py). Die beiden RECHTEN M3-Loecher wandern
+# mit der Kante (M3_HOLES_FUER), ihre Freihaltequadrate liegen also im
+# SELBEN X-Bereich wie diese Zone -- die Trennung muss ueber Y laufen.
+# Bei BOARD_H = 73,0 sind die rechten Loecher bei y = 4,0 und y = 69,0;
+# frei ab y = 4,0 + M3_KEEPOUT/2 + 0,6 mm = 8,10 mm, frei bis
+# y = 69,0 - M3_KEEPOUT/2 - 0,6 mm = 64,90 mm -- 56,80 mm verfuegbar
+# gegen 55,88 mm Bedarf (0,92 mm Reserve). Zentriert in diesem Fenster:
+#   y0 = 8,56, y1 = 8,56 + 55,88 = 64,44.
+#
+# ROT-NACHWEIS gegen die 1,5-mm-Verdreh-Klausel (R1-Aufgabenbrief: "wird
+# NICHT aufgeweicht"): der naechste Punkt aus LANDEPUNKTE_VERDREHT() zu
+# irgendeinem tatsaechlichen Randpad (RAND_X|RAND_Y0 + i*RAND_RASTER)
+# liegt bei 16,81 mm Zentrumsabstand, abzueglich RAND_PAD_B/2 (0,45 mm)
+# also 16,36 mm bis zur Kupferkante -- weit ueber LANDE_SPERRRADIUS
+# (1,5 mm) und deutlich mehr, als die im Aufgabenbrief zitierten
+# "≥21 mm" der (durch Aufgabe A ueberholten) ERSTEN Fassung mit
+# eingefrorenem M3-Lochbild: diese Zone ist die neu abgeleitete, fuer
+# das bewegliche Lochbild gueltige Rechnung, nicht mehr jene Fassung.
+# tests/test_stack_spec.py rechnet das fuer alle 22 Pads einzeln nach.
+RANDPAD_ZONE = (75.60, 8.56, 79.60, 64.44)   # 4,00 x 55,88 mm, F.Cu
+
 # --- Wieviel Platz bleibt uebrig ------------------------------------
 # Ein Vertrag, der die Stecker so hinlegt, dass kein Modul mehr
 # hineinpasst, ist wertlos. Untergrenze, hergeleitet statt geraten:
@@ -1440,33 +1587,48 @@ SOCKEL_HOF_SUMME_MM2 = 437.8
 # schon, und genau dafuer liegen die vier Steckerplaetze oben BEWUSST
 # UNSYMMETRISCH:
 #
-#   VERDREHT(...) der vier Flaechen ergibt
-#     stapel_links  -> (41.84, 13.2, 46.94, 64.0)
-#     stapel_rechts -> (24.06, 13.2, 29.16, 64.0)
-#     kette         -> (51.0, 57.83, 57.82, 64.13)
-#     leistung      -> (5.36, 15.18, 17.1, 21.28)
+#   VERDREHT(...) der vier Flaechen ergibt bei BOARD_W/H = 82,0/73,0
+#   (v2.1 -- STECKER_POS["flaeche"] ist frozen, aber VERDREHT() spiegelt
+#   an BOARD_W/BOARD_H, also aendern sich diese Ergebnisse mit dem
+#   waechsenden Umriss, obwohl an den Steckern selbst nichts geaendert
+#   wurde):
+#     stapel_links  -> (49.62, 20.7, 53.16, 72.5)
+#     stapel_rechts -> (31.84, 20.7, 35.38, 72.5)
+#     kette         -> (58.0, 65.83, 64.82, 72.13)
+#     leistung      -> (12.36, 23.18, 24.1, 29.28)
 #
 #   Keine dieser vier Flaechen deckt sich mit der eines Steckers.
 #   Entscheidend ist aber nicht die Flaeche, sondern das Raster: der
 #   kleinste Abstand zwischen einem verdrehten Kontakt und irgendeinem
-#   Kontakt betraegt 4,031 mm (v1, bis Aufgabe 5e: 2,755 mm). Der
-#   groesste Teil davon kommt NICHT aus dem Y-Versatz (der ist beim
-#   2,54-mm-Raster niemals mehr als die Haelfte, 1,27 mm), sondern aus
-#   dem bewussten seitlichen Versatz von stapel_links/rechts um 2,0 mm
-#   aus der Plattenmitte (s. Kommentar bei STECKER_POS,
-#   "stapel_links"/"stapel_rechts": 2 x 2,0 mm X-Versatz zwischen einer
-#   Reihe und dem verdrehten Abbild der jeweils anderen). Das ist mehr
-#   als das halbe Raster (1,27 mm), das ein Stift braucht, um in einen
-#   Buchsenkontakt zu finden -- ein verdreht aufgesetztes Modul steckt
-#   NIRGENDS. Es bleibt tot, statt kaputtzugehen.
+#   Kontakt betraegt bei 82x73 nur noch 3,002 mm (v2/75x65: 4,031 mm;
+#   v1, bis Aufgabe 5e: 2,755 mm). Der groesste Teil davon kommt NICHT
+#   aus dem Y-Versatz (der ist beim 2,54-mm-Raster niemals mehr als die
+#   Haelfte, 1,27 mm), sondern aus dem bewussten seitlichen Versatz von
+#   stapel_links/rechts um 2,0 mm aus der Plattenmitte (s. Kommentar bei
+#   STECKER_POS, "stapel_links"/"stapel_rechts") -- WACHSENDE Plattenmitte
+#   ist aber nicht dasselbe wie WACHSENDER Abstand: die Mitte wandert mit
+#   BOARD_W (37,5 -> 41,0), die frozen Stecker-Koordinaten tun das nicht,
+#   und genau diese Verschiebung der Mitte GEGEN feste Stecker verkleinert
+#   den Sicherheitsabstand, statt ihn zu vergroessern. Das ist mehr als
+#   das halbe Raster (1,27 mm), das ein Stift braucht, um in einen
+#   Buchsenkontakt zu finden, und bleibt ueber der 2,5-mm-Reissleine des
+#   Tests -- ein verdreht aufgesetztes Modul steckt weiterhin NIRGENDS.
+#   Es bleibt tot, statt kaputtzugehen.
 #   tests/test_stack_spec.py rechnet beides nach, damit eine kuenftige
 #   Verschiebung das nicht stillschweigend aufhebt.
+#
+#   BEDENKEN (Aufgabe B, 2026-09-10): die Reserve ist von 4,031 auf
+#   3,002 mm gesunken (-25,5 %), obwohl der Umriss GEWACHSEN ist -- der
+#   naive Reflex "groesser ist sicherer" traegt hier nicht, weil sich die
+#   Plattenmitte gegen den frozen Stapelvertrag verschiebt. Ein
+#   weiterer Rechts-/Unten-Zuwachs in einer Folgeaufgabe MUSS diese Zahl
+#   neu pruefen, statt sie fuer selbstverstaendlich steigend zu halten.
 #
 # Tot ist besser als kaputt, aber nicht gut genug: sichtbar wird der
 # Fehler dadurch nicht. Die zugehoerige Layout-Auflage steht in
 # AUFLAGEN unten (Pin-1-Kennzeichnung, kein freiliegendes Kupfer in den
 # vier verdrehten Flaechen).
-VERDREHT_MINDESTABSTAND_MM = 4.031   # gerechnet, s. Test
+VERDREHT_MINDESTABSTAND_MM = 3.002   # gerechnet, s. Test
 
 # --- Belegte Bauhoehen im Stapelspalt (gegen STAPEL_ABSTAND) --------
 # Beide Werte aus echten Datenblaettern gelesen, nicht geschaetzt --
@@ -1514,12 +1676,12 @@ AUFLAGEN = (
 # Kontakts der (v2: vier) Steckerplaetze -- weiterhin 46 Punkte
 # (20 + 20 + 2 + 4, s. STECKER_POS). Der bestehende Vertragstest
 # sichert bereits, dass jeder Landepunkt mindestens
-# VERDREHT_MINDESTABSTAND_MM (v2: 4,031 mm) von jedem Kontakt entfernt
-# bleibt; bis zur KUPFERKANTE des naechsten Steckerpads sind es
-# mindestens ebenso viel abzueglich des Padradius (v1: 1,90 mm bei
-# 0,85 mm Padradius -- fuer v2 nicht neu nachgerechnet, da
-# LANDE_SPERRRADIUS unten konservativ unter dem v1-Wert bleibt). Die
-# Regel wird
+# VERDREHT_MINDESTABSTAND_MM (v2.1: 3,002 mm, v2/75x65: 4,031 mm) von
+# jedem Kontakt entfernt bleibt; bis zur KUPFERKANTE des naechsten
+# Steckerpads sind es mindestens ebenso viel abzueglich des Padradius
+# (v1: 1,90 mm bei 0,85 mm Padradius -- fuer v2/v2.1 nicht neu
+# nachgerechnet, da LANDE_SPERRRADIUS unten mit 1,5 mm weiterhin klar
+# unter dem gesunkenen v2.1-Wert bleibt). Die Regel wird
 # deshalb: kein freiliegendes Kupfer naeher als LANDE_SPERRRADIUS an
 # einem Landepunkt. 1,5 mm lassen dem stumpfen Stiftende (0,64 mm
 # Vierkant, halbe Diagonale 0,45 mm) rund 1 mm Montagetoleranz.
@@ -1596,6 +1758,153 @@ LAYOUT_AUFLAGEN = (
     "Bedrahtete Stecker haetten das nicht gebraucht; sie sind hier "
     "aber ausgeschlossen (s. Block bei STECKER_KETTE).",
 )
+
+# --- v2.1: Layoutregeln R1-R9 (pruefbare Zusagen an jedes Modullayout) -
+# WARUM DIESER BLOCK EXISTIERT. Der Audit `.superpowers/sdd/
+# 2026-09-07-picostack-v2/audit-layout-v2.md` fand einen Blocker und
+# sieben Wichtig-Befunde, alle Varianten desselben Grundproblems: das
+# Layout hatte keine PRUEFBAREN Regeln, an denen es sich haette messen
+# lassen -- Klemmenposition, Bauteilhoehe, Beschriftung standen nirgends
+# als Zusage, nur als Ergebnis der jeweils naechstbesten Platzierung.
+# Die Recherche `.superpowers/sdd/2026-09-07-picostack-v2/
+# recherche-hat-layout.md` leitet daraus neun Regeln ab, jede mit einem
+# eigenen Belegstatus -- von woertlich zitiertem Datenblatt bis reine
+# Projektkonvention. LAYOUT_REGELN macht sie zu Zusagen im selben Stil
+# wie VERSORGUNG oben, damit eine spaetere Pruefung (Aufgabe C/D) und
+# jedes fremde Modul-Layout dieselbe, maschinenlesbare Quelle haben statt
+# eine Regel aus dem Fliesstext einer Recherche neu abzutippen.
+#
+# NIEMALS eine Konvention als Norm ausgeben: wo die Recherche eine Zahl
+# ausdruecklich als "unbelegt"/"Konvention" markiert (R5, R6, R8, R9),
+# steht das auch hier woertlich so -- ein "beleg"-Feld, das eine
+# Konvention als "belegt" tarnte, waere schlimmer als gar keines.
+LAYOUT_REGELN = {
+    "R1": {
+        "text": "Klemmen an der Kante: Klemmenkoerper buendig zur "
+                "Platinenkante, Drahtoeffnung nach aussen; kein "
+                "Klemmen-Hof (F.CrtYd) schneidet PICO_SCHATTEN.",
+        "keepout": "PICO_SCHATTEN",
+        "beleg": "belegt -- Hardware design with RP2040 (Raspberry Pi): "
+                 "\"You must make sure that the height of any components "
+                 "added underneath are less than the gap needed by the "
+                 "socket or header used\", und fuer aufgeloetete Bauteile "
+                 "sogar \"the entire footprint will have to have a "
+                 "component keepout underneath\". Eine Klemme braucht "
+                 "ausserdem Schraubendreher-Zugriff von oben, den ein "
+                 "gestecktes Pico-Board blockiert (recherche-hat-"
+                 "layout.md, Abschnitt 1, ableitbare Regel 1). Direkte "
+                 "Antwort auf Audit-Befund B1 (Blocker).",
+    },
+    "R2": {
+        "text": "Eine Reihe je Funktionsgruppe: alle Lastklemmen eines "
+                "Moduls auf EINER Kante, in Kanalreihenfolge, "
+                "vollstaendig innerhalb KLEMMENZONE.",
+        "zone": "KLEMMENZONE",
+        "beleg": "belegt -- Pimoroni Automation HAT und Adafruit 5095/"
+                 "DFRobot 2591 (Referenzboards): alle Klemmen laufen dort "
+                 "als eine durchgehende Reihe entlang einer einzigen "
+                 "Kante (recherche-hat-layout.md, Abschnitt 4, ableitbare "
+                 "Regel 3).",
+    },
+    "R3": {
+        "text": "Bauteilhoehe unter dem Pico: nichts im PICO_SCHATTEN "
+                "hoeher als der Steckabstand des Stapelsteckers.",
+        "max_bauteilhoehe_mm": STECKER_STAPEL["gehaeusehoehe_mm"],  # 8,5
+        "beleg": "belegt (qualitativ, kein Norm-Zahlenwert) -- Hardware "
+                 "design with RP2040: \"You must make sure that the "
+                 "height of any components added underneath are less "
+                 "than the gap needed by the socket or header used.\" "
+                 "Der Designguide selbst nennt keine mm-Zahl; die hier "
+                 "eingetragene Zahl (8,5 mm) ist "
+                 "STECKER_STAPEL['gehaeusehoehe_mm'] -- die Isolations-"
+                 "hoehe der Buchse, die genau den Spalt bildet, den die "
+                 "Guide-Regel meint (Bauform-Zielwert, noch kein "
+                 "bestelltes 1x20-Teil, s. RULING bei STECKER_STAPEL).",
+    },
+    "R4": {
+        "text": "Klemmenabstaende: Luft-/Kriechstrecke zwischen "
+                "benachbarten Klemmenkontakten.",
+        "mindestabstand_mm": 0.8,
+        "beleg": "belegt -- IEC 60664, zitiert bei andwinpcb.com: "
+                 "0,8 mm bei 50 V. Fuer PicoStacks 6-30-V-Klemme "
+                 "konservativ unveraendert uebernommen: IEC 60664 "
+                 "verlangt bei NIEDRIGERER Spannung nie MEHR Abstand, "
+                 "0,8 mm bei 50 V deckt also jeden Wert bis 30 V mit ab. "
+                 "Staerker als das generische COURTYARD_GAP (0,6 mm) -- "
+                 "eine Klemmenplatzierung, die auf COURTYARD_GAP "
+                 "zurueckfaellt, verletzt diese Regel.",
+    },
+    "R5": {
+        "text": "Kupferabstand zur Platinenkante.",
+        "mindestabstand_mm": 2.0,
+        "beleg": "teilweise belegt -- Eurocircuits Component Clearances "
+                 "nennt 2,00 mm fuer Card-Edge-Steckverbinder-Finger; die "
+                 "Uebertragung auf Klemmenreihen/Randpads ist eine "
+                 "eigene Schlussfolgerung der Recherche, KEINE "
+                 "wortgleiche Norm fuer Klemmen (recherche-hat-"
+                 "layout.md, ableitbare Regel 6, dort ausdruecklich so "
+                 "markiert: \"Konvention, teilweise belegt\"). Gilt fuer "
+                 "das KUPFER (Loetpads, Leiterbahnen) -- der "
+                 "Klemmenkoerper selbst darf laut R1 trotzdem "
+                 "kantenbuendig sitzen: die realen Loetpads einer "
+                 "Phoenix-Klemme dieser Bauform liegen gegenueber der "
+                 "Gehaeusevorderkante zurueckgesetzt (mehrere mm) -- "
+                 "eine Bauform-Annahme, kein in diesem Vertrag "
+                 "nachgerechneter Pad-Abstand (s. task-v21a-report.md, "
+                 "Abschnitt 8, Bedenken).",
+    },
+    "R6": {
+        "text": "Jedes bestueckte Bauteil traegt seinen "
+                "Referenzbezeichner sichtbar auf F.Silkscreen (nicht "
+                "F.Fab/B.Fab, nicht unsichtbar geschaltet).",
+        "layer": "F.Silkscreen",
+        "sichtbar": True,
+        "beleg": "Konvention, unbelegt als Norm -- IPC-2221 regelt nur "
+                 "allgemeine Silkscreen-Lesbarkeit, nichts Referenz-"
+                 "spezifisches (recherche-hat-layout.md, Abschnitt 5). "
+                 "Direkte Antwort auf Audit-Befund W1 (auf drei von vier "
+                 "Boards trug KEIN einziges Bauteil eine lesbare "
+                 "Referenz).",
+    },
+    "R7": {
+        "text": "Jede Klemme und jeder Stecker traegt seine Funktion "
+                "(Netz-/Pinname) im Siebdruck daneben, in "
+                "Anschlussreihenfolge.",
+        "layer": "F.Silkscreen",
+        "beleg": "belegt -- Adafruit 5095/DFRobot 2591: jede Klemme "
+                 "traegt den exakten Pico-Pinnamen, in Pinout-Reihenfolge "
+                 "(recherche-hat-layout.md, Abschnitt 5, ableitbare Regel "
+                 "5). Antwort auf Audit-Befund W2 (Notaus unbeschriftet) "
+                 "und W5 (keine Klemme traegt eine Funktion).",
+    },
+    "R8": {
+        "text": "Jedes Randpad traegt sein GP-/Netzlabel im Siebdruck, "
+                "auf DERSELBEN Seite wie sein Kupfer (v2.1: F.Cu, "
+                "vorher B.Cu/B.Silkscreen).",
+        "layer": RAND_LABEL_LAYER,
+        "kupfer_layer": RAND_LAYER,
+        "beleg": "Konvention (Fortschreibung von R7 auf die Randpads) -- "
+                 "keine eigene Norm gefunden, aber DFRobot bewirbt klare "
+                 "Pro-Pin-Beschriftung ausdruecklich als "
+                 "Grundanforderung an ein brauchbares Board "
+                 "(recherche-hat-layout.md, Abschnitt 5). Antwort auf "
+                 "Audit-Befund W3 (22 unbeschriftete Randpads auf allen "
+                 "vier Boards).",
+    },
+    "R9": {
+        "text": "Board-Identitaet: Modulname, Vertragsversion und "
+                "Modultyp stehen lesbar im Siebdruck (z. B. neben der "
+                "Pin-1-Marke).",
+        "layer": "F.Silkscreen",
+        "pflichtfelder": ("modulname", "vertrag_version", "modultyp"),
+        "beleg": "Konvention, unbelegt als Norm -- es gibt keine "
+                 "offizielle Pico-HAT-Spezifikation, an der sich eine "
+                 "Identitaetspflicht ablesen liesse (recherche-hat-"
+                 "layout.md, ableitbare Regel 12). Antwort auf "
+                 "Audit-Befund W7 (alle vier Boards trugen identischen, "
+                 "unetikettierten Text -- von aussen ununterscheidbar).",
+    },
+}
 
 # --- Modultypen -----------------------------------------------------
 # 0x00 ist ungueltig (ein unbeschriebener Kennwiderstand liest 0).

@@ -8,14 +8,14 @@ Die Zusagen rund um das Flashen -- die Leitungen `FLASH_TX`, `FLASH_RX`, `SEL`, 
 
 ## Umriss
 
-75.0 x 65.0 mm, Ecken 3.0 mm gerundet, 13.6 mm zwischen den Platinen.
+82.0 x 73.0 mm, Ecken 3.0 mm gerundet, 13.6 mm zwischen den Platinen.
 
 | M3-Bohrung | x | y | Bohrdurchmesser |
 |---|---|---|---|
 | 1 | 4.0 | 4.0 | 3.2 |
-| 2 | 4.0 | 61.0 | 3.2 |
-| 3 | 71.0 | 4.0 | 3.2 |
-| 4 | 71.0 | 61.0 | 3.2 |
+| 2 | 4.0 | 69.0 | 3.2 |
+| 3 | 78.0 | 4.0 | 3.2 |
+| 4 | 78.0 | 69.0 | 3.2 |
 
 ## Steckerbelegung
 
@@ -59,7 +59,7 @@ Diese Pins fuehren eine Bezeichnung, liegen aber auf keiner Platine des Stapels 
 
 ## Stapelstecker und Kettenstecker
 
-Die Steckerbelegung oben laeuft seit Vertragsversion 2 nicht mehr ueber einen einzelnen 2x20-Block, sondern ueber **zwei 1x20-Buchsenreihen in echter Pico-Geometrie** (Reihenabstand 17,78 mm, Raster 2,54 mm): `stapel_links` traegt Pico-Pin 1..20, `stapel_rechts` Pico-Pin 21..40. Der Pico steckt dadurch direkt oben in den Stapel; die Pin-Rollen aus der Tabelle oben aendern sich dadurch NICHT, nur ihre Steckergeometrie. Beide Reihen sind **Stapelstecker**: 1x20 (oder 2x 1x10 in Reihe), 2,54 mm, Buchse mit durchgehendem Stift (PC104/Arduino-Stapelleisten-Prinzip) -- je EINE Reihe (stapel_links ODER stapel_rechts, s. STECKER_POS), nicht mehr die ganze 2x20-Pico-Bahn wie in v1. Bauteil: offen bis Fertigungs-Sichtung (1x20-Sourcing-Ruling s. Kommentar oben), Gehaeusehoehe 8.50 mm, Stiftlaenge unterhalb des Gehaeuses 12.46 mm. Quelle: hardware/bauteile-1b.md, Beleg 1 (Fassung 2026-08-31, C35165 als Bauform-Beleg); Sourcing-Ruling fuer 1x20 s. Kommentar oben (Aufgabe 2, Fix-Runde 1, 2026-09-08).
+Die Steckerbelegung oben laeuft seit Vertragsversion 3 nicht mehr ueber einen einzelnen 2x20-Block, sondern ueber **zwei 1x20-Buchsenreihen in echter Pico-Geometrie** (Reihenabstand 17,78 mm, Raster 2,54 mm): `stapel_links` traegt Pico-Pin 1..20, `stapel_rechts` Pico-Pin 21..40. Der Pico steckt dadurch direkt oben in den Stapel; die Pin-Rollen aus der Tabelle oben aendern sich dadurch NICHT, nur ihre Steckergeometrie. Beide Reihen sind **Stapelstecker**: 1x20 (oder 2x 1x10 in Reihe), 2,54 mm, Buchse mit durchgehendem Stift (PC104/Arduino-Stapelleisten-Prinzip) -- je EINE Reihe (stapel_links ODER stapel_rechts, s. STECKER_POS), nicht mehr die ganze 2x20-Pico-Bahn wie in v1. Bauteil: offen bis Fertigungs-Sichtung (1x20-Sourcing-Ruling s. Kommentar oben), Gehaeusehoehe 8.50 mm, Stiftlaenge unterhalb des Gehaeuses 12.46 mm. Quelle: hardware/bauteile-1b.md, Beleg 1 (Fassung 2026-08-31, C35165 als Bauform-Beleg); Sourcing-Ruling fuer 1x20 s. Kommentar oben (Aufgabe 2, Fix-Runde 1, 2026-09-08).
 
 Einzige Ausnahme ist die Auswahlkette (`SEL`): sie muss von Modul zu Modul aufgetrennt werden (Schieberegister, `tools/kette.py`) und ist deshalb kein Pin des Stapelsteckers mehr. Sie laeuft ueber einen eigenen, zweipoligen **Kettenstecker** (SMD-Buchse oben / SMD-Stiftleiste unten (auftrennbar), 1x2, 2,54 mm): traegt SEL (Auswahlkette) und eine GND daneben.
 
@@ -93,11 +93,11 @@ Alle Masse in mm, Ursprung linke obere Ecke, x nach rechts, y nach unten. Diese 
 
 Die belegte Flaeche ist die Vereinigung der Hoefe (F.CrtYd) aller Footprints an diesem Platz, nach der Drehung. Ketten- und Leistungsstecker bestehen auf jedem Modul aus zwei Haelften (SMD-Buchse oben, SMD-Stiftleiste unten); beide Haelften belegen **denselben** Platz, sonst treffen sie sich im Stapel nicht.
 
-Seit Vertragsversion 2 steckt der Pico nicht mehr nur auf einer eigenen Sockelplatine, sondern oben auf **jedem** Modul, in `stapel_links`/`stapel_rechts`. Sein Umriss (`PICO_SCHATTEN`, 51 x 21 mm laut Datenblatt) liegt bei 29.00 0.90 50.00 51.90. Am Pico-Ende gegenueber der USB-Buchse liegt der WLAN-Antennen-Sperrbereich `ANTENNE_FREI` 29.00 42.90 50.00 51.90 (21.0 x 9.0 mm) -- dort darf auf der Seite, auf der der Pico steckt, weder Kupfer noch ein Bauteil liegen (Raspberry Pi Pico W Datasheet, RP-008312-DS-2, Abschnitt 2.2.1 "Keep-out area": Ausschnitt 14 x 9 mm).
+Seit Vertragsversion 3 steckt der Pico nicht mehr nur auf einer eigenen Sockelplatine, sondern oben auf **jedem** Modul, in `stapel_links`/`stapel_rechts`. Sein Umriss (`PICO_SCHATTEN`, 51 x 21 mm laut Datenblatt) liegt bei 29.00 0.90 50.00 51.90. Am Pico-Ende gegenueber der USB-Buchse liegt der WLAN-Antennen-Sperrbereich `ANTENNE_FREI` 29.00 42.90 50.00 51.90 (21.0 x 9.0 mm) -- dort darf auf der Seite, auf der der Pico steckt, weder Kupfer noch ein Bauteil liegen (Raspberry Pi Pico W Datasheet, RP-008312-DS-2, Abschnitt 2.2.1 "Keep-out area": Ausschnitt 14 x 9 mm).
 
 Um jede M3-Bohrung bleibt ein Freihaltebereich von 7.0 mm Durchmesser fuer Schraubenkopf und Abstandsbolzen frei.
 
-Das Lochbild ist punktsymmetrisch -- ein Modul laesst sich um 180 Grad verdreht anschrauben. Die Steckerlage ist deshalb bewusst unsymmetrisch: verdreht liegt kein Stift naeher als 4.03 mm an einem Kontakt (halbes Raster waeren 1.27 mm), ein verdreht aufgesetztes Modul steckt also nirgends und bleibt tot statt kaputt.
+Das Lochbild ist punktsymmetrisch -- ein Modul laesst sich um 180 Grad verdreht anschrauben. Die Steckerlage ist deshalb bewusst unsymmetrisch: verdreht liegt kein Stift naeher als 3.00 mm an einem Kontakt (halbes Raster waeren 1.27 mm), ein verdreht aufgesetztes Modul steckt also nirgends und bleibt tot statt kaputt.
 
 ## Auflagen an die Modulfirmware
 
@@ -115,7 +115,7 @@ Kein freiliegendes Kupfer naeher als 1.5 mm an einem der 46 Landepunkte aus `LAN
 
 ## Versorgung je Board
 
-Seit Vertragsversion 2 hat jedes Modul seine eigene Versorgungszelle statt einer gemeinsamen Sockelplatine: Klemme (6.0-30.0 V), Verpolschutz (P-FET, Drain am Netz `PWR_IN`), TVS, K7805-1000R3 und ein Schottky-OR (vsys_diode) vor VSYS. Beliebig viele bestueckte Regler koennen im selben Stapel koexistieren; ein einziges eingespeistes Board versorgt die ganze Kette. Der Gate-Teiler des Verpolschutzes haengt an `+24V_LOKAL`, nicht an der Einspeisung selbst -- das ist der aus v1 uebernommene Blocker-Fix: lag der Teiler am Eingang, bildeten Bodydiode und TVS bei verpolter Einspeisung einen Kurzschluss statt zu sperren.
+Seit Vertragsversion 3 hat jedes Modul seine eigene Versorgungszelle statt einer gemeinsamen Sockelplatine: Klemme (6.0-30.0 V), Verpolschutz (P-FET, Drain am Netz `PWR_IN`), TVS, K7805-1000R3 und ein Schottky-OR (vsys_diode) vor VSYS. Beliebig viele bestueckte Regler koennen im selben Stapel koexistieren; ein einziges eingespeistes Board versorgt die ganze Kette. Der Gate-Teiler des Verpolschutzes haengt an `+24V_LOKAL`, nicht an der Einspeisung selbst -- das ist der aus v1 uebernommene Blocker-Fix: lag der Teiler am Eingang, bildeten Bodydiode und TVS bei verpolter Einspeisung einen Kurzschluss statt zu sperren.
 
 ## Randpads
 
@@ -123,28 +123,28 @@ Jeder als "frei" deklarierte Pico-Pin (und mehrere 3V3-/GND-Pads) liegt zusaetzl
 
 | Pico-Pin | Beschriftung | x | y |
 |---|---|---|---|
-| 3 | GND | 8.0 | 63.0 |
-| 36 | 3V3 | 10.54 | 63.0 |
-| 11 | GP8 | 13.08 | 63.0 |
-| 12 | GP9 | 15.62 | 63.0 |
-| 14 | GP10 | 18.16 | 63.0 |
-| 15 | GP11 | 20.7 | 63.0 |
-| 16 | GP12 | 23.24 | 63.0 |
-| 17 | GP13 | 25.78 | 63.0 |
-| 19 | GP14 | 28.32 | 63.0 |
-| 20 | GP15 | 30.86 | 63.0 |
-| 21 | GP16 | 33.4 | 63.0 |
-| 22 | GP17 | 35.94 | 63.0 |
-| 24 | GP18 | 38.48 | 63.0 |
-| 25 | GP19 | 41.02 | 63.0 |
-| 26 | GP20 | 43.56 | 63.0 |
-| 27 | GP21 | 46.1 | 63.0 |
-| 29 | GP22 | 48.64 | 63.0 |
-| 31 | GP26 | 51.18 | 63.0 |
-| 32 | GP27 | 53.72 | 63.0 |
-| 34 | GP28 | 56.26 | 63.0 |
-| 36 | 3V3 | 58.8 | 63.0 |
-| 38 | GND | 61.34 | 63.0 |
+| 3 | GND | 77.6 | 9.83 |
+| 36 | 3V3 | 77.6 | 12.37 |
+| 11 | GP8 | 77.6 | 14.91 |
+| 12 | GP9 | 77.6 | 17.45 |
+| 14 | GP10 | 77.6 | 19.99 |
+| 15 | GP11 | 77.6 | 22.53 |
+| 16 | GP12 | 77.6 | 25.07 |
+| 17 | GP13 | 77.6 | 27.61 |
+| 19 | GP14 | 77.6 | 30.15 |
+| 20 | GP15 | 77.6 | 32.69 |
+| 21 | GP16 | 77.6 | 35.23 |
+| 22 | GP17 | 77.6 | 37.77 |
+| 24 | GP18 | 77.6 | 40.31 |
+| 25 | GP19 | 77.6 | 42.85 |
+| 26 | GP20 | 77.6 | 45.39 |
+| 27 | GP21 | 77.6 | 47.93 |
+| 29 | GP22 | 77.6 | 50.47 |
+| 31 | GP26 | 77.6 | 53.01 |
+| 32 | GP27 | 77.6 | 55.55 |
+| 34 | GP28 | 77.6 | 58.09 |
+| 36 | 3V3 | 77.6 | 60.63 |
+| 38 | GND | 77.6 | 63.17 |
 
 ## Montage
 

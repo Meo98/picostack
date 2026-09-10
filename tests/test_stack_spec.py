@@ -19,7 +19,11 @@ def check(label, got, want):
 # der Vertrag geaendert wird -- sie muessen zuerst rot sehen (S.
 # STECKER_POS["stapel"] existiert noch, S.VERTRAG_VERSION gibt es noch
 # nicht), sonst pruefen sie nichts.
-check("Vertragsversion 2", getattr(S, "VERTRAG_VERSION", 1), 2)
+# v2.1 (Aufgabe B, 2026-09-10): der Umriss waechst, M3_HOLES werden
+# beweglich, RANDPADS wandern auf F.Cu -- STECKER_POS/PIN_ROLLE (der
+# eigentliche Stapelvertrag) bleiben unangetastet. Bump auf 3, s.
+# stack_spec.py-Moduldocstring, Abschnitt "v2.1: bedienbares Layout".
+check("Vertragsversion 3", getattr(S, "VERTRAG_VERSION", 1), 3)
 check("Stapelreihen in Pico-Geometrie",
       round(abs(S.STECKER_POS["stapel_links"]["mitte"][0]
                 - S.STECKER_POS["stapel_rechts"]["mitte"][0]), 2), 17.78)
@@ -58,20 +62,69 @@ check("ADC_VREF bleibt nicht belegbar (unveraendert)",
       S.IST_BELEGBAR(35), False)
 
 # --- Umriss und Lochbild ---
-# v2 (Aufgabe 1/2): 64x60 -> 75x65, hergeleitet in tools/platzprobe_v2.py
-# (s. Kommentar bei S.BOARD_W). Das Lochbild folgt derselben 4-mm-
-# Randlogik wie v1, nur auf das neue Mass angewendet: 75-2*4=67,
-# 65-2*4=57.
-check("Breite", S.BOARD_W, 75.0)
-check("Hoehe", S.BOARD_H, 65.0)
+# v2.1 (Aufgabe B): 75x65 -> 82x73, hergeleitet in
+# tools/platzprobe_v2_1.py (Rot-Nachweis + Kandidatenrechnung in
+# task-v21a-report.md, Abschnitt 9). Das Lochbild folgt derselben
+# 4-mm-Randlogik wie v1/v2, jetzt auf das neue Mass angewendet:
+# 82-2*4=74, 73-2*4=65.
+check("Breite", S.BOARD_W, 82.0)
+check("Hoehe", S.BOARD_H, 73.0)
 check("vier M3", len(S.M3_HOLES), 4)
-check("Lochbild 67 mm", S.M3_HOLES[2][0] - S.M3_HOLES[0][0], 67.0)
-check("Lochbild 57 mm", S.M3_HOLES[1][1] - S.M3_HOLES[0][1], 57.0)
+check("Lochbild 74 mm", S.M3_HOLES[2][0] - S.M3_HOLES[0][0], 74.0)
+check("Lochbild 65 mm", S.M3_HOLES[1][1] - S.M3_HOLES[0][1], 65.0)
 
 # Alle vier Ecken einzeln, nicht nur zwei Differenzen: sonst darf die
 # vierte Bohrung irgendwo liegen und der Test merkt es nicht.
 check("Lochbild vollstaendig", sorted(S.M3_HOLES),
+      [(4.0, 4.0), (4.0, 69.0), (78.0, 4.0), (78.0, 69.0)])
+
+# --- v2.1: M3_HOLES_FUER() ist eine Verallgemeinerung, keine
+# Ersetzung der alten Herleitung -----------------------------------
+# ROT-NACHWEIS DER DERIVATION (bindend laut Aufgabenzettel): bei den
+# ALTEN Massen (75x65) muss die neue Funktion exakt die vier alten,
+# vorher fest eingetragenen M3_HOLES reproduzieren. Waere das nicht
+# der Fall, haette die "Verallgemeinerung" in Wirklichkeit die
+# Herleitung geaendert, nicht nur parametrisiert.
+check("M3_HOLES_FUER(75,65) reproduziert das alte v2-Lochbild",
+      S.M3_HOLES_FUER(75.0, 65.0),
       [(4.0, 4.0), (4.0, 61.0), (71.0, 4.0), (71.0, 61.0)])
+check("M3_HOLES ist M3_HOLES_FUER(BOARD_W, BOARD_H)",
+      S.M3_HOLES, S.M3_HOLES_FUER(S.BOARD_W, S.BOARD_H))
+
+# --- v2.1: die beiden neuen Pflichtzonen ----------------------------
+# Woertlich aus task-v21a-report.md, Abschnitt 9 uebernommen (die vom
+# Controller korrigierte, massgebliche Fassung mit beweglichem
+# Lochbild -- NICHT die erste, ueberholte 85x80-Fassung).
+check("KLEMMENZONE", S.KLEMMENZONE, (23.80, 60.80, 58.20, 73.00))
+check("RANDPAD_ZONE", S.RANDPAD_ZONE, (75.60, 8.56, 79.60, 64.44))
+
+
+def _ueberlappt_rechteck(a, b):
+    return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+
+
+# R1: kein Klemmen-Hof schneidet PICO_SCHATTEN -- hier auf Zonenebene
+# geprueft (die tatsaechlichen Klemmen-Hoefe kommen erst in Aufgabe C,
+# aber wenn schon die ZONE PICO_SCHATTEN schneidet, kann keine
+# Platzierung darin die Regel je einhalten).
+check("R1: KLEMMENZONE schneidet PICO_SCHATTEN nicht",
+      _ueberlappt_rechteck(S.KLEMMENZONE, S.PICO_SCHATTEN), False)
+
+# R5: RANDPAD_ZONE haelt >= 2,0 mm Kupferabstand zur rechten Kante.
+check("R5: RANDPAD_ZONE haelt Mindestabstand zur rechten Kante",
+      S.BOARD_W - S.RANDPAD_ZONE[2] >= S.LAYOUT_REGELN["R5"]["mindestabstand_mm"],
+      True)
+
+# RANDPAD_ZONE darf keines der (jetzt beweglichen) M3-Freihalte-
+# quadrate schneiden -- das war der eigentliche Engpass von Aufgabe A
+# (die Zone muss zwischen den beiden rechten Loechern hindurchpassen).
+_m3_r = S.M3_KEEPOUT / 2.0
+for _hx, _hy in S.M3_HOLES:
+    _quad = (_hx - _m3_r, _hy - _m3_r, _hx + _m3_r, _hy + _m3_r)
+    check("RANDPAD_ZONE frei von M3 (%s|%s)" % (_hx, _hy),
+          _ueberlappt_rechteck(S.RANDPAD_ZONE, _quad), False)
+    check("KLEMMENZONE frei von M3 (%s|%s)" % (_hx, _hy),
+          _ueberlappt_rechteck(S.KLEMMENZONE, _quad), False)
 
 # Masse, die die Spezifikation zusichert und die bisher niemand prueft.
 check("Eckenradius", S.CORNER_R, 3.0)
@@ -448,30 +501,42 @@ for name in ("stapel_links", "stapel_rechts"):
         check("%s: Hof von %s ist bekannt" % (name, fp.split(":")[-1]),
               fp in S.FOOTPRINT_HOF, True)
 
-# --- Randpads: das KUPFER muss aus dem M3-Freihaltebereich bleiben ----
+# --- v2.1: Randpads liegen auf F.Cu, vollstaendig in RANDPAD_ZONE, und
+# jedes Pad haelt LANDE_SPERRRADIUS von jedem Landepunkt ein ----------
 #
-# WARUM DIESE PRUEFUNG EXISTIERT (Fix-Runde 2 zu Aufgabe 7). Die
-# Herleitung von RAND_X0 im Vertrag verglich die M3-Eckloch-Reichweite
-# (7,5 mm) mit der Pad-MITTE (8,0 mm) und schloss daraus "knapp
-# ausserhalb". Ein Pad ist aber breit: sein Kupfer reicht RAND_PAD_B / 2
-# weiter nach links. Bei einem 1,6-mm-Pad -- der ersten Groesse, die ich
-# fuer den Randpad-Footprint gewaehlt hatte -- liegt die Kupferkante bei
-# 7,20 und damit 0,30 mm INNERHALB des Freihaltebereichs, unter dem
-# Abstandsbolzen. Bei einem Metallbolzen ist das ein Kurzschluss.
-#
-# Gefangen hat das damals `tests/test_spec_motor.py` ueber den Hof des
-# Bauteils -- also nur, WEIL der Hof dort zufaellig die Padflaeche war.
-# Ein Vertragsleser, der eigene Randpads baut, haette keine Zahl
-# gefunden, die ihm widerspricht. Jetzt steht die Bedingung im Vertrag
-# (RAND_PAD_B, M3_REICHWEITE) und wird hier nachgerechnet.
-check("Randpad-Kupfer bleibt aus dem M3-Freihaltebereich (%.2f - %.2f/2 "
-      ">= %.2f)" % (S.RAND_X0, S.RAND_PAD_B, S.M3_REICHWEITE),
-      S.RAND_X0 - S.RAND_PAD_B / 2.0 >= S.M3_REICHWEITE, True)
-# Und am anderen Ende der Reihe dasselbe gegen das RECHTE Eckloch.
-_rand_ende = S.RAND_X0 + (len(S.RANDPADS) - 1) * S.RAND_RASTER
-check("Randpad-Reihe endet vor dem rechten M3-Freihaltebereich",
-      _rand_ende + S.RAND_PAD_B / 2.0
-      <= max(x for x, _y in S.M3_HOLES) - S.M3_KEEPOUT / 2.0, True)
+# WARUM DIESE PRUEFUNG JETZT ANDERS AUSSIEHT ALS VORHER (Aufgabe B,
+# 2026-09-10). Die v2-Fassung dieser Datei pruefte RAND_X0 gegen die
+# M3-Eckloch-Reichweite, weil die Randpad-Reihe HORIZONTAL nahe der
+# unteren Kante lief. v2.1 dreht Seite UND Achse (s. stack_spec.py,
+# RANDPADS-Kommentar): die Reihe laeuft jetzt VERTIKAL in einer eigenen
+# Zone (RANDPAD_ZONE) auf F.Cu. Die alte Pruefung waere hier sinnlos
+# (RAND_X0/RAND_Y gibt es nicht mehr); die neue prueft direkt gegen die
+# Zone und gegen die Verdreh-Klausel, die durch den Seitenwechsel neu
+# gilt (auf B.Cu war sie nie anwendbar, s. alte RULING in stack_spec.py).
+check("Randpads liegen auf F.Cu", S.RAND_LAYER, "F.Cu")
+
+_rand_halb_b = S.RAND_PAD_B / 2.0
+_rand_halb_raster = S.RAND_RASTER / 2.0
+for _pin, _label, (_rx, _ry) in S.RANDPADS:
+    check("Randpad %s (%s) liegt in RANDPAD_ZONE (x)" % (_pin, _label),
+          (S.RANDPAD_ZONE[0] <= _rx - _rand_halb_b
+           and _rx + _rand_halb_b <= S.RANDPAD_ZONE[2]), True)
+    check("Randpad %s (%s) liegt in RANDPAD_ZONE (y)" % (_pin, _label),
+          (S.RANDPAD_ZONE[1] <= _ry - _rand_halb_raster
+           and _ry + _rand_halb_raster <= S.RANDPAD_ZONE[3]), True)
+
+# R1-Verdreh-Klausel (LAYOUT_AUFLAGEN/LANDE_SPERRRADIUS) OHNE Ausnahme --
+# der Aufgabenzettel verlangt ausdruecklich, dass sie NICHT aufgeweicht
+# wird. Anders als bei den frueheren B.Cu-Randpads (dort strukturell
+# unerfuellbar, s. History) muss hier jeder einzelne der 22 Punkte
+# einzeln bestehen, denn die Zone wurde extra so gelegt, dass das geht.
+_landepunkte = S.LANDEPUNKTE_VERDREHT()
+for _pin, _label, (_rx, _ry) in S.RANDPADS:
+    _abstand = min(((_rx - _px) ** 2 + (_ry - _py) ** 2) ** 0.5
+                   for _px, _py in _landepunkte)
+    check("Randpad %s (%s) haelt LANDE_SPERRRADIUS zu jedem Landepunkt "
+          "(Kupferkante, Abstand %.2f mm)" % (_pin, _label, _abstand),
+          _abstand - _rand_halb_b >= S.LANDE_SPERRRADIUS, True)
 
 # --- Der Hof umschliesst das Kontaktgitter mittig ---------------------
 #
@@ -634,6 +699,60 @@ check("Layout-Auflage zur Verdreh-Kennzeichnung steht im Vertrag",
 # Software, das andere dem Kupfer.
 check("Firmware-Auflagen bleiben Firmware",
       any("Bestueckungsdruck" in a for a in S.AUFLAGEN), False)
+
+# --- v2.1: R1-R9 als pruefbare Zusagen (LAYOUT_REGELN) ---------------
+# Der Aufgabenzettel verlangt "die pledge dict present with the
+# documented keys" -- alle neun Regeln aus dem Plan muessen als
+# eigener Schluessel auftauchen, jede mit Text UND Belegstatus, damit
+# spaeter niemand eine Regel nur behauptet, ohne zu sagen, wie hart sie
+# belegt ist.
+_R = S.LAYOUT_REGELN
+check("LAYOUT_REGELN traegt genau R1..R9",
+      sorted(_R), ["R%d" % n for n in range(1, 10)])
+for _k in _R:
+    check("%s hat einen Regeltext" % _k, bool(_R[_k].get("text")), True)
+    check("%s hat einen Belegstatus" % _k, bool(_R[_k].get("beleg")), True)
+
+# Wo die Recherche eine Zahl ausdruecklich als Konvention/unbelegt
+# markiert hat, darf dieser Vertrag sie nicht als "belegt" ausgeben --
+# das waere genau das Dressing, das der Aufgabenzettel verbietet.
+for _k in ("R5", "R6", "R8", "R9"):
+    check("%s ist ehrlich als Konvention markiert, nicht als Norm"
+          % _k,
+          _R[_k]["beleg"].startswith("Konvention")
+          or _R[_k]["beleg"].startswith("teilweise belegt"), True)
+
+# R1: die Zusage referenziert dieselbe Flaeche, gegen die oben
+# tatsaechlich geprueft wurde (kein zweiter, abweichender Name).
+check("R1 referenziert PICO_SCHATTEN", _R["R1"]["keepout"], "PICO_SCHATTEN")
+check("R2 referenziert KLEMMENZONE", _R["R2"]["zone"], "KLEMMENZONE")
+
+# R3: die Zahl ist keine geratene Konstante, sondern derselbe Wert wie
+# im Stapelvertrag selbst (STECKER_STAPEL) -- ein Auseinanderlaufen
+# waere ein stiller Widerspruch zwischen zwei Vertragsstellen.
+check("R3-Bauteilhoehe == STECKER_STAPEL-Buchsenhoehe",
+      _R["R3"]["max_bauteilhoehe_mm"],
+      S.STECKER_STAPEL["gehaeusehoehe_mm"])
+
+# R4/R5: die Zahlen, gegen die die Zonen oben tatsaechlich geprueft
+# wurden, muessen aus DIESEM Dict kommen, nicht aus einer zweiten,
+# unabhaengig gepflegten Kopie.
+check("R4-Klemmenabstand ist 0,8 mm (IEC 60664, konservativ)",
+      _R["R4"]["mindestabstand_mm"], 0.8)
+check("R5-Kantenabstand ist 2,0 mm", _R["R5"]["mindestabstand_mm"], 2.0)
+
+# R6/R7/R8: Silkscreen-seitige Zusagen liegen auf der Vorderseite --
+# eine Randpad-Beschriftung auf B.Silkscreen (der alte v2-Stand) waere
+# nach dem Seitenwechsel (RAND_LAYER) falsch.
+for _k in ("R6", "R7"):
+    check("%s liegt auf F.Silkscreen" % _k, _R[_k]["layer"], "F.Silkscreen")
+check("R8-Label liegt auf derselben Seite wie das Randpad-Kupfer",
+      _R["R8"]["layer"], S.RAND_LABEL_LAYER)
+check("R8-Kupferlayer stimmt mit RAND_LAYER ueberein",
+      _R["R8"]["kupfer_layer"], S.RAND_LAYER)
+check("R8-Label und -Kupfer liegen NICHT auf verschiedenen Seiten "
+      "(sonst waere die Beschriftung spiegelverkehrt zum Pad)",
+      _R["R8"]["layer"].split(".")[0], _R["R8"]["kupfer_layer"].split(".")[0])
 
 
 # --- Typcode -> Kennwiderstaende -------------------------------------
