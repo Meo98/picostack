@@ -11,53 +11,56 @@ Kern aller drei: das v2-Mass 75x65 hat keine Reserve fuer eine
 kantenbuendige Klemmenreihe UND eine erreichbare Randpad-Zone gleich-
 zeitig -- beide muessen NEU RESERVIERT werden, nicht nur umsortiert.
 
-BINDENDER RAHMEN (vom Auftraggeber/Controller entschieden, hier nicht neu
-verhandelt):
-  1. STECKER_POS (stapel_links/rechts, kette, leistung), PIN_ROLLE,
-     M3_HOLES und LANDEPUNKTE_VERDREHT behalten ihre HEUTIGEN Koordinaten
-     -- nur der Umriss waechst. Das heisst: der Koordinatenursprung
-     (0|0 = heutige linke obere Ecke) bleibt stehen, das Rechteck wird
-     NUR nach rechts (+x) und nach unten (+y) groesser. Waechst der
-     Umriss stattdessen nach links oder oben, muessten alle frozen
-     Koordinaten um den Zuwachs verschoben werden -- genau das verbietet
-     Punkt 1. Folge: neue Flaeche entsteht ausschliesslich als Streifen
-     rechts von x=75 und unterhalb von y=65; das ist auch der Grund,
-     warum dieses Skript (anders als platzprobe_v2.py) keine "links"-
-     Kandidaten rechnet, obwohl "links" laut Aufgabenzettel geometrisch
-     ebenfalls ein freier Streifen waere (der Pico sitzt bei x=29..50,
-     Rest links davon ist bereits mit Kette/Nest/Notaus belegt UND
-     duerfte wegen Punkt 1 ohnehin nicht wachsen, ohne alles zu
-     verschieben).
-  2. Klemmen an einer Plattenkante, Koerper buendig, Drahtoeffnung nach
+BINDENDER RAHMEN, KORRIGIERT (2026-09-10, Ruling des Controllers nach der
+ersten Fassung dieses Skripts). Die erste Fassung fror M3_HOLES UND
+LANDEPUNKTE_VERDREHT auf ihren heutigen ABSOLUTEN Koordinaten ein (Rechnung
+"stapelkompatibel mit v2"). Das wurde zurueckgenommen: es existiert kein
+gefertigtes v2-Board, gegen das echte Stapelkompatibilitaet noetig waere --
+der Preis (Klemmenzone musste unterhalb der eingefrorenen Bohrung bei
+y=61 ausweichen, trieb EINHEITSMASS_V2_1 auf 85x80) war real, der Nutzen
+nicht. Jetzt gilt:
+
+  1. STECKER_POS (stapel_links/rechts, kette, leistung) und PIN_ROLLE
+     bleiben eingefroren -- das ist der eigentliche Stapelvertrag: alle
+     Module im Stapel muessen ihre Stecker deckungsgleich haben, egal wie
+     gross ihr Umriss ist. Der Koordinatenursprung (0|0 = heutige linke
+     obere Ecke) bleibt stehen; das Rechteck waechst NUR nach rechts (+x)
+     und nach unten (+y).
+  2. M3_HOLES WANDERN mit dem Umriss: dieselbe Herleitung wie in v1/v2
+     (stack_spec.py, Kommentar bei M3_HOLES: "4,0 mm Abstand von JEDER
+     Kante", nicht von der Mitte) wird auf das NEUE Mass angewendet --
+     M3_HOLES(w,h) = [(4,4), (4,h-4), (w-4,4), (w-4,h-4)]. Bei w=75,h=65
+     reproduziert das exakt die heutigen vier Loecher; das ist der
+     Rot-Nachweis, dass diese Funktion die alte Herleitung nur verallgemeinert,
+     nicht ersetzt.
+  3. LANDEPUNKTE_VERDREHT folgt zwangslaeufig aus 1+2: die Funktion in
+     stack_spec.py spiegelt jeden Steckerkontakt an (BOARD_W, BOARD_H)
+     -- `(round(BOARD_W - x, 3), round(BOARD_H - y, 3))`. Weil STECKER_POS
+     (Punkt 1) fest bleibt, aber BOARD_W/H wachsen, WANDERN alle 46
+     Landepunkte um genau (delta_rechts, delta_unten) nach aussen -- eine
+     reine Verschiebung, keine Verzerrung (nachgerechnet in `_landepunkte_
+     fuer()` unten, das dieselbe PAD_LAGEN-Funktion wie stack_spec.py
+     benutzt, nicht die eingefrorene S.LANDEPUNKTE_VERDREHT()).
+  4. Klemmen an einer Plattenkante, Koerper buendig, Drahtoeffnung nach
      aussen; kein Klemmenhof schneidet PICO_SCHATTEN (R1).
-  3. Alle Lastklemmen EINES Moduls in EINER Reihe auf EINER Kante, in
-     Kanalreihenfolge (R2) -- Dimmer4 vier Klemmen, das Motormodul eine
-     Klemme (J5) plus den 4-poligen Notaus-Stecker J3.
-  4. Randpads wandern auf F.Cu, in eine Zone, die KEIN Landepunkt aus
-     LANDEPUNKTE_VERDREHT() erreicht -- die 1,5-mm-Klausel (LANDE_
-     SPERRRADIUS) bleibt ohne Ausnahmeliste erfuellbar.
-  5. Kupfer >= 2,0 mm von der Plattenkante (R5) -- schaerfer als das
-     bisherige EDGE_CLEARANCE=0,5 mm im Vertrag.
+  5. Alle Lastklemmen EINES Moduls in EINER Reihe auf EINER Kante, in
+     Kanalreihenfolge (R2).
+  6. Randpads auf F.Cu, in einer Zone, die KEIN Landepunkt erreicht (die
+     1,5-mm-Klausel bleibt ohne Ausnahmeliste erfuellbar) UND die keinen
+     der (jetzt mitwachsenden) M3-Freihaltebereiche schneidet.
+  7. Kupfer >= 2,0 mm von der Plattenkante (R5).
 
-WARUM RECHTS+UNTEN UND NICHT AUCH LINKS. Die drei zu loesenden Befunde
-(B1, K3, K4) liegen alle unten/rechts (Motor-Klemme in der Stapelluecke
-Richtung unten, J8 unten rechts neben dem Leistungsstecker, Randpads am
-unteren Rand). Links (x<27) ist im Audit an keiner Stelle als eng
-bemaengelt -- dort sitzen Kette, MCU-Nest und (beim Motormodul) die
-Notaus-Kette bereits kompakt und unauffaellig. Zusaetzliche Flaeche dort
-haette keinen der drei Befunde adressiert und waere nur Ballast.
-
-WIE GERECHNET WIRD. Wie in platzprobe_v2.py: jede Pflichtflaeche ist ein
-achsenparalleles Rechteck. Die VIER schon bestehenden Pflichtflaechen
-(Pico-Zone, Stecker-Zone, Versorgungszelle) werden UNVERAENDERT aus
-platzprobe_v2.py uebernommen -- ihre Herleitung aendert sich mit v2.1
-nicht, nur ZWEI NEUE Pflichtflaechen kommen hinzu (Klemmenzone,
-Randpad-Zone) und wandern in den neu gewachsenen Rand. Kandidaten sind
-Zuwaechse (delta_rechts, delta_unten) auf die heutigen 75x65 mm; fuer
-jeden wird sowohl die GEOMETRIE (passt die Klemmenzone neben die
-M3-Eckloecher? bleibt die Randpad-Zone 1,5 mm von jedem Landepunkt UND
-2,0 mm von der neuen Kante weg?) als auch die FLAECHE (reicht der Rest
-fuer die Elektronik-Nutzlast?) geprueft.
+WAS SICH DADURCH AENDERT (der eigentliche Kern dieser Neufassung). Die
+Randpad-Zone sitzt rechts, nahe der neuen Kante -- und GENAU DORT sitzen
+jetzt auch die beiden rechten M3-Loecher (sie wandern ja mit, immer 4 mm
+von der aktuellen rechten Kante). In der ERSTEN Fassung war das kein
+Thema: das eingefrorene M3-Loch blieb bei x=71, weit hinter jeder
+plausiblen Randpad-Zone. Jetzt ueberlappen sich Randpad-Zone und
+M3-Freihaltequadrat in x fast zwangslaeufig (beide sitzen nah an der
+Kante) -- die Trennung muss also ueber Y laufen: die Randpad-Zone muss
+zwischen dem oberen und dem unteren rechten M3-Freihaltequadrat
+hindurchpassen. Das treibt jetzt delta_unten (nicht mehr die
+Klemmenzone!), s. Abschnitt 3 unten.
 
 Rein aus Python, ohne KiCad-Import -- lauffaehig als
 `python3 tools/platzprobe_v2_1.py`.
@@ -77,6 +80,9 @@ DIMMER4 = beschreibung(4)
 
 BOARD_W0 = S.BOARD_W   # 75.0 -- heutiges v2-Mass, Ausgangspunkt des Wachstums
 BOARD_H0 = S.BOARD_H   # 65.0
+M3_RAND_ABSTAND = 4.0  # mm von jeder Kante -- dieselbe v1/v2-Herleitung
+                       # (stack_spec.py, Kommentar bei M3_HOLES), jetzt als
+                       # Funktion statt als vier feste Zahlen.
 
 
 def _mass(flaeche):
@@ -84,10 +90,38 @@ def _mass(flaeche):
     return (round(x1 - x0, 3), round(y1 - y0, 3))
 
 
+def m3_holes_fuer(w, h):
+    """M3-Eckloecher fuer einen wxh-Umriss, 4,0 mm von jeder Kante.
+
+    Rot-Nachweis der Herleitung: m3_holes_fuer(75, 65) muss exakt
+    stack_spec.M3_HOLES reproduzieren (s. test unten in main()).
+    """
+    a = M3_RAND_ABSTAND
+    return [(a, a), (a, h - a), (w - a, a), (w - a, h - a)]
+
+
+def landepunkte_fuer(w, h):
+    """LANDEPUNKTE_VERDREHT fuer einen wxh-Umriss.
+
+    Identische Herleitung wie stack_spec.LANDEPUNKTE_VERDREHT() -- dort an
+    das MODUL-globale BOARD_W/H gebunden (fest 75/65), hier parametrisiert,
+    weil die Platzprobe mehrere Kandidatengroessen durchrechnen muss.
+    STECKER_POS/PAD_LAGEN kommen unveraendert aus dem Vertrag (Punkt 1
+    oben, frozen).
+    """
+    aus = []
+    for eintrag in S.STECKER_POS.values():
+        lagen = S.PAD_LAGEN(eintrag["footprints"][0], eintrag["pin1"],
+                             eintrag["drehung"])
+        for x, y in lagen.values():
+            aus.append((round(w - x, 3), round(h - y, 3)))
+    return tuple(aus)
+
+
 # === 1. Unveraendert aus platzprobe_v2.py uebernommene Pflichtflaechen ==
 # Diese drei Zonen aendern sich mit v2.1 NICHT (der Auftrag verlangt nur
-# Klemmenreihe + Randpad-Zone neu, s. Modul-Docstring) -- hier nur
-# zitiert, damit die Flaechenbilanz unten vollstaendig ist.
+# Klemmenreihe + Randpad-Zone neu) -- hier nur zitiert, damit die
+# Flaechenbilanz unten vollstaendig ist.
 
 PICO_REIHE_L = 50.8
 PICO_REIHE_B = 5.1
@@ -118,21 +152,20 @@ M3_FLAECHE = round(M3_ANZAHL * M3_KEEPOUT * M3_KEEPOUT, 3)
 M3_HALB = M3_KEEPOUT / 2.0                # 3,5 mm -- Reichweite je Seite
                                           # der Bohrmitte
 
-# === 2. NEU: Klemmenzone (R1/R2/R4) ====================================
-# Die Zone muss BEIDE Extremfaelle gleichzeitig fassen, weil sie EIN
-# Rechteck im Vertrag ist, das jedes Modul unterschiedlich weit nutzt:
-#   - Dimmer4: vier Lastklemmen in einer Reihe, Kanal 1..4 (breiteste
-#     Reihe).
-#   - Motormodul: eine Motorklemme (J5, groesserer 5,08-mm-Typ, hoehere
-#     Strombelastung) PLUS der 4-polige Notaus-Stecker J3 in derselben
-#     Reihe (hoechste Einzelklemme).
-# Klemmenabstand R4 (IEC 60664, s. Recherche Abschnitt 3): 0,8 mm bei
-# 50 V ist der einzige BELEGTE Zahlenwert, den die Recherche fand; er
-# gilt konservativ auch fuer die 6-30-V-Versorgung dieses Projekts
-# (Kriechstrecke bei 30 V ist hoechstens so gross wie bei 50 V). Das ist
-# GROESSER als der generische COURTYARD_GAP von 0,6 mm, den spec_motor.py
-# fuer Bauteile ohne eigene Spannungsfestigkeits-Anforderung benutzt --
-# hier zaehlt die schaerfere, spezifische Regel.
+STAPEL_BODEN = S.STECKER_POS["stapel_links"]["flaeche"][3]   # 52,3 mm --
+# tiefster Punkt EINGEFRORENER Vertragsgeometrie (beide Stapelreihen enden
+# hier, s. STECKER_POS-Kommentar "beide Hoefe belegen denselben
+# Y-Bereich"). Das ist jetzt die massgebliche untere Grenze fuer alles,
+# was ueber der Klemmenzone noch Platz braucht -- NICHT mehr "das alte
+# BOARD_H0", das war in der ersten Fassung eine eigene, zu vorsichtige
+# Annahme (s. Modul-Docstring).
+GENERISCHER_ABSTAND = 0.6   # mm, COURTYARD_GAP-Groessenordnung, ueberall
+                            # dort verwendet, wo kein spezifischerer Wert
+                            # (R4/R5) bindet.
+
+# === 2. Klemmenzone (R1/R2/R4) -- unveraendert gegenueber der ersten
+# Fassung, die M3-Beweglichkeit aendert an DIESER Herleitung nichts (die
+# Klemmenzone haengt an KLEMMENTYPEN, nicht an M3-Lage) =================
 KF350_HOF_L, KF350_HOF_B = 8.0, 8.6     # J90/J5..J8 Dimmer: TerminalBlock_
                                         # Phoenix_PT-1,5-2-3.5-H (spec_
                                         # motor.FOOTPRINTS["J90"], echter
@@ -146,6 +179,11 @@ NOTAUS_L, NOTAUS_B = 11.16, 3.54        # J3: FP_HDR_1X04, gedreht 90 Grad
                                         # Ausdehnung IN Platinenachsen,
                                         # Drehung eingerechnet)
 R4_KLEMMENABSTAND_MM = 0.8               # IEC 60664, 50 V (Recherche Abs. 3)
+                                          # -- schaerfer als das generische
+                                          # COURTYARD_GAP (0,6 mm); Aufgabe
+                                          # C muss diesen Wert benutzen,
+                                          # nicht auf COURTYARD_GAP
+                                          # zurueckfallen.
 
 DIMMER4_REIHE_L = round(4 * KF350_HOF_L + 3 * R4_KLEMMENABSTAND_MM, 3)
 DIMMER4_REIHE_B = KF350_HOF_B
@@ -156,46 +194,27 @@ KLEMMENZONE_L = round(max(DIMMER4_REIHE_L, MOTOR_REIHE_L), 3)
 KLEMMENZONE_B = round(max(DIMMER4_REIHE_B, MOTOR_REIHE_B), 3)
 KLEMMENZONE_FLAECHE = round(KLEMMENZONE_L * KLEMMENZONE_B, 3)
 
-# === 3. NEU: Randpad-Zone auf F.Cu (R4 Vertragsregel, K4) ==============
-# 22 Loecher (18 GPIO + 2x 3V3 + 2x GND, stack_spec.RANDPADS) im
-# 2,54-mm-Raster -- dieselbe Laenge wie in platzprobe_v2.py, aber jetzt
-# auf F.Cu statt B.Cu, deshalb NEU gegen LANDEPUNKTE_VERDREHT() und
-# gegen die neue Plattenkante zu pruefen (das war auf B.Cu nicht noetig,
-# s. stack_spec.py RULING 2026-09-09).
+# === 3. Randpad-Zone auf F.Cu (R6-Vertragsregel/K4) --------------------
 RAND_LOECHER = 18 + 4
 RAND_RASTER = S.RAND_RASTER
 RANDPAD_LAUF = round(RAND_LOECHER * RAND_RASTER, 3)     # 55,88 mm
 RANDPAD_TIEFE = 4.0     # mm quer zur Reihe -- Pad (0,90 mm,
-                        # stack_spec.RAND_PAD_B) plus Silk-Label-Platz,
-                        # dieselbe Groessenordnung wie RAND_SILK_TIEFE in
-                        # platzprobe_v2.py
-RANDPAD_PUFFER = 0.6    # mm Abstand zur alten Kante x=75 (COURTYARD_GAP-
-                        # Groessenordnung; x=75 traegt heute nichts, der
-                        # Puffer ist reine Uebersicht, keine harte Not-
-                        # wendigkeit)
+                        # stack_spec.RAND_PAD_B) plus Silk-Label-Platz
+RANDPAD_PUFFER = 0.6    # mm Abstand zur alten Kante x=75 (reine
+                        # Uebersicht -- x=75 traegt heute nichts)
 R5_KANTENABSTAND_MM = 2.0     # neue, schaerfere Vertragsregel (statt des
                               # alten EDGE_CLEARANCE=0,5 mm)
 
 RANDPAD_ZONE_FLAECHE = round(RANDPAD_LAUF * RANDPAD_TIEFE, 3)
 
-# Minimaler Rechts-Zuwachs, damit die Randpad-Zone (Puffer + Tiefe) UND
-# der Kantenabstand (R5) hinter der neuen Kante Platz haben:
+# Minimaler Rechts-Zuwachs: Puffer + Zonentiefe + R5-Kantenabstand hinter
+# der neuen Kante. Diese Zahl aendert sich durch die M3-Beweglichkeit
+# NICHT -- sie folgt allein aus R5 und der Zonentiefe.
 DELTA_RECHTS_MIN = round(
     RANDPAD_PUFFER + RANDPAD_TIEFE + R5_KANTENABSTAND_MM, 3)
-# Minimaler Unten-Zuwachs: die Klemmenzone braucht ihre eigene Tiefe an
-# der neuen Kante (Koerper buendig, R1 -- kein zusaetzlicher Puffer noetig,
-# unterhalb y=65 liegt heute nichts).
-DELTA_UNTEN_MIN = KLEMMENZONE_B
 
 
 # === 4. Elektronik-Nutzlast: echte Hof-Summen aus den Spec-Dateien =====
-# "Nutzlast" ist hier alles, was NICHT schon eine der obigen Zonen ist:
-# die vier Vertragsstecker (Stapelreihen, Kette, Leistung), die
-# Randpad-Bauteile (J95/J96 -- ihre Flaeche steht oben eigens als
-# RANDPAD_ZONE_FLAECHE), die Versorgungszelle (J90/Q90/R90/R91/D90/D91/
-# U90/C90/C91 -- steht oben als ZELLE_ZONE_FLAECHE) und die Lastklemmen
-# selbst (J5/J6/J7/J8 bzw. J5+J3 -- stehen oben als KLEMMENZONE_FLAECHE)
-# fallen aus der Summe heraus, sonst waere ihre Flaeche doppelt gezaehlt.
 _CONN_REFS = {"J100", "J105", "J101", "J102", "J103", "J104"}
 _RANDPAD_REFS = {"J95", "J96"}
 _ZELLE_REFS = {"J90", "Q90", "R90", "R91", "D90", "D91", "U90", "C90", "C91"}
@@ -214,11 +233,7 @@ DIMMER4_NUTZLAST = _nutzlast(DIMMER4["PLACEMENT"], _TERM_DIMMER_REFS)
 NUTZLAST_WORST = max(MOTOR_NUTZLAST, DIMMER4_NUTZLAST)
 
 PACKUNGS_RESERVE = 1.25    # dieselbe konservative Konstante wie in
-                          # platzprobe_v2.py (Herleitung dort:
-                          # BELEGUNGSGRAD_ERPROBT = 0,566 -> Faktor
-                          # 1/0,566 = 1,77; 1,25 ist der kleinere,
-                          # vorsichtigere Wert, weil dies nur die grobe
-                          # Vorauswahl trifft)
+                          # platzprobe_v2.py
 NUTZLAST_BEDARF = round(NUTZLAST_WORST * PACKUNGS_RESERVE, 4)
 
 MANDATORY_SUMME = round(
@@ -227,13 +242,18 @@ MANDATORY_SUMME = round(
 
 
 # === 5. Kandidaten: Zuwachs rechts + unten auf 75x65 ====================
-KANDIDATEN = ((5.0, 10.0), (10.0, 15.0), (15.0, 20.0))
+# Kleiner geraster als in der ersten Fassung: die Grobsuche oben (nicht im
+# Skript, im Vorlauf dieser Aufgabe) zeigt den Umschlagpunkt bei
+# delta_rechts=7/delta_unten=8 (ganzzahlige mm) -- die drei Kandidaten
+# hier klammern ihn ein: einer scheitert klar, einer trifft ihn, einer
+# hat spuerbar mehr Reserve.
+KANDIDATEN = ((5.0, 5.0), (7.0, 8.0), (10.0, 10.0))
 
 
-def _landepunkt_min_abstand(x0, x1, y0, y1):
-    """Kleinster Abstand irgendeines der 46 Landepunkte zum Rechteck."""
+def _landepunkt_min_abstand(punkte, x0, x1, y0, y1):
+    """Kleinster Abstand irgendeines Landepunkts zum Rechteck."""
     beste = None
-    for px, py in S.LANDEPUNKTE_VERDREHT():
+    for px, py in punkte:
         dx = max(x0 - px, 0.0, px - x1)
         dy = max(y0 - py, 0.0, py - y1)
         d = (dx * dx + dy * dy) ** 0.5
@@ -245,35 +265,49 @@ def _landepunkt_min_abstand(x0, x1, y0, y1):
 def pruefe(delta_rechts, delta_unten):
     w = round(BOARD_W0 + delta_rechts, 3)
     h = round(BOARD_H0 + delta_unten, 3)
+    m3 = m3_holes_fuer(w, h)
+    m3_oben_rechts, m3_unten_rechts = m3[2], m3[3]
+    m3_unten_links = m3[1]
+    punkte = landepunkte_fuer(w, h)
 
-    # -- Randpad-Zone: rechter Streifen, mittig in y auf der vollen
-    # neuen Hoehe platziert (nichts anderes steht dort, s. Docstring).
+    # -- Randpad-Zone: rechter Streifen, X-Lage fix (Puffer + Tiefe ab der
+    # ALTEN Kante x=75), Y-Lage mittig -- aber jetzt MUSS sie zwischen dem
+    # oberen und dem unteren rechten M3-Freihaltequadrat hindurchpassen
+    # (beide wandern mit der Kante, liegen also im selben X-Bereich wie
+    # die Randpad-Zone selbst -- der Docstring erklaert, warum das jetzt
+    # so ist und vorher nicht war).
     rp_x0 = round(BOARD_W0 + RANDPAD_PUFFER, 3)
     rp_x1 = round(rp_x0 + RANDPAD_TIEFE, 3)
+    y_frei_oben = round(m3_oben_rechts[1] + M3_HALB + GENERISCHER_ABSTAND, 3)
+    y_frei_unten = round(m3_unten_rechts[1] - M3_HALB - GENERISCHER_ABSTAND,
+                         3)
+    y_verfuegbar = round(y_frei_unten - y_frei_oben, 3)
     rp_y0 = round((h - RANDPAD_LAUF) / 2.0, 3)
     rp_y1 = round(rp_y0 + RANDPAD_LAUF, 3)
+    rp_m3_ok = rp_y0 >= y_frei_oben and rp_y1 <= y_frei_unten
     rp_kante_frei = round(w - rp_x1, 3)
     rp_kante_ok = rp_kante_frei >= R5_KANTENABSTAND_MM
-    rp_landeabstand = _landepunkt_min_abstand(rp_x0, rp_x1, rp_y0, rp_y1)
+    rp_landeabstand = _landepunkt_min_abstand(punkte, rp_x0, rp_x1, rp_y0,
+                                              rp_y1)
     rp_lande_ok = rp_landeabstand >= S.LANDE_SPERRRADIUS
-    rp_y_ok = rp_y0 >= 0.0 and rp_y1 <= h
 
-    # -- Klemmenzone: unterer Streifen, mittig in x auf der ALTEN Breite
-    # (75 mm) zentriert, damit sie unabhaengig vom Rechts-Zuwachs immer
-    # mittig zwischen den beiden UNTEREN M3-Eckloechern liegt.
-    kz_x0 = round((BOARD_W0 - KLEMMENZONE_L) / 2.0, 3)
+    # -- Klemmenzone: unterer Streifen, mittig in x auf der NEUEN
+    # Gesamtbreite w zentriert (nicht mehr auf der alten 75 mm) -- so
+    # bleibt sie symmetrisch zwischen den beiden UNTEREN M3-Eckloechern,
+    # die jetzt ja ebenfalls mit w wachsen.
+    kz_x0 = round((w - KLEMMENZONE_L) / 2.0, 3)
     kz_x1 = round(kz_x0 + KLEMMENZONE_L, 3)
     kz_y1 = h
     kz_y0 = round(kz_y1 - KLEMMENZONE_B, 3)
-    # M3-Eckloch-Freihaltequadrate (unveraendert bei x=4/x=71, y=61):
-    m3_links_x1 = round(S.M3_HOLES[1][0] + M3_HALB, 3)      # (4,61) + 3,5
-    m3_rechts_x0 = round(S.M3_HOLES[3][0] - M3_HALB, 3)     # (71,61) - 3,5
-    kz_frei_links = round(kz_x0 - m3_links_x1, 3)
-    kz_frei_rechts = round(m3_rechts_x0 - kz_x1, 3)
+    kz_frei_links = round(kz_x0 - (m3_unten_links[0] + M3_HALB), 3)
+    kz_frei_rechts = round((m3_unten_rechts[0] - M3_HALB) - kz_x1, 3)
     kz_m3_ok = kz_frei_links >= 0.0 and kz_frei_rechts >= 0.0
-    kz_y_ok = kz_y0 >= BOARD_H0    # darf die alte Platine nicht anschneiden
+    # Untere Grenze ist jetzt STAPEL_BODEN (52,3, frozen Vertragsgeometrie)
+    # + genereller Abstand -- nicht mehr "die alte Plattenkante bei 65".
+    kz_boden_ok = kz_y0 >= round(STAPEL_BODEN + GENERISCHER_ABSTAND, 3)
 
-    geometrie_ok = rp_kante_ok and rp_lande_ok and rp_y_ok and kz_m3_ok and kz_y_ok
+    geometrie_ok = (rp_kante_ok and rp_m3_ok and rp_lande_ok and kz_m3_ok
+                    and kz_boden_ok)
 
     flaeche = round(w * h, 3)
     frei = round(flaeche - MANDATORY_SUMME - M3_FLAECHE, 3)
@@ -282,19 +316,32 @@ def pruefe(delta_rechts, delta_unten):
 
     return {
         "delta_rechts": delta_rechts, "delta_unten": delta_unten,
-        "w": w, "h": h, "flaeche": flaeche, "frei": frei,
-        "rp": (rp_x0, rp_y0, rp_x1, rp_y1), "rp_kante_frei": rp_kante_frei,
-        "rp_kante_ok": rp_kante_ok, "rp_landeabstand": rp_landeabstand,
-        "rp_lande_ok": rp_lande_ok, "rp_y_ok": rp_y_ok,
+        "w": w, "h": h, "flaeche": flaeche, "frei": frei, "m3": m3,
+        "rp": (rp_x0, rp_y0, rp_x1, rp_y1),
+        "rp_kante_frei": rp_kante_frei, "rp_kante_ok": rp_kante_ok,
+        "y_frei_oben": y_frei_oben, "y_frei_unten": y_frei_unten,
+        "y_verfuegbar": y_verfuegbar, "rp_m3_ok": rp_m3_ok,
+        "rp_landeabstand": rp_landeabstand, "rp_lande_ok": rp_lande_ok,
         "kz": (kz_x0, kz_y0, kz_x1, kz_y1),
         "kz_frei_links": kz_frei_links, "kz_frei_rechts": kz_frei_rechts,
-        "kz_m3_ok": kz_m3_ok, "kz_y_ok": kz_y_ok,
+        "kz_m3_ok": kz_m3_ok, "kz_boden_ok": kz_boden_ok,
         "geometrie_ok": geometrie_ok, "flaeche_reicht": flaeche_reicht,
         "passt": passt,
     }
 
 
 def main():
+    print("=== Rot-Nachweis: m3_holes_fuer(75,65) reproduziert den "
+          "Vertrag ===")
+    nachprobe = m3_holes_fuer(BOARD_W0, BOARD_H0)
+    ok = nachprobe == S.M3_HOLES
+    print("m3_holes_fuer(75,65) = %s" % (nachprobe,))
+    print("stack_spec.M3_HOLES  = %s -> %s"
+          % (S.M3_HOLES, "GLEICH" if ok else "ABWEICHUNG"))
+    if not ok:
+        raise SystemExit(1)
+
+    print()
     print("=== Unveraendert aus platzprobe_v2.py uebernommene Zonen ===")
     print("Pico-Zone           : %5.2f x %5.2f mm = %8.2f mm^2"
           % (PICO_ZONE_L, PICO_ZONE_B, PICO_ZONE_FLAECHE))
@@ -306,7 +353,8 @@ def main():
           % (M3_KEEPOUT, M3_KEEPOUT, M3_FLAECHE))
 
     print()
-    print("=== NEU: Klemmenzone (R1/R2/R4) ===")
+    print("=== Klemmenzone (R1/R2/R4, unveraendert durch M3-Beweglichkeit) "
+          "===")
     print("Dimmer4-Reihe (4x KF350 3,5mm): 4 x %.2f + 3 x %.2f = %.2f mm "
           "breit, %.2f mm tief"
           % (KF350_HOF_L, R4_KLEMMENABSTAND_MM, DIMMER4_REIHE_L,
@@ -319,24 +367,33 @@ def main():
           "%.2f mm = %.2f mm^2"
           % (DIMMER4_REIHE_L, MOTOR_REIHE_L, DIMMER4_REIHE_B, MOTOR_REIHE_B,
              KLEMMENZONE_L, KLEMMENZONE_B, KLEMMENZONE_FLAECHE))
-    print("-> minimaler Zuwachs unten (delta_unten) = KLEMMENZONE-Tiefe "
-          "= %.2f mm" % DELTA_UNTEN_MIN)
+    print("STAPEL_BODEN (tiefster Punkt frozen Vertragsgeometrie, "
+          "stapel_links/rechts) = %.2f mm" % STAPEL_BODEN)
+    print("-> Klemmenzone braucht mindestens y >= %.2f + %.2f = %.2f mm "
+          "Deckenhoehe, das treibt delta_unten kaum noch (s. Kandidaten)"
+          % (STAPEL_BODEN, GENERISCHER_ABSTAND,
+             STAPEL_BODEN + GENERISCHER_ABSTAND))
 
     print()
-    print("=== NEU: Randpad-Zone auf F.Cu (R4-Vertragsregel/K4) ===")
+    print("=== Randpad-Zone auf F.Cu -- JETZT von den beweglichen "
+          "M3-Loechern eingeklemmt ===")
     print("22 Loecher x %.2f mm Raster = %.2f mm Lauflaenge"
           % (RAND_RASTER, RANDPAD_LAUF))
-    print("Zonentiefe %.2f mm + Puffer %.2f mm zur alten Kante + "
-          "Kantenabstand R5 %.2f mm"
-          % (RANDPAD_TIEFE, RANDPAD_PUFFER, R5_KANTENABSTAND_MM))
-    print("-> minimaler Zuwachs rechts (delta_rechts) = %.2f + %.2f + "
-          "%.2f = %.2f mm"
-          % (RANDPAD_PUFFER, RANDPAD_TIEFE, R5_KANTENABSTAND_MM,
-             DELTA_RECHTS_MIN))
+    print("Rechter Streifen: X fix bei %.2f Puffer + %.2f Tiefe ab der "
+          "alten Kante x=75, R5-Kantenabstand %.2f mm -> delta_rechts >= "
+          "%.2f mm" % (RANDPAD_PUFFER, RANDPAD_TIEFE, R5_KANTENABSTAND_MM,
+                        DELTA_RECHTS_MIN))
+    print("Die beiden RECHTEN M3-Loecher wandern mit (immer 4,0 mm von "
+          "der jeweils aktuellen Kante) -- ihre Freihaltequadrate liegen "
+          "damit im SELBEN X-Bereich wie die Randpad-Zone. Trennung "
+          "muss also ueber Y laufen: die Zone muss zwischen dem oberen "
+          "und dem unteren Freihaltequadrat (je +-%.1f mm um die "
+          "Lochmitte, plus %.1f mm Abstand) hindurchpassen -- das treibt "
+          "jetzt delta_unten, nicht mehr die Klemmenzone."
+          % (M3_HALB, GENERISCHER_ABSTAND))
 
     print()
-    print("=== Elektronik-Nutzlast (echte Hof-Summen, Vertragsstecker/"
-          "Zelle/Klemmen ausgenommen) ===")
+    print("=== Elektronik-Nutzlast (echte Hof-Summen) ===")
     print("Motormodul-Rest   = %8.2f mm^2" % MOTOR_NUTZLAST)
     print("Dimmer4-Rest      = %8.2f mm^2  <- schlechtester Fall"
           % DIMMER4_NUTZLAST)
@@ -353,29 +410,35 @@ def main():
         ergebnisse.append(r)
         print("delta_rechts=%.1f, delta_unten=%.1f -> %sx%s mm (%.0f mm^2)"
               % (dr, db, r["w"], r["h"], r["flaeche"]))
+        print("    M3-Loecher: %s" % (r["m3"],))
         rp_x0, rp_y0, rp_x1, rp_y1 = r["rp"]
-        print("    Randpad-Zone (%.2f,%.2f)-(%.2f,%.2f): Kantenabstand "
-              "%s - %s = %.2f mm (braucht >= %.1f) -> %s"
-              % (rp_x0, rp_y0, rp_x1, rp_y1, r["w"], rp_x1,
-                 r["rp_kante_frei"], R5_KANTENABSTAND_MM,
+        print("    Randpad-Zone (%.2f,%.2f)-(%.2f,%.2f)"
+              % (rp_x0, rp_y0, rp_x1, rp_y1))
+        print("      Kantenabstand %s - %s = %.2f mm (braucht >= %.1f) "
+              "-> %s"
+              % (r["w"], rp_x1, r["rp_kante_frei"], R5_KANTENABSTAND_MM,
                  "ok" if r["rp_kante_ok"] else "R5 VERLETZT"))
-        print("    Randpad-Zone Landepunkt-Mindestabstand = %.2f mm "
-              "(braucht >= %.1f) -> %s"
+        print("      M3-Luecke oben->unten: frei ab y=%.2f bis y=%.2f "
+              "(%.2f mm verfuegbar, braucht %.2f mm Lauf) -> %s"
+              % (r["y_frei_oben"], r["y_frei_unten"], r["y_verfuegbar"],
+                 RANDPAD_LAUF,
+                 "ok" if r["rp_m3_ok"] else "KOLLISION MIT M3-ECKE"))
+        print("      Landepunkt-Mindestabstand = %.2f mm (braucht >= "
+              "%.1f) -> %s"
               % (r["rp_landeabstand"], S.LANDE_SPERRRADIUS,
                  "ok" if r["rp_lande_ok"] else "1,5-mm-KLAUSEL VERLETZT"))
-        print("    Randpad-Zone passt in y (%.2f..%.2f von 0..%.2f) -> %s"
-              % (rp_y0, rp_y1, r["h"],
-                 "ok" if r["rp_y_ok"] else "LAUFT UEBER DIE PLATTE"))
         kz_x0, kz_y0, kz_x1, kz_y1 = r["kz"]
-        print("    Klemmenzone (%.2f,%.2f)-(%.2f,%.2f): Luft zum linken "
-              "M3-Eckloch %.2f mm, zum rechten %.2f mm -> %s"
-              % (kz_x0, kz_y0, kz_x1, kz_y1, r["kz_frei_links"],
-                 r["kz_frei_rechts"],
+        print("    Klemmenzone (%.2f,%.2f)-(%.2f,%.2f)"
+              % (kz_x0, kz_y0, kz_x1, kz_y1))
+        print("      Luft zum linken M3-Eckloch %.2f mm, zum rechten "
+              "%.2f mm -> %s"
+              % (r["kz_frei_links"], r["kz_frei_rechts"],
                  "ok" if r["kz_m3_ok"] else "KOLLISION MIT M3-ECKE"))
-        print("    Klemmenzone beginnt bei y=%.2f (>= altes BOARD_H "
+        print("      Beginnt bei y=%.2f (braucht >= STAPEL_BODEN+%.1f = "
               "%.2f) -> %s"
-              % (kz_y0, BOARD_H0, "ok" if r["kz_y_ok"] else "SCHNEIDET DIE "
-                 "ALTE PLATINE AN"))
+              % (kz_y0, GENERISCHER_ABSTAND,
+                 STAPEL_BODEN + GENERISCHER_ABSTAND,
+                 "ok" if r["kz_boden_ok"] else "SCHNEIDET STECKERFLAECHE AN"))
         print("    Flaeche: frei = %.0f - %.2f - %.2f = %.2f mm^2, Bedarf "
               "%.2f mm^2 -> %s"
               % (r["flaeche"], MANDATORY_SUMME, M3_FLAECHE, r["frei"],
@@ -398,14 +461,19 @@ def main():
     kz_x0, kz_y0, kz_x1, kz_y1 = kleinster["kz"]
     rp_x0, rp_y0, rp_x1, rp_y1 = kleinster["rp"]
     print("BOARD_W = %.1f, BOARD_H = %.1f" % (kleinster["w"], kleinster["h"]))
+    print("M3_HOLES = %s  # 4,0 mm von jeder Kante, dieselbe Herleitung "
+          "wie v1/v2" % (kleinster["m3"],))
     print("KLEMMENZONE  = (%.2f, %.2f, %.2f, %.2f)  # %.2f x %.2f mm, "
           "Kante unten, F.Silkscreen-Beschriftung je Klemme (R7)"
           % (kz_x0, kz_y0, kz_x1, kz_y1, KLEMMENZONE_L, KLEMMENZONE_B))
     print("RANDPAD_ZONE = (%.2f, %.2f, %.2f, %.2f)  # %.2f x %.2f mm, "
           "Kante rechts, F.Cu + F.Silkscreen (R8)"
           % (rp_x0, rp_y0, rp_x1, rp_y1, RANDPAD_TIEFE, RANDPAD_LAUF))
-    print("PICO_SCHATTEN, ANTENNE_FREI, STECKER_POS, M3_HOLES: "
-          "UNVERAENDERT aus dem v2-Vertrag (S. Modul-Docstring Punkt 1)")
+    print("STECKER_POS, PIN_ROLLE: UNVERAENDERT aus dem v2-Vertrag "
+          "(frozen, s. Modul-Docstring Punkt 1)")
+    print("LANDEPUNKTE_VERDREHT: neu herzuleiten fuer BOARD_W/H = %.1f/"
+          "%.1f (landepunkte_fuer() oben), NICHT mehr die alten 46 "
+          "75x65-Werte" % (kleinster["w"], kleinster["h"]))
 
     print()
     print("=== Rot-Nachweis gegen die Audit-Befunde ===")
@@ -415,11 +483,29 @@ def main():
           % (kz_y0, S.PICO_SCHATTEN[3],
              "GELOEST (Zone liegt vollstaendig ausserhalb)" if b1_frei
              else "NICHT geloest"))
-    print("K1 (Q90 nur 0,10-0,20 mm zum M3-Freihaltequadrat): NICHT Teil "
-          "dieser Aufgabe -- die Versorgungszelle bleibt unveraendert "
-          "(s. Modul-Docstring). Der Zuwachs schafft dafuer keinen neuen "
-          "Platz; das ist ein offener Punkt fuer Aufgabe C (Q90 innerhalb "
-          "der bestehenden Zelle verschieben).")
+
+    q90 = MOTOR.PLACEMENT["Q90"]
+    q90_x0, q90_y0 = q90.x, q90.y
+    q90_x1, q90_y1 = q90.x + q90.w, q90.y + q90.h
+    m3_or_alt = S.M3_HOLES[2]           # (71, 4), eingefrorener v2-Wert
+    m3_or_neu = kleinster["m3"][2]      # (w-4, 4), jetzt gewandert
+    keep_alt_x0, keep_alt_x1 = m3_or_alt[0] - M3_HALB, m3_or_alt[0] + M3_HALB
+    keep_neu_x0 = m3_or_neu[0] - M3_HALB
+    x_ueberlappt_alt = not (q90_x1 <= keep_alt_x0 or q90_x0 >= keep_alt_x1)
+    x_frei_neu = round(keep_neu_x0 - q90_x1, 3)
+    print("K1 (Q90 nur 0,10-0,20 mm zum M3-Freihaltequadrat der Bohrung "
+          "(71|4)): Q90-Hof x=%.2f..%.2f, y=%.2f..%.2f."
+          % (q90_x0, q90_x1, q90_y0, q90_y1))
+    print("    Altes M3-Loch (71,4), Freihaltequadrat x=%.2f..%.2f: "
+          "ueberlappt Q90 in x -> %s (deshalb reichte in y nur 0,1-0,2 mm)"
+          % (keep_alt_x0, keep_alt_x1, "JA" if x_ueberlappt_alt else "nein"))
+    print("    Neues M3-Loch %s (wandert mit der rechten Kante): Luft in "
+          "x zwischen Q90-Ostkante und Freihaltequadrat = %.2f - %.2f = "
+          "%.2f mm -> %s"
+          % (m3_or_neu, keep_neu_x0, q90_x1, x_frei_neu,
+             "GELOEST (x-getrennt, y-Naehe irrelevant)"
+             if x_frei_neu > 0 else "weiterhin eng"))
+
     k3_abstand = round(kz_y0 - S.STECKER_POS["leistung"]["flaeche"][3], 2)
     print("K3 (J8 nur 1,14 mm zum Leistungsstecker): J8 zieht in die "
           "Klemmenzone (y=%.2f), Leistungsstecker endet bei y=%.2f -> "
