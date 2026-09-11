@@ -60,7 +60,9 @@ for kanaele in (1, 3, 4):
     check("%s M3_HOLES" % tag, b.M3_HOLES, S.M3_HOLES)
 
     # -- Geometrie: keine Ueberlappungen, keine M3-Kollision, kein
-    # Ueberstand -- reine Python-Pruefung, kein KiCad noetig. -----------
+    # Ueberstand -- reine Python-Pruefung, kein KiCad noetig. Die
+    # Kanal-Klemmen sitzen kantenbuendig (R1); b.EDGE_FLUSH_REFS sagt
+    # geometry.check_all() das bereits (s. dort), kein Filter noetig. --
     bad = geometry.check_all(b.PLACEMENT, b)
     fails.extend("%s Geometrie: %s" % (tag, x) for x in bad)
 
@@ -91,24 +93,30 @@ for kanaele in (1, 3, 4):
         check("%s %s Footprint wie Motormodul" % (tag, ref),
               b.FOOTPRINTS[ref], M.FOOTPRINTS[ref])
 
-    # -- Randpads (J95/J96) auf B.Cu, an den Vertragskoordinaten. Die
-    # Nest-Verbatim-Pruefung oben deckt "identisch zum Motormodul"
-    # bereits ab; hier zusaetzlich explizit gegen den Vertrag selbst
-    # (RANDPADS/RAND_Y), falls beide je auseinanderlaufen sollten. ------
+    # -- Randpads (J95/J96) auf F.Cu, an den Vertragskoordinaten (v2.1:
+    # SENKRECHT, s. spec_motor.PLACEMENT-Kommentar). Die Nest-Verbatim-
+    # Pruefung oben deckt "identisch zum Motormodul" bereits ab; hier
+    # zusaetzlich explizit gegen den Vertrag selbst (RANDPADS/RAND_X/
+    # RAND_Y0), falls beide je auseinanderlaufen sollten. ------
     for ref in ("J95", "J96"):
         p = b.PLACEMENT[ref]
-        check("%s %s auf B.Cu (unten=True)" % (tag, ref), p.unten, True)
+        check("%s %s auf F.Cu (unten=False)" % (tag, ref), p.unten, False)
+        # Alle Pads teilen sich RAND_X (senkrechte Reihe); Platz.x ist
+        # der Hof-Rand (RAND_X - 1,3, s. spec_motor.PLACEMENT-Kommentar).
+        check("%s %s x auf RAND_X" % (tag, ref),
+              round(p.x + 1.3, 3), S.RAND_X)
     # J96 traegt die ersten vier Kontakte (Versorgung), J95 die
     # restlichen 18 (GPIO) -- zusammen die 22 RANDPADS-Koordinaten,
-    # Pad-Mitte = Platz.x + 0.45 (Herleitung in spec_motor.PLACEMENT).
-    rand_x = sorted(round(p[2][0], 2) for p in S.RANDPADS)
-    gebaut_x = sorted(
-        round(b.PLACEMENT["J96"].x + 0.45 + i * S.RAND_RASTER, 2)
+    # Pad-Mitte(y) = Platz.y + 0.45 + i * RAND_RASTER (Herleitung in
+    # spec_motor.PLACEMENT).
+    rand_y = sorted(round(p[2][1], 2) for p in S.RANDPADS)
+    gebaut_y = sorted(
+        round(b.PLACEMENT["J96"].y + 0.45 + i * S.RAND_RASTER, 2)
         for i in range(4)) + sorted(
-        round(b.PLACEMENT["J95"].x + 0.45 + i * S.RAND_RASTER, 2)
+        round(b.PLACEMENT["J95"].y + 0.45 + i * S.RAND_RASTER, 2)
         for i in range(18))
-    check("%s Randpad-x-Koordinaten == RANDPADS" % tag,
-          sorted(gebaut_x), rand_x)
+    check("%s Randpad-y-Koordinaten == RANDPADS" % tag,
+          sorted(gebaut_y), rand_y)
 
     # -- ANTENNE_FREI: kein Bauteil-Hof (ausser den Vertragssteckern
     # J100/J105 selbst, die als Anker dort liegen DUERFEN, s.
@@ -137,14 +145,43 @@ for kanaele in (1, 3, 4):
         dy = max(abs(py - (p.y + p.h / 2.0)) - p.h / 2.0, 0.0)
         return (dx * dx + dy * dy) ** 0.5
 
+    # Die Kanal-Klemmen (J5..J8, TerminalBlock_Phoenix_PT-1,5-2-3.5-H)
+    # bekommen HIER die SCHARFE Pruefung gegen die beiden echten Pads
+    # statt der Hof-Naeherung (Aufgabe C1). Grund: ihr Hof (8,00 mm) ist
+    # gegenueber ihren beiden Kontakten (3,5 mm Abstand, je 2,25 mm vom
+    # Hofrand eingerueckt) so grosszuegig bemessen, dass die Hof-
+    # Naeherung hier KEINE billige Voranzeige mehr ist, sondern falsch
+    # alarmiert: KLEMMENZONE liegt fuer alle drei Kanalzahlen im
+    # Ueberschneidungsbereich der Landepunkt-Spiegelspalten von
+    # stapel_links/-rechts (x=33,61 bzw. 51,39, s. stack_spec.
+    # KLEMMENZONE-Kommentar fuer die volle Eskalation) -- eine Klemme,
+    # die diese Spalten mit ihren PADS (nicht mit ihrem leeren Hof-Rand)
+    # meidet, ist verdreht-sicher, auch wenn ihr Hof den Streifen noch
+    # ueberlappt. Radius 1,2 mm = halbe Pad-Kantenlaenge (2,4 x 2,4 mm,
+    # aus TerminalBlock_Phoenix_PT-1,5-2-3.5-H.kicad_mod gemessen).
+    _KLEMMEN_REFS = tuple("J%d" % (4 + n) for n in range(1, 5))
+
+    def _klemme_pad_abstand(p, px, py):
+        pin1 = (p.x + 2.25, p.y + 3.6)
+        pin2 = (pin1[0] + 3.5, pin1[1])
+        beste = 1e9
+        for cx, cy in (pin1, pin2):
+            dx = max(abs(px - cx) - 1.2, 0.0)
+            dy = max(abs(py - cy) - 1.2, 0.0)
+            beste = min(beste, (dx * dx + dy * dy) ** 0.5)
+        return beste
+
     for ref, p in b.PLACEMENT.items():
         if ref in ("J95", "J96") or ref in _VERTRAGSSTECKER:
             continue
+        pruefen = _klemme_pad_abstand if ref in _KLEMMEN_REFS else _hof_abstand
         for px, py in punkte:
-            if _hof_abstand(p, px, py) < S.LANDE_SPERRRADIUS - 1e-6:
+            if pruefen(p, px, py) < S.LANDE_SPERRRADIUS - 1e-6:
                 fails.append(
-                    "%s %s: Hof naeher als %.1f mm am Landepunkt "
-                    "(%.2f|%.2f)" % (tag, ref, S.LANDE_SPERRRADIUS, px, py))
+                    "%s %s: %s naeher als %.1f mm am Landepunkt "
+                    "(%.2f|%.2f)" % (tag, ref,
+                                     "Pad" if ref in _KLEMMEN_REFS else "Hof",
+                                     S.LANDE_SPERRRADIUS, px, py))
                 break
 
     # -- Kanalzahl schlaegt ueberall durch -------------------------------

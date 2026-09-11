@@ -92,10 +92,14 @@ check("M3_HOLES ist M3_HOLES_FUER(BOARD_W, BOARD_H)",
       S.M3_HOLES, S.M3_HOLES_FUER(S.BOARD_W, S.BOARD_H))
 
 # --- v2.1: die beiden neuen Pflichtzonen ----------------------------
-# Woertlich aus task-v21a-report.md, Abschnitt 9 uebernommen (die vom
-# Controller korrigierte, massgebliche Fassung mit beweglichem
-# Lochbild -- NICHT die erste, ueberholte 85x80-Fassung).
-check("KLEMMENZONE", S.KLEMMENZONE, (23.80, 60.80, 58.20, 73.00))
+# RANDPAD_ZONE: woertlich aus task-v21a-report.md, Abschnitt 9
+# uebernommen (die vom Controller korrigierte, massgebliche Fassung mit
+# beweglichem Lochbild). KLEMMENZONE: BREITE seit Aufgabe C1 auf
+# 46,40 mm korrigiert (x1 = 70,20 statt 58,20) -- die urspruengliche
+# 34,40-mm-Herleitung pruefte nie gegen LANDEPUNKTE_VERDREHT() und war
+# fuer Dimmer4 (vier Klemmen) arithmetisch unerfuellbar, s. Herleitung
+# und Rot-Nachweis bei stack_spec.KLEMMENZONE.
+check("KLEMMENZONE", S.KLEMMENZONE, (23.80, 60.80, 70.20, 73.00))
 check("RANDPAD_ZONE", S.RANDPAD_ZONE, (75.60, 8.56, 79.60, 64.44))
 
 

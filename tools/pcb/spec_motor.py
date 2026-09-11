@@ -1,9 +1,39 @@
-"""Platinenbeschreibung des Motormoduls (v2): Umriss, Lochbild, Platzierung.
+"""Platinenbeschreibung des Motormoduls (v2.1): Umriss, Lochbild, Platzierung.
 
 Gelesen von tools/pcb/geometry.py (Pruefung), tools/pcb/build.py
 (Aufbau) und tools/pcb/netclasses.py (Bahnbreiten). Bewusst OHNE
 KiCad-Abhaengigkeit -- `python3 tools/pcb/geometry.py spec_motor` muss
 ohne pcbnew laufen.
+
+--- v2.1 (Aufgabe C1, 2026-09-10/11): Klemme an die Kante --------------
+Der Vertrag ist wieder gewachsen (82x73 statt 75x65, s. stack_spec.py),
+und diese Datei zieht die Platzierung auf die neuen Pflichtzonen
+(KLEMMENZONE, RANDPAD_ZONE) nach:
+
+  * J5 (die Motorklemme) verlaesst die Luecke zwischen den Stapelreihen
+    (Audit-Befund B1 -- sie sass dort vollstaendig im PICO_SCHATTEN) und
+    zieht kantenbuendig in KLEMMENZONE, gedreht 180 Grad (die groessere
+    Haelfte der MKDS-3-Bauform zeigt zur Kante, R1). J3 (Notaus) BLEIBT
+    am linken Rand, ruckt aber innerhalb der "Notaus"-Gruppe nach unten
+    (mehr Abstand zu C17-19, Audit-Befund W2).
+  * J95/J96 (Randpads) wechseln von B.Cu/waagrecht auf F.Cu/senkrecht
+    (RANDPAD_ZONE, Audit-Befund K4) -- Drehung 90 statt Spiegelung.
+  * Die Versorgungszelle wandert um dx=+2,10 mm nach Osten (Audit-Fund
+    dieser Aufgabe: der Landepunkt-Spiegel von stapel_links wanderte
+    mit dem Boardwachstum in ihren alten Platz).
+  * Das MCU-Nest ist NICHT mehr komplett "verbatim": U100/U102/U103/
+    C14/C16 ("obere Gruppe") wandern um dy=-3,70 mm, weil derselbe
+    Boardwachstum-Effekt den Landepunkt-Spiegel von stapel_rechts in
+    ihre alte Lage schob. R100/R101/R102/R104/R105/C100/C101/U101/R13
+    bleiben unangetastet. /ID0 und /ID1 (die einzigen Vorverdrahtungen,
+    die die "obere Gruppe" mit dem unbeweglichen Rest verbinden) sind
+    ENTFERNT -- s. PRE_TRACKS-Kommentar dort. Ebenso entfernt: die
+    gesamte Hand-Vorverdrahtung der Motorstufe (Haelse, /Out1, /Out2,
+    /+24V, /VCP/CPH/CPL) -- ihre Zielklemme (J5) ist umgezogen, und ihre
+    Ostgassen-Kalibrierung gegen die frozen J105-Kontakte vertraegt
+    _MOTOR_DX=0 nicht mehr unveraendert. Beides bleibt fuer Aufgabe D.
+  * Alle Zahlen und Rot-Nachweise: .superpowers/sdd/
+    2026-09-07-picostack-v2/task-v21c1-report.md.
 
 v2-NEUAUFLAGE (Aufgabe 7). Der Vertrag ist gewachsen (75x65 statt
 64x60, zwei 1x20-Stapelreihen statt einem 2x20-Block, eine eigene
@@ -366,14 +396,36 @@ _S = S.STECKER_POS
 # die Nest-Vorverdrahtung haengt an U100/U102/U103/U101/R100/R101/
 # R102/R13, und die stehen alle still.
 
-# _MOTOR_DX: die Motorstufe (U1, C9, C10, C11, J5), 0,50 mm nach Westen.
-# Gebraucht haetten U1 0,26 und J5 0,45 mm; beide bekommen 0,50, damit
-# der Block STARR bleibt und die Vorverdrahtung zwischen ihnen (Haelse,
-# /Out1, /Out2, /+24V, /VCP) unveraendert gilt. Danach: U1-Ostpadkante
-# 42,65 (1,74 mm vom Landepunkt 44,39), J5-2 auf 1,573 mm -- beide ueber
-# 1,5. Nach Westen bleibt Luft: J5s Hof beginnt bei 33,42, der Hof von
-# stapel_links endet bei 32,38 (1,04 mm, COURTYARD_GAP ist 0,6).
-_MOTOR_DX = -0.50
+# _MOTOR_DX: v2.1 (Aufgabe C1) setzt dies auf 0,0 -- beide Gruende fuer
+# den alten Wert (-0,50) sind entfallen.
+#
+#   (1) Der alte Zweck war, U1 1,74 mm Luft zum Landepunkt-Spiegel von
+#       stapel_links zu verschaffen -- der sass in v2 (BOARD_W=75) bei
+#       x=44,39. Mit v2.1s BOARD_W=82 liegt dieser Spiegel jetzt bei
+#       x=82-30,61=51,39, weit oestlich der Motorstufe (die bei x<=43,4
+#       endet) -- U1/C9/C10/C11 beruehren ihn nicht mehr. Der NEUE
+#       Landepunkt-Nachbar der Motorstufe ist der Spiegel von
+#       stapel_RECHTS, x=82-48,39=33,61 -- dagegen reicht die NOMINELLE
+#       (unverschobene) Lage bereits: U1 bei x=35,60 haelt 1,99 mm
+#       Kupferkante-Abstand (verlangt 1,5), C9/C10/C11 liegen noch
+#       weiter oestlich und damit noch klarer.
+#   (2) Der andere Grund war J5 (0,45 mm gebraucht) -- J5 verlaesst
+#       diese Luecke komplett (s. PLACEMENT["J5"], jetzt in
+#       KLEMMENZONE) und stellt hier keine Anforderung mehr.
+#
+# Die Hand-Vorverdrahtung dieser Aufgabe (Haelse an U1-10/11, /Out2,
+# /+24V, /VCP/CPH/CPL) haengt NICHT mehr an _MOTOR_DX -- sie ist mit
+# dieser Aufgabe entfernt (s. PRE_TRACKS/RULE_AREAS-Kommentar dort):
+# sie war in 42 Wuerfellaeufen (Aufgabe 7) gegen die ALTE
+# Ostgassen-Geometrie (Naehraster, J105-Padkante) auf 0,02..0,23 mm
+# genau kalibriert; _MOTOR_DX=0 zieht diese Kalibrierung um 0,50 mm
+# zurecht und wuerde mehrere dieser Reserven negativ machen (z. B. lief
+# eine /+24V-Rueckseitenspur nach der alten Rechnung bis x=46,80 --
+# INNERHALB des frozen J105-Hofs, der bei x=46,62 beginnt). Eine so eng
+# austarierte Vorverdrahtung neu zu kalibrieren braucht denselben
+# Wuerfel-Prozess, der sie erzeugt hat (Aufgabe 7s Dice-Loop) -- das ist
+# Aufgabe D, nicht C1. S. Bericht, Abschnitt Vorverdrahtung.
+_MOTOR_DX = 0.0
 
 
 def _m(x):
@@ -394,36 +446,89 @@ PLACEMENT = {
     "J103": _vertragsstecker("J103", "leistung", False, index=0),
     "J104": _vertragsstecker("J104", "leistung", False, index=1, unten=True),
 
-    # -- MCU-Nest (dx=-1.0 gegenueber v1, s. Moduldocstring; Zeilen 1-3
-    #    unveraendert relativ zueinander; ab Fix-Runde 2 zusaetzlich
-    #    _NEST_DX nach Westen, s. dort) --
-    "U100": Platz("U100", 14.00, 16.50, 7.70, 7.00, 0, False),
+    # -- MCU-Nest, "OBERE GRUPPE" (v2.1, Aufgabe C1): NUR U100/U102/U103/
+    #    C14/C16 STARR um dy=-3.70 mm (nach NORDEN) verschoben.
+    #
+    #    WARUM UEBERHAUPT VERSCHOBEN, ENTGEGEN "Nest bleibt verbatim".
+    #    v2.1 spiegelt STECKER_POS["leistung"]s vier Kontakte an den
+    #    GEWACHSENEN BOARD_W/BOARD_H -- der Landepunkt wanderte dadurch
+    #    von (9,96/12,50 | 16,96/19,50) auf (16,96/19,50 | 24,96/27,50),
+    #    also GENAU IN dieses Nest hinein (vorher lag er 7 bzw. 8 mm
+    #    davor). Rot-Nachweis (ohne diese Verschiebung, gemessen mit
+    #    S.LANDEPUNKTE_VERDREHT()): U100 nur 1,46 mm, U102 0,00 mm
+    #    (Landepunkt LIEGT im Hof), U103 0,10 mm vom naechsten Landepunkt
+    #    -- verlangt sind 1,5. Das ist keine Bauteilwahl dieser Aufgabe,
+    #    sondern eine unmittelbare Folge von Aufgabe Bs BOARD_W/H-
+    #    Wachstum, die dort nicht gegen den BESTEHENDEN Nest-Grundriss
+    #    geprueft wurde.
+    #
+    #    WARUM NUR DIESE FUENF UND NICHT DAS GANZE NEST. R100/R101/R102/
+    #    R104/R105/C100/C101/U101 verletzen die Regel selbst NICHT (naechste
+    #    Landepunkt-Distanz >= 4,7 mm, weit ueber 1,5) -- ihre einzige
+    #    Beziehung zur Verletzung ist die Vorverdrahtung zu U100 (/ID0,
+    #    /ID1, 3V3-Stummel). Ein erster Versuch verschob sie MIT (um
+    #    dieselben 0,45/90-Grad-Winkel zu erhalten) -- das riss aber eine
+    #    NEUE Kollision auf: R101/R105 sitzen in DERSELBEN Spalte wie R13
+    #    (x=8,30..12,10 gegen 8,40..12,10, motor-only, NICHT Teil dieser
+    #    Gruppe), und eine Verschiebung um 3,70 mm schob sie direkt in
+    #    R13 hinein (Rot-Nachweis: geometry.check_all() meldete
+    #    "Ueberlappung R101/R13" und "Ueberlappung R105/R13"). R100/R104
+    #    (Spalte x=4,00..7,70, eine Spalte weiter westlich) waeren nicht
+    #    betroffen gewesen -- aber R101/R105 schon, und eine Gruppe laesst
+    #    sich nicht spaltenweise unterschiedlich verschieben, ohne ihre
+    #    eigene 0,6-mm-Zeilenteilung zu zerreissen.
+    #
+    #    Geloest wird das NICHT durch eine kompliziertere Teilverschiebung,
+    #    sondern indem /ID0 und /ID1 (die einzigen beiden Netze, die U100
+    #    mit diesem unbeweglichen Teil des Nests verbinden) aus der
+    #    Vorverdrahtung entfernt werden -- s. PRE_TRACKS-Kommentar dort.
+    #    R100/R101/R102/R104/R105/C100/C101/U101/R13 bleiben dadurch
+    #    VOLLSTAENDIG unveraendert (verbatim im woertlichen Sinn); nur
+    #    U100/U102/U103/C14/C16 wandern.
+    #
+    #    dy=-3,70 ist die kleinste Verschiebung, mit der U102 (der
+    #    schaerfste Fall, 0,00 mm) auf >= 1,5 mm kommt (rechnerisch reicht
+    #    3,54 mm; 3,70 laesst 0,16 mm Reserve). Nachgerechnet bleiben alle
+    #    Abstaende zu NICHT verschobenen Nachbarn positiv: Kettenstecker
+    #    (Hof endet y=7,17) haelt zu U100 (neu y=12,80) 5,63 mm; U101/
+    #    C100/C101/R102 (unveraendert, x <= 12,10) ueberlappen U100/U102/
+    #    U103 (x >= 14,00) in x nie, unabhaengig von y.
+    "U100": Platz("U100", 14.00, 12.80, 7.70, 7.00, 0, False),
     # C14/C16 um 90 Grad GEDREHT und nach Osten an die Nestkante
-    # gerueckt (Verdreh-Kupferregel, Herleitung oben bei _MOTOR_DX).
-    # Hochkant reicht ihr Kupfer nur 1,57 statt 3,51 mm ueber die
-    # Hofkante: Ostpad-Kante 22,90 + 1,57 = 24,47, also 2,14 mm vom
-    # Landepunkt (26,61) -- verlangt sind 1,5. Die y-Lagen sind nach
-    # unten von U103 begrenzt (Hof ab 24,50): C16 endet bei 23,86,
-    # also 0,64 mm davor. Waagrecht war das mit
-    # keiner x-Lage zu erreichen, ohne U100 in die Landezone des
-    # Leistungssteckers (x = 12,50) zu druecken.
-    "C14": Platz("C14", 22.90, 15.70, 1.96, 3.76, 90, False),
-    "C16": Platz("C16", 22.90, 20.10, 1.96, 3.76, 90, False),
-    "U102": Platz("U102", 14.00, 24.50, 4.56, 2.50, 0, False),
-    "U103": Platz("U103", 19.60, 24.50, 2.90, 2.20, 0, False),
-    # Zeile zusammengerueckt (statt 1,0 mm Luft nur noch der
-    # COURTYARD_GAP von 0,6), damit R9 als letztes Glied auf 21,60
-    # kommt: Ostpad-Kante 21,60 + 3,45 = 25,05, knapp unter der
-    # Grenze 25,11 (= 26,61 - 1,5). R7 bleibt mit 13,00 noch 0,90 mm
-    # hinter R13 (endet 12,10) und damit ueber dem Mindestabstand.
-    "R7": Platz("R7", 13.00, 28.20, 3.70, 1.90, 0, False),
-    "R8": Platz("R8", 17.30, 28.20, 3.70, 1.90, 0, False),
-    "R9": Platz("R9", 21.60, 28.20, 3.70, 1.90, 0, False),
-    # Dieselbe Rechnung eine Zeile tiefer fuer R20.
-    "C13": Platz("C13", 12.80, 31.20, 3.76, 1.96, 0, False),
-    "R5": Platz("R5", 17.30, 31.20, 3.70, 1.90, 0, False),
-    "R20": Platz("R20", 21.60, 31.20, 3.70, 1.90, 0, False),
+    # gerueckt (Verdreh-Kupferregel gegen die ALTE Landezone bei x=26,61,
+    # s. Bericht zu Fix-Runde 2/Aufgabe 7 fuer die volle Herleitung). Die
+    # x-Lage ist von jener Regel unveraendert (die neue Leistungs-
+    # Landezone liegt bei x=16,96/19,50, weit westlich von C14/C16s
+    # x=22,90 -- 6,47/3,57 mm Luft, s. Rot-Nachweis oben); nur y wandert
+    # mit der "oberen Gruppe" um -3,70 mm.
+    "C14": Platz("C14", 22.90, 12.00, 1.96, 3.76, 90, False),
+    "C16": Platz("C16", 22.90, 16.40, 1.96, 3.76, 90, False),
+    "U102": Platz("U102", 14.00, 20.80, 4.56, 2.50, 0, False),
+    "U103": Platz("U103", 19.60, 20.80, 2.90, 2.20, 0, False),
+    # R7/R8/R9 -- "UNTERE GRUPPE" (mit C13/R5/R20/C15/R15/R10/C17-19/R21),
+    # STARR um dy=+0.90 mm (nach SUEDEN) verschoben. R7/R8 sind
+    # UNVERDRAHTET (keine PRE_TRACKS-Referenz) und beide selbst
+    # Landepunkt-Verletzer (0,75/0,70 mm statt 1,5, s. Rot-Nachweis oben)
+    # -- sie brauchen nur 0,80 mm Sued-Versatz, um unter den Landepunkt
+    # (y=27,50) zu ruecken; 0,90 mm laesst 0,10 mm Reserve. R9/C13/R5/R20
+    # verletzten die Regel schon vorher nicht (2,21/3,72/3,70/4,25 mm),
+    # wandern aber MIT, damit ihr 0,6-mm-COURTYARD_GAP-Abstand zu R7-9
+    # exakt erhalten bleibt (reine Parallelverschiebung). C15/R15/R10 und
+    # C17-19/R21 wandern aus demselben Grund kaskadierend mit (jede
+    # dieser vier Zeilen sass vorher mit GENAU 0,60 mm Luft an der
+    # naechsten -- ohne Mitverschiebung waere aus 0,60 mm entweder eine
+    # Kollision oder eine unbegruendete Luecke geworden).
+    "R7": Platz("R7", 13.00, 29.10, 3.70, 1.90, 0, False),
+    "R8": Platz("R8", 17.30, 29.10, 3.70, 1.90, 0, False),
+    "R9": Platz("R9", 21.60, 29.10, 3.70, 1.90, 0, False),
+    "C13": Platz("C13", 12.80, 32.10, 3.76, 1.96, 0, False),
+    "R5": Platz("R5", 17.30, 32.10, 3.70, 1.90, 0, False),
+    "R20": Platz("R20", 21.60, 32.10, 3.70, 1.90, 0, False),
 
+    # U101/C100/C101/R100/R101/R102/R104/R105/R13 -- UNVERAENDERT (s.
+    # Kommentar bei "obere Gruppe" oben): keiner verletzt die Verdreh-
+    # Klausel selbst, und eine Mitverschiebung riss eine neue Kollision
+    # mit R13 auf. Woertlich aus v2 uebernommen.
     "U101": Platz("U101", 4.00, 21.00, 2.90, 2.20, 0, False),
     "C101": Platz("C101", 4.00, 24.20, 3.76, 1.96, 0, False),
     "R102": Platz("R102", 8.40, 24.20, 3.70, 1.90, 0, False),
@@ -434,52 +539,44 @@ PLACEMENT = {
     "R104": Platz("R104", 4.00, 32.90, 3.70, 1.90, 0, False),
     "R105": Platz("R105", 8.30, 32.90, 3.70, 1.90, 0, False),
 
-    # Zeile 4 -- NEU (v1s Spalte 4 kollidierte mit stapel_links, s.
-    # Moduldocstring). x>=12,65: bewusst rechts von der R100..R105-Spalte
-    # begonnen (die bis x=12,00 reicht), damit dieser Zeile nur EIN
-    # Nachbar (Zeile 3 oben) statt zwei Nachbarn mit COURTYARD_GAP
-    # genuegen muss.
-    "C15": Platz("C15", 12.65, 33.76, 3.76, 1.96, 0, False),
-    "R15": Platz("R15", 17.01, 33.76, 3.70, 1.90, 0, False),
-    "R10": Platz("R10", 21.31, 33.76, 3.70, 1.90, 0, False),
+    # Zeile 4 (unveraendert relativ, s. "untere Gruppe" oben).
+    "C15": Platz("C15", 12.65, 34.66, 3.76, 1.96, 0, False),
+    "R15": Platz("R15", 17.01, 34.66, 3.70, 1.90, 0, False),
+    "R10": Platz("R10", 21.31, 34.66, 3.70, 1.90, 0, False),
 
-    # Zeile 5 -- NEU: die drei Gatter-Abblockkondensatoren (C17/C18/C19,
-    # Fix-Runde vor Aufgabe 7) plus das verbliebene R21 aus Zeile 4.
-    "C17": Platz("C17", 4.00, 36.32, 3.76, 1.96, 0, False),
-    "C18": Platz("C18", 8.60, 36.32, 3.76, 1.96, 0, False),
-    "C19": Platz("C19", 13.20, 36.32, 3.76, 1.96, 0, False),
-    "R21": Platz("R21", 17.80, 36.32, 3.70, 1.90, 0, False),
+    # Zeile 5 (unveraendert relativ, s. "untere Gruppe" oben).
+    "C17": Platz("C17", 4.00, 37.22, 3.76, 1.96, 0, False),
+    "C18": Platz("C18", 8.60, 37.22, 3.76, 1.96, 0, False),
+    "C19": Platz("C19", 13.20, 37.22, 3.76, 1.96, 0, False),
+    "R21": Platz("R21", 17.80, 37.22, 3.70, 1.90, 0, False),
 
-    # -- Notaus, auf drei kompakte Zeilen umgelegt (v1 reichte bis
-    #    x=38,2 -- kollidiert mit stapel_links; alle drei Zeilen bleiben
-    #    hier bei x <= 27, weit vor stapel_links bei x=28,06) --
-    "J3": Platz("J3", 0.50, 38.88, 11.16, 3.54, 90, True),
-    "R16": Platz("R16", 0.50, 43.02, 4.56, 2.26, 0, False),
-    "R17": Platz("R17", 5.66, 43.02, 4.56, 2.26, 0, False),
-    "R18": Platz("R18", 10.82, 43.02, 4.56, 2.26, 0, False),
-    "R19": Platz("R19", 15.98, 43.02, 4.56, 2.26, 0, False),
-    "U3": Platz("U3", 0.50, 45.88, 2.90, 2.20, 0, False),
-    "U6": Platz("U6", 4.00, 45.88, 2.90, 2.20, 0, False),
-    # U7 um +1,50 mm nach rechts (7,50 -> 9,00) gegenueber der ersten
-    # Fassung: masseheiler.py fand in JEDEM getesteten Router-Ergebnis
-    # (mehrere unabhaengige Boards) im 0,60-mm-Spalt zwischen U6 und U7
-    # eine isolierte GND-Restflaeche OHNE freien Heilpunkt (zu klein
-    # fuer ein 0,6-mm-Via samt Abstand zu Nachbarkupfer) -- ein reines
-    # Platzproblem, kein Zufall des jeweiligen Wuerfellaufs. 2,10 mm
-    # Spalt schaffen dort Platz.
-    "U7": Platz("U7", 9.00, 45.88, 2.90, 2.20, 0, False),
-    # U4/U5 um +1,52 mm nach unten verschoben (48,68 -> 50,20) gegenueber
-    # der ersten Fassung dieser Aufgabe: die Luecke zur Zeile darueber
-    # (U3/U6/U7, Ende 48,08) war mit 0,60 mm zu schmal, um sowohl
-    # /NOTAUS (U3-2 -> U6-4) als auch /U1_NSLEEP (U1-3 -> U3-4, ein
-    # Fanout quer durchs halbe Brett) im selben Wuerfellauf durchzu-
-    # bringen -- beide blieben deshalb in ZWEI unabhaengigen Laeufen
-    # identisch offen (Herleitung bei PRE_TRACKS unten). Die neue Luecke
-    # (2,12 mm) reicht fuer beide getrennt. M3-Freihaltebereich (71|61
-    # ist hier irrelevant, das gilt nur rechts) bzw. (4|61): U4 bleibt
-    # mit y1 = 57,40 unter der 61-3,5 = 57,5-mm-Grenze (0,10 mm Luft).
-    "U4": Platz("U4", 0.50, 50.20, 10.90, 7.20, 0, False),
-    "U5": Platz("U5", 12.00, 50.20, 10.90, 7.20, 0, False),
+    # -- Notaus, STARR um dy=+2.30 mm nach Sueden verschoben (v2.1,
+    #    Audit-Befund W2: J3 sass mit genau 0,60 mm -- dem nackten
+    #    COURTYARD_GAP-Minimum -- zu C17-19 UND zu R16-19 eingeklemmt,
+    #    "eng ... unbequem" fuer den sicherheitsrelevanten Notaus-
+    #    Steckverbinder). 0,90 mm davon sind die Kaskade der "unteren
+    #    Gruppe" (die jetzt bei R21 endet, s.o.); die restlichen 1,40 mm
+    #    sind die eigentliche Auflagen-Antwort -- die neue Luecke
+    #    C17-19 -> J3 betraegt jetzt 2,06 mm (statt 0,60), mehr als
+    #    das Dreifache des Minimums, wie vom Audit gefordert ("mehr waere
+    #    hier angemessen"). Genutzt wird dabei ausschliesslich die durch
+    #    Aufgabe B neu gewonnene Bodenhoehe (BOARD_H 65 -> 73 mm): U4/U5
+    #    enden jetzt bei y=59,70, immer noch 1,10 mm vor KLEMMENZONE
+    #    (y=60,80) und weit vor dem GEWANDERTEN M3-Freihaltequadrat der
+    #    Bohrung (4|69) (Kante ab y=65,5 -- unrelevant geworden, s.
+    #    stack_spec-Docstring). Kein PRE_TRACKS-Eintrag haengt an J3
+    #    selbst; die U6-3/U7-3-GND-Stummel und die /NOTAUS-Vias (s.
+    #    PRE_TRACKS/PRE_VIAS unten) wandern um denselben Betrag mit.
+    "J3": Platz("J3", 0.50, 41.18, 11.16, 3.54, 90, True),
+    "R16": Platz("R16", 0.50, 45.32, 4.56, 2.26, 0, False),
+    "R17": Platz("R17", 5.66, 45.32, 4.56, 2.26, 0, False),
+    "R18": Platz("R18", 10.82, 45.32, 4.56, 2.26, 0, False),
+    "R19": Platz("R19", 15.98, 45.32, 4.56, 2.26, 0, False),
+    "U3": Platz("U3", 0.50, 48.18, 2.90, 2.20, 0, False),
+    "U6": Platz("U6", 4.00, 48.18, 2.90, 2.20, 0, False),
+    "U7": Platz("U7", 9.00, 48.18, 2.90, 2.20, 0, False),
+    "U4": Platz("U4", 0.50, 52.50, 10.90, 7.20, 0, False),
+    "U5": Platz("U5", 12.00, 52.50, 10.90, 7.20, 0, False),
 
     # -- Motorstufe: in der Luecke zwischen den Stapelreihen
     #    (x 33,16..45,84), y < 42,9 -- ausserhalb ANTENNE_FREI und weit
@@ -489,108 +586,160 @@ PLACEMENT = {
     "C10": Platz("C10", _m(36.40), 25.00, 1.96, 3.76, 90, False),
     "C9": Platz("C9", _m(39.00), 25.00, 1.96, 3.76, 90, False),
 
-    # J5 -- Motorklemme. RUNDE 1 dieser Aufgabe versuchte sie rechts
-    # unterhalb des Leistungssteckers (wie im ersten Docstring-Entwurf
-    # beschrieben) -- das ueberlappte den Hof von J95 (Randpad-Reihe)
-    # um 0,63 mm und liess sich dort nicht mehr gewinnen: der Streifen
-    # zwischen Leistungsstecker-Unterkante (49,82) und der Platinenkante
-    # (65, minus Randstreifen) ist inklusive der Randpad-Reihe schlicht
-    # 0,6..1,2 mm zu kurz fuer J5s 11,17 mm (s. Bericht, Herleitung
-    # "J5-Platzsuche"). build.bauen() bricht bei JEDER Ueberlappung hart
-    # ab (kein Ausnahme-Mechanismus) -- ein dokumentierter Hof-Ueberlapp
-    # waere also nicht einmal baubar gewesen.
+    # J5 -- Motorklemme, v2.1 (Aufgabe C1): zieht in KLEMMENZONE
+    # (23,80..58,20 x 60,80..73,00), Kante unten (R1) -- loest Audit-
+    # Befund B1 (die alte Lage, Runde 2 der v2-Fassung, saß VOLLSTAENDIG
+    # im PICO_SCHATTEN, s. Bericht/Vertrag).
     #
-    # RUNDE 2 (diese Fassung): J5 sitzt in der Luecke zwischen den
-    # beiden Stapelreihen (x 33,16..45,84, y < ANTENNE_FREI-Start=42,9),
-    # unterhalb des Motortreiber-Strangs (C9/C10 enden bei y=28,76).
-    # Elektrisch unproblematisch (U1-Out1/Out2 muessen ohnehin dorthin
-    # geroutet werden). MECHANISCH ist das ein bewusst eingegangener,
-    # offener Punkt: die Flaeche liegt unter dem eingesteckten Pico
-    # (STECKER_STAPEL-Steckhoehe 8,5 mm), J5 selbst baut aber ca.
-    # 10,1 mm hoch (stack_spec.KLEMME_HOEHE_MM) -- eine Klemme dieser
-    # Bauhoehe wuerde den Pico anheben oder mit ihm kollidieren. Dieser
-    # Zielkonflikt ist NICHT in dieser Aufgabe aufgeloest (er beruehrt
-    # STECKER_POS/PICO_SCHATTEN, also den Vertrag selbst, nicht nur
-    # dieses Layout) -- s. Bericht, Bedenken, fuer eine ausformulierte
-    # Empfehlung an eine Folgeaufgabe.
-    "J5": Platz("J5", _m(33.92), 29.36, 11.17, 12.20, 0, True),
+    # DREHUNG 180, NICHT 0. Der reale Hof der Bauform
+    # (TerminalBlock_Phoenix_MKDS-3-2-5.08, gemessen aus der
+    # .kicad_mod-Datei: F.CrtYd (-3,04|-6,4)-(8,13|5,8), Kontakt 1 bei
+    # (0|0), Kontakt 2 bei (5,08|0)) ist um die Kontaktachse ASYMMETRISCH
+    # (6,40 mm auf der einen, 5,80 mm auf der anderen Seite) -- diese
+    # Asymmetrie ist eine reale Bauform-Eigenschaft (Gehaeuse plus
+    # Schraub-/Drahtzugang auf einer Seite), keine Zeichenwillkuer.
+    # Dieselbe Konvention wie bei allen PT-1,5-Klemmen dieses Projekts
+    # (J90, J5..J8 der Dimmer, s. dort): die GROESSERE Haelfte zeigt zur
+    # Platinenkante ("Drahtoeffnung nach aussen", R1). Bei der PT-1,5-
+    # Bauform faellt das mit Drehung 0 zusammen (ihre groessere Haelfte
+    # liegt schon lokal auf +y); bei der MKDS-3-Bauform liegt die
+    # groessere Haelfte lokal auf -y -- Drehung 180 dreht sie auf die
+    # Suedseite (kantenbuendig), s. Rechnung unten.
+    #
+    #   Hof bei Drehung 180 (S.LAGE-Formel (px-fx,py-fy)):
+    #     x-Bereich [px-8,13, px+3,04], y-Bereich [py-5,8, py+6,4]
+    #   Gefordert: Hof-Suedkante (py+6,4) == BOARD_H (kantenbuendig,
+    #     R1). Absichtlich OHNE EDGE_CLEARANCE-Marge: R1 verlangt
+    #     ausdruecklich einen Klemmenkoerper buendig zur Kante, nicht
+    #     0,5 mm davor -- das ist eine EXPLIZITE Ausnahme von der
+    #     generischen Randregel, die dieselbe Rolle wie die
+    #     Vertragsstecker-Ausnahme bei ANTENNE_FREI spielt (s.
+    #     test_spec_motor.py, "geometry: check_all()"-Filter). Die
+    #     generische Regel schuetzt vor abgeschnittenen Siebdruck-/
+    #     Bestueckungsflaechen im Nutzen; eine Klemme, die genau dafuer
+    #     gebaut ist, am Rand zu sitzen, ist keine solche Flaeche.
+    #     -> py = 73,00 - 6,40 = 66,60
+    #   Zentriert in KLEMMENZONE (Breite 11,17 mm Hof):
+    #     x0 = 23,80 + (34,40-11,17)/2 = 35,415 -> px = 35,415+8,13
+    #        = 43,545
+    #
+    # R5-MESSUNG (Kupferabstand zur Kante, Task-B-Bedenken): beide
+    # Kontakte liegen lokal auf y=0, also bei Drehung 180 auf globalem
+    # y = py = 66,60 -- 73,00-66,60 = 6,40 mm von der Kante. Padradius
+    # (2,6 mm rund/roundrect) = 1,30 mm -> naechste Kupferkante 5,10 mm
+    # von der Kante entfernt, weit ueber den geforderten 2,0 mm (R5
+    # HAELT, mit 3,10 mm Reserve). Selbst in der UNGUENSTIGEREN
+    # Alternativlesart (kleinere Haelfte, 5,8 mm, kantenbuendig) bliebe
+    # die Kupferkante noch 4,50 mm von der Kante -- R5 haelt in JEDER
+    # denkbaren Zuordnung von "vorne"/"hinten" bei dieser Bauform.
+    "J5": Platz("J5", 35.415, 60.80, 11.17, 12.20, 180, True),
 
-    # -- Versorgungszelle, rechts oben (x 51,54..72,64, y 0,5..35,65) --
-    "R90": Platz("R90", 51.54, 0.50, 3.70, 1.90, 0, False),
-    "R91": Platz("R91", 55.84, 0.50, 3.70, 1.90, 0, False),
-    "J90": Platz("J90", 51.54, 7.70, 8.00, 8.60, 0, True),
-    "Q90": Platz("Q90", 60.14, 7.70, 11.10, 7.00, 0, False),
-    "D90": Platz("D90", 51.54, 17.20, 9.80, 6.70, 0, False),
-    "D91": Platz("D91", 62.00, 17.20, 9.80, 6.70, 0, False),
-    "C90": Platz("C90", 51.54, 24.50, 8.50, 8.50, 0, True),
-    "U90": Platz("U90", 60.64, 24.50, 12.00, 9.00, 0, True),
-    "C91": Platz("C91", 51.54, 33.60, 3.85, 2.05, 0, False),
+    # -- Versorgungszelle, rechts oben. v2.1: um dx=+2,10 mm nach OSTEN
+    # verschoben (x 53,64..74,74 statt 51,54..72,64), y-Lagen sonst
+    # UNVERAENDERT ("Versorgung behaelt ihre innere Anordnung", wie
+    # gefordert).
+    #
+    # WARUM UEBERHAUPT VERSCHOBEN. Derselbe Mechanismus wie beim
+    # MCU-Nest oben: der Landepunkt-Spiegel von stapel_links wanderte
+    # durch Aufgabe Bs BOARD_W-Wachstum von x=44,39 (v2) auf x=51,39
+    # (v2.1) -- direkt an den alten Zellenrand (x=51,54, nur 0,15 mm
+    # Luft). D4 (Dimmer-Kanal-4-Diode, dieselbe Spalte, s.
+    # spec_dimmer_basis.py) waere mit ihrem alten x=51,00 sogar
+    # UEBERLAPPT worden (Landepunkt LIEGT im Hof). Rot-Nachweis (ohne
+    # Verschiebung): R90/J90/D90/C90/U90/C91 je 0,00..0,15 mm statt
+    # 1,5 mm; D4 (Dimmer) 0,00 mm.
+    #
+    # dx=+2,10 ist so gewaehlt, dass der LINKESTE Nachbar dieser Spalte
+    # (D4 beim Dimmer, x=51,00) auf >= 1,5 mm Kupferkante kommt:
+    # 51,00+2,10 = 53,10, Abstand zu 51,39 = 1,71 mm (0,21 mm Reserve).
+    # Fuer die Motor-eigene Spalte (R90 bei 51,54) bleiben nach demselben
+    # Versatz 2,15 mm Reserve. Nach OSTEN bleibt die Zelle klar von der
+    # RANDPAD_ZONE (bzw. dem echten J95/J96-Hof, x ab 76,30) getrennt:
+    # U90 (motor, breitester Nachbar) endet bei x=74,74, 1,56 mm Luft;
+    # Q4 (Dimmer, s. dort) endet bei x=75,20, 1,10 mm Luft -- beide ueber
+    # COURTYARD_GAP (0,6). Zum (ebenfalls gewachsenen, aber weiterhin
+    # x < 74,5 bleibenden) rechten M3-Freihaltequadrat der Bohrung
+    # (78|4) bleibt Q90 mit x1=73,34 unveraendert klar (K1, s. Vertrag/
+    # Bericht) -- 1,16 mm Reserve statt der urspruenglichen 3,26 mm,
+    # aber weiterhin positiv.
+    "R90": Platz("R90", 53.64, 0.50, 3.70, 1.90, 0, False),
+    "R91": Platz("R91", 57.94, 0.50, 3.70, 1.90, 0, False),
+    "J90": Platz("J90", 53.64, 7.70, 8.00, 8.60, 0, True),
+    "Q90": Platz("Q90", 62.24, 7.70, 11.10, 7.00, 0, False),
+    "D90": Platz("D90", 53.64, 17.20, 9.80, 6.70, 0, False),
+    "D91": Platz("D91", 64.10, 17.20, 9.80, 6.70, 0, False),
+    "C90": Platz("C90", 53.64, 24.50, 8.50, 8.50, 0, True),
+    "U90": Platz("U90", 62.74, 24.50, 12.00, 9.00, 0, True),
+    "C91": Platz("C91", 53.64, 33.60, 3.85, 2.05, 0, False),
 
-    # -- Randpads (RANDPADS-Realisierung, s. Moduldocstring) --
-    # Beide Werte gedreht (drehung=90): Hof-x0/y0 sind bereits die
-    # POST-Rotations-Werte (build.place() dreht zuerst, misst den Hof
-    # danach -- Platz.x/y meint immer den fertigen, gedrehten Hof).
-    # -- Randpad-Reihen: SMD-Loetpads auf der RUECKSEITE ----------------
-    # Ruling Fix-Runde 2 (Herleitung im Vertrag bei stack_spec.RAND_Y):
-    # auf der Oberseite ist die Verdreh-Kupferregel mit einer
-    # 2,54-mm-Padreihe UNERFUELLBAR (hoechstens 0,42 mm statt 1,5 mm
-    # Abstand zu den Landepunkten, bei jedem x-Versatz). Auf B.Cu bleibt
-    # die Zusage voll erhalten, weil ein verdreht gestecktes Modul nur
-    # die Oberseite beruehrt. Keine Ausnahmeliste.
+    # -- Randpads (RANDPADS-Realisierung, s. Moduldocstring). v2.1:
+    # SEITENWECHSEL UND ACHSENWECHSEL (s. stack_spec.RANDPADS-Kommentar
+    # und RANDPAD_ZONE). Die Reihe liegt jetzt SENKRECHT auf F.Cu, nahe
+    # der rechten Kante, statt waagrecht auf B.Cu nahe der unteren.
     #
-    # Drehung 0, `unten=True`: die Reihe laeuft waagrecht an der unteren
-    # Kante, der Footprint bringt seine Pads bereits gespiegelt mit
-    # (s. FP_RANDPAD_* und der Docstring des Footprints), sodass Pad 1
-    # nach dem Spiegeln LINKS liegt -- in der Leserichtung der Labels.
+    # DREHUNG 90, `unten` ENTFAELLT (unten=False -- Standard). Der
+    # Footprint bringt seine 18/4 Pads nativ in einer waagrechten Reihe
+    # entlang der lokalen -x-Achse (Kontakt 1 bei lokal (0|0), Kontakt k
+    # bei (-(k-1)*2,54|0)); bei Drehung 90 (S.LAGE-Formel
+    # (px+fy,py-fx)) wird daraus eine SENKRECHTE Reihe, die mit
+    # wachsendem k nach SUEDEN laeuft (globales y = py+(k-1)*2,54) --
+    # exakt die "RAND_Y0 + i*RAND_RASTER"-Reihenfolge des Vertrags, ohne
+    # dass irgendein Aufrufer die Zaehlrichtung umdrehen muesste. Der
+    # Footprint-Docstring ("gehoert GESPIEGELT auf die Rueckseite") ist
+    # damit VERALTET -- er beschreibt die v2-B.Cu-Lage; v2.1 braucht
+    # keine Spiegelung mehr (RAND_LAYER ist jetzt F.Cu, derselbe wie der
+    # native Footprint), s. Bericht, Bedenken.
     #
-    # Lage aus den Vertragszahlen gerechnet, nicht geschaetzt:
-    # RAND_X0 = 8,0, RAND_RASTER = 2,54, RAND_Y = 63,0. Der Hof IST die
-    # Padflaeche (Loetpad ohne Koerper), reicht also 0,45 mm ueber die
-    # Padmitte hinaus und 1,30 mm quer dazu. Also
-    #   Platz.x = x(erstes Pad) - 0,45 ; Platz.y = 63,0 - 1,30 = 61,70
-    #   Breite = (n-1) * 2,54 + 0,90  ; Hoehe = 2,60
-    # Die Padbreite 0,90 ist nicht frei gewaehlt: der M3-Freihaltebereich
-    # des Ecklochs (4|61) reicht bis x = 7,5, das erste Pad sitzt laut
-    # Vertrag bei 8,0 -- es bleiben 0,5 mm, und breiteres Kupfer laege
-    # unter dem Abstandsbolzen (s. Footprint-Docstring).
-    # J96 traegt die vier Versorgungspads am ANFANG der Strecke
-    # (x 8,00..15,62), J95 die 18 GPIO direkt danach (x 18,16..61,34) --
-    # zusammen die 22 Pads und genau die Spanne, die der Vertrag nennt
-    # (Ende 61,34). Luecke zwischen den beiden Hoefen: 2,54 - 2x0,95 =
-    # 0,64 mm, ueber dem COURTYARD_GAP von 0,6.
+    # HOF-RECHNUNG (gemessen aus Randpad_Reihe_1x18/1x04.kicad_mod, nicht
+    # geschaetzt): natives F.CrtYd ist x [-((n-1)*2,54+0,45), 0,45],
+    # y [-1,3, 1,3] (Kontakt 1 im Ursprung). Bei Drehung 90 wird daraus
+    # (S.LAGE angewendet auf die vier Eckpunkte):
+    #   x-Bereich [px-1,3, px+1,3]              (Breite 2,60 mm)
+    #   y-Bereich [py-0,45, py+(n-1)*2,54+0,45]  (Hoehe (n-1)*2,54+0,90)
+    # mit (px,py) = globale Lage von Kontakt 1 dieses Teilstuecks.
     #
-    # RAND_Y GILT JETZT UNVERAENDERT. Die alte Fassung musste 0,27 mm
-    # nach oben ausweichen (RAND_Y_IST = 62,73), weil der Hof einer
-    # echten Stiftleiste 1,77 mm ueber die Pin-Achse ragt und damit die
-    # Plattenkante gerissen haette. Der Loetpad-Footprint ragt nur
-    # 1,35 mm: 63,0 + 1,35 = 64,35, unter der Grenze 64,5. Damit ist die
-    # letzte Abweichung von einer Vertragszahl in dieser Datei weg.
-    "J96": Platz("J96", 8.00 - 0.45, 61.70, 3 * 2.54 + 0.90, 2.60, 0, False,
-                 unten=True),
-    "J95": Platz("J95", 18.16 - 0.45, 61.70, 17 * 2.54 + 0.90, 2.60, 0, False,
-                 unten=True),
+    # J96 (die 4 Versorgungspads) beginnt am ERSTEN Vertragsplatz
+    # (px=RAND_X=77,60, py=RAND_Y0=9,83); J95 (die 18 GPIO) beginnt DIREKT
+    # danach, am 5. Vertragsplatz (py=9,83+4*2,54=19,99) -- zusammen
+    # exakt die 22 Positionen aus S.RANDPADS, ohne Luecke (dieselbe
+    # "einseitig statt beidseitig gerahmt"-Abweichung vom Vertragstext
+    # wie in v2, s. Moduldocstring oben und stack_spec.RANDPADS-Kommentar
+    # -- elektrisch ohne Wirkung, beide GND- und beide 3V3-Pads sind
+    # dasselbe Netz).
+    #
+    # ZONEN-PRUEFUNG (S.RANDPAD_ZONE = 75,60..79,60 x 8,56..64,44):
+    # J96-Hof x[76,30, 78,90] y[9,38, 17,90]; J95-Hof x[76,30, 78,90]
+    # y[19,54, 63,62] -- beide vollstaendig innerhalb der Zone (0,70 mm
+    # Rand in x, 0,82 mm in y an beiden Enden). R5 (Kantenabstand):
+    # 82,00-78,90 = 3,10 mm >= 2,0 mm.
+    "J96": Platz("J96", 77.60 - 1.30, 9.83 - 0.45,
+                 2.60, 3 * 2.54 + 0.90, 90, False),
+    "J95": Platz("J95", 77.60 - 1.30, 19.99 - 0.45,
+                 2.60, 17 * 2.54 + 0.90, 90, False),
 }
 
 # --- Pflicht-Kennzeichnung (stack_spec.LAYOUT_AUFLAGEN) --------------
 # Pin-1-Marke neben Kontakt 1 von stapel_links (Pico-Pin 1, FLASH_TX) --
 # der primaere Bezug, weil dort das Pico-Datenblatt selbst Pin 1 zaehlt.
-# "KLEMMEN" in der Naehe von J5, dem einzigen verbliebenen Bauteil an
-# der klassischen unteren Kante mit echtem Kabelzugang (J3/J90 sitzen
-# in v2 an anderen Kanten, s. Moduldocstring).
+# UNVERAENDERT: stapel_links' pin1 ist Vertrag (frozen), diese Marke
+# haengt nicht an BOARD_W/H.
 PIN1_MARKE = (25.50, 2.27)
-# y = 59,60 statt 58,00 (Fix-Runde 1 zu Aufgabe 7): steckerprobe.py
-# verlangt fuer die Kennzeichnungs-Auflage ein "KLEMMEN" an der
-# Klemmenkante, gemessen als y >= BOARD_H - 6,0 = 59,0 mm. Bei 58,00 lag
-# die Schrift 1,0 mm zu hoch -- gemeldet hat das niemand, weil die Probe
-# vorher an der v1-Vertragszeile abbrach (s. steckerprobe.py). Die neue
-# Lage liegt im freien Streifen zwischen J5 (Hof endet y = 41,56) und der
-# Randpad-Reihe (Hof beginnt y = 60,96).
-KLEMMEN_POS = (44.00, 59.60)
+# KLEMMEN_POS, v2.1 (Aufgabe C1): steckerprobe.kennzeichnungsprobe()
+# verlangt y >= BOARD_H - 6,0 = 67,0 mm (frueher 59,0 bei BOARD_H=65).
+# x=14,00 liegt in der Gasse zwischen dem M3-Freihaltequadrat der
+# linken unteren Bohrung (4|69, Kante bis x=7,5) und KLEMMENZONE
+# (Kante ab x=23,80) -- ausserhalb JEDER Klemmenreihe aller vier
+# Boards (Dimmer4 fuellt die Zone lueckenlos aus, s. spec_dimmer_basis
+# .py), also ein sicherer, board-unabhaengiger Platz. y=68,00 liegt
+# innerhalb von KLEMMENZONE (60,80..73,00) und damit ueber der
+# Reissleine; auf dem Motormodul ausserdem klar unterhalb von U4/U5
+# (Hof endet y=59,70, 8,30 mm Luft).
+KLEMMEN_POS = (14.00, 68.00)
 
 # --- Waermepfad des DRV8876 -------------------------------------------
-# U1-Hof plus 1 mm Rand, wie in v1 -- x wandert mit _MOTOR_DX mit,
-# sonst laege die Waermeschutzflaeche neben dem Baustein, den sie
-# schuetzen soll.
+# U1-Hof plus 1 mm Rand, wie in v1 -- x wandert mit _MOTOR_DX mit
+# (jetzt 0,0, s. dort), sonst laege die Waermeschutzflaeche neben dem
+# Baustein, den sie schuetzen soll.
 RULE_AREAS = (
     ("Waermepfad DRV8876", ("B.Cu",),
      (_m(34.60), 17.90, _m(44.40), 25.40), frozenset(("bahnen", "vias"))),
@@ -600,42 +749,14 @@ RULE_AREAS = (
     ("Antennenfreiheit (Pico-Schatten)", ("F.Cu",), S.ANTENNE_FREI,
      frozenset(("bahnen", "vias", "guss"))),
 
-    # Vias-frei in der Ausleitungsgasse des DRV8876.
-    #
-    # Zwischen der U1-Ostpadkante (43,15) und der J105-Kontaktreihe
-    # (Padkante 46,76) liegen 3,61 mm, und durch diese eine Gasse
-    # muessen FUENF Netze nach Sueden: /Out2 und /+24V in
-    # Leistungsbreite (1,00 mm) sowie /VCP, /CPH und /CPL (0,25 mm).
-    # Das 7,5-mm-Naehraster setzt sein Via aber genau in die Mitte
-    # dieser Gasse, auf (45,00|21,25) -- und zerlegt sie damit in zwei
-    # Teilgassen von 1,55 und 1,46 mm.
-    #
-    # ROT-NACHWEIS: mit diesem Via blieb /VCP (U1-12 -> C9-2) in FUENF
-    # aufeinanderfolgenden Wuerfellaeufen (e1..e5) offen -- als einzige
-    # Verbindung, und in jedem Lauf. Nachgerechnet ist das kein Pech:
-    # zwischen der Via-Oberkante (21,55) und der /+24V-Ausleitung auf
-    # Pad-11-Hoehe bleiben 0,575 mm, eine 0,25-mm-Bahn braucht mit
-    # beidseitigem Abstand 0,65 mm.
-    #
-    # Ein Naehvia ist hier also teurer als es nuetzt: es verbindet
-    # Masseflaechen, die ueber die Nachbarnaehte (45|28,75) und
-    # (37,5|21,25) ohnehin zusammenhaengen, und kostet dafuer ein
-    # ganzes Netz. Die Flaeche ist knapp um dieses eine Rasterpunkt
-    # gelegt (44,2..45,8 x 20,4..22,1); (45|28,75) bleibt bewusst
-    # erhalten -- unterhalb von U1 ist die Gasse breiter.
-    # _naht_erlaubt() liest RULE_AREAS generisch, der Eintrag wirkt
-    # dort also ohne eigenen Code.
-    # Eng um den EINEN Rasterpunkt gelegt (44,90..45,10 x 21,15..21,35).
-    # Die erste Fassung war 1,6 x 1,7 mm gross und sperrte damit auch die
-    # Stellen, an denen die Vorverdrahtung ihre eigenen Lagenwechsel
-    # braucht -- sie soll aber nur EIN Naehvia verhindern, nicht eine
-    # ganze Gasse.
-    # Kasten auf (45,15..45,25): so schliesst er den Rasterpunkt
-    # (45|21,25) immer noch aus (die Naht-Pruefung rechnet mit 0,5 mm
-    # Via-Radius, also 44,65..45,75), laesst aber das /CPH-Via bei
-    # (44,60|21,325) daneben zu -- dessen 0,5-mm-Kasten endet bei 45,10.
-    ("Naehtfrei in der DRV8876-Ausleitung", ("F.Cu",),
-     (45.15, 21.15, 45.25, 21.35), frozenset(("vias",))),
+    # Die alte "Naehtfrei in der DRV8876-Ausleitung"-Regelflaeche (v2,
+    # Aufgabe 7) ist mit dieser Aufgabe ENTFERNT -- sie schuetzte einen
+    # Rasterpunkt (45|21,25), den die JETZT ENTFERNTE Hand-Vorverdrahtung
+    # (/VCP/CPH/CPL/Out2/+24V, s. PRE_TRACKS-Kommentar unten) fuer sich
+    # brauchte. Ohne diese Vorverdrahtung ist die Sperre gegenstandslos;
+    # Aufgabe D darf sie bei Bedarf aus ihrem eigenen Dice-Loop heraus
+    # neu einfuehren, mit einer fuer die NEUE Ostgassen-Geometrie
+    # gueltigen Rechnung.
 )
 
 # --- GND-Vorverdrahtung (nur das Nest; s. Moduldocstring) -------------
@@ -653,319 +774,84 @@ _HALS = 0.40
 # Konstante, weil die vorverdrahteten Leistungsstuecke dieselbe Breite
 # tragen muessen wie das, was der Router daran anschliesst.
 _LEISTUNG = fertigung.TRACK_POWER
+# v2.1 (Aufgabe C1) -- die Hand-Vorverdrahtung der Motorstufe (Haelse
+# an U1-10/11, /Out1, /Out2, /+24V, /VCP, /CPH, /CPL -- Aufgabe 7,
+# 42 Wuerfellaeufe) ist HIER ENTFERNT, nicht nur "ein Stueck davon
+# gekuerzt". Zwei unabhaengige Gruende, beide zwingend:
+#
+#   1. /Out1 und /Out2 enden auf J5-Pads -- J5 ist von der
+#      Stapelluecke (y~29..41) in KLEMMENZONE (y 60,80..73,00)
+#      gewandert. Der bisherige, in 45-Grad-Etappen fein austarierte
+#      Weg (Escape -> Leistungsspur -> J5) ERREICHT die neue Klemme gar
+#      nicht mehr; eine Fortsetzung waere eine LANGE Querverbindung ueber
+#      ein voellig neues Kupferbild -- genau die Kategorie, die dieses
+#      Projekt seit Aufgabe 7 ausdruecklich dem Router ueberlaesst
+#      ("vorverdrahtet wird nur, was der Router grundsaetzlich nicht
+#      kann").
+#   2. /+24V, /VCP, /CPH, /CPL beruehren J5 nicht (sie bleiben bei U1/
+#      C9/C10/C11), aber ihre Koordinaten sind auf 0,02..0,23 mm genau
+#      gegen die ALTE Ostgasse kalibriert (U1-Ostpadkante vs. die
+#      FROZEN J105-Kontaktreihe UND das alte 7,5-mm-Naehraster). Mit
+#      _MOTOR_DX=0 (s. dort) laege der /+24V-Rueckseitenpunkt
+#      (frueher _m(46,80)=46,30) jetzt bei x=46,80 -- INNERHALB des
+#      J105-Hofs (beginnt bei x=46,62, frozen). Diese Vorverdrahtung
+#      ohne den Dice-Loop neu zu kalibrieren, der sie erzeugt hat, waere
+#      genau das Eyeballing, das Aufgabe 7 als Fehlerquelle identifiziert
+#      hat ("drei separate Male ... Stunden gekostet").
+#
+# U1/C9/C10/C11 bleiben platziert (unveraendert, s. PLACEMENT, nur
+# _MOTOR_DX geaendert) und sind DRC-frei erreichbar -- Aufgabe D
+# verdrahtet die Motorstufe komplett neu, mit derselben Technik
+# (Dice-Loop + Vorverdrahtungs-Gate) wie Aufgabe 7, gegen die NEUE
+# Geometrie (laengerer Weg zu J5, neue Ostgassen-Masse gegen die frozen
+# J105-Kontakte).
+#
+# Die NEST-Vorverdrahtung unten ist WOERTLICH aus Aufgabe 6/7
+# uebernommen, nur um dy=-3,70 mm mitverschoben (s. PLACEMENT-Kommentar
+# "obere Gruppe") -- eine reine Parallelverschiebung aendert an keinem
+# Winkel oder Abstand innerhalb der Gruppe etwas.
 PRE_TRACKS = (
     ("/SEL_OUT", "F.Cu", (("PAD", "U102", "1"), ("PAD", "U102", "2"))),
     ("/NQ", "F.Cu", (("PAD", "U102", "6"), ("PAD", "U102", "7"))),
 
     # Masse-Ausleitung fuer U100-5 (MCU-GND).
-    ("GND", "F.Cu", (("PAD", "U100", "5"), (12.90, 19.675))),
+    ("GND", "F.Cu", (("PAD", "U100", "5"), (12.90, 15.975))),
 
-    ("/NRST", "F.Cu", (("PAD", "U102", "3"), (13.50, 26.00)), 0.20),
-    ("/NRST", "F.Cu", ((13.50, 26.00), (13.50, 20.325),
+    ("/NRST", "F.Cu", (("PAD", "U102", "3"), (13.50, 22.30)), 0.20),
+    ("/NRST", "F.Cu", ((13.50, 22.30), (13.50, 16.625),
                        ("PAD", "U100", "6"))),
 
     # 3V3 U102-8 -> U103-5 auf der RUECKSEITE (Nordschneise frei
-    # halten -- Herleitung wie in v1, nur um dx=-1,0 verschoben).
-    ("3V3", "F.Cu", (("PAD", "U102", "8"), (17.68, 24.10))),
-    ("3V3", "B.Cu", ((17.68, 24.10), (22.35, 24.10), (22.90, 24.65),
-                     (22.90, 24.95))),
-    ("3V3", "F.Cu", ((22.90, 24.95), ("PAD", "U103", "5"))),
+    # halten -- Herleitung wie in v1, nur um dy=-3,70 verschoben).
+    ("3V3", "F.Cu", (("PAD", "U102", "8"), (17.68, 20.40))),
+    ("3V3", "B.Cu", ((17.68, 20.40), (22.35, 20.40), (22.90, 20.95),
+                     (22.90, 21.25))),
+    ("3V3", "F.Cu", ((22.90, 21.25), ("PAD", "U103", "5"))),
 
     ("/FLASH_MODE", "F.Cu", (("PAD", "U102", "5"),
-                             (17.68, 27.20), (18.68, 27.20),
-                             (18.68, 24.35), (20.212, 24.35),
+                             (17.68, 23.50), (18.68, 23.50),
+                             (18.68, 20.65), (20.212, 20.65),
                              ("PAD", "U103", "1"))),
 
     ("/SEL_OUT", "F.Cu", (("PAD", "U103", "2"),
-                          (19.35, 25.60), (19.35, 27.60))),
-    ("/SEL_OUT", "B.Cu", ((19.35, 27.60), (17.98, 27.60),
-                          (14.88, 24.50), (14.88, 23.65))),
-    ("/SEL_OUT", "F.Cu", ((14.88, 23.65), ("PAD", "U102", "1"))),
+                          (19.35, 21.90), (19.35, 23.90))),
+    ("/SEL_OUT", "B.Cu", ((19.35, 23.90), (17.98, 23.90),
+                          (14.88, 20.80), (14.88, 19.95))),
+    ("/SEL_OUT", "F.Cu", ((14.88, 19.95), ("PAD", "U102", "1"))),
 
-    ("/ID0", "F.Cu", (("PAD", "U100", "7"), (16.50, 20.975))),
-    ("/ID0", "B.Cu", ((16.50, 20.975), (12.50, 20.975),
-                      (4.85, 28.625), (4.85, 29.60))),
-    ("/ID0", "F.Cu", ((4.85, 29.60), ("PAD", "R100", "1"))),
-
-    ("/ID1", "F.Cu", (("PAD", "U100", "8"), (17.10, 21.625))),
-    ("/ID1", "B.Cu", ((17.10, 21.625), (14.30, 21.625),
-                      (9.15, 26.775), (9.15, 29.65))),
-    ("/ID1", "F.Cu", ((9.15, 29.65), ("PAD", "R101", "1"))),
-
-    # -- Motorstufe: NUR ORTSNAHE ESCAPES ------------------------------
-    #
-    # WARUM NUR ORTSNAH. Eine frühere Fassung dieser Aufgabe verdrahtete
-    # hier zusaetzlich sieben LANGE Querverbindungen von Hand vor
-    # (/NFAULT, /IPROPI und 3V3 durch den Streifen y = 0,90/1,35/1,80
-    # ueber den Stapelkontakten; /U1_NSLEEP quer durchs halbe Brett bei
-    # y = 39,10; /Out2 senkrecht bei x = 42,40; /NOTAUS bei y = 46,98;
-    # /FLASH_MODE von J100-5) -- weil der Router genau diese Kanten
-    # offen liess. Der Router meldete danach "1 Verbindung nicht
-    # verlegt", und genau das wurde als Erfolg gelesen.
-    #
-    # NACHGEMESSEN am gebauten Brett (kicad-cli drc auf die Platine OHNE
-    # jeden Router-Lauf, s. Bericht "Vorverdrahtungs-Gate"): diese sieben
-    # Zuege allein erzeugten 21 DRC-Verletzungen, BEVOR freerouting
-    # ueberhaupt startete -- die y=1,35- und y=1,80-Gassen tauchen bei
-    # x = 22,00/22,50 senkrecht ab und laufen dabei mitten durch die
-    # Pads von J101 (Pad 2, GND, bei (22,240|5,290)) und ueber ein
-    # Naehvia; /Out2 faehrt von U1-10 senkrecht nach Sueden und damit
-    # durch U1s EIGENES Pad 9 (GND, (42,400|23,925), nur 0,65 mm
-    # tiefer); /U1_NSLEEP kreuzt J100-Pad 15 bei (29,830|38,330) --
-    # der Kommentar dort behauptete Kontakte bei 37,83/40,37 und ein
-    # freies Fenster bei 39,10, das Raster liegt aber anders; /NOTAUS
-    # faehrt aus U3-2 waagrecht heraus und trifft U3-4.
-    #
-    # Alle sieben sind ersatzlos entfernt. Sie sind auch nicht durch
-    # korrigierte Langstrecken ersetzt: eine von Hand gelegte
-    # Querverbindung nimmt dem Router einen Korridor, den er fuer
-    # DREI andere Netze braucht -- das ist genau die Erfahrung, die v1
-    # als "vorverdrahten verstopft, was der Router noch selbst loesen
-    # muss" festgehalten hat. Vorverdrahtet wird deshalb nur noch, was
-    # der Router GRUNDSAETZLICH nicht kann: Escapes aus Feinraster-
-    # Gehaeusen und Halsstuecke an Leistungspads.
-    #
-    # /Out1 (U1-8 -> J5-1) bleibt: U1-8 ist der SUEDLICHSTE Pad der
-    # Westspalte, unter ihm liegt kein weiterer -- der Zug faellt frei
-    # nach Sueden, weicht westlich an C10 vorbei (x = 35,70; C10-Pads
-    # ab x = 36,79, also 0,965 mm Luft) und trifft J5-1 von oben.
-    # Nachgemessen: in der Gate-Messung oben ohne Beanstandung.
-    ("/Out1", "F.Cu", (("PAD", "U1", "8"), (_m(36.60), 24.60),
-                       (_m(35.70), 25.50), (_m(35.70), 30.16),
-                       (_m(36.96), 31.42), ("PAD", "J5", "1"))),
-
-    # -- Das gestaffelte Halsstueck-Paar an U1-10/U1-11 ------------------
-    #
-    # Das ist der EINE Fund aus v1, den die v2-Beschreibung verloren
-    # hatte, und der Grund, warum der Router hier ueberhaupt scheitert.
-    # v1 hielt ihn woertlich fest: "die Pads 10/11 liegen 0,65 mm
-    # auseinander, zwei 1,0-mm-Fortsetzungen brauchen aber 1,2 mm
-    # Kappenabstand -- direkt nebeneinander ist das unerfuellbar, der
-    # Router fand nie eine Loesung."
-    #
-    # ROT-NACHWEIS in dieser Aufgabe: drei unabhaengige Wuerfellaeufe
-    # ohne dieses Paar liessen 4, 2 und 4 Verbindungen offen -- und
-    # /Out2 (J5-2 -> U1-10) UND /+24V (U1-11) waren in ALLEN DREI dabei,
-    # als einzige, die nie durchkamen. Alles andere (auch /CPL, /CPH,
-    # /VCP, die durch dieselbe Ostgasse muessen) loeste der Router
-    # mindestens einmal selbst.
-    #
-    # /Out2 (Pad 10) und /+24V (Pad 11) tragen beide Leistungsbreite
-    # (1,00 mm), sitzen aber auf 0,45 mm hohen Pads im 0,65-mm-Raster.
-    # Beide bekommen deshalb ein 0,40-mm-Halsstueck (breiter geht nicht:
-    # 0,225 mm Luft zu den Nachbarpads 9 bzw. 12) waagrecht aus dem Pad
-    # heraus bis x = 43,55 -- erst DA, ausserhalb des Padfeldes
-    # (Ostkante 43,15), knicken sie um 45 Grad AUSEINANDER: /Out2 nach
-    # Sueden, /+24V nach Norden. Ihre Enden liegen bei y = 23,975 und
-    # 21,925, also 2,05 mm auseinander -- die 1,2 mm, die zwei
-    # 1,0-mm-Kappen brauchen, sind damit da, wo der Router sie braucht.
-    #
-    # NUR das Halsstueck-Paar reichte NICHT: vier weitere Wuerfellaeufe
-    # mit Haelsen, aber ohne die Fortsetzung unten, liessen /Out2 und
-    # /+24V weiterhin in JEDEM Lauf offen. Der Grund ist die Breite,
-    # nicht die Staffelung: eine 1,0-mm-Bahn von U1 bis zur Klemme J5
-    # quer durch die Ostgasse findet der Router nicht mehr, wenn er
-    # zuvor die Signalnetze durch dieselbe Gasse gelegt hat. v1 hat
-    # deshalb den GANZEN /Out2-Weg in Leistungsbreite vorverdrahtet;
-    # hier steht dieselbe Loesung mit v2-Geometrie.
-    # /Out2 knickt nach Sueden weg. /+24V bleibt dagegen GERADE:
-    # sein Hals brauchte den Gegenknick nach Norden nur so lange, wie
-    # der Router die 1,0-mm-Fortsetzung selbst suchen musste (dann
-    # gelten 1,2 mm Kappenabstand). Seit /+24V unten vollstaendig
-    # festgelegt ist und ueber ein Via auf die Rueckseite geht, ist der
-    # Knick nicht nur unnoetig, sondern schaedlich: er verschloss die
-    # Ausfahrt von Pad 12 (/VCP). Nachgerechnet -- Pad 12 kann erst ab
-    # x = 43,475 steigen (0,2 mm Luft zur Padkante 43,15), der
-    # Nordknick liess es aber nur bis x = 43,458 waagrecht laufen.
-    # 0,017 mm zu wenig; /VCP blieb in ELF Laeufen (e1..e6, f1..f4)
-    # ohne Ausnahme offen.
-    ("/Out2", "F.Cu", (("PAD", "U1", "10"), (_m(43.55), 23.275),
-                       (_m(44.25), 23.975)), _HALS),
-    ("/+24V", "F.Cu", (("PAD", "U1", "11"), (_m(44.30), 22.625)), _HALS),
-    # ... und dann SOFORT per Via auf die Rueckseite, statt als
-    # 1,0-mm-Trasse quer durch die Ostgasse.
-    #
-    # DAS IST DIE EIGENTLICHE LOESUNG FUER /CPL. Die alte Trasse lief von
-    # Pad 11 nach Osten bis x = 45,43 und dann nach Sueden -- und stand
-    # damit als Wand zwischen den Pads 12/13/14 (noerdlich davon) und
-    # ihren Kondensatoren (suedlich davon). JEDES Netz von dort musste
-    # sie kreuzen, und kreuzen liess sie sich nur an zwei Stellen: auf
-    # B.Cu im 1,13-mm-Fenster x 43,90..45,03 (Platz fuer EIN Via) oder
-    # oestlich von x = 46,03. Deshalb kam immer nur eines der drei
-    # Cap-Netze durch, und /CPL, das aeusserste, nie.
-    # Mit dem Via bei (45,00|22,625) endet die Vorderseiten-Fuehrung von
-    # /+24V nach 3,10 mm, und die Gasse ist ab x = 45,30 auf ganzer Hoehe
-    # frei. Zwischenstueck 0,60 mm statt 1,00: so bleibt zur
-    # /VCP-Ausfahrt auf Pad-12-Hoehe 0,225 mm Luft (bei 1,00 waeren es
-    # 0,025 gewesen). Unterbreite damit 1,90 mm bei 0,40 -- innerhalb der
-    # v1-Regel -- plus 1,20 mm bei 0,60.
-    ("/+24V", "F.Cu", ((_m(44.30), 22.625), (_m(45.50), 22.625)), 0.60),
-    ("/+24V", "B.Cu", ((_m(45.50), 22.625), (_m(46.80), 22.625),
-                       (_m(46.80), 17.30), (_m(40.10), 17.30)), _LEISTUNG),
-
-    # /Out2 in Leistungsbreite weiter bis J5-2. Die Suedspur liegt bei
-    # x = 43,90, NICHT bei 44,25: die Naehvia-Spalte des 7,5-mm-Rasters
-    # sitzt bei x = 45,00 (Via-Rand 44,70) -- eine 1,0-mm-Bahn auf 44,25
-    # reicht bis 44,75 und ueberlappte sie um 0,05 mm. Auf 43,90
-    # bleiben 0,30 mm zum Via und 0,25 mm zu den U1-Ostpads (Kante
-    # 43,15). Der kurze 45-Grad-Versatz direkt unter dem Halsstueck
-    # bringt die Bahn von 44,25 auf diese Spur.
-    ("/Out2", "F.Cu", ((_m(44.25), 23.975), (_m(44.25), 25.00), (_m(43.90), 25.35),
-                       (_m(43.90), 31.60), (_m(42.04), 33.46),
-                       ("PAD", "J5", "2")), _LEISTUNG),
-
-    # /+24V bekommt BEWUSST NUR das Halsstueck, keine Fortsetzung.
-    #
-    # Eine Zwischenfassung zog /+24V in Leistungsbreite nach Norden
-    # (Spur x = 43,90, y 18,30..21,575) ueber U1 hinweg nach C11-2. Sie
-    # loeste /+24V und /Out2 tatsaechlich -- und riss dafuer DREI neue
-    # Loecher auf: /VCP, /CPH und /CPL (U1-12/13/14) blieben danach in
-    # beiden Wuerfellaeufen offen. Nachgerechnet ist das kein Pech,
-    # sondern Arithmetik: zwischen der U1-Ostpadkante (43,15) und dem
-    # Naehvia bei (45|21,25) (Randkante 44,70) liegen 1,55 mm. Eine
-    # 1,0-mm-Spur samt Abstaenden braucht davon 1,40 mm; fuer eine
-    # 0,25-mm-Ausfahrt der darunter liegenden Pads 13/14 blieben 0,15
-    # statt der noetigen 0,65 mm. Die Pads waren eingemauert, und
-    # UNTEN durch konnten sie auch nicht: die Waermepfad-Regelflaeche
-    # (34,60..44,40 x 17,90..25,40) verbietet dort B.Cu.
-    #
-    # Also nicht nach Norden. Aber auch "nur der Hals" reichte nicht:
-    # in VIER weiteren Wuerfellaeufen (c4, d1, d2, d3) blieb U1-11 ->
-    # C9-1 als EINZIGE Verbindung in JEDEM Lauf offen -- der Router
-    # fing am Halsende gar nicht erst an.
-    #
-    # Der Grund steht im Naehraster, nicht im Router: die Ostgasse
-    # zwischen U1 (Padkante 43,15) und der J105-Reihe (Padkante 46,76)
-    # ist 3,61 mm breit, aber die 7,5-mm-Naehspalte x = 45,00 legt
-    # genau in ihre Mitte zwei Vias ((45|21,25) und (45|28,75),
-    # Randkante 44,70 bzw. 45,30). Die Gasse zerfaellt damit in zwei
-    # Teilgassen von 1,55 und 1,46 mm. Eine 1,0-mm-Bahn braucht mit
-    # beidseitigem Abstand 1,40 mm -- in JEDE Teilgasse passt genau
-    # EINE, und die westliche gehoert schon /Out2.
-    #
-    # C9-1 (/+24V) bekommt seinen Anschluss von WESTEN, nicht mehr durch
-    # die Ostgasse.
-    #
-    # Erst ganz weglassen und dem Router ueberlassen ging nicht: in Lauf u
-    # blieb /+24V dann in beiden Wuerfen offen. Kein Wunder -- C9-1 haette
-    # von der Versorgungszelle aus entweder durch die (jetzt den
-    # Cap-Netzen gehoerende) Ostgasse gemusst oder quer durch U1.
-    #
-    # Der Weg hier fuehrt stattdessen ueber die Rueckseite um U1 HERUM,
-    # und beruehrt die Ostgasse gar nicht: Via im eigenen Pad von C9-1,
-    # auf B.Cu nach Westen (y = 28,60, also 0,475 mm unter der
-    # /CPL-Rueckseitenbahn), dann bei x = 33,30 nach Norden -- westlich
-    # der Waermepfad-Regelflaeche (die beginnt erst bei x = 34,10) und
-    # 1,34 mm neben den Kontakten von stapel_links -- und oben auf
-    # y = 17,30 nach Osten, wo der Nordast ohnehin schon liegt.
-    ("/+24V", "B.Cu", ((_m(39.98), 28.60), (_m(39.28), 29.30),
-                       (_m(33.80), 29.30), (_m(33.80), 17.30),
-                       (_m(40.10), 17.30)), _LEISTUNG),
-
-    # -- Ausfahrt von U1-12 (/VCP) --------------------------------------
-    # Nur die AUSFAHRT, nicht der Weg. Pad 12 liegt zwischen Pad 11
-    # (/+24V, dessen Hals nach Osten laeuft) und Pad 13 (/CPH) und ist
-    # damit das am engsten eingebaute Pad der Ostspalte: nach Norden
-    # und Sueden Nachbarpads, nach Osten der /+24V-Hals.
-    # Waagrecht bis x = 43,60 (0,45 mm ausserhalb der Padkante 43,15),
-    # dann 45 Grad nach NORDOSTEN in das freie Feld ueber dem
-    # /+24V-Strang -- das ist erst seit dem Entfall des Naehvias
-    # (45|21,25) freies Gebiet (s. RULE_AREAS). Engste Stellen
-    # nachgerechnet: 0,330 mm zur /+24V-Fuehrung (deren 1,0-mm-Kappe
-    # sitzt bei (44,30|22,625)), 0,494 mm zur Padecke von Pad 13
-    # (43,15|21,55).
-    # Wohin /VCP von dort nach C9-2 laeuft, bleibt dem Router -- die
-    # Ausfahrt war das, was er nicht fand.
-    # /VCP U1-12 -> C9-2, VOLLSTAENDIG. Die blosse Ausfahrt reichte
-    # nicht: /VCP blieb ueber alle Wuerfelrunden hinweg das haertnaeckigste
-    # Netz, weil es von Pad 12 aus nach SUEDWESTEN muss und ihm auf der
-    # Oberseite alles im Weg steht -- noerdlich Pad 13, suedlich die
-    # Haelse von /+24V und /Out2, oestlich deren Leistungsspuren.
-    # Zwischen U1s Ostpadkante (42,65) und der /Out2-Spur (ab 43,25)
-    # bleiben 0,60 mm; eine 0,25-mm-Bahn braucht 0,65.
-    #
-    # Also ueber die RUECKSEITE. Das Via muss dafuer oestlich von
-    # x = 43,90 liegen -- so weit reicht die Waermepfad-Regelflaeche, die
-    # B.Cu unter U1 verbietet. Bei (44,30|21,375) ist es 0,45 mm von der
-    # /+24V-Fuehrung entfernt und liegt frei. Unten quert die B.Cu-Bahn
-    # bei y = 25,60 (0,20 mm unterhalb der Regelflaeche, die bei 25,40
-    # endet) nach Westen unter der /Out2-Spur hindurch und kommt bei
-    # x = 41,00 wieder hoch -- 0,63 mm neben C9s Pad.
-    # /VCPs Rueckseitenband liegt UNTER dem von /CPH (26,65 gegen 26,00).
-    # Andersherum kreuzen sie sich: /CPH faellt bei x = 44,15 nach
-    # Sueden und muesste /VCPs Band schneiden. Wer tiefer abbiegt, muss
-    # das weiter oestlich gelegene Band bekommen.
-    ("/VCP", "F.Cu", (("PAD", "U1", "12"), (_m(46.25), 21.975),
-                      (_m(46.25), 26.65))),
-    ("/VCP", "B.Cu", ((_m(46.25), 26.65), (_m(41.10), 26.65))),
-    ("/VCP", "F.Cu", ((_m(41.10), 26.65), (_m(41.10), 25.843),
-                      ("PAD", "C9", "2"))),
-
-    # -- /CPL U1-14 -> C10-2, VOLLSTAENDIG -------------------------------
-    #
-    # Die letzte offene Verbindung, und die zaeheste: sie blieb in ALLEN
-    # 26 Wuerfen der Laeufe r, s und t offen.
-    #
-    # KORREKTUR EINER VORGABE. Das Ruling lautete "C10 drehen und ~1 mm
-    # suedlich, damit die 0,625-mm-Luecke auf 0,650 kommt". Das kann nicht
-    # gehen: die 0,625 mm sind der Abstand zwischen C10s EIGENEN ZWEI
-    # PADS und damit Footprint-Geometrie (0805-HandSolder: Padraster
-    # 2,075 minus Padhoehe 1,450). Drehen oder Verschieben nimmt beide
-    # Pads mit -- die Luecke bleibt 0,625 mm, in jeder Lage.
-    #
-    # Der eigentliche Grund lag woanders und war meine eigene Bahn:
-    # C10-2 ist von Osten durch C9s Pads verdeckt (gleiche y-Lage), und
-    # das Band suedlich von C9 war durch meinen /+24V-Rueckweg (y = 27,40)
-    # belegt. Der ist jetzt auf y = 30,20 gewandert, und damit ist der
-    # Weg frei:
-    #
-    #   1. Von U1-14 nach Osten bis x = 43,55 -- weiter geht nicht, dort
-    #      steht die /VCP-Ausfahrt (x = 44,00; 0,20 mm Luft).
-    #   2. Nach NORDEN auf y = 18,90, oberhalb von U1s Padreihe und
-    #      0,375 mm unter dem /VCP-Via (44,70|19,70).
-    #   3. Nach Osten und per Via auf x = 44,68 auf die Rueckseite. Die
-    #      Spur ist die einzige, die dort passt: zwischen der
-    #      /VCP-Rueckseitenspur (Ostkante 44,325) und der
-    #      /+24V-Kappe (Westkante 45,03) liegen 0,705 mm, eine
-    #      0,25-mm-Bahn braucht 0,65.
-    #   4. Auf B.Cu nach Sueden bis y = 27,60 -- in dem Band, das der
-    #      verschobene /+24V-Rueckweg freigemacht hat -- und nach Westen
-    #      bis x = 38,18, mitten in die 1,42-mm-Gasse zwischen C10s und
-    #      C9s Pads.
-    #   5. Per Via zurueck auf die Vorderseite und in dieser Gasse nach
-    #      Norden auf C10-2s Hoehe (0,585 mm Luft zu beiden Nachbarpads).
-    # SPURREIHENFOLGE. Die drei Cap-Netze faechern nach Osten auf. Zwei
-    # bekommen eine eigene VORDERSEITEN-Spur, und die muss in der
-    # Reihenfolge ihrer Pads liegen, sonst kreuzen sie einander: das
-    # suedlichere Pad biegt frueher (weiter westlich) nach Sueden ab.
-    #   /VCP (Pad 12, y = 21,975) -> Spur 45,75
-    #   /CPL (Pad 14, y = 20,675) -> Spur 46,40
-    # Fuer /CPH (Pad 13) ist auf der Vorderseite kein Platz mehr: zwischen
-    # den beiden Spuren bleiben 0,40 mm, oestlich von /CPL bis zur
-    # J105-Padkante 1,015 mm -- dorthin kaeme /CPH aber nur, indem es
-    # /CPLs Spur kreuzt. Es geht deshalb frueher auf die Rueckseite
-    # (s. unten).
-    ("/CPL", "F.Cu", (("PAD", "U1", "14"), (_m(46.90), 20.675),
-                      (_m(46.90), 27.50))),
-    ("/CPL", "B.Cu", ((_m(46.90), 27.50), (_m(38.68), 27.50))),
-    ("/CPL", "F.Cu", ((_m(38.68), 27.50), (_m(38.68), 25.843),
-                      ("PAD", "C10", "2"))),
-
-    # /CPH U1-13 -> C10-1: Via schon bei (44,60|21,325), also NOERDLICH
-    # der /+24V-Ausleitung, und dann auf der Rueckseite nach Sueden. Die
-    # Rueckseitenspur liegt auf x = 44,15 -- 0,15 mm oestlich der
-    # Waermepfad-Regelflaeche (endet 43,90) und 0,85 mm von der
-    # /+24V-Rueckseitenbahn, die bei (45,00|22,625) beginnt (noetig
-    # 0,825). Querung nach Westen auf y = 26,65, zwischen den Baendern
-    # von /VCP (26,65) und den U1-Pads, und westlich von x = 38,18 ist
-    # auch /CPLs Band (27,50) zu Ende -- deshalb kann /CPH dort
-    # ungestoert auf C10-1s Pad-Hoehe hinunter.
-    ("/CPH", "F.Cu", (("PAD", "U1", "13"), (_m(45.10), 21.325))),
-    ("/CPH", "B.Cu", ((_m(45.10), 21.325), (_m(44.65), 21.775),
-                      (_m(44.65), 26.00), (_m(37.38), 26.00),
-                      (_m(37.38), 27.918))),
-    ("/CPH", "F.Cu", ((_m(37.38), 27.918), ("PAD", "C10", "1"))),
-
+    # /ID0 (U100-7 -> R100-1) und /ID1 (U100-8 -> R101-1) sind mit dieser
+    # Aufgabe ENTFERNT. Beide verbinden U100 (Teil der "oberen Gruppe",
+    # dy=-3,70) mit R100/R101 (UNVERAENDERT, s. PLACEMENT-Kommentar --
+    # eine Mitverschiebung von R100/R101 riss die R101/R13-Kollision
+    # auf). Die alte Fuehrung (Escape -> 45-Grad-Diagonale -> Senkrechte
+    # zum Pad) ist auf die ALTE U100-Position kalibriert; mit U100 3,70 mm
+    # weiter noerdlich waere nur die ESCAPE-Etappe (der erste, feste
+    # Punkt) noch gueltig zu verschieben -- die Diagonale muesste NEU
+    # gerechnet werden, weil ihr Zielpunkt (die Senkrechte zu R100/R101)
+    # unveraendert bleibt. Eine Diagonale mit verschobenem Start und
+    # festem Ziel ist keine reine Parallelverschiebung mehr und braucht
+    # dieselbe Sorgfalt wie die entfernte U1-Ostgassen-Vorverdrahtung
+    # (s. Kommentar oben) -- das ist Aufgabe D, nicht C1.
     # -- Masseanbindung der SOT-353-Notausgatter U6/U7 -------------------
     # masseheiler.py brach in JEDEM Wuerfellauf an einem dieser beiden
     # Stuecke ab ("traegt Massepads, hat aber keinen freien Heilpunkt"):
@@ -974,60 +860,49 @@ PRE_TRACKS = (
     # genug fuer ein 0,6-mm-Via samt Abstand waere. Kein Zufall des
     # Wuerfels, sondern ein Platzproblem -- also gehoert die Loesung in
     # die Beschreibung, nicht in den Heiler.
-    # Kurzer Stummel nach Sueden in die auf 2,12 mm erweiterte Luecke
-    # zwischen der U3/U6/U7-Zeile (Hof endet y = 48,08) und U4/U5 (Hof
-    # ab y = 50,20); Via bei y = 49,20 haelt dort 0,82 bzw. 0,70 mm
-    # Abstand zu beiden Hoefen. Seitlich naechster Nachbar ist jeweils
-    # Pad 4 desselben Gehaeuses, 1,04 mm entfernt.
-    ("GND", "F.Cu", (("PAD", "U6", "3"), (4.612, 49.20))),
-    ("GND", "F.Cu", (("PAD", "U7", "3"), (9.613, 49.20))),
+    # v2.1: Zielpunkt um dy=+2,30 mm mitverschoben (U6/U7 sind Teil der
+    # "Notaus"-Gruppe, s. PLACEMENT-Kommentar) -- die urspruengliche
+    # 2,12-mm-Luecke zwischen der U3/U6/U7-Zeile und U4/U5 wandert
+    # dabei unveraendert mit (starre Parallelverschiebung), der Stummel
+    # bleibt also mit denselben 0,82/0,70 mm Abstand zu beiden Hoefen
+    # gueltig.
+    ("GND", "F.Cu", (("PAD", "U6", "3"), (4.612, 51.50))),
+    ("GND", "F.Cu", (("PAD", "U7", "3"), (9.613, 51.50))),
 
     # 3V3-Stummel im Kennwiderstands-Nest: R102-1 liegt zwischen U101s
     # Hof (endet x = 6,90) und R13; der direkte Weg zu U101-5 waere
     # schraeg (verboten). Knick bei x = 9,25 ausserhalb des Hofes,
     # Einfahrt auf Pad-5-Hoehe. R13-1 haengt als senkrechter Nachbar-
-    # stummel in derselben Spalte daran.
+    # stummel in derselben Spalte daran. v2.1: UNVERAENDERT -- R102 und
+    # U101 sind NICHT Teil der "oberen Gruppe" (s. PLACEMENT-Kommentar),
+    # beide stehen wie in v2.
     ("3V3", "F.Cu", (("PAD", "R102", "1"), (9.25, 22.1),
                      ("PAD", "U101", "5"))),
     ("3V3", "F.Cu", (("PAD", "R102", "1"), ("PAD", "R13", "1"))),
 )
 
-# Die Vias sitzen an den Knickpunkten der Vorverdrahtung und wandern
-# deshalb mit demselben _m() mit -- sonst laege das Via neben dem
-# Lagenwechsel, den es herstellen soll.
+# Die Vias sitzen an den Knickpunkten der Vorverdrahtung. Die
+# Nest-Vias der "oberen Gruppe" (U100/U102/U103/C14/C16, dy=-3,70)
+# wandern mit; die U6/U7-GND- und /NOTAUS-Vias mit der "Notaus"-Gruppe
+# (dy=+2,30) -- sonst laege ein Via neben dem Lagenwechsel, den es
+# herstellen soll. /ID0 und /ID1 (und ihre Vias) sind mit dieser
+# Aufgabe ENTFERNT (s. PRE_TRACKS-Kommentar); ebenso die neun
+# U1-Ostgassen-Vias (/+24V, /CPL, /CPH, /VCP) der v2-Fassung, zusammen
+# mit den PRE_TRACKS, an deren Lagenwechseln sie sassen.
 PRE_VIAS = (
-    ("/SEL_OUT", 19.35, 27.60),
-    ("/SEL_OUT", 14.88, 23.65),
-    ("/ID0", 16.50, 20.975),
-    ("/ID0", 4.85, 29.60),
-    ("/ID1", 17.10, 21.625),
-    ("/ID1", 9.15, 29.65),
-    ("3V3", 17.68, 24.10),
-    ("3V3", 22.90, 24.95),
-    ("GND", 12.90, 19.675),
+    ("/SEL_OUT", 19.35, 23.90),
+    ("/SEL_OUT", 14.88, 19.95),
+    ("3V3", 17.68, 20.40),
+    ("3V3", 22.90, 21.25),
+    ("GND", 12.90, 15.975),
     # Gegenstuecke der U6/U7-Masse-Ausleitungen (s. PRE_TRACKS): erst
     # das Via bringt das eingemauerte F.Cu-Pad an den B.Cu-Guss.
-    # U6/U7 gehoeren NICHT zum Nest und wandern nicht mit.
-    ("GND", 4.612, 49.20),
-    ("GND", 9.613, 49.20),
-    # Lagenwechsel des /+24V-Wegs um /Out2 herum (s. PRE_TRACKS).
-    ("/+24V", _m(45.50), 22.625),
-    # Via IM Pad von C9-1 (gleiches Netz): der Weg nach Westen um U1
-    # herum beginnt hier, s. PRE_TRACKS.
-    ("/+24V", _m(39.98), 28.60),
-    # Lagenwechsel des /CPL-Wegs um C9 herum (s. PRE_TRACKS).
-    ("/CPL", _m(46.90), 27.50),
-    ("/CPL", _m(38.68), 27.50),
-    ("/CPH", _m(45.10), 21.325),
-    ("/CPH", _m(37.38), 27.918),
-    # Nordast des /+24V zum Abblock-C11 (s. PRE_TRACKS).
-    ("/+24V", _m(40.10), 17.30),
-    # /VCP quert unter /Out2 hindurch.
-    ("/VCP", _m(46.25), 26.65),
-    ("/VCP", _m(41.10), 26.65),
+    # U6/U7 gehoeren NICHT zum Nest, sondern zur "Notaus"-Gruppe.
+    ("GND", 4.612, 51.50),
+    ("GND", 9.613, 51.50),
     # /NOTAUS quert unter dem GND-Stummel von U6-3 hindurch.
-    ("/NOTAUS", 3.70, 48.40),
-    ("/NOTAUS", 5.90, 48.40),
+    ("/NOTAUS", 3.70, 50.70),
+    ("/NOTAUS", 5.90, 50.70),
 )
 
 # --- Masseflaechen vernaehen -------------------------------------------
@@ -1093,54 +968,45 @@ def _naehte():
 #
 # Die Regionen stammen aus den Heiler-Meldungen von 30 Wuerfellaeufen;
 # jede Zeile deckt die Stuecke ab, die dort wiederholt auftraten:
+# v2.1 (Aufgabe C1): vier Punkte, die direkt neben dem alten Platz von
+# U100/U102/U103 lagen (die "obere Gruppe" ist um dy=-3,70 verschoben,
+# s. PLACEMENT-Kommentar), sind ERSATZLOS ENTFERNT statt mitverschoben:
+# (11,70|23,20), (13,70|19,10), (21,50|27,20), (16,70|19,10). Sie waren
+# gegen das GEBAUTE v2-Kupfer (Escapes, Guss-Erreichbarkeit) einzeln
+# vermessen -- mit der neuen Nest-Lage UND der entfernten
+# U1-Ostgassen-Vorverdrahtung (s. PRE_TRACKS-Kommentar) waere ihre
+# Gueltigkeit nur geraten, nicht nachgerechnet. Aufgabe D findet die
+# noetigen Ersatzpunkte (falls welche noetig werden) aus ihrem eigenen
+# Dice-Loop, wie v1/v2 es fuer diese Stellen schon einmal getan haben.
+#
+# Die verbleibenden zehn Punkte sind entweder UNVERAENDERT gueltig (sie
+# liegen in x < 12 -- der linken, nicht verschobenen Nest-Spalte -- oder
+# weit oestlich/noerdlich ausserhalb jeder verschobenen Gruppe) oder mit
+# ihrer jeweiligen Gruppe mitverschoben (Kommentar an jedem Punkt).
 STITCH_EXTRA = (
-    # (14,20|24,30) ersetzt: der Punkt lag in der Tasche zwischen U100s
-    # Padreihe (endet y 23,575) und U102 (ab 24,825) -- geometrisch
-    # zulaessig, aber der Guss fuellt dort nicht hinein, und das Via
-    # haing in JEDEM Wuerfellauf isoliert in der Luft (DRC: Via gegen
-    # Zone). Ein Naehpunkt muss nicht nur PLATZ haben, sondern auch
-    # Kupfer, das ihn erreicht.
-    # y = 23,20, nicht 23,40: die /ID1-Diagonale (14,30|21,625)->
-    # (9,15|26,775) laeuft hier durch, und ein Via braucht zu ihr
-    # 0,62 mm (0,3 Via + 0,2 Luft + 0,125 Bahn). Bei 23,40 waren es
-    # 0,583 -- vom Gate gefangen, nicht vom Auge.
-    (11.70, 23.20),   # Westband neben U100 (x 10,5..14,0 y 17,0..31,0)
-    (13.70, 19.10),   # B.Cu-Insel unter dem Nest (x 11,6..17,4 y 18,2..20,0)
-    (21.50, 27.20),   # Nest-Ost (x 19,5..29,3 y 24,6..29,9)
-    (21.30, 33.40),   # Zeile 4/5 (x 19,0..23,6 y 31,4..34,0)
-    # (18.10|32.10) ENTFERNT (Aufgabe 7c): der Kommentar hier behauptete
-    # ">= 0,50 mm zu jedem Pad", gemessen war es 0,0707 mm zu Pad 1 von
-    # R5 (/IPROPI) -- eine Behauptung, die nie am Brett geprueft wurde.
-    # build.stitching_vias() haette das Via klaglos gesetzt, und
-    # board.BuildConnectivity() zog es danach STILLSCHWEIGEND auf das
-    # fremde Netz (aus GND wurde /IPROPI, 0 DRC-Verletzungen). Der neue
-    # Guss-Erreichbarkeitsfilter (s. Aufgabe-7c-Bericht) verwirft den
-    # Punkt jetzt zuverlaessig -- er bleibt trotzdem entfernt, denn ein
-    # Naehpunkt, der nie greift, ist toter Text. Der Zwickel selbst
-    # (x 15,6..18,8 y 31,4..32,9) bleibt ohne Ersatzpunkt: er lag noch
-    # nie unter den offenen Gussfragmenten eines Wuerfellaufs.
-    (8.10, 28.50),    # Kennwiderstands-Nest West (x 5,1..15,0 y 22,3..35,3)
-    (3.00, 31.00),    # Westband (x 1,0..5,0 y 26,0..36,0)
-    (26.00, 18.20),   # Streifen unter dem Kettenstecker (war 26,80|17,70,
-                      # ebenfalls ohne Gussanbindung)
-    (25.70, 21.50),   # Ostband am Stapelrand (x 22,3..32,0 y 18,6..24,1)
-    (13.50, 39.20),   # Band zwischen Nest und Notaus (x 8,9..18,1 y 35,3..45,2)
-    (8.60, 47.70),        # Notaus-Zeile Mitte (x 6,6..11,1 y 46,1..49,5)
-    # Zweiter Punkt in derselben Zeile: die Insel dort (F.Cu x 6,9..11,0
-    # y 46,1..49,5 / B.Cu x 7,7..10,6 y 45,2..51,5) blieb am besten Board
-    # als EINZIGE ungeheilt. Die SOT-353-Escapes und die beiden
-    # GND-Stummel zerschneiden die Ecke so, dass ein Punkt allein nicht
-    # jede Wuerfelvariante trifft; im ganzen Bereich gibt es nur 14
-    # zulaessige Stellen, (7,70|47,70) ist die mittigste davon.
-    (7.70, 47.70),
-    (3.20, 49.50),        # Notaus-Zeile West (x 0,5..6,0 y 47,3..51,6)
-    # Dritte Runde, an dem Wurf gesucht, der als erster ALLE Netze
-    # verlegt hatte (w8): dort blieben nur noch vier Massestuecke ohne
-    # Heilpunkt. Diese drei Punkte decken sie ab -- die Notaus-Ecke
-    # oben und unten und der Zwickel westlich von U100.
-    (8.90, 48.60),        # Notaus-Zeile, zwischen U6/U7 und U4/U5
-    (7.30, 54.00),        # B.Cu-Insel unter U4/U5 (x 7,4..11,9 y 47..57,7)
-    (16.70, 19.10),       # Zwickel westlich von U100 (B.Cu x 10,4..17,1)
+    (8.10, 28.50),    # Kennwiderstands-Nest West (x 5,1..15,0), unveraendert:
+                      # liegt in der NICHT verschobenen linken Spalte.
+    (3.00, 31.00),    # Westband (x 1,0..5,0), unveraendert, s.o.
+    (26.00, 18.20),   # Streifen unter dem Kettenstecker, unveraendert:
+                      # x=26 liegt oestlich jeder verschobenen Gruppe.
+    (25.70, 21.50),   # Ostband am Stapelrand, unveraendert, s.o.
+    # Zeile 4/5 (urspruenglich x 19,0..23,6 y 31,4..34,0) -- Teil der
+    # "unteren Gruppe" (dy=+0,90, s. PLACEMENT-Kommentar), mitverschoben.
+    (21.30, 34.30),
+    # Band zwischen Nest und Notaus (urspruenglich y 35,3..45,2) --
+    # liegt zwischen der unteren Gruppe (endet jetzt bei R21, y=39,12)
+    # und der Notaus-Gruppe (beginnt jetzt bei J3, y=41,18); mit dy=+0,90
+    # (der unteren Gruppe, deren unmittelbarer Nachbar dieser Punkt ist)
+    # mitverschoben.
+    (13.50, 40.10),
+    # Die folgenden fuenf Punkte lagen alle in der Notaus-Zeile
+    # (U3/U6/U7 <-> U4/U5) bzw. darunter -- Teil der "Notaus"-Gruppe
+    # (dy=+2,30, s. PLACEMENT-Kommentar), alle mitverschoben.
+    (8.60, 50.00),        # Notaus-Zeile Mitte
+    (7.70, 50.00),        # zweiter Punkt in derselben Zeile
+    (3.20, 51.80),        # Notaus-Zeile West
+    (8.90, 50.90),        # Notaus-Zeile, zwischen U6/U7 und U4/U5
+    (7.30, 56.30),        # B.Cu-Insel unter U4/U5
 )
 
 STITCH_VIAS = _naehte() + STITCH_EXTRA
@@ -1149,3 +1015,12 @@ STITCH_VIAS = _naehte() + STITCH_EXTRA
 # /PWR_IN (vor Q90), /+24V (nach Q90 -- speist U1, Leistungsstecker,
 # U90-Eingang) und die beiden Motorausgaenge tragen den Motorstrom.
 POWER_NETS = ("/PWR_IN", "/+24V", "/Out1", "/Out2")
+
+# v2.1 (Aufgabe C1): R1 verlangt den Klemmenkoerper kantenbuendig (Hof-
+# Suedkante == BOARD_H) -- ein bewusster, im Vertrag begruendeter
+# Widerspruch zu geometry.check_all()s generischer EDGE_CLEARANCE-Regel
+# (0,5 mm Rand fuer JEDEN Hof). Ohne diesen Eintrag verweigert
+# build.bauen() den Bau ("J5 ragt unten hinaus"), obwohl die Lage genau
+# der Auflage entspricht. S. Kommentar bei PLACEMENT["J5"] und
+# geometry.check_all()s EDGE_FLUSH_REFS-Dokumentation.
+EDGE_FLUSH_REFS = frozenset(("J5",))

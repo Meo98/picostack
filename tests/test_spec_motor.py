@@ -92,9 +92,31 @@ check("kein unerwartetes Bauteil sitzt unten",
 # ein Fehler hier waere also nur an falschen Kollisionsmeldungen
 # erkennbar -- ausreichend fuer dieses Detail.
 
+# J5 sitzt kantenbuendig (R1) -- B.EDGE_FLUSH_REFS sagt
+# geometry.check_all() das bereits (s. dort), kein Filter noetig.
 bad = geometry.check_all(B.PLACEMENT, B)
 if bad:
     fails.extend("Geometrie: " + b for b in bad)
+
+# --- 1a. KLEMMENZONE/PICO_SCHATTEN: Kontrakt-Positionsnachweis (R1/R2) --
+# Task-B/v21b-Fund: test_spec_motor.py hatte KEINE Zonen-Mitgliedschafts-
+# und keine Verdreht-Pruefung, obwohl test_spec_dimmer.py beide schon
+# hatte -- diese Luecke schliesst Aufgabe C1 hier.
+_KZ_X0, _KZ_Y0, _KZ_X1, _KZ_Y1 = S.KLEMMENZONE
+_j5 = B.PLACEMENT["J5"]
+_j5_hof = (_j5.x, _j5.y, _j5.x + _j5.w, _j5.y + _j5.h)
+check("J5 (Motorklemme) vollstaendig in KLEMMENZONE (x0)",
+      _j5_hof[0] >= _KZ_X0 - 1e-9, True)
+check("J5 (Motorklemme) vollstaendig in KLEMMENZONE (y0)",
+      _j5_hof[1] >= _KZ_Y0 - 1e-9, True)
+check("J5 (Motorklemme) vollstaendig in KLEMMENZONE (x1)",
+      _j5_hof[2] <= _KZ_X1 + 1e-9, True)
+check("J5 (Motorklemme) Suedkante buendig mit BOARD_H (R1)",
+      round(_j5_hof[3], 3), S.BOARD_H)
+_PX0, _PY0, _PX1, _PY1 = S.PICO_SCHATTEN
+check("J5-Hof schneidet PICO_SCHATTEN nicht (R1, Audit-Befund B1)",
+      (_j5_hof[0] < _PX1 and _PX0 < _j5_hof[2]
+       and _j5_hof[1] < _PY1 and _PY0 < _j5_hof[3]), False)
 
 # --- 2. ANTENNE_FREI ist bindend --------------------------------------
 _AX0, _AY0, _AX1, _AY1 = S.ANTENNE_FREI
@@ -118,6 +140,75 @@ for name, lagen, (x0, y0, x1, y1), verbote in B.RULE_AREAS:
                 fails.append("ANTENNE_FREI-Regelflaeche erlaubt " + v)
 if not _hat_antennenregel:
     fails.append("keine RULE_AREAS-Regelflaeche fuer ANTENNE_FREI gefunden")
+
+# --- 2z. Verdreht-Kupferklausel (Task-B/v21b-Fund: fehlte hier ganz,
+# obwohl test_spec_dimmer.py sie schon hatte -- s. Bericht dort,
+# Abschnitt 5). Approximiert ueber Bauteil-Hoefe wie in
+# test_spec_dimmer.py; J5 (die einzige Klemme dieser Platine) bekommt
+# die SCHARFE Pruefung gegen ihre echten Pads (MKDS-3-2-5.08, Kontakte
+# 5,08 mm auseinander, Drehung 180) -- aus demselben Grund wie bei den
+# Dimmer-Kanalklemmen: ihr Hof ist gegenueber den Kontakten so
+# grosszuegig bemessen, dass die Hof-Naeherung hier falsch alarmieren
+# wuerde. J95/J96 (F.Cu, aber gedreht -- Sonderfall, s. deren eigener
+# Zonen-Nachweis unten) und die vier Vertragsstecker (sie SIND der
+# Anker) sind ausgenommen.
+_punkte = S.LANDEPUNKTE_VERDREHT()
+
+
+def _hof_abstand(p, px, py):
+    dx = max(abs(px - (p.x + p.w / 2.0)) - p.w / 2.0, 0.0)
+    dy = max(abs(py - (p.y + p.h / 2.0)) - p.h / 2.0, 0.0)
+    return (dx * dx + dy * dy) ** 0.5
+
+
+def _j5_pad_abstand(p, px, py):
+    # Drehung 180 (S.LAGE: (px,py)->(cx-fx,cy-fy)): Kontakt 1 liegt bei
+    # globalem (p.x+8.13, p.y+5.8) (Hof-Suedostecke minus lokaler
+    # Kontakt-1-Versatz), Kontakt 2 um 5,08 mm WESTLICH davon (s.
+    # spec_motor.PLACEMENT["J5"]-Kommentar). Padradius 1,3 mm (2,6 mm
+    # rund/roundrect, aus der .kicad_mod gemessen).
+    pin1 = (p.x + 8.13, p.y + 5.8)
+    pin2 = (pin1[0] - 5.08, pin1[1])
+    beste = 1e9
+    for cx, cy in (pin1, pin2):
+        dx = max(abs(px - cx) - 1.3, 0.0)
+        dy = max(abs(py - cy) - 1.3, 0.0)
+        beste = min(beste, (dx * dx + dy * dy) ** 0.5)
+    return beste
+
+
+for ref, p in sorted(B.PLACEMENT.items()):
+    if ref in _VERTRAGSSTECKER or ref in ("J95", "J96"):
+        continue
+    pruefen = _j5_pad_abstand if ref == "J5" else _hof_abstand
+    for px, py in _punkte:
+        if pruefen(p, px, py) < S.LANDE_SPERRRADIUS - 1e-6:
+            fails.append(
+                "%s: %s naeher als %.1f mm am Landepunkt (%.2f|%.2f)"
+                % (ref, "Pad" if ref == "J5" else "Hof",
+                   S.LANDE_SPERRRADIUS, px, py))
+            break
+
+# --- 2y. Randpad-Zone: J95/J96 vollstaendig in RANDPAD_ZONE (R5/R8) ----
+_RZ_X0, _RZ_Y0, _RZ_X1, _RZ_Y1 = S.RANDPAD_ZONE
+for ref in ("J95", "J96"):
+    p = B.PLACEMENT[ref]
+    hof = (p.x, p.y, p.x + p.w, p.y + p.h)
+    check("%s vollstaendig in RANDPAD_ZONE (x0)" % ref, hof[0] >= _RZ_X0 - 1e-9, True)
+    check("%s vollstaendig in RANDPAD_ZONE (x1)" % ref, hof[2] <= _RZ_X1 + 1e-9, True)
+    check("%s vollstaendig in RANDPAD_ZONE (y0)" % ref, hof[1] >= _RZ_Y0 - 1e-9, True)
+    check("%s vollstaendig in RANDPAD_ZONE (y1)" % ref, hof[3] <= _RZ_Y1 + 1e-9, True)
+    check("%s auf F.Cu (unten=False)" % ref, p.unten, False)
+# Pad-Mitte(y) = Platz.y + 0.45 + i * RAND_RASTER (Herleitung im
+# PLACEMENT-Kommentar) -- J96 traegt die ersten 4 Kontakte, J95 die
+# restlichen 18, zusammen exakt die 22 RANDPADS-y-Koordinaten.
+_rand_y = sorted(round(p[2][1], 2) for p in S.RANDPADS)
+_gebaut_y = sorted(
+    round(B.PLACEMENT["J96"].y + 0.45 + i * S.RAND_RASTER, 2)
+    for i in range(4)) + sorted(
+    round(B.PLACEMENT["J95"].y + 0.45 + i * S.RAND_RASTER, 2)
+    for i in range(18))
+check("Randpad-y-Koordinaten == RANDPADS", sorted(_gebaut_y), _rand_y)
 
 # --- 2a. Raster-Naehte liegen frei -------------------------------------
 CLEARANCE = 0.2

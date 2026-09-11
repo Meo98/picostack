@@ -114,19 +114,30 @@ def check_all(placement, beschreibung):
                 bad.append("Ueberlappung {} / {}".format(a.ref, c.ref))
 
     r = m3_keepout / 2.0
+    # v2.1 (Aufgabe C1): R1 verlangt Klemmenkoerper KANTENBUENDIG
+    # (Hof-Kante == Platinenkante) -- ein expliziter Widerspruch zur
+    # generischen EDGE_CLEARANCE-Regel unten, die JEDEN Hof 0,5 mm von
+    # jeder Kante fernhaelt. EDGE_FLUSH_REFS (optional, wie PICO_REF/
+    # ANTENNA_SLOT oben) nennt die Referenzen, fuer die dieser
+    # Widerspruch eine bewusste, im Vertrag begruendete Ausnahme ist --
+    # ihr Hof darf die Kante ERREICHEN (0,0 mm), aber nicht ueberragen
+    # (weiterhin < 0 waere ein echter Ueberstand). Ohne diese Liste
+    # (Standard: leer) verhaelt sich die Pruefung exakt wie vorher.
+    edge_flush = getattr(b, "EDGE_FLUSH_REFS", frozenset())
     for ref in refs:
         p = placement[ref]
         x0, y0, x1, y1 = _rect(p)
+        rand = 0.0 if ref in edge_flush else edge_clearance
         # Kein Teil ragt hinaus -- auch der Pico nicht. Sein Ueberhang
         # haette auf dem Vorlaeuferprojekt Pins gekostet; die Antenne
         # bekommt ihre freie Luft stattdessen durch den Schlitz.
-        if x0 < edge_clearance:
+        if x0 < rand - EPS:
             bad.append("{} ragt links hinaus".format(p.ref))
-        if y0 < edge_clearance:
+        if y0 < rand - EPS:
             bad.append("{} ragt oben hinaus".format(p.ref))
-        if x1 > b.BOARD_W - edge_clearance:
+        if x1 > b.BOARD_W - rand + EPS:
             bad.append("{} ragt rechts hinaus".format(p.ref))
-        if y1 > b.BOARD_H - edge_clearance:
+        if y1 > b.BOARD_H - rand + EPS:
             bad.append("{} ragt unten hinaus".format(p.ref))
 
         for hx, hy in b.M3_HOLES:

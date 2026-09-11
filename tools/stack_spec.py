@@ -1456,32 +1456,86 @@ ANTENNE_FREI = (29.0, 42.9, 50.0, 51.9)
 
 # --- v2.1: KLEMMENZONE (R1/R2/R4) ------------------------------------
 # Pflichtflaeche fuer ALLE Lastklemmen eines Moduls, an der unteren
-# Kante (y = BOARD_H), hergeleitet in tools/platzprobe_v2_1.py und
-# uebernommen aus task-v21a-report.md, Abschnitt 9. Muss BEIDE
-# Extremfaelle der vier Modultypen fassen (ein Rechteck im Vertrag,
-# unterschiedlich genutzt je Modultyp):
+# Kante (y = BOARD_H), urspruenglich hergeleitet in
+# tools/platzprobe_v2_1.py / task-v21a-report.md Abschnitt 9 (auf
+# 34,40 x 12,20 mm, aus R1/R2/R4 allein). Die BREITE ist mit Aufgabe C1
+# KORRIGIERT (45,20 statt 34,40 mm) -- Herleitung und Rot-Nachweis
+# unten. Die TIEFE (12,20 mm, vom Motormodul-Fall gebunden) ist
+# unveraendert richtig.
 #
-#   Dimmer4 (schlechtester Fall in der Breite): 4x KF350-3,5mm-Klemme
-#   (TerminalBlock_Phoenix_PT-1,5-2-3.5-H, 8,00 x 8,60 mm Hof) plus 3x
-#   Klemmenabstand R4 (0,8 mm, s. LAYOUT_REGELN["R4"]):
-#     4 x 8,00 + 3 x 0,80 = 34,40 mm breit, 8,60 mm tief.
-#   Motormodul (schlechtester Fall in der Tiefe): Motorklemme
-#   (TerminalBlock_Phoenix_MKDS-3-2-5.08, 11,17 x 12,20 mm Hof) plus
-#   Notaus-Stecker (11,16 x 3,54 mm Hof, 90 Grad gedreht) in derselben
-#   Reihe:
-#     11,17 + 0,80 + 11,16 = 23,13 mm breit, max(12,20, 3,54) = 12,20 mm
-#     tief.
-#   KLEMMENZONE_L/B = max(34,40; 23,13) x max(8,60; 12,20)
-#                   = 34,40 x 12,20 mm.
+# --- WARUM DIE BREITE KORRIGIERT WERDEN MUSSTE (Aufgabe C1,
+# 2026-09-10/11, Eskalation nach Vorgabe: "arithmetisch unmoeglich ...
+# mit Zahlen korrigieren, nicht zurechtbiegen"). ---
 #
-# Lage: an der unteren Kante (y1 = BOARD_H = 73,0), in x mittig auf der
-# NEUEN Gesamtbreite (82 mm) zentriert -- NICHT auf der alten 75-mm-
-# Breite (anders als in der ersten, spaeter korrigierten Fassung von
-# task-v21a-report.md, s. dort Abschnitt 9 fuer die Korrektur). Weil die
-# beiden unteren M3-Eckloecher mit M3_HOLES_FUER ebenfalls auf der neuen
-# Breite sitzen, bleibt eine auf w = BOARD_W zentrierte Zone
-# automatisch symmetrisch zu ihnen:
-#   x0 = (82 - 34,40) / 2 = 23,80, x1 = 23,80 + 34,40 = 58,20.
+# Die urspruengliche 34,40-mm-Herleitung (R1/R2/R4) pruefte NIE gegen
+# LANDEPUNKTE_VERDREHT() -- und genau die Landepunkt-Spiegel von
+# stapel_links/stapel_rechts (je 20 Punkte, Spalten bei x = BOARD_W -
+# 30,61 = 51,39 und x = BOARD_W - 48,39 = 33,61) laufen ueber die GANZE
+# Hoehe der Platine, auch durch KLEMMENZONE hindurch (Spalten-y-Bereich
+# 20,7..72,5, KLEMMENZONE liegt bei y 60,80..73,00 -- vollstaendig
+# darin). Fuer Dimmer4 (vier KF350-Klemmen, 3,5-mm-Kontaktabstand,
+# lueckenlos in 34,40 mm gepackt) ist das ARITHMETISCH UNERFUELLBAR:
+#
+#   * Jede der beiden Spalten verbietet Kupfer (LANDE_SPERRRADIUS =
+#     1,5 mm plus Padradius 1,2 mm = 2,7 mm Mindestabstand des
+#     Kontaktzentrums) in einem 5,4 mm breiten Streifen um sich herum.
+#   * Ein KF350-Kontaktpaar hat nur 3,5 mm Abstand -- SCHMALER als der
+#     5,4-mm-Sperrstreifen. Eine einzelne Klemme kann einen Streifen
+#     also nie "ueberspannen" (beide Kontakte ausserhalb, waehrend die
+#     Klemme selbst darueber sitzt) -- sie muss ihn komplett umgehen.
+#   * Bei 34,40 mm Zonenbreite bleiben nach Abzug beider Streifen nur
+#     zwei nutzbare Restkorridore von 1,35 mm und 8,86 mm -- zusammen
+#     Platz fuer HOECHSTENS ZWEI Klemmen, nie fuer drei (Dimmer3) oder
+#     vier (Dimmer4). Rot-Nachweis (scratchpad-Suche, Aufgabe C1):
+#     mit den v2.1-Referenzpositionen (spec_dimmer_basis.py, Stand vor
+#     dieser Korrektur) meldete die Verdreht-Pruefung fuer Dimmer4
+#     "J6 nur 1,29 mm" und "J8 0,00 mm" (Landepunkt LIEGT im Pad).
+#
+# Das ist kein Platzierungsfehler von Aufgabe C1, sondern eine Luecke
+# in Aufgabe As/Bs Herleitung: beide pruefte KLEMMENZONE nur gegen
+# PICO_SCHATTEN und die M3-Freihaltequadrate, nie gegen die 46 Punkte
+# aus LANDEPUNKTE_VERDREHT() -- eine Pruefung, die es zum Zeitpunkt von
+# Aufgabe A noch gar nicht auf diese Zone angewendet gab.
+#
+# KORREKTUR: Breite auf 46,40 mm angehoben (x1 = 70,20 statt 58,20),
+# x0 unveraendert bei 23,80. Hergeleitet durch eine gierige
+# Links-nach-rechts-Platzierung gegen ALLE 46 Punkte aus
+# LANDEPUNKTE_VERDREHT() (scratchpad-Suche, Aufgabe C1) -- nicht nur
+# gegen die beiden Stapel-Spiegelspalten (33,61/51,39), sondern auch
+# gegen die Kette-Spiegelspalte (61,41|67,71..70,25): eine erste
+# Fassung dieser Korrektur pruefte nur gegen die Stapel-Spalten und
+# geriet mit Kanal 4 direkt in die Kette-Spalte (Rot-Nachweis: "J8 Pad
+# naeher als 1,5 mm (61,41|70,25)", gemessen 1,12 mm). Jede Klemme so
+# weit wie moeglich nach links, aber mit >= 1,6 mm PAD-Kupferabstand
+# (0,1 mm Reserve ueber der 1,5-mm-Reissleine, gegen die ECHTEN
+# Kontaktmitten der KF350-Klemme, nicht gegen ihren Hof -- s.
+# spec_dimmer_basis.py, "_klemme_pad_abstand"-Kommentar fuer die
+# Begruendung) zu JEDEM der 46 Punkte UND mindestens 0,8 mm
+# Klemmenabstand (R4) zur vorigen Klemme:
+#   Kanal 1: x0 = 23,80   Kanal 2: x0 = 34,17   Kanal 3: x0 = 51,95
+#   Kanal 4: x0 = 61,96  (Hofende 69,96, + 0,24 mm Reserve = 70,20)
+# Die grossen Luecken (23,80->34,17 = 10,37 mm, 42,17->51,95 = 9,78 mm,
+# 59,95->61,96 = 2,01 mm, alle ueber dem R4-Minimum 0,8 mm) sind KEIN
+# Verschwenden von Platz, sondern die einzige Art, wie eine Klemmen-
+# reihe an dieser Stelle der Platine ueberhaupt alle drei Landepunkt-
+# Spalten umgehen kann -- s. spec_dimmer_basis._klemme_x() fuer die
+# vollstaendige, pro Kanal nachgerechnete Platzierung.
+#
+# Warum NICHT stattdessen BOARD_W weiter wachsen lassen (die andere
+# denkbare Korrektur): die Landepunkt-Spalten haengen an
+# STECKER_POS[...]["pin1"] (frozen) UND an BOARD_W gleichzeitig
+# (Spiegelformel BOARD_W - pin1_x) -- waechst BOARD_W, wandern ALLE
+# Spalten um denselben Betrag nach rechts, UND KLEMMENZONEs eigene, auf
+# BOARD_W zentrierte Lage wandert um die HALBE Differenz mit.
+# Nachgerechnet verschiebt das die Spalten nicht aus der Zone heraus,
+# sondern nur relativ zueinander -- ein Board-Wachstum haette dasselbe
+# Problem an anderer Stelle reproduziert, nur mit anderen Zahlen, und
+# zusaetzlich RANDPAD_ZONE und das M3-Lochbild neu aufgerollt. Eine
+# reine KLEMMENZONE-Verbreiterung (BOARD_W unveraendert) loest das
+# Problem an der Wurzel, ohne Nebenwirkungen auf andere Vertragsteile
+# -- nachgerechnet bleibt bei x1 = 70,20 mm weiterhin 4,30 mm Luft zum
+# rechten M3-Freihaltequadrat (74,5 mm) und 5,40 mm zur RANDPAD_ZONE
+# (75,60 mm).
 #
 # ROT-NACHWEIS (Audit-Befund B1, Kanal-1-Klemme im PICO_SCHATTEN):
 # KLEMMENZONE beginnt bei y = 60,80 (73,00 - 12,20), PICO_SCHATTEN endet
@@ -1492,8 +1546,8 @@ ANTENNE_FREI = (29.0, 42.9, 50.0, 51.9)
 # ROT-NACHWEIS gegen die M3-Eckloecher (jetzt BEWEGLICH, s.
 # M3_HOLES_FUER): Luft zum linken unteren Loch (4|69) = 23,80 -
 # (4 + M3_KEEPOUT/2) = 23,80 - 7,50 = 16,30 mm; zum rechten (78|69) =
-# (78 - 3,50) - 58,20 = 16,30 mm -- beide weit ueber 0.
-KLEMMENZONE = (23.80, 60.80, 58.20, 73.00)   # 34,40 x 12,20 mm
+# (78 - 3,50) - 70,20 = 4,30 mm -- beide weit ueber 0.
+KLEMMENZONE = (23.80, 60.80, 70.20, 73.00)   # 46,40 x 12,20 mm
 
 # --- v2.1: RANDPAD_ZONE (R5/R8) ---------------------------------------
 # Pflichtflaeche fuer die 22 RANDPADS auf F.Cu, nahe der rechten Kante.

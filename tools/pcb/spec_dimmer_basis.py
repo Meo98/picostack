@@ -1,9 +1,31 @@
-"""Gemeinsame Platinenbeschreibung der Dimmer-Module (v2, Aufgabe 8a).
+"""Gemeinsame Platinenbeschreibung der Dimmer-Module (v2.1, Aufgabe C1).
 
 beschreibung(kanaele) liefert alle Attribute, die build.py/geometry.py/
 autoroute.py/steckerprobe.py von einem spec-Modul erwarten;
 spec_dimmer1/3/4.py sind Dreizeiler, die das Ergebnis in ihren
 Modul-Namensraum heben.
+
+--- v2.1 (Aufgabe C1, 2026-09-10/11): Klemmen an die Kante ------------
+Alle Kanal-Klemmen (J5..J8) verlassen ihre Kanal-eigenen Taschen und
+ziehen gemeinsam in KLEMMENZONE (Audit-Befund B1), kantenbuendig (R1),
+in Kanalreihenfolge links->rechts (_klemme_x()). D/Q bleiben in ihren
+Taschen (ausser D4/Q4, die mit der Versorgungszelle nach Osten
+wandern, s.u.) -- die dadurch frei gewordene Flaeche unter jedem FET
+nehmen die Gatewiderstaende RG/RP auf: JEDER Kanal bekommt sein
+eigenes Paar direkt beim eigenen FET statt in einem gemeinsamen
+Sammelplatz (Audit-Befund W6). Die Versorgungszelle (und mit ihr D4/
+Q4) wandert um dx=+2,10 mm nach Osten -- derselbe Landepunkt-Fund wie
+in spec_motor.py, s. dort. J95/J96 sind Teil des woertlich
+uebernommenen Nests (NEST_REFS) und folgen dessen v2.1-Aenderungen
+automatisch (F.Cu/senkrecht statt B.Cu/waagrecht).
+
+WICHTIGER FUND DIESER AUFGABE: KLEMMENZONE selbst musste verbreitert
+werden (34,40 -> 46,40 mm, s. stack_spec.KLEMMENZONE) -- eine
+gleichmaessige Verteilung der Klemmen (der erste Versuch) trifft
+zwangslaeufig einen der drei Landepunkt-Sperrstreifen, die durch die
+Zone laufen (Spiegel von stapel_links/-rechts/kette). _klemme_x() traegt
+deshalb eine gepruefte Positionstabelle statt einer Formel, s. dort fuer
+die volle Herleitung.
 
 v2-NEUAUFLAGE (Aufgabe 8a, wie Aufgabe 7 fuer den Motor). Die alte
 Fassung importierte `from spec_sockel import Platz, _aus_vertrag` --
@@ -146,20 +168,29 @@ NEST_REFS = (
 COURTYARD_GAP = M.COURTYARD_GAP
 EDGE_CLEARANCE = M.EDGE_CLEARANCE
 
+# v2.1 (Aufgabe C1): die gesamte Spalte um dx=+2,10 mm nach OSTEN
+# verschoben (x 53,64.. statt 51,54..) -- WORTGLEICH dieselbe
+# Verschiebung und derselbe Grund wie bei spec_motor.PLACEMENT
+# (Landepunkt-Spiegel von stapel_links wanderte durch Aufgabe Bs
+# BOARD_W-Wachstum von x=44,39 auf x=51,39, direkt an den alten
+# Zellenrand -- Rot-Nachweis dort). D4 (unten, x=51,00 vor der
+# Verschiebung) war hier sogar der SCHAERFSTE Fall im ganzen Projekt:
+# der Landepunkt LAG in seinem Hof (0,00 mm statt 1,5). Nach der
+# Verschiebung (D4 neu x=53,10) bleiben 1,71 mm Reserve.
 _VERSORGUNG_PLATZ = {
-    "R90": Platz("R90", 51.54, 0.50, 3.70, 1.90, 0, False),
-    "R91": Platz("R91", 55.84, 0.50, 3.70, 1.90, 0, False),
-    "J90": Platz("J90", 51.54, 3.00, 8.00, 8.60, 0, True),
-    # Q90 (Hof bis x=71,24) muss y >= 7,51 halten, sonst greift das
-    # M3-Freihaltequadrat der rechten oberen Bohrung (71|4, Kante bis
-    # x=67,5/y=7,5) -- ROT-NACHWEIS: bei y=3,00 (buendig mit J90) meldet
-    # geometry.check_all() "Q90 im Freihaltebereich von M3 (71.0|4.0)".
-    "Q90": Platz("Q90", 60.14, 7.60, 11.10, 7.00, 0, False),
-    "D90": Platz("D90", 51.54, 15.20, 9.80, 6.70, 0, False),
-    "D91": Platz("D91", 62.00, 15.20, 9.80, 6.70, 0, False),
-    "C90": Platz("C90", 51.54, 22.50, 8.50, 8.50, 0, True),
-    "U90": Platz("U90", 60.64, 22.50, 12.00, 9.00, 0, True),
-    "C91": Platz("C91", 51.54, 32.10, 3.85, 2.05, 0, False),
+    "R90": Platz("R90", 53.64, 0.50, 3.70, 1.90, 0, False),
+    "R91": Platz("R91", 57.94, 0.50, 3.70, 1.90, 0, False),
+    "J90": Platz("J90", 53.64, 3.00, 8.00, 8.60, 0, True),
+    # Q90 (Hof bis x=73,34) muss y >= 7,51 halten, sonst greift das
+    # M3-Freihaltequadrat der rechten oberen Bohrung (78|4, Kante bis
+    # x=74,5/y=7,5) -- ROT-NACHWEIS: bei y=3,00 (buendig mit J90) meldet
+    # geometry.check_all() "Q90 im Freihaltebereich von M3 (78.0|4.0)".
+    "Q90": Platz("Q90", 62.24, 7.60, 11.10, 7.00, 0, False),
+    "D90": Platz("D90", 53.64, 15.20, 9.80, 6.70, 0, False),
+    "D91": Platz("D91", 64.10, 15.20, 9.80, 6.70, 0, False),
+    "C90": Platz("C90", 53.64, 22.50, 8.50, 8.50, 0, True),
+    "U90": Platz("U90", 62.74, 22.50, 12.00, 9.00, 0, True),
+    "C91": Platz("C91", 53.64, 32.10, 3.85, 2.05, 0, False),
 }
 # Ende der Zelle (C91-Hofunterkante): 34,15 mm -- das ist die Zahl, an
 # der die Kanal-4-Tasche unten haengt (s. _KANAL_TASCHEN). Nur 1,5 mm
@@ -168,16 +199,25 @@ _VERSORGUNG_PLATZ = {
 # selbst durfte wegen der M3-Bohrung nicht weiter nach oben.
 _VERSORGUNG_ENDE_Y = 32.10 + 2.05
 
-# RG4/RP4 (Kanal 4) haben in der Kanal-4-Tasche selbst keinen Platz
-# (s. _KANAL_TASCHEN -- D4/Q4 fuellen deren gesamte Hoehe von 8,37 mm
-# bereits aus) und sitzen stattdessen in der ungenutzten Restbreite von
-# Zeile 1 der Versorgungszelle (R90/R91 enden bei x=59,54; die Spalte
-# reicht bis x=72,64), uebereinander gestapelt VOR Q90 (dessen Zeile
-# erst bei y=7,60 beginnt): x1 bleibt mit 63,84 klar unter der
-# M3-Reichweite (67,5 mm) der Bohrung (71|4).
+# RG4/RP4 (Kanal 4), v2.1 (Aufgabe C1, Audit-Befund W6): sitzen jetzt
+# NAHE BEI Q4 -- nicht mehr in der Versorgungszelle, weit von Kanal 4
+# entfernt (der alte Platz war eine Raumnot-Loesung: "D4/Q4 fuellen die
+# Tasche bereits aus"). x an Q4 ausgerichtet (dieselbe
+# +2,10-Verschiebung wie die Versorgungszelle, s.o.).
+#
+# NICHT unterhalb von Q4 (erster Versuch dieser Aufgabe): der Streifen
+# zwischen Q4-Hofende (y=42,00) und dem frozen Leistungsstecker J103
+# (Vertragsflaeche 57,90..69,64 x 43,72..49,82, s. stack_spec.
+# STECKER_POS["leistung"]) ist nur 1,72 mm hoch -- zu schmal fuer
+# RG4/RP4 (1,90 mm) UND deren Mindestabstaende. Rot-Nachweis:
+# geometry.check_all() meldete "Ueberlappung J103/RG4" und
+# "Ueberlappung J103/RP4". Stattdessen OBERHALB von Q4, in der
+# 3,50-mm-Luecke zwischen dem Ende der Versorgungszelle (U90, Hof bis
+# y=31,50) und dem Beginn der Kanal-4-Tasche (Q4/D4, y=35,00):
+# y=32,10 haelt 0,60 mm (COURTYARD_GAP) zu U90 und 1,00 mm zu Q4.
 _RG4RP4_PLATZ = {
-    "RG4": Platz("RG4", 60.14, 0.50, 3.70, 1.90, 0, False),
-    "RP4": Platz("RP4", 60.14, 3.00, 3.70, 1.90, 0, False),
+    "RG4": Platz("RG4", 64.10, 32.10, 3.70, 1.90, 0, False),
+    "RP4": Platz("RP4", 68.40, 32.10, 3.70, 1.90, 0, False),
 }
 
 # -- Neue Nest-Stuetzkondensatoren (im Motor-Schaltplan nicht vorhanden) --
@@ -217,63 +257,114 @@ _C_NEST_PLATZ = {
 # statt buendig unter dem urspruenglichen Diodenanker -- ihr Hof reichte
 # bei x=35,50 bis 43,50, ebenfalls in den Streifen hinein (mehrere
 # "Verdreht"-Funde entlang der Spalte x=44,39).
+# v2.1 (Aufgabe C1): "J" (die Klemmen-Ecke) ist aus diesem Dict
+# ENTFERNT -- alle Klemmen ziehen jetzt gemeinsam in KLEMMENZONE
+# (Audit-Befund B1/R1/R2), in einer Reihe, links->rechts in
+# Kanalreihenfolge (s. _klemme_x() unten). D/Q bleiben, wo sie waren,
+# AUSSER D4/Q4 (s. dort, +2,10 mm mit der Versorgungszelle).
 _KANAL_TASCHEN = {
     1: {  # Luecke zwischen den Stapelreihen (x 32,98..46,02, y<42,9)
-        "D": (34.60, 1.00), "Q": (34.00, 8.30), "J": (33.60, 20.00),
+        "D": (34.60, 1.00), "Q": (34.00, 8.30),
         "Q_rot": 90,
     },
-    2: {  # linke Zone, Spalte A (x=0,50) -- Klemme nach rechts versetzt
-        # (dodgt das M3-Freihaltequadrat der Bohrung (4|61), das bei
-        # x<7,5 UND y>57,5 beginnt -- die Klemme reicht bis y=58,90).
-        "D": (0.50, 35.40), "Q": (0.50, 42.70), "J": (7.60, 50.30),
+    2: {  # linke Zone, Spalte A (x=0,50)
+        "D": (0.50, 35.40), "Q": (0.50, 42.70),
     },
-    3: {  # linke Zone, Spalte B (x=12,20) -- Klemme auf x=16,20
-        # versetzt, sonst ueberlappte sie die von Kanal 2 (s.o.)
-        "D": (12.20, 35.40), "Q": (12.20, 42.70), "J": (16.20, 50.30),
+    3: {  # linke Zone, Spalte B (x=12,20)
+        "D": (12.20, 35.40), "Q": (12.20, 42.70),
     },
     4: {  # rechte Tasche unter der verdichteten Versorgungszelle;
         # Diode/FET NEBENEINANDER (Tasche nur 8,37 mm hoch -- der volle
-        # Uebereinander-Stapel braucht 23,5 mm), Klemme eine Etage
-        # tiefer unter dem Leistungsstecker, auf x=56,00 versetzt (statt
-        # buendig unter der Diode/dem FET) -- bei x=51,00 lag ihre
-        # Suedostecke nur 0,11 mm vom Landepunkt-Spiegel des Ketten-
-        # steckers entfernt ((54,41|59,71), s. LANDEPUNKTE_VERDREHT()).
-        "D": (51.00, 35.00), "Q": (62.00, 35.00), "J": (56.00, 51.00),
+        # Uebereinander-Stapel braucht 23,5 mm). x um +2,10 mm verschoben,
+        # s. _VERSORGUNG_PLATZ-Kommentar (derselbe Landepunkt-Grund; D4
+        # war hier vor der Verschiebung der schaerfste Fall im Projekt,
+        # 0,00 mm statt 1,5).
+        "D": (53.10, 35.00), "Q": (64.10, 35.00),
     },
 }
 
-# -- Gatewiderstaende je Kanal. NICHT in der schmalen Nest<->Stapel-
-# Gasse (der erste Wurf setzte sie dorthin und geriet ebenfalls in den
-# Landepunkt-Streifen von stapel_rechts, x=26,61 -- "Pad RG1.2 ... nur
-# 0.00 mm Kupferkante vom Landepunkt (26.61|17.01)" u.a., weil die Gasse
-# zwischen U103 (endet x=22,50) und dem 1,5-mm-Saum (beginnt x=25,11)
-# nur 2,01 mm frei laesst -- zu schmal fuer ein 0805, auch gedreht knapp
-# unter der ROT-Grenze).
+
+def _klemme_x(n, kanaele):
+    """x0 der Klemme fuer Kanal n von insgesamt `kanaele` Kanaelen.
+
+    v2.1 (Aufgabe C1, Audit-Befund B1/R1/R2): alle Klemmen eines Moduls
+    liegen in EINER Reihe in KLEMMENZONE, in Kanalreihenfolge
+    links->rechts.
+
+    NICHT gleichmaessig verteilt/zentriert -- das war der erste Versuch
+    dieser Aufgabe und ist FALSCH: die Landepunkt-Spiegel von
+    stapel_links/stapel_rechts (S.LANDEPUNKTE_VERDREHT()) laufen als
+    zwei 5,4 mm breite Sperrstreifen (Spaltenmitte x=33,61 bzw. 51,39,
+    +-2,7 mm) durch die GESAMTE KLEMMENZONE -- schmaler als der
+    3,5-mm-Kontaktabstand des KF350 ist dieser Streifen NICHT, eine
+    Klemme kann ihn also nie ueberspannen, nur umgehen. Eine
+    gleichmaessige Verteilung trifft ihn zwangslaeufig irgendwo (Rot-
+    Nachweis: bei gleichmaessiger Verteilung meldete Dimmer4 "J6 nur
+    1,29 mm" und "J8 0,00 mm" -- Landepunkt LIEGT im Pad). Deshalb ist
+    KLEMMENZONE selbst mit dieser Aufgabe verbreitert (46,40 statt
+    34,40 mm, s. stack_spec.KLEMMENZONE-Kommentar fuer die volle
+    Eskalation) UND die Positionen sind hier als gepruefte Tabelle
+    hinterlegt, nicht mehr algorithmisch gleichverteilt:
+        Kanal 1: x0 = 23,80   Kanal 2: x0 = 34,17
+        Kanal 3: x0 = 51,95   Kanal 4: x0 = 61,96
+    Jede Position haelt >= 1,6 mm Kupferabstand (0,1 mm Reserve ueber
+    der 1,5-mm-Reissleine, gegen die ECHTEN Pad-Mitten, s.
+    _klemme_pad_abstand()-Kommentar in tests/test_spec_dimmer.py) zu
+    JEDEM der 46 Landepunkte -- nachgerechnet mit einer gierigen
+    Links-nach-rechts-Suche (scratchpad, Aufgabe C1), die jede Klemme so
+    weit wie moeglich nach links schiebt, aber weder einen Landepunkt-
+    Sperrstreifen noch das R4-Mindestmass (0,8 mm) zur Vorgaenger-
+    Klemme verletzt. Eine erste Fassung dieser Suche pruefte nur gegen
+    die beiden Stapel-Spiegelspalten (33,61/51,39) und uebersah die
+    Kette-Spiegelspalte (61,41|67,71..70,25) -- Kanal 4 landete dadurch
+    mit x0=60,75 direkt darin (Pad nur 1,12 mm statt 1,5). Kanal 4s
+    Position (61,96) und KLEMMENZONEs Breite sind deshalb GEGENUEBER
+    dem ersten Rot-Nachweis dieser Aufgabe nochmals nachgezogen. Dieselben
+    vier Positionen gelten fuer alle drei Kanalzahlen (Dimmer1 nutzt nur
+    eine eigene, mittigere Position, s.u. -- es hat keine Nachbarklemme,
+    die die Reihenfolge erzwingt).
+    """
+    if kanaele == 1:
+        # Dimmer1 hat keine Nachbarklemme und keinen Packungszwang --
+        # eine ruhige, von allen drei Landepunkt-Spalten weit entfernte
+        # Position (x=37,00, s. Kanal-1-Tasche): Pad-Abstand zum
+        # naechsten der 46 Landepunkte = 4,44 mm, weit ueber 1,5.
+        return 37.00
+    return {1: 23.80, 2: 34.17, 3: 51.95, 4: 61.96}[n]
+
+
+# Klemmen-y: Hof-Suedkante buendig mit BOARD_H (R1, kantenbuendig, wie
+# spec_motor.PLACEMENT["J5"] -- dieselbe bewusste Ausnahme von
+# EDGE_CLEARANCE, s. Kommentar dort).
+_KLEMME_Y = S.KLEMMENZONE[3] - 8.60
+
+# -- Gatewiderstaende je Kanal (Audit-Befund W6, v2.1/Aufgabe C1):
+# JEDER Kanal bekommt sein eigenes RG/RP-Paar DIREKT bei seinem EIGENEN
+# FET (Q1..Q4), NICHT mehr in einem gemeinsamen Sammelplatz weit vom
+# eigenen Kanal entfernt (Audit: "Wer ein Kanalproblem eingrenzt ...
+# muss vier verschiedene Board-Ecken absuchen"). Moeglich geworden durch
+# denselben Umzug, der B1 loest: die Klemmen (frueher direkt unterhalb
+# jedes FETs) sind nach KLEMMENZONE gezogen und haben die Flaeche
+# darunter freigemacht.
 #
-# ROT-NACHWEIS (zweiter Wurf): in der Nest-Luecke bei x=12,70/17,00
-# platziert, kollidierte RP2 mit dem Nest-Vorverdrahtungs-Via
-# (/SEL_OUT, 19,35|27,60) und dessen Rueckseitenband -- DRC meldete
-# "shorting_items" (GND gegen /SEL_OUT), Loetstopplack-Bruecke UND
-# Bohrabstand, an genau dieser Stelle. Die Nest-Luecke ist von der
-# SEL_OUT/NRST/ID0/ID1-Vorverdrahtung durchzogen (spec_motor.PRE_TRACKS)
-# und deshalb KEIN freier Fleck, obwohl sie geometrisch leer aussieht.
-#
-# Alle vier Gatewiderstandspaare sitzen deshalb stattdessen unterhalb
-# von Kanal 1 in der Stapelluecke (x 32,98..46,02, y < ANTENNE_FREI-
-# Start 42,9) -- dort liegt KEINE Vorverdrahtung (Kanal 1 selbst hat
-# keine PRE_TRACKS-Eintraege, s. Moduldocstring), und die Luecke ist mit
-# 42,4 mm Hoehe weit groesser, als Kanal 1 allein braucht. Reihenfolge
-# von oben: Kanal 1 (unter J5), dann 2, dann 3 -- jeweils dieselbe
-# x-Aufteilung wie J5 selbst, damit sie im selben 9,91-mm-Korridor
-# (32,98..42,89, s. Kanal-1-Kommentar oben) bleiben.
+# Kanal 1 (Q1 endet y=19,40, gedreht 90 Grad): RG1/RP1 NICHT bei x=34,00
+# (Q1s eigenem x), sondern ab x=36,00 -- der Landepunkt-Spiegel von
+# stapel_rechts liegt jetzt bei x=33,61 (s. spec_motor.PLACEMENT-
+# Kommentar "obere Gruppe" fuer dieselbe Rechnung), 36,00 haelt 2,39 mm
+# Kupferkante-Abstand (>= 1,5, Reserve 0,89 mm) unabhaengig vom
+# y-Versatz.
+# Kanal 2/3 (Q2/Q3 enden y=49,70): RG/RP direkt darunter, y=50,30
+# (COURTYARD_GAP 0,60), weit unterhalb jedes Landepunkt-Streifens.
+# Kanal 4: s. _RG4RP4_PLATZ oben (bei Q4, mit derselben +2,10-
+# Verschiebung).
 _RGRP_PLATZ = {
-    1: {"RG": (33.60, 29.20), "RP": (37.90, 29.20)},
-    2: {"RG": (34.60, 32.30), "RP": (38.90, 32.30)},
-    3: {"RG": (34.60, 34.80), "RP": (38.90, 34.80)},
+    1: {"RG": (36.00, 20.00), "RP": (40.30, 20.00)},
+    2: {"RG": (0.50, 50.30), "RP": (4.80, 50.30)},
+    3: {"RG": (12.20, 50.30), "RP": (16.50, 50.30)},
 }
 
 
-def _kanal_platz(n):
+def _kanal_platz(n, kanaele):
     t = _KANAL_TASCHEN[n]
     platz = {
         "D%d" % n: Platz("D%d" % n, t["D"][0], t["D"][1], 9.80, 6.70, 0,
@@ -282,8 +373,8 @@ def _kanal_platz(n):
                          *((7.00, 11.10) if t.get("Q_rot") == 90
                            else (11.10, 7.00)),
                          t.get("Q_rot", 0), False),
-        "J%d" % (4 + n): Platz("J%d" % (4 + n), t["J"][0], t["J"][1],
-                               8.00, 8.60, 0, True),
+        "J%d" % (4 + n): Platz("J%d" % (4 + n), _klemme_x(n, kanaele),
+                               _KLEMME_Y, 8.00, 8.60, 0, True),
     }
     if n == 4:
         platz.update(_RG4RP4_PLATZ)
@@ -414,18 +505,32 @@ def _pre_tracks_und_vias():
 # bevor /SEL_OUT ihn erreicht (gemessen an Wurf d1_1).
 EIGENE_PRE_TRACKS = (
     # /SEL_OUT: J102-1 (Kettenstecker-Spiegel, Pad nur auf B.Cu) am
-    # Ostrand des Nests hinunter bis an das BESTEHENDE Nest-Via
-    # (14,88|23,65). Damit haengt der Vertragsstecker am selben Netz-
-    # stueck wie U102/U103; U101-4 laesst der Router (er hat es in
-    # jedem der acht Wuerfe geschafft, kurzer Weg innerhalb des Nests).
+    # Ostrand des Nests hinunter bis an das BESTEHENDE Nest-Via.
+    # Damit haengt der Vertragsstecker am selben Netzstueck wie
+    # U102/U103; U101-4 laesst der Router (er hat es in jedem der acht
+    # Wuerfe geschafft, kurzer Weg innerhalb des Nests).
     # (Die x=22,245 ist die exakte Pad-Mitte von J102-1; das Motormodul
     # hatte hier 22,25/3,58 stehen -- 5 um daneben, was build.pre_tracks
     # als schiefes Segment abweist. Rot-Nachweis: genau daran ist der
     # erste Bauversuch dieser Erweiterung gescheitert.)
+    #
+    # v2.1 (Aufgabe C1): das Ziel-Via wanderte mit der "oberen Gruppe"
+    # des Nests (U100/U102/U103/C14/C16, s. spec_motor.PLACEMENT-
+    # Kommentar) von (14,88|23,65) auf (14,88|19,95) -- dy=-3,70. J102
+    # selbst ist ein Vertragsstecker (frozen) und bewegt sich nicht; die
+    # ERSTEN beiden Punkte (Escape aus dem Pad) bleiben deshalb
+    # UNVERAENDERT, die naechste (freie, laengenunabhaengige) Senkrechte
+    # nimmt die gesamte Verkuerzung auf (16,49 -> 12,79), und ALLE
+    # Punkte danach wandern um denselben dy=-3,70 mit -- eine reine
+    # Parallelverschiebung des Restwegs, die jeden Winkel unveraendert
+    # laesst (Rot-Nachweis: ohne diese Anpassung meldete kicad-cli drc
+    # "shorting_items" zwischen /SEL_OUT und 3V3 bei (17,7|20,6) --
+    # der alte, unverschobene Pfad lief mitten durch die NEUE Lage des
+    # 3V3-Rueckseitenvias, s. PRE_TRACKS in spec_motor.py).
     ("/SEL_OUT", "B.Cu", (("PAD", "J102", "1"), (22.245, 3.585),
-                          (21.17, 4.66), (21.17, 16.49), (17.39, 20.27),
-                          (17.73, 20.61), (17.73, 22.18), (16.31, 23.60),
-                          (14.93, 23.60), (14.88, 23.65))),
+                          (21.17, 4.66), (21.17, 12.79), (17.39, 16.57),
+                          (17.73, 16.91), (17.73, 18.48), (16.31, 19.90),
+                          (14.93, 19.90), (14.88, 19.95))),
 
     # 3V3: R102-1 -> C100-1. Der einzige Weg ist die 0,89 mm schmale
     # Gasse zwischen C101 (Hofunterkante 26,18) und C100 (Hofoberkante
@@ -446,7 +551,7 @@ def beschreibung(kanaele):
     platz.update(_VERSORGUNG_PLATZ)
     platz.update(_C_NEST_PLATZ)
     for n in range(1, kanaele + 1):
-        platz.update(_kanal_platz(n))
+        platz.update(_kanal_platz(n, kanaele))
 
     footprints = {r: M.FOOTPRINTS[r] for r in NEST_REFS}
     footprints.update({r: M.FOOTPRINTS[r] for r in _VERSORGUNG_PLATZ})
@@ -481,10 +586,20 @@ def beschreibung(kanaele):
         "STITCH_RASTER": M.STITCH_RASTER,
         "STITCH_VIAS": _naehte(platz),
         "PIN1_MARKE": M.PIN1_MARKE,
-        # y = 59,60: dieselbe Kennzeichnungs-Auflage wie beim Motormodul
-        # (y >= BOARD_H - 6,0 = 59,0); x=34 liegt im freien Mittelstreifen
-        # unterhalb von Kanal 1 und links der Kanal-4-Klemme.
-        "KLEMMEN_POS": (34.00, 59.60),
+        # v2.1: dieselbe Stelle wie beim Motormodul (s.
+        # spec_motor.KLEMMEN_POS-Kommentar) -- die Gasse zwischen dem
+        # M3-Freihaltequadrat der Bohrung (4|69) und KLEMMENZONE, y in
+        # deren letzten 6 mm (steckerprobe-Auflage y >= BOARD_H-6,0
+        # =67,0). Bewusst AUSSERHALB KLEMMENZONE (x < 23,80): bei
+        # Dimmer4 fuellen die vier Klemmen die Zone lueckenlos aus,
+        # jede x-Position INNERHALB der Zone wuerde also eine Klemme
+        # treffen.
+        "KLEMMEN_POS": (14.00, 68.00),
         "POWER_NETS": tuple(["/PWR_IN", "/+24V"]
                             + ["/LED%d" % n for n in range(1, kanaele + 1)]),
+        # v2.1 (Aufgabe C1): dieselbe bewusste Ausnahme wie
+        # spec_motor.EDGE_FLUSH_REFS, fuer alle Kanal-Klemmen dieses
+        # Boards (R1, kantenbuendig).
+        "EDGE_FLUSH_REFS": frozenset(
+            "J%d" % (4 + n) for n in range(1, kanaele + 1)),
     }
