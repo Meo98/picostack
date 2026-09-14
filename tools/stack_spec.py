@@ -1772,11 +1772,26 @@ MONTAGE_REGEL = (
     "auseinandergezogen werden, ohne zuerst die Bolzen zu loesen."
 )
 
+# v2.1 (Aufgabe C2, Audit-Befund W4): der zweite Text hiess bis hierher
+# woertlich "KLEMMEN" -- das verspricht "hier sind die Klemmen", haelt
+# es aber auf keinem der vier Boards ein (Motormodul/Dimmer1: der Text
+# stand ueber der unbestueckten Randpad-Reihe, nirgends nahe einer
+# echten Klemme; Dimmer3/4: nur zufaellig zwischen zwei von mehreren
+# Klemmen). Der AUDIT selbst nennt die Loesung: den Text in seiner
+# tatsaechlichen Rolle benennen. Die Rolle ist eine reine
+# Verdreh-Orientierungsmarke (welche Kante ist unten, s. Begruendung
+# unten) -- deshalb jetzt "UNTEN" statt "KLEMMEN". Jede Klemme bekommt
+# stattdessen ihre EIGENE Funktionsbeschriftung (R7, build.
+# funktionsbeschriftung()) direkt an ihrer eigenen Position -- das war
+# der eigentliche Zweck, den "KLEMMEN" nie erfuellt hat.
 LAYOUT_AUFLAGEN = (
     "Jede Platine traegt neben Pin 1 des Stapelsteckers eine "
     "Kennzeichnung im Bestueckungsdruck (Dreieck plus Text \"1\") und "
     "an der Klemmenkante (untere Kante, y = BOARD_H) die "
-    "Beschriftung \"KLEMMEN\". Grund: das "
+    "Orientierungsmarke \"UNTEN\" (v2.1: vorher \"KLEMMEN\", s. "
+    "Audit-Befund W4 -- die Marke zeigt nur die Verdreh-Orientierung "
+    "an, keine bestimmte Klemme; jede Klemme traegt ihre eigene "
+    "Funktionsbeschriftung, s. R7/funktionsbeschriftung()). Grund: das "
     "M3-Lochbild ist punktsymmetrisch, ein Modul laesst sich also um "
     "180 Grad verdreht anschrauben. Die Steckerlage (STECKER_POS) ist "
     "bewusst so unsymmetrisch, dass dann kein einziger Stift in einen "
@@ -1959,6 +1974,14 @@ LAYOUT_REGELN = {
                  "unetikettierten Text -- von aussen ununterscheidbar).",
     },
 }
+
+# --- Projektidentitaet (R9, Audit-Befund W7) --------------------------
+# EIN Name fuer alle Boards -- build.board_identity() druckt ihn
+# zusammen mit MODULNAME/MODULTYP/VERTRAG_VERSION auf jede Platine
+# (s. build.py). Hier und nicht in jeder spec_*.py, weil der Projektname
+# keine Modul-Eigenschaft ist, sondern fuer den gesamten Vertrag gilt --
+# dieselbe Ueberlegung wie bei VERTRAG_VERSION selbst.
+PROJEKTNAME = "PicoStack"
 
 # --- Modultypen -----------------------------------------------------
 # 0x00 ist ungueltig (ein unbeschriebener Kennwiderstand liest 0).

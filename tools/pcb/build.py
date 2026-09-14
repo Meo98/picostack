@@ -26,10 +26,15 @@ Aufruf ueber den kipy-Starter:
 import math, os, re, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
+for _d in (HERE, os.path.join(HERE, "..")):
+    if _d not in sys.path:
+        sys.path.insert(0, _d)
 
 import pcbnew
 import fertigung, geometry, gusslage, kicadlibs
+import stack_spec as S    # noqa: E402  -- RANDPADS/VERTRAG_VERSION/
+                           # PROJEKTNAME/MODULTYPEN fuer die Beschriftung
+                           # (R7-R9), s. randpad_labels()/board_identity()
 
 
 def mm(v):
@@ -733,44 +738,196 @@ def place(board, comps, beschreibung, kicad_dir):
     return placed, problems
 
 
-def tidy_silkscreen(board, beschreibung):
-    """Beschriftung aufraeumen.
+def _text_extent(board, text, hoehe, dicke):
+    """Reale (Breite, Hoehe) eines Silkscreen-Texts in mm, per pcbnew
+    gemessen statt geschaetzt.
 
-    Die Vorgabe der Bibliotheken ist fuer grosszuegige Platinen gedacht:
-    1-mm-Text neben jedem Bauteil. Auf einer dicht bestueckten Platine
-    ergibt das ein Gewirr, das keiner mehr lesen kann und das die DRC
-    zu Recht bemaengelt.
-
-    Darum: Werte wandern auf F.Fab (die Bestueckungszeichnung, wo sie
-    hingehoeren), Referenzen werden kleiner, und die Referenzen von
-    SMD-Teilen (p.tht == False) wandern ebenfalls auf F.Fab -- gedruckt
-    waeren sie ohnehin oft verdeckt, gebraucht werden sie nur beim
-    Bestuecken, und dafuer ist die Zeichnung da.
+    Die alte Fassung schaetzte die Breite grob (0,75 * Groesse * Zeichen);
+    das reichte fuer die wenigen Faelle, die sie je pruefte (s.
+    tidy_silkscreen-Historie). R6 verlangt jetzt eine Platzierung fuer
+    JEDES Bauteil, viele davon in Luecken von nur 0,6-1,0 mm -- da muss
+    die Schaetzung stimmen, nicht nur "reichen". pcbnew kennt die
+    tatsaechliche Zeichensatzbreite (GetBoundingBox()); ein Wegwerf-Text,
+    der nie board.Add()ed wird, liefert sie ohne Seiteneffekt.
     """
-    klein = pcbnew.VECTOR2I(mm(fertigung.SILK_TEXT), mm(fertigung.SILK_TEXT))
-    hoehe = fertigung.SILK_TEXT
+    t = pcbnew.PCB_TEXT(board)
+    t.SetText(text)
+    t.SetTextSize(pcbnew.VECTOR2I(mm(hoehe), mm(hoehe)))
+    t.SetTextThickness(mm(dicke))
+    bb = t.GetBoundingBox()
+    return (bb.GetRight() - bb.GetLeft()) / 1e6, (bb.GetBottom() - bb.GetTop()) / 1e6
 
-    # Die Hoefe aller Bauteile, gegen die eine Beschriftung nicht stossen
-    # darf. Aus der Beschreibung statt aus der Platine, weil der Text
-    # gesetzt wird, bevor die Konnektivitaet steht.
+
+def _pad_rechtecke(board):
+    """Alle Pad-Bounding-Boxen der Platine, in mm.
+
+    Die Grundlage fuer "traegt seinen/fremden Pads nicht ueberlappen"
+    (R6/R7/R8): ECHTE Kupferflaechen aus der gebauten Platine, nicht die
+    Naeherung ueber PLACEMENT-Hoefe (die auch Silkscreen-Umrisse und
+    Bauteilkoerper mitzaehlt, also strenger ist als noetig -- ein Pad
+    ist typischerweise kleiner als sein Hof).
+    """
+    aus = []
+    for fp in board.GetFootprints():
+        for pad in fp.Pads():
+            bb = pad.GetBoundingBox()
+            aus.append((bb.GetLeft() / 1e6, bb.GetTop() / 1e6,
+                        bb.GetRight() / 1e6, bb.GetBottom() / 1e6))
+    return aus
+
+
+_SILK_PAD_GAP = 0.15   # mm Mindestabstand Text<->Pad (uebliche
+                       # Fertiger-Regel Silk-zu-Kupfer, s. Bericht).
+
+
+def _schneidet(a, b, gap=0.0):
+    return (a[0] - gap < b[2] and b[0] - gap < a[2]
+            and a[1] - gap < b[3] and b[1] - gap < a[3])
+
+
+def tidy_silkscreen(board, beschreibung):
+    """Beschriftung aufraeumen -- UND (v2.1, Aufgabe C2, R6/Audit-Befund
+    W1) jedem bestueckten Bauteil eine sichtbare, lesbare Referenz auf
+    F.Silkscreen/B.Silkscreen verschaffen.
+
+    BIS HIERHIN (v2/vorher): Referenzen von SMD-Teilen (p.tht == False)
+    wanderten UNBEDINGT auf F.Fab, unabhaengig davon, ob daneben Platz
+    gewesen waere -- "gedruckt waeren sie ohnehin oft verdeckt". Das
+    Audit hat gemessen, was das auf den vier fertigen Boards bedeutet:
+    auf drei von vieren trug KEIN EINZIGES Bauteil eine lesbare
+    Referenz, auf dem vierten nur eines (W1). F.Fab wird nicht
+    belichtet -- eine Referenz dort existiert auf der realen Platine
+    nicht.
+
+    JETZT: jede Referenz bleibt sichtbar auf der Silkscreen-Lage ihrer
+    Seite. Gesucht wird eine freie Stelle in vier Richtungen (oben,
+    unten, rechts, links vom EIGENEN PAD-Rechteck -- nicht vom
+    PLACEMENT-Hof, s. "ROT-NACHWEIS R15" unten) und mit mehreren
+    Textgroessen (absteigend von fertigung.SILK_TEXT) -- die erste
+    Kombination, die weder ein fremdes Pad noch die Plattenkante trifft,
+    gewinnt. Zwei Suchstufen:
+      1. bevorzugt: auch ausserhalb jedes NACHBAR-Hofs (PLACEMENT-
+         Rechtecke) -- vermeidet, dass der Text auf einem fremden
+         Bauteilkoerper/dessen eigener Silkscreen-Zeichnung landet.
+      2. Fallback, nur wenn Stufe 1 bei KEINER Groesse/Richtung passt:
+         Hof-Ueberlappung erlaubt, PAD-Ueberlappung (eigene wie fremde)
+         bleibt verboten -- das ist die einzige harte Regel aus R6
+         ("nicht ueberlappend mit eigenen oder Nachbar-Pads"). Ohne
+         Fallback bliebe sonst irgendeine dicht gepackte Nest-Reihe ohne
+         Referenz, und das Projekt haette wieder eine stille Ausnahme.
+      Bleibt auch Stufe 2 bei jeder Groesse erfolglos (in keinem der
+      vier Boards beobachtet, s. Bericht), bricht das Bauen mit
+      SystemExit ab -- lieber ein lauter Fehler als eine Referenz, die
+      klammheimlich wieder auf F.Fab landet.
+
+    Werte bleiben wie bisher auf F.Fab/unsichtbar (Bestueckungs-
+    zeichnung, nicht Kennzeichnung); H-Bohrungen bleiben ohne Referenz
+    (keine echten Bauteile).
+
+    ROT-NACHWEIS R15 (Motormodul, erster Wurf dieser Aufgabe): der
+    erste Anlauf verankerte jede Kandidatenbox am PLACEMENT-Hof (der
+    Platz-Naeherung "linke obere Ecke plus Groesse"), nicht am
+    tatsaechlichen Pad. In der neun Widerstaende dichten Gruppe
+    (R5/R7/R8/R9/R10/R13/R15/R20/R21, COURTYARD_GAP=0,6 mm) frisst genau
+    dieser Naeherungsfehler den einzigen freien Spalt auf: R15s realer
+    Pad-Nordrand liegt bei y=34,91, der Hof-Nordrand aber bei y=34,66
+    (0,25 mm hoehere Naeherung) -- auf einer Luecke von nur 1,16 mm
+    zwischen R15s Pad und R5s Pad blieb dadurch keine Kombination aus
+    Groesse/Richtung mehr uebrig (ALLE 40 Kombinationen aus beiden
+    Stufen schlugen fehl, s. Bericht). Fix: die Kandidatenbox ankert
+    jetzt am EIGENEN PAD-Rechteck (eigene_pads() unten, aus denselben
+    echten Pads wie trifft_pad()) und spalt sinkt von 0,30 auf 0,20 mm
+    (der harte Mindestabstand bleibt _SILK_PAD_GAP=0,15 mm, unveraendert
+    -- 0,20 mm Standardabstand plus 0,15 mm Pruefung ergaben vorher
+    0,45 mm Luft, die diese Engstelle nicht hat). Mit beiden Aenderungen
+    findet R15 bei h=0,35 mm eine Stelle (N/S), 0,09 mm Reserve zur
+    Nachbarpad-Kante -- knapp, aber gemessen, nicht geraten.
+    """
+    hoehen = (fertigung.SILK_TEXT, 0.65, 0.55, 0.45, 0.35)
+    dicke = fertigung.SILK_DICKE
+
+    # Hoefe (PLACEMENT-Rechtecke, "weicher" Nachbar-Ausschluss, Stufe 1)
+    # und echte Pads (harter Ausschluss, beide Stufen) -- zwei getrennte
+    # Quellen, s. Docstring.
+    refs = list(beschreibung.PLACEMENT)
     hoefe = [(q.x, q.y, q.x + q.w, q.y + q.h)
              for q in beschreibung.PLACEMENT.values()]
+    pads = _pad_rechtecke(board)
+    e = getattr(beschreibung, "EDGE_CLEARANCE", 0.5)
+    bw, bh = beschreibung.BOARD_W, beschreibung.BOARD_H
 
-    def frei(x0, y0, x1, y1, eigener):
-        """Passt ein Textkasten dorthin, ohne fremde Hoefe oder die Kante?"""
-        e = getattr(beschreibung, "EDGE_CLEARANCE", 0.5)
-        if (x0 < e or y0 < e or x1 > beschreibung.BOARD_W - e
-                or y1 > beschreibung.BOARD_H - e):
-            return False
+    # Eigenes Pad-Rechteck je Referenz (Vereinigung aller eigenen Pads) --
+    # die Kandidatenbox ankert HIER, nicht am PLACEMENT-Hof (s. "ROT-
+    # NACHWEIS R15" oben): der Hof ist eine Naeherung (Vertragswert,
+    # nicht die reale Footprint-Geometrie) und in dicht gepackten
+    # Gruppen oft grosszuegiger als das tatsaechliche Pad, was genau dort
+    # den einzigen freien Millimeter kostet, wo er gebraucht wird.
+    eigene_pads = {}
+    for _fp in board.GetFootprints():
+        _boxen = [pad.GetBoundingBox() for pad in _fp.Pads()]
+        if not _boxen:
+            continue
+        eigene_pads[_fp.GetReference()] = (
+            min(b.GetLeft() for b in _boxen) / 1e6,
+            min(b.GetTop() for b in _boxen) / 1e6,
+            max(b.GetRight() for b in _boxen) / 1e6,
+            max(b.GetBottom() for b in _boxen) / 1e6)
+
+    # Eigene Silkscreen-ZEICHNUNG je Referenz (Linien/Boegen/Polygone,
+    # NICHT die Referenz/Wert-Texte selbst) -- s. "ROT-NACHWEIS C90"
+    # unten: der Pad-Anker allein erkennt nicht, dass ein grosser/runder
+    # Bauteilkoerper (Elko-Kreis, IC-Umriss) viel weiter reicht als seine
+    # eigenen Pads. Diese Liste ist der direkte, geometrische Nachweis
+    # dafuer -- dieselbe Fragestellung, die kicad-cli drc als
+    # "silk_overlap" meldet, hier VOR dem Bauen statt hinterher.
+    eigene_grafik = {}
+    for _fp in board.GetFootprints():
+        _gboxen = [it.GetBoundingBox() for it in _fp.GraphicalItems()
+                  if it.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS)]
+        if _gboxen:
+            eigene_grafik[_fp.GetReference()] = [
+                (b.GetLeft() / 1e6, b.GetTop() / 1e6,
+                 b.GetRight() / 1e6, b.GetBottom() / 1e6) for b in _gboxen]
+
+    def trifft_eigene_grafik(box, ref):
+        return any(_schneidet(box, g, _SILK_PAD_GAP)
+                  for g in eigene_grafik.get(ref, ()))
+
+    def kandidat(richtung, rect, breite, hoehe_txt, spalt=0.20):
+        x0, y0, x1, y1 = rect
+        mx, my = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+        if richtung == "N":
+            return (mx - breite / 2, y0 - spalt - hoehe_txt,
+                    mx + breite / 2, y0 - spalt)
+        if richtung == "S":
+            return (mx - breite / 2, y1 + spalt,
+                    mx + breite / 2, y1 + spalt + hoehe_txt)
+        if richtung == "O":
+            return (x1 + spalt, my - hoehe_txt / 2,
+                    x1 + spalt + breite, my + hoehe_txt / 2)
+        return (x0 - spalt - breite, my - hoehe_txt / 2,
+                x0 - spalt, my + hoehe_txt / 2)
+
+    def auf_platine(box):
+        return (box[0] >= e and box[1] >= e
+                and box[2] <= bw - e and box[3] <= bh - e)
+
+    def trifft_pad(box):
+        return any(_schneidet(box, q, _SILK_PAD_GAP) for q in pads)
+
+    def trifft_hof(box, eigener):
         for k, h in enumerate(hoefe):
             if k == eigener:
                 continue
-            if x0 < h[2] and h[0] < x1 and y0 < h[3] and h[1] < y1:
-                return False
-        return True
+            if _schneidet(box, h):
+                return True
+        return False
 
-    n_fab = 0
-    refs = list(beschreibung.PLACEMENT)
+    n_klein = 0     # Referenzen, die nicht in voller SILK_TEXT-Groesse
+                    # passten (zaehlmetrik fuers Log, kein Fehler)
+    n_fallback = 0  # Referenzen, die Stufe 2 (Hof-Ueberlappung erlaubt)
+                    # brauchten
+
     for fp in board.GetFootprints():
         ref = fp.GetReference()
         p = beschreibung.PLACEMENT.get(ref)
@@ -790,56 +947,138 @@ def tidy_silkscreen(board, beschreibung):
         wert.SetVisible(False)
 
         r = fp.Reference()
-        r.SetTextSize(klein)
-        r.SetTextThickness(mm(fertigung.SILK_DICKE))
-        if p is not None and not p.tht:
-            r.SetLayer(fab)
-            n_fab += 1
-        elif ref.startswith("H"):
+        r.SetTextThickness(mm(dicke))
+
+        if ref.startswith("H"):
+            # Bohrungsmarke, kein Bauteil -- R6 gilt nur fuer bestueckte
+            # (bzw. laut Aufgabenzettel: "wo ein Label hilft") Positionen.
             r.SetVisible(False)
-        elif p is None:
+            continue
+        if p is None:
+            # Sollte durch build.place()s eigene Vollstaendigkeitspruefung
+            # nie vorkommen (jede Referenz aus der Netzliste braucht einen
+            # PLACEMENT-Eintrag) -- fallback bleibt sichtbar am
+            # Ursprungsort statt still zu verschwinden.
             r.SetLayer(silk)
-        else:
-            r.SetLayer(silk)
-            # Ueber das Bauteil setzen -- aber nur, wenn dort wirklich
-            # Platz ist. Beim Pico (53,85 mm breit, direkt unter dem
-            # Stapelstecker) landete die Beschriftung sonst mitten auf
-            # dessen Silkscreen und ueber einem seiner Pads: zwei
-            # DRC-Fehler, die erst am gerouteten Board auffielen.
-            # Faellt der Platz darueber weg, wandert der Text in den
-            # eigenen Hof -- der gehoert dem Bauteil ohnehin.
-            breite = 0.75 * hoehe * max(2, len(ref))   # grob, reicht hier
-            mitte_x = p.x + p.w / 2.0
-            eigener = refs.index(ref)
-            oben = (mitte_x - breite / 2, p.y - 0.9 - hoehe / 2,
-                    mitte_x + breite / 2, p.y - 0.9 + hoehe / 2)
-            if frei(*oben, eigener):
-                r.SetPosition(pcbnew.VECTOR2I(mm(mitte_x), mm(p.y - 0.9)))
-            else:
-                # Kein Platz daneben: dann gehoert die Kennung auf die
-                # Bestueckungszeichnung, nicht mit Gewalt auf den Druck.
-                # In den eigenen Hof zu schieben half nicht -- dort liegt
-                # der Silkscreen-Umriss des Bauteils selbst (bei der
-                # Klemme J1 nachgewiesen), und ein Text ueber dem eigenen
-                # Umriss ist genauso unlesbar wie einer ueber dem
-                # fremden.
-                r.SetLayer(fab)
-                r.SetPosition(pcbnew.VECTOR2I(mm(mitte_x),
-                                              mm(p.y + p.h / 2)))
-                n_fab += 1
-    return n_fab
+            continue
+
+        r.SetLayer(silk)
+        eigener = refs.index(ref)
+        # Zwei Anker, in dieser Reihenfolge versucht -- s. "ROT-NACHWEIS
+        # C90" unten fuer den Grund, warum einer allein nicht reicht:
+        #   1. das eigene PAD-Rechteck (eng, s. "ROT-NACHWEIS R15" unten)
+        #   2. der PLACEMENT-Hof (weiter, aber IMMER ausserhalb des
+        #      eigenen Koerpers -- wichtig fuer grosse/runde Bauteile,
+        #      deren Pads nur einen Bruchteil der sichtbaren Flaeche
+        #      einnehmen).
+        rect_pad = eigene_pads.get(ref, (p.x, p.y, p.x + p.w, p.y + p.h))
+        rect_hof = (p.x, p.y, p.x + p.w, p.y + p.h)
+        anker_liste = (rect_pad, rect_hof) if rect_pad != rect_hof else (rect_pad,)
+        # ROT-NACHWEIS C90 (Motormodul + alle drei Dimmer, zweiter Fund
+        # dieser Aufgabe): mit NUR dem Pad-Anker (Fix fuer R15 oben)
+        # landete C90s Referenz zwischen den beiden winzigen THT-Pads --
+        # geometrisch pad-frei, aber mitten im gezeichneten RUNDEN
+        # Elko-Koerper (8,5 x 8,5 mm Hof, die Pads nehmen davon nur einen
+        # Bruchteil ein). kicad-cli pcb render zeigte gar keine "C90"
+        # lesbar, nur den blauen Kondensator-Kreis; kicad-cli pcb drc
+        # bestaetigte "Reference field of C90" ueberlappt "Segment of
+        # C90" (den eigenen Polaritaets-Bogen). Der Hof-Anker (zweiter
+        # Versuch) reichte ALLEIN nicht: er wird erst probiert, wenn der
+        # (immer zuerst versuchte) Pad-Anker in Stufe 1 fehlschlaegt --
+        # aber der Pad-Anker "schlaegt" per Definition nie an der EIGENEN
+        # Grafik fehl (trifft_hof() nimmt den eigenen Index ausdruecklich
+        # aus), er fand also klaglos eine (falsche) Stelle direkt neben
+        # den Pads, noch bevor der Hof-Anker ueberhaupt drankam. Der
+        # eigentliche Fix ist deshalb trifft_eigene_grafik() oben: eine
+        # dritte, in STUFE 1 (nicht Stufe 2, s.u.) geprueft Schranke, die
+        # direkt (wie kicad-cli drc) gegen die eigene Silkscreen-Zeichnung
+        # (Linien/Boegen/Polygone, nicht nur Pads) misst. Mit ihr
+        # scheitert der Pad-Anker fuer C90 tatsaechlich, der Hof-Anker
+        # greift und findet die freie Stelle westlich des eigenen Hofs
+        # (Luecke zu J105, 0,92 mm Reserve) -- ohne Stufe 2.
+        #
+        # WARUM NUR STUFE 1: als HARTE Regel in beiden Stufen scheiterte
+        # U3 (SOT-353, Notaus-Kette) an JEDER Kombination -- ein derart
+        # kleines Gehaeuse zeichnet seinen Koerperumriss so dicht an den
+        # eigenen Pads, dass keine Richtung/Groesse/Anker beides zugleich
+        # meidet. Genau dafuer ist Stufe 2 da: der allerletzte Ausweg,
+        # bei dem ein bisschen eigene (oder fremde) Grafik ueberdeckt
+        # sein darf, weil die Alternative ein Bauabbruch waere.
+        #
+        # ROT-NACHWEIS (Motormodul J96/C10/C14/C16, erster Wurf dieser
+        # Aufgabe): eine Footprint-Referenz dreht sich MIT ihrem
+        # Footprint (kein "keep upright" gesetzt) -- bei einem um 90 Grad
+        # gedrehten Bauteil (alle Randpads J95/J96, mehrere gedrehte
+        # 0805-Kondensatoren) tauschen Breite und Hoehe auf der Platine
+        # ihre Rollen, aber _text_extent() misst IMMER ungedreht (der
+        # Wegwerf-Text hat keine Rotation). Ungeprueft haelt der
+        # Kandidat dann eine Luecke fuer die ungedrehte (schmale, hohe)
+        # Form frei, waehrend real die gedrehte (breite, niedrige) Form
+        # gedruckt wird -- kicad-cli drc (alle Stufen) meldete danach
+        # "Reference field of J96 ... Silkscreen clipped by solder
+        # mask": die echte, gedrehte Referenz ragte 0,29 mm in J96s
+        # eigenes Pad 1 hinein, obwohl der (ungedreht gerechnete)
+        # Kandidat 0,20 mm Abstand auswies. Fix: Breite/Hoehe VOR der
+        # Kandidatensuche tauschen, wenn der Footprint um (ann.) 90 Grad
+        # gedreht ist -- ab dann rechnet kandidat()/trifft_pad() mit der
+        # tatsaechlich auf der Platine projizierten Form.
+        gedreht90 = abs(fp.GetOrientationDegrees() % 180 - 90) < 1.0
+        gefunden = None
+        for stufe in (1, 2):
+            for anker in anker_liste:
+                for hoehe_txt in hoehen:
+                    breite, txt_h = _text_extent(board, ref, hoehe_txt, dicke)
+                    if gedreht90:
+                        breite, txt_h = txt_h, breite
+                    for richtung in ("N", "S", "O", "W"):
+                        box = kandidat(richtung, anker, breite, txt_h)
+                        if not auf_platine(box) or trifft_pad(box):
+                            continue
+                        if stufe == 1 and (trifft_hof(box, eigener)
+                                          or trifft_eigene_grafik(box, ref)):
+                            continue
+                        gefunden = (box, hoehe_txt)
+                        break
+                    if gefunden:
+                        break
+                if gefunden:
+                    break
+            if gefunden:
+                if stufe == 2:
+                    n_fallback += 1
+                break
+        if gefunden is None:
+            raise SystemExit(
+                "%s: keine freie Silkscreen-Stelle fuer die Referenz "
+                "gefunden (R6) -- Platzierung zu dicht, Naeheres in "
+                "tidy_silkscreen()" % ref)
+
+        box, hoehe_txt = gefunden
+        if hoehe_txt < fertigung.SILK_TEXT - 1e-6:
+            n_klein += 1
+        r.SetTextSize(pcbnew.VECTOR2I(mm(hoehe_txt), mm(hoehe_txt)))
+        cx, cy = (box[0] + box[2]) / 2.0, (box[1] + box[3]) / 2.0
+        r.SetPosition(pcbnew.VECTOR2I(mm(cx), mm(cy)))
+
+    return n_klein, n_fallback
 
 
 def kennzeichnung(board, beschreibung):
     """Die Pflicht-Kennzeichnung aus stack_spec.LAYOUT_AUFLAGEN.
 
-    Dreieck plus "1" neben Pin 1 des Stapelsteckers und "KLEMMEN" an
-    der Klemmenkante. Grund steht im Vertrag: das M3-Lochbild ist
-    punktsymmetrisch, ein um 180 Grad verdreht angeschraubtes Modul
-    steckt nicht -- aber ohne Kennzeichnung sieht niemand, WARUM es
-    nicht steckt. Bis 2026-09-01 hat kein Werkzeug diese Auflage
-    umgesetzt und keine Pruefung sie angemahnt; die erste Fassung der
-    Sockelplatine wurde ohne committet.
+    Dreieck plus "1" neben Pin 1 des Stapelsteckers und "UNTEN" an
+    der Klemmenkante (v2.1: vorher "KLEMMEN" -- umbenannt, Audit-Befund
+    W4: der Text ist eine reine Verdreh-Orientierungsmarke, keine
+    Klemmen-Beschriftung, und hiess trotzdem so, obwohl er auf keinem
+    der vier Boards neben einer echten Klemme stand. Jede Klemme
+    bekommt jetzt ihre eigene Funktionsbeschriftung, s.
+    funktionsbeschriftung() unten). Grund fuer die Marke selbst steht
+    im Vertrag: das M3-Lochbild ist punktsymmetrisch, ein um 180 Grad
+    verdreht angeschraubtes Modul steckt nicht -- aber ohne
+    Kennzeichnung sieht niemand, WARUM es nicht steckt. Bis 2026-09-01
+    hat kein Werkzeug diese Auflage umgesetzt und keine Pruefung sie
+    angemahnt; die erste Fassung der Sockelplatine wurde ohne
+    committet.
 
     PIN1_MARKE und KLEMMEN_POS kommen aus der Platinenbeschreibung
     (die Platzverhaeltnisse sind je Platine verschieden) und sind
@@ -867,7 +1106,7 @@ def kennzeichnung(board, beschreibung):
         _UMRISSE.append(sh)
 
     for txt, (x, y) in (("1", (mx, my + 1.6)),
-                        ("KLEMMEN", beschreibung.KLEMMEN_POS)):
+                        ("UNTEN", beschreibung.KLEMMEN_POS)):
         t = pcbnew.PCB_TEXT(board)
         t.SetText(txt)
         t.SetLayer(pcbnew.F_SilkS)
@@ -907,6 +1146,266 @@ def mark_version(board, versionstext, beschreibung, hinweise=()):
         t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_LEFT)
         board.Add(t)
         _UMRISSE.append(t)
+
+
+def _silk_text_rechtecke(board):
+    """Bounding-Boxen aller schon sichtbaren Silkscreen-Texte -- Referenz-
+    Felder (von tidy_silkscreen() gesetzt) UND bereits vom Bauen
+    hinzugefuegte PCB_TEXT-Objekte (Dreieck+1/UNTEN aus kennzeichnung(),
+    fruehere _text_pruefen()-Aufrufe).
+
+    ROT-NACHWEIS (Motormodul, dritter Fund dieser Aufgabe): "NOTAUS"
+    (Koordinaten unabhaengig gegen J3s PADS gerechnet, s.
+    spec_motor.FUNKTIONS_LABELS) landete deckungsgleich mit J3s EIGENER
+    Referenz -- tidy_silkscreen() sucht J3s Platz unabhaengig von
+    FUNKTIONS_LABELS und fand zufaellig dieselbe kleine Luecke. Der reine
+    Pad-Rot-Nachweis sieht das nicht: keiner der beiden Texte liegt auf
+    einem Pad. kicad-cli pcb render zeigte "J3" mitten durch "NOTAUS"
+    hindurchgedruckt, kicad-cli pcb drc bestaetigte "Reference field of
+    J3" ueberlappt "PCB text 'NOTAUS'". Deshalb jetzt ein zusaetzlicher
+    Rot-Nachweis in _text_pruefen() gegen ALLE bereits sichtbaren Texte,
+    nicht nur gegen Pads -- frisch bei jedem Aufruf gelesen, damit auch
+    zwei FUNKTIONS_LABELS-Eintraege sich gegenseitig meiden.
+    """
+    aus = []
+    for fp in board.GetFootprints():
+        r = fp.Reference()
+        if r.IsVisible():
+            bb = r.GetBoundingBox()
+            aus.append((bb.GetLeft() / 1e6, bb.GetTop() / 1e6,
+                       bb.GetRight() / 1e6, bb.GetBottom() / 1e6))
+    for d in board.GetDrawings():
+        if (isinstance(d, pcbnew.PCB_TEXT)
+                and d.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS)):
+            bb = d.GetBoundingBox()
+            aus.append((bb.GetLeft() / 1e6, bb.GetTop() / 1e6,
+                       bb.GetRight() / 1e6, bb.GetBottom() / 1e6))
+    return aus
+
+
+def _text_pruefen(board, beschreibung, pads, ref, text, x, y, hoehe, dicke,
+                  halign="C", valign="C"):
+    """Ein Silkscreen-Text an (x, y) -- mit einem Rot-Nachweis, dass er
+    weder von der Platine faellt noch ein Pad oder einen anderen
+    sichtbaren Silkscreen-Text trifft.
+
+    Gemeinsame Grundlage fuer funktionsbeschriftung(), stecker_funktion(),
+    randpad_labels() und board_identity() (R7/R8/R9): alle vier setzen
+    Texte an fest ausgerechnete, in den spec_*.py-Dateien begruendete
+    Koordinaten (anders als tidy_silkscreen()s Referenzen, die eine
+    freie Stelle erst SUCHEN muessen) -- aber "fest ausgerechnet" ist
+    keine Garantie, wenn sich eine Platzierung anderswo aendert. Deshalb
+    hier derselbe Pad-Rot-Nachweis wie bei den Referenzen: liegt der
+    Text auf einem Pad, ausserhalb der Platine oder ueber einem anderen
+    Text, bricht das Bauen laut ab, statt eine kaputte Beschriftung
+    stillschweigend zu drucken (s. _silk_text_rechtecke()-Docstring fuer
+    den Fund, der den Text-Rot-Nachweis noetig machte).
+
+    pads: vorab aus _pad_rechtecke(board) geholt (einmal je bauen()-Lauf
+    reicht, alle Aufrufer teilen sich dieselbe Liste ueber ihren
+    eigenen Parameter statt ueber ein Modul-Global).
+    """
+    breite, texthoehe = _text_extent(board, text, hoehe, dicke)
+    hx = {"L": (x, x + breite), "C": (x - breite / 2, x + breite / 2),
+         "R": (x - breite, x)}[halign]
+    vy = {"T": (y, y + texthoehe), "C": (y - texthoehe / 2, y + texthoehe / 2),
+         "B": (y - texthoehe, y)}[valign]
+    box = (hx[0], vy[0], hx[1], vy[1])
+    e = getattr(beschreibung, "EDGE_CLEARANCE", 0.5)
+    bw, bh = beschreibung.BOARD_W, beschreibung.BOARD_H
+    if not (box[0] >= e and box[1] >= e and box[2] <= bw - e
+            and box[3] <= bh - e):
+        raise SystemExit(
+            "%s: Text %r bei (%.2f|%.2f) ragt ueber die Plattenkante "
+            "hinaus (Box %s)" % (ref, text, x, y, box))
+    for q in pads:
+        if _schneidet(box, q, _SILK_PAD_GAP):
+            raise SystemExit(
+                "%s: Text %r bei (%.2f|%.2f) liegt auf einem Pad %s "
+                "(R7/R8/R9 verlangen pad-frei)" % (ref, text, x, y, q))
+    for q in _silk_text_rechtecke(board):
+        if _schneidet(box, q, _SILK_PAD_GAP):
+            raise SystemExit(
+                "%s: Text %r bei (%.2f|%.2f) ueberlappt einen anderen "
+                "Silkscreen-Text %s (R7/R8/R9 verlangen textfrei)"
+                % (ref, text, x, y, q))
+
+    t = pcbnew.PCB_TEXT(board)
+    t.SetText(text)
+    t.SetLayer(pcbnew.F_SilkS)
+    t.SetTextSize(pcbnew.VECTOR2I(mm(hoehe), mm(hoehe)))
+    t.SetTextThickness(mm(dicke))
+    hj = {"L": pcbnew.GR_TEXT_H_ALIGN_LEFT, "C": pcbnew.GR_TEXT_H_ALIGN_CENTER,
+         "R": pcbnew.GR_TEXT_H_ALIGN_RIGHT}[halign]
+    vj = {"T": pcbnew.GR_TEXT_V_ALIGN_TOP, "C": pcbnew.GR_TEXT_V_ALIGN_CENTER,
+         "B": pcbnew.GR_TEXT_V_ALIGN_BOTTOM}[valign]
+    t.SetHorizJustify(hj)
+    t.SetVertJustify(vj)
+    t.SetPosition(pcbnew.VECTOR2I(mm(x), mm(y)))
+    board.Add(t)
+    _UMRISSE.append(t)
+    return box
+
+
+def funktionsbeschriftung(board, beschreibung):
+    """R7: Funktionsbeschriftung an jeder Klemme/jedem Stecker.
+
+    Liest beschreibung.FUNKTIONS_LABELS -- eine Liste von
+    (text, x, y[, halign, valign, groesse])-Eintraegen, in der jede
+    spec_*.py-Datei ihre eigenen, gegen die eigene Platzierung
+    ausgerechneten Koordinaten mitbringt (derselbe Stil wie PIN1_MARKE/
+    KLEMMEN_POS: die Platzverhaeltnisse sind je Board verschieden, also
+    gehoert die Zahl in die Beschreibung, nicht hierher). Fehlt das
+    Attribut, passiert nichts -- Motor/Dimmer setzen es, aber die
+    (bereits auf v1 eingefrorene) Sockelplatine muss es nicht.
+
+    KETTE/LEISTUNG (die beiden Stapelstecker-Funktionslabels) sind KEIN
+    Teil von FUNKTIONS_LABELS: ihre Position haengt nur an
+    stack_spec.STECKER_POS (Vertrag, fuer alle Module gleich), nicht an
+    einer modul-eigenen Platzierung -- s. board_identity()-Nachbar
+    stecker_funktion() unten, das sie einmalig, generisch fuer jedes
+    Modul erzeugt.
+    """
+    pads = _pad_rechtecke(board)
+    n = 0
+    for eintrag in getattr(beschreibung, "FUNKTIONS_LABELS", ()):
+        text, x, y = eintrag[0], eintrag[1], eintrag[2]
+        halign = eintrag[3] if len(eintrag) > 3 else "C"
+        valign = eintrag[4] if len(eintrag) > 4 else "C"
+        groesse = eintrag[5] if len(eintrag) > 5 else fertigung.SILK_TEXT
+        _text_pruefen(board, beschreibung, pads, "FUNKTIONS_LABELS", text,
+                     x, y, groesse, fertigung.SILK_DICKE, halign, valign)
+        n += 1
+    return n
+
+
+def stecker_funktion(board, beschreibung):
+    """R7 fuer Ketten-/Leistungsstecker: "KETTE"/"LEISTUNG", einmalig aus
+    stack_spec.STECKER_POS abgeleitet -- gilt fuer JEDES Modul gleich,
+    weil beide Stecker Vertragskoordinaten sind (STECKER_POS["kette"]/
+    ["leistung"]), nicht modul-eigene Platzierung. Deshalb hier und
+    nicht in FUNKTIONS_LABELS jeder einzelnen spec_*.py.
+
+    Positionen: unter dem Nest bzw. unter dem Leistungsstecker, in
+    Luecken, die auf allen vier Boards frei sind (nachgemessen gegen
+    die tatsaechliche PLACEMENT jedes Boards, s. Bericht):
+      KETTE   -- Mitte von STECKER_POS["kette"]["flaeche"] in x,
+                 y=9,80 (Luecke J101/J102-Hof-Unterkante 7,17 bis
+                 U100-Hof-Oberkante 12,80 -- 5,63 mm frei, auf allen
+                 vier Boards identisch, weil das MCU-Nest woertlich
+                 uebernommen ist).
+      LEISTUNG-- Mitte von STECKER_POS["leistung"]["flaeche"] in x,
+                 y=52,50 (Luecke Leistungsstecker-Unterkante 49,82 bis
+                 KLEMMENZONE-Oberkante 60,80 -- 10,98 mm frei, auf allen
+                 vier Boards frei: die Kanalzonen der Dimmer bleiben
+                 x < 20 bzw. enden mit D4/Q4 bei y <= 42,0, s.
+                 spec_dimmer_basis._KANAL_TASCHEN).
+    """
+    if not getattr(beschreibung, "IST_MODUL", False):
+        return 0
+    pads = _pad_rechtecke(board)
+    kette = S.STECKER_POS["kette"]["flaeche"]
+    leistung = S.STECKER_POS["leistung"]["flaeche"]
+    kx = (kette[0] + kette[2]) / 2.0
+    lx = (leistung[0] + leistung[2]) / 2.0
+    _text_pruefen(board, beschreibung, pads, "STECKER_FUNKTION", "KETTE",
+                 kx, 9.80, fertigung.SILK_TEXT, fertigung.SILK_DICKE)
+    _text_pruefen(board, beschreibung, pads, "STECKER_FUNKTION", "LEISTUNG",
+                 lx, 52.50, fertigung.SILK_TEXT, fertigung.SILK_DICKE)
+    return 2
+
+
+def randpad_labels(board, beschreibung):
+    """R8: jedes der 22 Randpads traegt sein GP-/Netzlabel im Siebdruck.
+
+    Direkt aus stack_spec.RANDPADS (die Pin->Label-Zuordnung, die der
+    Vertrag ohnehin schon fuehrt, s. Audit-Befund W3: "keine neue
+    Entscheidung noetig, nur Umsetzung der bereits gemachten Zusage") --
+    NICHT aus der jeweiligen spec_*.py, weil die Positionen selbst schon
+    Vertragskoordinaten sind (RAND_X/RAND_Y0/RAND_RASTER), fuer alle vier
+    Boards identisch.
+
+    LAGE: rechts NEBEN jedem Pad (x = Pad-Ostkante + 0,20 mm), nicht
+    darueber/darunter -- die Randpad-Reihe steht im 2,54-mm-Raster,
+    aber jedes einzelne Pad ist nur 0,90 mm (nach der v2.1-Drehung: in
+    y) hoch, waehrend ein Label seitlich in x reichlich Platz hat (die
+    Zone endet erst bei BOARD_W, 2,4 mm rechts vom Pad). Textgroesse
+    0,5 mm (kleiner als SILK_TEXT=0,8): bei 0,8 mm ist selbst "GP10"
+    (3,32 mm breit, real gemessen) breiter als die 2,4 mm Reserve
+    zwischen Padkante (78,90) und der um EDGE_CLEARANCE geschrumpften
+    Plattenkante (81,50) -- bei 0,5 mm sind es 2,15 mm, das passt (s.
+    Bericht fuer die volle Messreihe). Nur fuer diese 22 Labels kleiner
+    als sonst im Projekt ueblich: das 2,54-mm-Raster laesst nichts
+    anderes zu, ohne die Kupferregel (R8-Layer = RAND_LABEL_LAYER,
+    dieselbe Seite wie das Kupfer) zu verlassen.
+    """
+    if not getattr(beschreibung, "PLACEMENT", None) or (
+            "J95" not in beschreibung.PLACEMENT
+            and "J96" not in beschreibung.PLACEMENT):
+        return 0
+    pads = _pad_rechtecke(board)
+    groesse = 0.5
+    dicke = 0.10
+    x = S.RAND_X + S.RAND_PAD_B * (2.6 / 0.9) / 2.0 + 0.20
+    # Padbreite nach der v2.1-Drehung ist nicht RAND_PAD_B selbst
+    # (0,90 mm, die NATIVE, ungedrehte Padbreite aus dem Vertrag),
+    # sondern die um 90 Grad gedrehte GESAMTBREITE der Randpad-Footprints
+    # (2,60 mm, s. spec_motor.PLACEMENT["J95"]-Kommentar, "natives
+    # F.CrtYd ... Breite 2,60 mm") -- deshalb der Skalierungsfaktor
+    # 2,6/0,9 auf RAND_PAD_B statt einer zweiten, hartkodierten Zahl.
+    for pin, label, (px, py) in S.RANDPADS:
+        _text_pruefen(board, beschreibung, pads, "J95/J96 Pin %d" % pin,
+                     label, x, py, groesse, dicke, halign="L", valign="C")
+    return len(S.RANDPADS)
+
+
+def board_identity(board, beschreibung):
+    """R9: Modulname, Vertragsversion und Modultyp lesbar im Siebdruck.
+
+    Verlangt beschreibung.MODULNAME und .MODULTYP (Pflichtfelder wie
+    PIN1_MARKE/KLEMMEN_POS in kennzeichnung() -- fehlt eines, bricht das
+    Bauen ab, statt eine Platine ohne Identitaet zu erzeugen, genau die
+    Luecke, die Audit-Befund W7 gefunden hat: "alle vier Boards trugen
+    identischen, unetikettierten Text").
+
+    LAGE: (2,0 | BOARD_H-2,0), linksbuendig, OBENBUENDIG (valign="T") --
+    dieselbe Stelle, die mark_version() seit jeher fuer einen
+    Versionsvermerk vorsieht (hier aber unbedingt aufgerufen, nicht nur
+    wenn ein Aufrufer einen versionstext uebergibt -- das tat bisher NIE
+    jemand, s. build.py __main__, deshalb war W7 ueberhaupt offen). Die
+    Zeile x=2,0..~23 ist auf allen vier Boards frei (naechste Bebauung
+    ist KLEMMENZONE ab x=23,80 bzw. Dimmer1s J5 bei x=37,00) UND liegt
+    nicht unter einem Stecker (Auftrag: "nicht unter einem Anschluss").
+
+    ROT-NACHWEIS (erster Wurf dieser Aufgabe, valign="C"): bei y=BOARD_H
+    -2,0=71,0 und Standard-Vertikalzentrierung reicht der Text nach OBEN
+    bis y=70,5 -- mitten in das Pad der linken unteren Bohrung H2 (x=4,
+    Pad-Box 67,40..70,60, auf allen vier Boards identisch, Vertrags-
+    lochbild). valign="T" laesst den Text stattdessen NACH UNTEN von
+    y=71,0 wachsen -- H2s Pad-Unterkante (70,60) bleibt klar oberhalb der
+    Textbox.
+
+    ZWEITER ROT-NACHWEIS (Texthoehe): bei nominell 1,0 mm misst
+    _text_extent() die REALE Boundingbox mit 1,70 mm Hoehe (Ober-/
+    Unterlaengen von "P"/"0" etc., pcbnew rechnet grober als das
+    nominelle Textmass) -- von y=71,0 abwaerts reicht das bis 72,70,
+    ueber BOARD_H-EDGE_CLEARANCE (72,5) hinaus. Texthoehe deshalb
+    fertigung.SILK_TEXT (0,8 mm, das im ganzen Projekt uebliche
+    Silkscreen-Mass) statt der zunaechst versuchten 1,0 mm -- reale Hoehe
+    dann 1,36 mm, endet bei 72,36, 0,14 mm Reserve.
+    """
+    for feld in ("MODULNAME", "MODULTYP"):
+        if getattr(beschreibung, feld, None) is None:
+            raise SystemExit(
+                "%s fehlt in der Platinenbeschreibung -- die "
+                "Board-Identitaet ist Vertragsauflage (R9)" % feld)
+    pads = _pad_rechtecke(board)
+    text = "%s %s v%s 0x%02X" % (S.PROJEKTNAME, beschreibung.MODULNAME,
+                                 S.VERTRAG_VERSION, beschreibung.MODULTYP)
+    _text_pruefen(board, beschreibung, pads, "BOARD_IDENTITY", text, 2.0,
+                 beschreibung.BOARD_H - 2.0, fertigung.SILK_TEXT,
+                 fertigung.SILK_DICKE, halign="L", valign="T")
+    return text
 
 
 def drop_offboard_pads(board, beschreibung):
@@ -1015,8 +1514,21 @@ def bauen(beschreibung, board_pfad, sch_pfad, kicad_dir=None,
     # meldet die Zuweisung sie als fehlend und die Netzliste sieht
     # unvollstaendig aus, obwohl nur Loecher neben der Platine wegfallen.
     weg, weg_mit_netz = drop_offboard_pads(board, beschreibung)
-    n_fab = tidy_silkscreen(board, beschreibung)
+    n_klein, n_fallback = tidy_silkscreen(board, beschreibung)
     kennzeichnung(board, beschreibung)
+    # v2.1 (Aufgabe C2, R7-R9): Funktionsbeschriftung, Randpad-Labels und
+    # Board-Identitaet -- alle drei lesen feste, in der jeweiligen
+    # spec_*.py/stack_spec.py begruendete Koordinaten (anders als
+    # tidy_silkscreen()s Referenzen) und pruefen sich selbst gegen die
+    # ECHTEN Pads dieses Baus (_text_pruefen, s. dort). Reihenfolge nach
+    # kennzeichnung(), damit "UNTEN" zuerst steht und diese vier
+    # zusaetzlichen Texte im selben Silkscreen-Bild wie die uebrige
+    # Kennzeichnung entstehen; untereinander ist die Reihenfolge egal,
+    # keine der vier haengt von einer anderen ab.
+    n_funktion = funktionsbeschriftung(board, beschreibung)
+    n_stecker_funktion = stecker_funktion(board, beschreibung)
+    n_randpads = randpad_labels(board, beschreibung)
+    board_identity(board, beschreibung)
     if versionstext:
         mark_version(board, versionstext, beschreibung, hinweise)
     if getattr(beschreibung, "ANTENNA_SLOT", None) is not None:
@@ -1052,8 +1564,14 @@ def bauen(beschreibung, board_pfad, sch_pfad, kicad_dir=None,
               % (len(weg), ", ".join(weg)))
     for x in weg_mit_netz:
         problems.append("Pad %s traegt ein Netz und faellt trotzdem weg" % x)
-    print("Beschriftung: %d SMD-Referenzen auf F.Fab, Werte ausgeblendet"
-          % n_fab)
+    print("Beschriftung: alle Referenzen sichtbar auf Silkscreen "
+          "(%d verkleinert, %d mit Hof-Ueberlappung), Werte ausgeblendet"
+          % (n_klein, n_fallback))
+    if n_funktion or n_stecker_funktion:
+        print("%d Funktionslabel + %d Stapelstecker-Label gesetzt (R7)"
+              % (n_funktion, n_stecker_funktion))
+    if n_randpads:
+        print("%d Randpad-Labels gesetzt (R8)" % n_randpads)
     if n_stich:
         print("%d GND-Vias zum Vernaehen der Masseflaechen gesetzt" % n_stich)
     if n_vor:

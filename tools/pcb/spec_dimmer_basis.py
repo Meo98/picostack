@@ -544,6 +544,68 @@ EIGENE_PRE_TRACKS = (
 )
 
 
+# --- Board-Identitaet (R9, Audit-Befund W7) --------------------------
+# stack_spec.MODULTYPEN traegt dieselben Namen/Codes bereits (0x10/0x11/
+# 0x12 fuer Dimmer1/3/4) -- hier nur nochmal als Kanalzahl->Typcode-
+# Tabelle, weil beschreibung() die Kanalzahl kennt, nicht den Namen.
+_MODULTYP = {1: 0x10, 3: 0x11, 4: 0x12}
+
+
+def _funktions_labels(kanaele):
+    """R7: LED-Kanal-Beschriftung + Einspeiseklemme (Audit-Befund W5).
+
+    LED%d bei der Pad-Mitte der jeweiligen Kanal-Klemme (_klemme_x(n,
+    kanaele) + 2,25 -- das ist FP_KLEMME_2s Pad-1-Versatz innerhalb des
+    Hofes, nachgemessen am gebauten Board fuer alle drei Kanalzahlen:
+    Dimmer1 J5 x=39,25 bei _klemme_x(1,1)=37,00, Dimmer4 J5..J8 x=26,05/
+    36,42/54,20/64,21 bei _klemme_x(1..4,4)=23,80/34,17/51,95/61,96 --
+    ueberall exakt +2,25).
+
+    y: KLEMMENZONE (60,80..73,00) ist oberhalb der Klemmen-Pads
+    (Pad-Oberkante y=66,80) frei von KANAL-Bauteilen (kein Bauteil reicht
+    unter y=50,30 hinaus, s. _RGRP_PLATZ/_RG4RP4_PLATZ oben) -- aber
+    NICHT vom Klemmenkoerper selbst (dessen Silkscreen-Kontur beginnt
+    schon bei y=64,78, pcbnew nachgemessen, deutlich hoeher als der reine
+    Pad-Bereich) UND NICHT von der Klemme EIGENER Referenz: tidy_
+    silkscreen() setzt J5/J6/J7/J8s eigene Referenz bei y=65,24..66,60,
+    innerhalb des eigenen Koerpers (derselbe Pad-Anker-Kompromiss wie bei
+    den dicht gepackten Widerstaenden, s. build.tidy_silkscreen()-
+    Kommentar "ROT-NACHWEIS R15"). ROT-NACHWEIS (erster Wurf, y=64,50):
+    _text_pruefen()s Text-gegen-Text-Pruefung (seit dieser Aufgabe, s.
+    build._silk_text_rechtecke()) lehnte "LED1" ab -- es ueberlappte J5s
+    eigene Referenz woertlich; kicad-cli pcb render zeigte "LED1"
+    sichtbar, aber "J5" darunter verschwunden (volle Deckung). JETZT:
+    y=62,50, klar OBERHALB sowohl des Klemmenkoerpers (64,78, 2,28 mm
+    Reserve) als auch der eigenen Referenz (65,24, 2,74 mm Reserve) --
+    innerhalb der 4-mm-Luecke zwischen KLEMMENZONE-Oberkante (60,80) und
+    dem Klemmenkoerper.
+    6-30V bei J90: dieselbe Herleitung wie spec_motor.FUNKTIONS_LABELS --
+    Pin 1 (x=55,89) fuehrt PWR_IN/+, Pin 2 (x=59,39) GND/-, aber die
+    Polaritaet steht schon auf dem Footprint (Pfeil-Dreieck an Pin 1,
+    dieselbe eingebaute Konvention wie C90s "+"), eigene "+"/"-"-Texte
+    entfallen deshalb hier wie dort.
+
+    LAGE weicht vom Motormodul ab (dort: OBERHALB von J90). Grund: auf
+    dem Dimmer-Board sitzt J90 in der verdichteten Versorgungszelle
+    (Pads y=5,40..7,80 statt 10,10..12,50) direkt UNTER R90/R91 --
+    zwischen deren Referenztext (endet y=2,13) und J90s Klemmenkoerper
+    (beginnt y=3,38) bleiben nur 1,25 mm frei, weniger als die reale
+    Texthoehe (~1,36 mm bei 0,8 mm nominell) -- "oberhalb" passt hier
+    schlicht nicht. UNTERHALB dagegen (zwischen J90s Klemmenkoerper,
+    endet y=11,22, und D90s Klemmenkoerper, beginnt y=15,24) sind 4,02 mm
+    frei. Text bei y=13,20: 1,3 mm Abstand zu beiden Koerpern.
+
+    ROT-NACHWEIS (verworfener erster Wurf, y=10,50): lag noch INNERHALB
+    von J90s Klemmenkoerper (bis y=11,22) -- vom 3D-Rendering verdeckt,
+    genau die K2-Falle (pad-frei ist nicht koerper-frei), s.
+    spec_motor.FUNKTIONS_LABELS fuer denselben Fund am Motormodul.
+    """
+    aus = [("6-30V", 57.64, 13.20)]
+    for n in range(1, kanaele + 1):
+        aus.append(("LED%d" % n, _klemme_x(n, kanaele) + 2.25, 62.50))
+    return tuple(aus)
+
+
 def beschreibung(kanaele):
     assert kanaele in (1, 3, 4)
 
@@ -572,6 +634,8 @@ def beschreibung(kanaele):
         "M3_HOLES": S.M3_HOLES, "M3_KEEPOUT": S.M3_KEEPOUT,
         "COURTYARD_GAP": COURTYARD_GAP, "EDGE_CLEARANCE": EDGE_CLEARANCE,
         "IST_MODUL": True,
+        "MODULNAME": "Dimmer%d" % kanaele, "MODULTYP": _MODULTYP[kanaele],
+        "FUNKTIONS_LABELS": _funktions_labels(kanaele),
         "FOOTPRINTS": footprints,
         "PLACEMENT": platz,
         # Welche Referenz an welchem Vertragsplatz sitzt -- dieselbe

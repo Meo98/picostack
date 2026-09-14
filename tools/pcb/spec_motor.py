@@ -1024,3 +1024,72 @@ POWER_NETS = ("/PWR_IN", "/+24V", "/Out1", "/Out2")
 # der Auflage entspricht. S. Kommentar bei PLACEMENT["J5"] und
 # geometry.check_all()s EDGE_FLUSH_REFS-Dokumentation.
 EDGE_FLUSH_REFS = frozenset(("J5",))
+
+# --- Board-Identitaet (R9, Audit-Befund W7) --------------------------
+# build.board_identity() verlangt beide Felder, s. dort.
+MODULNAME = "Motor"
+MODULTYP = 0x01     # stack_spec.MODULTYPEN[0x01] = {"name": "Motor", ...}
+
+# --- Funktionsbeschriftung (R7, Audit-Befund W2/W5) -------------------
+# Koordinaten am REALEN, gebauten Board nachgemessen (tools/pcb/kipy +
+# pcbnew, Aufgabe C2 -- nicht aus den PLACEMENT-Hoefen hergeleitet, die
+# geben nur die linke obere Ecke, nicht die tatsaechliche Pad-Lage
+# innerhalb des Footprints).
+#
+# NOTAUS (J3, Audit-Befund W2: "unbeschriftet und beengt"): J3 sitzt bei
+# x=2,27..9,89/y=42,95 (vier Pads, Pad-Box 42,10..43,80). Die Luecke
+# ZWISCHEN den Stuetzkondensatoren C17-19 (Pad-Unterkante 38,92) und J3
+# selbst (Pad-Oberkante 42,10) ist 3,18 mm hoch -- pad-frei ueber die
+# GESAMTE Breite dieser Ecke.
+#
+# ZWEI VERWORFENE VERSUCHE (beide pad-frei, aber TEXT-Kollisionen --
+# seit dieser Aufgabe zusaetzlich geprueft, s.
+# build._silk_text_rechtecke()): tidy_silkscreen() setzt in dieselbe
+# Luecke schon J3s EIGENE Referenz (mittig bei x=6,08) und C17/C19s
+# Referenzen (x=1,53..4,05 bzw. 13,82..16,34) -- der urspruengliche
+# Versuch, "NOTAUS" mittig ueber J3 zu setzen, ueberlappte J3s Referenz
+# woertlich (kicad-cli pcb render zeigte "J3" mitten durch "NOTAUS"
+# hindurchgedruckt). Ein zweiter Versuch oestlich von J3 (x=11,74) traf
+# stattdessen R18s Referenz, dann C19s. FUNDIERT NACHGEMESSEN (nicht nur
+# gegen Pads, auch gegen alle vier Referenzen in dieser Ecke): die einzig
+# wirklich freie Luecke in x liegt ZWISCHEN J3s Referenz (endet x=6,76)
+# und C19s Referenz (beginnt x=13,82) -- 7,06 mm breit, mehr als genug
+# fuer "NOTAUS" (real gemessen ~4,6 mm bei 0,8 mm Texthoehe). Text
+# mittig bei x=10,29, y=40,50 (Bandmitte).
+#
+# MOTOR (J5, Motor-Klemme): Pads bei y=65,30..67,90, x=37,16..44,84.
+# ROT-NACHWEIS (erster Wurf dieser Aufgabe, y=62,00): das gebaute Board
+# gerendert (kicad-cli pcb render) zeigte KEIN "MOTOR" -- der Text war
+# nicht zu knapp platziert, sondern lag UNTER dem gezeichneten
+# Klemmenkoerper und wurde vom 3D-Rendering verdeckt. Der Klemmenkoerper
+# selbst (die Silkscreen-Kontur des Footprints, nicht nur der Hof) reicht
+# von y=61,18 bis 72,62 -- deutlich hoeher als der reine Pad-Bereich.
+# Text jetzt bei y=57,00: oberhalb des Klemmenkoerpers UND mit gutem
+# Abstand zu J105s Hof (endet y=52,33).
+#
+# 6-30V (J90, Einspeiseklemme, R7 "Polaritaet wo es zaehlt"): Pin 1
+# (x=55,89) fuehrt PWR_IN (+, s. tools/sch/versorgung.py: Q90-Drain an
+# PWR_IN), Pin 2 (x=59,39) fuehrt GND (-) -- der KF350/PT-1,5-Footprint
+# traegt bereits ein Pfeil-Silkscreen-Dreieck an Pin 1 (Spitze exakt bei
+# x=55,89, pcbnew nachgemessen), DIESELBE Konvention wie der eingebaute
+# "+" auf C90s CP_Radial-Footprint (Auftrag: "Polaritaet ... wie beim
+# Elko") -- eigene "+"/"-"-Texte sind deshalb NICHT noetig, nur die
+# Funktion ("6-30V") fehlt. ZWEI VERWORFENE VERSUCHE, beide am Rendering
+# nachgewiesen (kicad-cli pcb render, nicht nur der Pad-Rot-Nachweis --
+# genau die K2-Falle: pad-frei ist nicht dasselbe wie koerper-frei):
+#   y=15,50 (Luecke Pad-Unterkante 12,50 .. D90-Pad-Oberkante 18,90):
+#     J90s GEZEICHNETER Klemmenkoerper reicht bis y=15,92 -- der Text
+#     lag darunter, vom 3D-Rendering verdeckt.
+#   y=17,50 (unterhalb des Klemmenkoerpers): D90s GEZEICHNETER Koerper
+#     beginnt schon bei y=17,24 -- nur 1,32 mm frei, weniger als die
+#     reale Texthoehe (~1,36 mm bei 0,8 mm nominell, pcbnew-
+#     Boundingbox), der Text lag wieder verdeckt.
+# JETZT: y=6,00, OBERHALB von J90 -- zwischen R90/R91s Referenztext
+# (endet y=3,71) und J90s Klemmenkoerper (beginnt y=8,08), 4,37 mm frei,
+# genug Abstand zu beiden Seiten, um nicht wie eine R90/R91-Beschriftung
+# misszuverstehen zu sein.
+FUNKTIONS_LABELS = (
+    ("NOTAUS", 10.29, 40.50),
+    ("MOTOR", 41.00, 57.00),
+    ("6-30V", 57.64, 6.00),
+)

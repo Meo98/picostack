@@ -196,11 +196,14 @@ def umrissprobe(board, beschreibung):
 def kennzeichnungsprobe(board, beschreibung):
     """Traegt die Platine die Pflicht-Kennzeichnung des Vertrags?
 
-    Dreieck plus "1" neben Pin 1 des Stapelsteckers, "KLEMMEN" an der
-    Klemmenkante (stack_spec.LAYOUT_AUFLAGEN, erste Auflage). Die erste
-    Fassung der Sockelplatine wurde OHNE committet, weil kein Werkzeug
-    die Auflage umsetzte und keine Pruefung sie kannte -- eine Auflage
-    in Prosa, die niemand misst, ist keine.
+    Dreieck plus "1" neben Pin 1 des Stapelsteckers, "UNTEN" an der
+    Klemmenkante (stack_spec.LAYOUT_AUFLAGEN, erste Auflage; v2.1:
+    vorher "KLEMMEN", umbenannt wegen Audit-Befund W4 -- der Text ist
+    eine reine Verdreh-Orientierungsmarke, keine Klemmen-Beschriftung,
+    s. stack_spec.LAYOUT_AUFLAGEN-Kommentar). Die erste Fassung der
+    Sockelplatine wurde OHNE committet, weil kein Werkzeug die Auflage
+    umsetzte und keine Pruefung sie kannte -- eine Auflage in Prosa,
+    die niemand misst, ist keine.
     """
     fails = []
     texte = [(d.GetText(), d.GetPosition().x / 1e6, d.GetPosition().y / 1e6)
@@ -208,12 +211,12 @@ def kennzeichnungsprobe(board, beschreibung):
              if isinstance(d, pcbnew.PCB_TEXT)
              and d.GetLayer() == pcbnew.F_SilkS]
 
-    klemmen = [t for t in texte if t[0] == "KLEMMEN"]
+    klemmen = [t for t in texte if t[0] == "UNTEN"]
     if not klemmen:
-        fails.append("Kennzeichnung: kein \"KLEMMEN\" auf dem "
+        fails.append("Kennzeichnung: kein \"UNTEN\" auf dem "
                      "Bestueckungsdruck")
     elif all(t[2] < S.BOARD_H - 6.0 for t in klemmen):
-        fails.append("Kennzeichnung: \"KLEMMEN\" liegt nicht an der "
+        fails.append("Kennzeichnung: \"UNTEN\" liegt nicht an der "
                      "Klemmenkante (y = %.1f)" % klemmen[0][2])
 
     # Der v2-Vertrag kennt keinen Stecker "stapel" mehr: der eine
@@ -241,7 +244,7 @@ def kennzeichnungsprobe(board, beschreibung):
         fails.append("Kennzeichnung: kein Dreieck neben Pin 1 des "
                      "Stapelsteckers")
     if not fails:
-        print("  Kennzeich Dreieck+1 an Pin 1, KLEMMEN an der Kante")
+        print("  Kennzeich Dreieck+1 an Pin 1, UNTEN an der Kante")
     return fails
 
 
