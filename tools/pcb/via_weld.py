@@ -33,9 +33,21 @@ werden geschweisst; alles darueber bricht laut ab, weil das dann
 keine Rasterungenauigkeit mehr waere, sondern eine echte Sackgasse,
 die pcb_checks.py zu Recht meldet.
 
+Zweite, seltenere Form (erster Fund: Dimmer4, 1 von 91 Vias): die Via
+liegt nicht knapp NEBEN einem Bahnende, sondern MITTEN AUF einer
+durchlaufenden Bahn desselben Netzes -- ein T-Abzweig, elektrisch
+voellig normal und von kicad-cli DRC/Konnektivitaet laengst als
+verbunden erkannt, aber `bahn_anliegend()` prueft nur Bahn-ENDPUNKTE,
+nicht das Innere einer Strecke. Hierfuer wird KEIN neues Kupfer
+eingefuegt, sondern die durchlaufende Bahn an der Via-Position in zwei
+Teilstuecke zerlegt (gleiche Lage/Breite/Netz, identische Gesamtflaeche)
+-- danach hat die Via einen echten Bahn-ENDPUNKT an genau ihrer eigenen
+Position, ohne dass sich am verlegten Kupfer etwas aendert.
+
 Aufruf: kipy via_weld.py <board.kicad_pcb>
-Rueckgabe 1, wenn eine gemeldete Luecke groesser als MAX_ABSTAND ist
-(dann NICHT geschweisst -- echter Befund, kein Rasterversatz).
+Rueckgabe 1, wenn eine gemeldete Luecke weder durch einen kurzen Steg
+noch durch eine Bahnzerlegung geschlossen werden kann (dann NICHT
+geschweisst -- echter Befund, kein Rasterversatz/T-Abzweig).
 """
 import math
 import os
@@ -56,7 +68,64 @@ mm = lambda v: int(round(v * 1e6))
 # entfernt als das).
 MAX_ABSTAND = mm(0.5)
 
+# Toleranz quer zur Bahnmitte fuer den T-Abzweig-Fall: die halbe
+# Bahnbreite plus etwas Grid-Schlupf. Bahnbreiten reichen hier von
+# 0,20 bis 1,00 mm -- 0,15 mm deckt die halbe Breite der schmalsten
+# Signalbahn (0,10 mm) grosszuegig ab, ohne bei einer 1,00-mm-
+# Leistungsbahn (0,50 mm Halbbreite) zu grob zu werden.
+QUER_TOLERANZ = mm(0.15)
+
 LAGEN = {"F.Cu": pcbnew.F_Cu, "B.Cu": pcbnew.B_Cu}
+
+
+def _naechster_punkt_auf_strecke(px, py, sx, sy, ex, ey):
+    """Naechster Punkt auf der Strecke (s->e) zu (px,py), geklemmt auf
+    das Segment selbst (kein Verlaengern ueber die Enden hinaus).
+    Liefert (punkt_x, punkt_y, abstand, t in [0,1])."""
+    dx, dy = ex - sx, ey - sy
+    laenge2 = dx * dx + dy * dy
+    if laenge2 == 0:
+        return sx, sy, math.hypot(px - sx, py - sy), 0.0
+    t = ((px - sx) * dx + (py - sy) * dy) / laenge2
+    t = max(0.0, min(1.0, t))
+    qx, qy = sx + t * dx, sy + t * dy
+    return qx, qy, math.hypot(px - qx, py - qy), t
+
+
+def _t_abzweig_schliessen(board, px, py, netz, lage):
+    """Sucht eine durchlaufende Bahn desselben Netzes/derselben Lage,
+    auf deren INNEREM (nicht an den Enden) die Via liegt, und zerlegt
+    sie an genau dieser Stelle in zwei Teilstuecke. Liefert True, wenn
+    geschlossen."""
+    for t in list(board.Tracks()):
+        if (t.Type() != pcbnew.PCB_TRACE_T
+                or t.GetLayer() != lage
+                or t.GetNetCode() != netz):
+            continue
+        s, e = t.GetStart(), t.GetEnd()
+        qx, qy, d, tparam = _naechster_punkt_auf_strecke(
+            px, py, s.x, s.y, e.x, e.y)
+        # Echt INNERES Stueck, kein (schon vom Endpunkt-Schritt
+        # behandelter) Fall nahe an s oder e.
+        if d <= QUER_TOLERANZ and 0.02 < tparam < 0.98:
+            mitte = pcbnew.VECTOR2I(px, py)
+            teil1 = pcbnew.PCB_TRACK(board)
+            teil1.SetStart(s)
+            teil1.SetEnd(mitte)
+            teil1.SetWidth(t.GetWidth())
+            teil1.SetLayer(lage)
+            teil1.SetNetCode(netz)
+            teil2 = pcbnew.PCB_TRACK(board)
+            teil2.SetStart(mitte)
+            teil2.SetEnd(e)
+            teil2.SetWidth(t.GetWidth())
+            teil2.SetLayer(lage)
+            teil2.SetNetCode(netz)
+            board.Remove(t)
+            board.Add(teil1)
+            board.Add(teil2)
+            return True
+    return False
 
 
 def main(pfad):
@@ -70,6 +139,7 @@ def main(pfad):
         return 0
 
     geschweisst = 0
+    zerlegt = 0
     ungeloest = []
     for x, y, netzname, lagen_text in offene:
         px, py = mm(x), mm(y)
@@ -88,28 +158,32 @@ def main(pfad):
                     if bester is None or d < bester[0]:
                         bester = (d, p)
                         beste_breite = t.GetWidth()
-            if bester is None or bester[0] > MAX_ABSTAND:
-                ungeloest.append((x, y, netzname, lage_name,
-                                   bester[0] / 1e6 if bester else None))
+            if bester is not None and bester[0] <= MAX_ABSTAND:
+                _, ziel = bester
+                steg = pcbnew.PCB_TRACK(board)
+                steg.SetStart(pcbnew.VECTOR2I(px, py))
+                steg.SetEnd(ziel)
+                steg.SetWidth(beste_breite)
+                steg.SetLayer(lage)
+                steg.SetNetCode(netz)
+                board.Add(steg)
+                geschweisst += 1
                 continue
-            _, ziel = bester
-            steg = pcbnew.PCB_TRACK(board)
-            steg.SetStart(pcbnew.VECTOR2I(px, py))
-            steg.SetEnd(ziel)
-            steg.SetWidth(beste_breite)
-            steg.SetLayer(lage)
-            steg.SetNetCode(netz)
-            board.Add(steg)
-            geschweisst += 1
+            if _t_abzweig_schliessen(board, px, py, netz, lage):
+                zerlegt += 1
+                continue
+            ungeloest.append((x, y, netzname, lage_name,
+                               bester[0] / 1e6 if bester else None))
 
-    if geschweisst:
+    if geschweisst or zerlegt:
         board.Save(pfad)
 
-    print("via_weld: %d Steg(e) geschweisst" % geschweisst)
+    print("via_weld: %d Steg(e) geschweisst, %d Bahn(en) am T-Abzweig "
+          "zerlegt" % (geschweisst, zerlegt))
     if ungeloest:
-        print("  ! %d Luecke(n) groesser als %.2f mm -- NICHT geschweisst "
-              "(echter Befund, keine Rasterungenauigkeit):"
-              % (len(ungeloest), MAX_ABSTAND / 1e6))
+        print("  ! %d Luecke(n) weder Steg noch T-Abzweig -- NICHT "
+              "geschlossen (echter Befund):"
+              % len(ungeloest))
         for x, y, netzname, lage_name, d in ungeloest:
             print("      (%.3f|%.3f) [%s] auf %s, naechstes Bahnende %s"
                   % (x, y, netzname, lage_name,
