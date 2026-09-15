@@ -44,10 +44,30 @@ Teilstuecke zerlegt (gleiche Lage/Breite/Netz, identische Gesamtflaeche)
 -- danach hat die Via einen echten Bahn-ENDPUNKT an genau ihrer eigenen
 Position, ohne dass sich am verlegten Kupfer etwas aendert.
 
+Dritte Form (erster Fund: Motormodul, 1 von 235 Vias, nach dem
+QFN-Fanout-Umweg fuer U1s eng gepackte Leistungspins): eine Via, die
+GENAU auf einem Pad desselben Netzes sitzt (hier: U5 Pad 3, F.Cu), aber
+auf der Gegenlage (B.Cu) ueberhaupt kein Kupfer dieses Netzes in der
+Naehe hat (naechstes Bahnstueck 8,3 mm entfernt) -- weder ein
+Rasterversatz noch ein T-Abzweig, sondern eine schlicht UNNOETIGE Via:
+das Pad selbst stellt die Verbindung schon her, die Via traegt nichts
+zum Netz bei, das nicht schon durch das Pad da waere. Gemessen (kipy-
+Probe, Board vor/nach Entfernen): `kicad-cli pcb drc
+--refill-zones --save-board` bleibt 0/0, `masseheiler --nur-pruefen`
+bleibt gruen -- die Via ist beweisbar ueberfluessig, ihr Fehlen aendert
+nichts an der Konnektivitaet. Fuer DIESEN Fall wird nichts geschweisst
+und keine Bahn zerlegt, sondern die Via schlicht ENTFERNT (nicht nur
+eine Lage davon -- eine Via ist immer ein durchgehender Stift, es gibt
+bei einer 2-Lagen-Platine keine "halbe" Via) -- aber NUR, wenn sie
+exakt auf einem gleichnetzigen Pad sitzt (das Pad bleibt als Anker
+stehen); eine Via ohne diesen Anker wird NICHT geloescht, selbst wenn
+sie ansonsten ungenutzt aussieht, weil das ein Urteil ueber die
+Netz-Topologie waere, das dieses Skript nicht treffen soll.
+
 Aufruf: kipy via_weld.py <board.kicad_pcb>
 Rueckgabe 1, wenn eine gemeldete Luecke weder durch einen kurzen Steg
-noch durch eine Bahnzerlegung geschlossen werden kann (dann NICHT
-geschweisst -- echter Befund, kein Rasterversatz/T-Abzweig).
+noch durch eine Bahnzerlegung noch durch Entfernen einer ueberfluessigen
+Via geschlossen werden kann (dann NICHTS geaendert -- echter Befund).
 """
 import math
 import os
@@ -128,6 +148,35 @@ def _t_abzweig_schliessen(board, px, py, netz, lage):
     return False
 
 
+def _auf_gleichnetzigem_pad(board, px, py, netz):
+    """True, wenn (px,py) auf einem Pad DESSELBEN Netzes liegt (auf
+    IRGENDEINER Lage) -- der Anker, der eine dort sitzende Via
+    ueberfluessig macht, s. Moduldocstring, dritte Form."""
+    punkt = pcbnew.VECTOR2I(px, py)
+    for fp in board.GetFootprints():
+        for pad in fp.Pads():
+            if pad.GetNetCode() == netz and pad.HitTest(punkt):
+                return True
+    return False
+
+
+def _ueberfluessige_via_entfernen(board, px, py, netz):
+    """Entfernt die Via bei (px,py), aber NUR wenn sie exakt auf einem
+    gleichnetzigen Pad sitzt (das Pad bleibt als Anker stehen -- die
+    Via traegt dann nachweislich nichts zur Netz-Konnektivitaet bei,
+    s. Moduldocstring). Liefert True, wenn entfernt."""
+    if not _auf_gleichnetzigem_pad(board, px, py, netz):
+        return False
+    for t in list(board.Tracks()):
+        if t.Type() != pcbnew.PCB_VIA_T or t.GetNetCode() != netz:
+            continue
+        p = t.GetPosition()
+        if p.x == px and p.y == py:
+            board.Remove(t)
+            return True
+    return False
+
+
 def main(pfad):
     board = pcbnew.LoadBoard(pfad)
     board.BuildListOfNets()
@@ -140,10 +189,14 @@ def main(pfad):
 
     geschweisst = 0
     zerlegt = 0
+    entfernt = 0
     ungeloest = []
     for x, y, netzname, lagen_text in offene:
         px, py = mm(x), mm(y)
         netz = board.GetNetcodeFromNetname(netzname)
+        if _ueberfluessige_via_entfernen(board, px, py, netz):
+            entfernt += 1
+            continue
         for lage_name in lagen_text.split(", "):
             lage = LAGEN[lage_name]
             bester = None
@@ -175,14 +228,15 @@ def main(pfad):
             ungeloest.append((x, y, netzname, lage_name,
                                bester[0] / 1e6 if bester else None))
 
-    if geschweisst or zerlegt:
+    if geschweisst or zerlegt or entfernt:
         board.Save(pfad)
 
     print("via_weld: %d Steg(e) geschweisst, %d Bahn(en) am T-Abzweig "
-          "zerlegt" % (geschweisst, zerlegt))
+          "zerlegt, %d ueberfluessige Via(s) entfernt"
+          % (geschweisst, zerlegt, entfernt))
     if ungeloest:
-        print("  ! %d Luecke(n) weder Steg noch T-Abzweig -- NICHT "
-              "geschlossen (echter Befund):"
+        print("  ! %d Luecke(n) weder Steg noch T-Abzweig noch "
+              "ueberfluessige Via -- NICHT geschlossen (echter Befund):"
               % len(ungeloest))
         for x, y, netzname, lage_name, d in ungeloest:
             print("      (%.3f|%.3f) [%s] auf %s, naechstes Bahnende %s"

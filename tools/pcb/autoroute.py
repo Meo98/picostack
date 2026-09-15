@@ -41,6 +41,32 @@ router.py im Vorlaeuferprojekt (bleibt dort im Baum, weil seine
 Geometrie- und Abstandspruefungen weiter gebraucht werden) -- freerouting
 braucht Sekunden statt Kurzschluesse zu produzieren.
 
+STAND v2.1 (Aufgabe D, 2026-09-14/15): dieses Modul ist fuer alle vier
+PicoStack-Bretter DURCH KiCadRoutingTools ERSETZT (~/KiCadRoutingTools,
+CLI py_router/route.py, Verdikt REPLACE aus der Etappe-1b-Evaluation,
+.superpowers/sdd/2026-09-07-picostack-v2/task-v21d-eval-report.md).
+Es bleibt NUR als historischer Code/Fallback im Baum, wird von keinem
+der vier Bretter mehr aufgerufen. Gemessener Vergleich (dieselben
+Bretter, derselbe Rechner):
+
+| Brett      | freerouting-Wuerfelei (v2, Task 8b/7b/7c)      | KiCadRoutingTools (v2.1, Aufgabe D) |
+|------------|-------------------------------------------------|--------------------------------------|
+| Dimmer1    | 15 Wuerfe (Serien d/e/f) bis 0 offen             | 1 Lauf, 0 Wuerfe, 7,93 s Engine-Zeit  |
+| Dimmer3    | (analog, mehrere Wuerfe je Serie)                | 1 Lauf, 0 Wuerfe, 8,83 s Engine-Zeit  |
+| Dimmer4    | (analog, mehrere Wuerfe je Serie)                | 1 Lauf, 0 Wuerfe, 14,4 s Engine-Zeit  |
+| Motormodul | Task 7c: mehrere Wuerfe UEBER 420 s Zeitgrenze,  | s. task-v21d-report.md (schwierigstes|
+|            | Handverdrahtung vorab noetig (Stunden)           | Brett, Vorverdrahtung komplett neu)   |
+
+Kein Wurf war bei KiCadRoutingTools noetig -- jeder Lauf lieferte 0
+offene Netze auf Anhieb (Dimmer-Bretter) bzw. nach gezielter
+Nacharbeit statt Zufallswiederholung (Motormodul, s. Report). Drei
+Nacharbeiten sind bei JEDEM Brett noetig (nicht optional): `--fab-tier
+standard` explizit setzen, `kicad-cli pcb drc --refill-zones
+--save-board` vor jeder DRC-Bewertung, und `tools/pcb/via_weld.py` +
+`tools/pcb/stamp_via_tenting.py` NACH jedem Routing-Lauf, VOR
+`steckerprobe.py`/`pcb_checks.py` (Details und Begruendung in den
+beiden Skriptdateien und in task-v21d-report.md).
+
 Aufruf ueber den kipy-Starter:
   ~/.claude/skills/kicad-pcbnew-scripting/scripts/kipy tools/pcb/autoroute.py \\
       <board.kicad_pcb> <spec_modul, z.B. spec_sockel>
