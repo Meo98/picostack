@@ -89,7 +89,17 @@ tools/pcb/build.py        →  fresh .kicad_pcb from netlist + spec
 tools/pcb/autoroute.py    →  freerouting 2.3 headless, DSN repaired on the fly
 tools/pcb/masseheiler.py  →  finds isolated copper islands, heals them with vias
 tools/pcb/steckerprobe.py →  measures the finished board against the contract
+tools/pcb/strombelastung.py → measures whether the routed copper really carries
+                              the current the contract promises (IPC-2221)
 ```
+
+Every power net is measured, not assumed. `tools/stack_spec.py` states the
+current budget of the 24 V distribution (4.0 A per module, 3.0 A through the
+stack connector, 3.0 A per LED channel as long as the sum stays inside the
+module budget); `tools/pcb/strombelastung.py` derives the current in every
+individual track segment and via from the routed topology and fails if the
+copper is too narrow for it. Running it is a required step before any
+fabrication data — see CONTRIBUTING.md.
 
 Every stage is a plain Python file you can read, run and extend. The
 [website](https://meo98.github.io/picostack/) walks through the architecture in

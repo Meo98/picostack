@@ -574,6 +574,92 @@ VERSORGUNG = {
     "eingang_v": (6.0, 30.0),
 }
 
+# --- v2.1: das Strombudget der 24-V-Verteilung ------------------------
+# WARUM DAS IN DEN VERTRAG GEHOERT (Aufgabe D3, 2026-09-15). Bis v2.1
+# stand NIRGENDS, wie viel Strom die 24-V-Verteilung eines Moduls
+# tragen darf. Die Folge war keine Luecke, sondern eine STILLE,
+# FALSCHE Annahme: `tools/pcb/strombelastung.py` (Aufgabe D2) leitete
+# den schlimmsten Fall aus Kirchhoffs Knotenregel her -- "keine
+# Verriegelung gegen gleichzeitigen Vollbetrieb aller Kanaele
+# dokumentiert, also 4 x 3 A = 12 A" -- und verurteilte damit Dimmer3
+# und Dimmer4 zu 4,1 bzw. 6,1 mm Bahnbreite auf einem 82x73-mm-
+# Zweilagenbrett. Die Knotenregel war richtig; die Praemisse war es
+# nicht. Nachgerechnet an den Bauteilen, die in genau diesem Strang
+# SITZEN, war der Fall nie herstellbar:
+#
+#   * Q90 (IRFR5305, D-Pak/TO-252) liegt als Verpolschutz im Strang
+#     JEDES Moduls -- zwischen PWR_IN und der lokalen 24-V-Schiene.
+#     RDS(on) 0,065 Ohm (Datenblatt Infineon/IR PD-95025A, woertlich
+#     zitiert in tools/sch/motormodul.py); dasselbe Datenblatt nennt
+#     fuer typische SMD-Montage "Power dissipation levels up to 1.5
+#     watts are possible". Daraus: I_max = sqrt(1,5 W / 0,065 Ohm) =
+#     4,80 A. Bei den unterstellten 12 A waeren es 0,065 x 144 =
+#     9,4 W in einem TO-252 -- das Bauteil ist lange vorher tot,
+#     gleich wie breit das Kupfer ist. Die 12 A konnten also nie
+#     fliessen; eine Bahn dafuer zu bauen waere Kupfer fuer einen
+#     Betriebsfall gewesen, den das Brett gar nicht erreicht.
+#   * STECKER_LEISTUNG (unten) traegt 3,0 A je Kontakt, zwei Kontakte
+#     je Ader. Der Vertrag markiert die 6,0-A-Parallelsumme dort
+#     selbst als "keine Herstelleraussage ueber den Parallelbetrieb
+#     bei ungleichen Kontaktwiderstaenden" -- also wird sie hier auch
+#     nicht gebucht.
+#   * J90 / J5..J8 (KF350-3.5-2P, LCSC C474892): 10 A. Nicht der
+#     Engpass.
+#
+# DIE ZUSAGE, die daraus folgt (und die ab jetzt PRUEFBAR ist --
+# tools/pcb/strombelastung.py rechnet gegen genau diese Zahlen,
+# tests/test_strombudget.py haelt sie KiCad-frei fest):
+#
+#   modul_gesamt_a = 4,0   Summe ALLER Lasten hinter Q90 eines Moduls.
+#     Q90 verbraet dabei 0,065 x 16 = 1,04 W = 69 % der belegten 1,5 W
+#     -- 31 % Reserve, keine Punktlandung auf dem Grenzwert.
+#   stapel_durchleitung_a = 3,0   Was ueber STECKER_LEISTUNG in den
+#     Rest des Stapels weitergereicht werden darf. Bewusst NICHT die
+#     6,0-A-Parallelsumme, sondern der Nennwert EINES Kontakts: so
+#     bleibt die Verbindung auch dann innerhalb des Datenblatts, wenn
+#     von den zwei parallelen Kontakten einer schlecht sitzt und der
+#     andere alles traegt. Praktische Konsequenz, die auf den
+#     Bestueckungsdruck gehoert: EIN MODUL, DAS MEHR ALS 3,0 A ZIEHT,
+#     MUSS AN SEINER EIGENEN KLEMME J90 GESPEIST WERDEN, nicht ueber
+#     den Stapel.
+#   kanal_a = 3,0   je LED-Kanal, unveraendert (NCE6020AK 40 mOhm x
+#     (3 A)^2 = 0,36 W, tools/sch/dimmermodul.py; SS36C 3 A) -- ABER
+#     nur, solange die Summe aller gleichzeitig laufenden Kanaele
+#     modul_gesamt_a nicht ueberschreitet. Dimmer4 kann also einen
+#     Kanal mit vollen 3 A fahren, nicht vier.
+#   motor_a = 2,538   DRV8876-Choppinglimit (tools/sch/motormodul.py:
+#     ITRIP = 3,3 / (1300 x 0,001)), unveraendert.
+#
+# WAS HIER GESENKT WURDE, damit es niemand nachschlagen muss: die
+# frueher unterstellten 9 A (Dimmer3) bzw. 12 A (Dimmer4) gelten NICHT
+# mehr. Sie sind durch modul_gesamt_a = 4,0 A ersetzt. Das ist eine
+# Verkleinerung der Zusage gegenueber dem, was die Kanalzahl nahelegt
+# -- sie steht deshalb hier im Vertrag, auf dem Bestueckungsdruck
+# (tools/pcb/strombudget_druck.py) und in docs/vertrag.md, nicht nur
+# in einem Bericht.
+STROMBUDGET = {
+    "modul_gesamt_a": 4.0,
+    # Die Netze, durch die modul_gesamt_a VOLLSTAENDIG hindurch muss --
+    # auf jedem Modultyp dieselben zwei: die rohe Einspeisung vor dem
+    # Verpolschutz und die lokale Schiene dahinter (s. VERSORGUNG).
+    # netclasses.py gibt genau ihnen fertigung.TRACK_STAMM.
+    "stamm_netze": ("/PWR_IN", "/+24V"),
+    "stapel_durchleitung_a": 3.0,
+    "kanal_a": 3.0,
+    "motor_a": 2.538,
+    # Die Belege, gegen die oben gerechnet wurde -- maschinenlesbar,
+    # damit tests/test_strombudget.py die Herleitung nachrechnen kann
+    # statt sie zu glauben.
+    "q90_rdson_ohm": 0.065,
+    "q90_verlust_max_w": 1.5,
+    "q90_quelle": "Infineon/IR PD-95025A (IRFR5305PbF), 'Power "
+                  "dissipation levels up to 1.5 watts are possible'; "
+                  "RDS(on) 0.065 Ohm -- zitiert in tools/sch/motormodul.py",
+    "klemme_a": 10.0,
+    "klemme_quelle": "LCSC C474892 (KF350-3.5-2P): '10A' -- "
+                     "hardware/bauteile-dimmer.md",
+}
+
 # --- Die vier Steckerplaetze ------------------------------------------
 # Vier Steckerplaetze (v2: stapel_links, stapel_rechts, kette,
 # leistung), zwei Bauprinzipien. Der Unterschied ist keine

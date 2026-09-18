@@ -117,6 +117,20 @@ Kein freiliegendes Kupfer naeher als 1.5 mm an einem der 46 Landepunkte aus `LAN
 
 Seit Vertragsversion 3 hat jedes Modul seine eigene Versorgungszelle statt einer gemeinsamen Sockelplatine: Klemme (6.0-30.0 V), Verpolschutz (P-FET, Drain am Netz `PWR_IN`), TVS, K7805-1000R3 und ein Schottky-OR (vsys_diode) vor VSYS. Beliebig viele bestueckte Regler koennen im selben Stapel koexistieren; ein einziges eingespeistes Board versorgt die ganze Kette. Der Gate-Teiler des Verpolschutzes haengt an `+24V_LOKAL`, nicht an der Einspeisung selbst -- das ist der aus v1 uebernommene Blocker-Fix: lag der Teiler am Eingang, bildeten Bodydiode und TVS bei verpolter Einspeisung einen Kurzschluss statt zu sperren.
 
+## Strombudget der 24-V-Verteilung
+
+Der Verpolschutz Q90 (IRFR5305, TO-252) liegt im Strang JEDES Moduls. Sein Datenblatt (Infineon/IR PD-95025A) nennt RDS(on) 0.065 Ohm und "power dissipation levels up to 1.5 watts are possible" -- daraus 4.80 A als absolute Obergrenze. Zugesagt wird deshalb:
+
+| Groesse | Wert | Woher |
+|---|---|---|
+| Summe aller Lasten hinter Q90 | 4.0 A | Q90 verbraet dabei 1.04 W = 69 % der belegten 1.5 W |
+| Durchleitung in den Stapel | 3.0 A | Nennstrom EINES Kontakts von STECKER_LEISTUNG -- sicher auch dann, wenn von den zwei parallelen Kontakten einer schlecht sitzt |
+| je LED-Kanal | 3.0 A | NCE6020AK/SS36C -- gilt fuer EINEN Kanal, die Summe bleibt beim Modulbudget |
+| Motorausgang | 2.538 A | DRV8876-Choppinglimit |
+| Einspeiseklemme | 10 A | KF350-3.5-2P -- nicht der Engpass |
+
+**Ein Modul, das mehr als 3.0 A zieht, muss an seiner eigenen Klemme J90 gespeist werden**, nicht ueber den Stapel. Ein Vierkanal-Dimmer kann also EINEN Kanal mit vollen 3.0 A fahren, aber nicht vier: 12.0 A liegen weit ueber dem Modulbudget. Diese Grenze steht auch auf dem Bestueckungsdruck jeder Platine.
+
 ## Randpads
 
 Jeder als "frei" deklarierte Pico-Pin (und mehrere 3V3-/GND-Pads) liegt zusaetzlich als beschriftetes Loetpad auf der Plattenkante -- Position vertraglich fixiert, identisch auf jedem Modul, auf der Unterseite (B.Cu), damit die Verdreh-Sicherheit der Landepunkte unangetastet bleibt. 22 Pads insgesamt.

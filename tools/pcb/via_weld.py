@@ -149,24 +149,68 @@ def _t_abzweig_schliessen(board, px, py, netz, lage):
 
 
 def _auf_gleichnetzigem_pad(board, px, py, netz):
-    """True, wenn (px,py) auf einem Pad DESSELBEN Netzes liegt (auf
-    IRGENDEINER Lage) -- der Anker, der eine dort sitzende Via
-    ueberfluessig macht, s. Moduldocstring, dritte Form."""
+    """Das Pad DESSELBEN Netzes unter (px,py), oder None.
+
+    Der Anker, der eine dort sitzende Via ueberfluessig machen KANN
+    (s. Moduldocstring, dritte Form) -- ob sie es wirklich ist, ent-
+    scheidet erst `_ueberfluessige_via_entfernen()`."""
     punkt = pcbnew.VECTOR2I(px, py)
     for fp in board.GetFootprints():
         for pad in fp.Pads():
             if pad.GetNetCode() == netz and pad.HitTest(punkt):
-                return True
+                return pad
+    return None
+
+
+def _kupfer_auf_lage(board, px, py, netz, lage, radius):
+    """Liegt gleichnetziges Bahnkupfer dieser Lage am Punkt an?"""
+    punkt = pcbnew.VECTOR2I(px, py)
+    for t in board.Tracks():
+        if (t.Type() != pcbnew.PCB_TRACE_T or t.GetNetCode() != netz
+                or t.GetLayer() != lage):
+            continue
+        if t.HitTest(punkt, radius):
+            return True
     return False
 
 
 def _ueberfluessige_via_entfernen(board, px, py, netz):
-    """Entfernt die Via bei (px,py), aber NUR wenn sie exakt auf einem
-    gleichnetzigen Pad sitzt (das Pad bleibt als Anker stehen -- die
-    Via traegt dann nachweislich nichts zur Netz-Konnektivitaet bei,
-    s. Moduldocstring). Liefert True, wenn entfernt."""
-    if not _auf_gleichnetzigem_pad(board, px, py, netz):
+    """Entfernt die Via bei (px,py), aber NUR wenn sie wirklich nichts
+    traegt. Liefert True, wenn entfernt.
+
+    ZWEI Bedingungen, nicht eine (Fehlerkorrektur Aufgabe D3, v2.1):
+
+      1. Die Via sitzt auf einem gleichnetzigen Pad (der Anker).
+      2. Auf jeder Lage, die dieses Pad NICHT selbst traegt, liegt auch
+         kein gleichnetziges Bahnkupfer an der Via an.
+
+    Bedingung 2 stand seit der Einfuehrung im Moduldocstring ("auf der
+    Gegenlage ueberhaupt kein Kupfer dieses Netzes in der Naehe"), war
+    aber NIE implementiert -- der Code prueste nur den Anker. Das ist
+    genau dann falsch, wenn der Anker ein SMD-Pad ist (nur EINE Lage):
+    dann ist die Via das einzige, was eine Bahn der Gegenlage ans Pad
+    bringt, und ihr Entfernen trennt das Netz auf. GEMESSEN
+    (Dimmer1, Aufgabe D3): C91 Pad 1 (0805, nur F.Cu) hing ueber genau
+    so eine Via an /+5V_LOKAL auf B.Cu; via_weld entfernte sie, DRC
+    meldete danach "1 unconnected items". Die urspruengliche Messung,
+    die dieses Entfernen rechtfertigte, betraf einen Fall, in dem auf
+    der Gegenlage tatsaechlich nichts lag (naechstes Bahnstueck 8,3 mm
+    entfernt) -- der Code verallgemeinerte davon zu weit.
+    """
+    pad = _auf_gleichnetzigem_pad(board, px, py, netz)
+    if pad is None:
         return False
+    # Radius, in dem Kupfer als "anliegend" gilt: der Via-Restring.
+    radius = 0
+    for t in board.Tracks():
+        if (t.Type() == pcbnew.PCB_VIA_T and t.GetNetCode() == netz
+                and t.GetPosition().x == px and t.GetPosition().y == py):
+            radius = t.GetWidth(pcbnew.F_Cu) // 2
+    for lage in (pcbnew.F_Cu, pcbnew.B_Cu):
+        if pad.IsOnLayer(lage):
+            continue            # diese Lage deckt das Pad selbst ab
+        if _kupfer_auf_lage(board, px, py, netz, lage, radius):
+            return False        # die Via traegt diese Lage ans Pad
     for t in list(board.Tracks()):
         if t.Type() != pcbnew.PCB_VIA_T or t.GetNetCode() != netz:
             continue
@@ -174,6 +218,94 @@ def _ueberfluessige_via_entfernen(board, px, py, netz):
         if p.x == px and p.y == py:
             board.Remove(t)
             return True
+    return False
+
+
+def _kreuzung_aufloesen(board, px, py, netz, leere_lage):
+    """Via, die auf EINER Lage nichts traegt, auf der anderen aber zwei
+    Bahnen zusammenhaelt -- auf der vollen Lage verbinden, dann weg.
+
+    FUENFTE FORM (Aufgabe D3, v2.1). Nach einem Lauf mit
+    `--rip-existing-nets '*'` bleiben Vias stehen, an denen auf einer
+    Lage gar nichts mehr haengt (vierte Form), die aber trotzdem nicht
+    entfernt werden duerfen: auf der ANDEREN Lage enden zwei Bahnen
+    knapp NEBEN der Via-Mitte, und nur das Via-Pad verbindet sie. Ein
+    Lagenwechsel findet trotzdem nicht statt -- das Loch ist gebohrt,
+    ohne etwas von einer Lage zur anderen zu bringen.
+
+    Hier wird deshalb erst das Kupfer der vollen Lage explizit
+    verbunden (Steg von jedem nahen Bahnende zur Via-Mitte, Breite der
+    jeweiligen Bahn) und DANACH die Via nach der Messregel der vierten
+    Form entfernt -- bleibt die Konnektivitaet nicht gleich, werden
+    Stege und Via wieder zurueckgenommen.
+    """
+    voll = pcbnew.B_Cu if leere_lage == pcbnew.F_Cu else pcbnew.F_Cu
+    mitte = pcbnew.VECTOR2I(px, py)
+    stege = []
+    for t in board.Tracks():
+        if (t.Type() != pcbnew.PCB_TRACE_T or t.GetLayer() != voll
+                or t.GetNetCode() != netz):
+            continue
+        for p in (t.GetStart(), t.GetEnd()):
+            d = math.hypot(p.x - px, p.y - py)
+            if 0 < d <= MAX_ABSTAND:
+                steg = pcbnew.PCB_TRACK(board)
+                steg.SetStart(mitte)
+                steg.SetEnd(pcbnew.VECTOR2I(p.x, p.y))
+                steg.SetWidth(t.GetWidth())
+                steg.SetLayer(voll)
+                steg.SetNetCode(netz)
+                stege.append(steg)
+    if len(stege) < 2:
+        return False
+    for steg in stege:
+        board.Add(steg)
+    if _beweisbar_nutzlose_via_entfernen(board, px, py, netz):
+        return True
+    for steg in stege:
+        board.Remove(steg)
+    board.BuildConnectivity()
+    return False
+
+
+def _beweisbar_nutzlose_via_entfernen(board, px, py, netz):
+    """Entfernt eine Via, wenn ihr Fehlen die Konnektivitaet NICHT
+    aendert -- gemessen, nicht geschlossen.
+
+    VIERTE FORM (Aufgabe D3, v2.1). Ein Lauf mit
+    `route.py --rip-existing-nets '*'` laesst Vias stehen, an denen auf
+    einer Lage ueberhaupt nichts mehr haengt: keine Bahn, kein Pad,
+    keine Gussflaeche (genau das prueft `freihaengende_vias()`). Das ist
+    weder ein Rasterversatz (erste Form) noch ein T-Abzweig (zweite)
+    noch ein Pad-Anker (dritte) -- es ist ein Rest, den der Router beim
+    Umverlegen nicht mit aufgeraeumt hat: ein gebohrtes, verkupfertes
+    Loch, das nichts verbindet.
+
+    Warum das Entfernen hier erlaubt ist und in der dritten Form nur mit
+    Pad-Anker: dort wird GESCHLOSSEN, die Via sei entbehrlich; hier wird
+    es GEMESSEN. Die Via wird testweise entfernt, die Konnektivitaet neu
+    gerechnet, und nur wenn die Zahl der unverbundenen Stellen GLEICH
+    bleibt, bleibt sie entfernt -- sonst wird sie zurueckgelegt. Damit
+    trifft das Skript kein Urteil ueber die Netz-Topologie, es misst
+    eines.
+    """
+    opfer = None
+    for t in board.Tracks():
+        if (t.Type() == pcbnew.PCB_VIA_T and t.GetNetCode() == netz
+                and t.GetPosition().x == px and t.GetPosition().y == py):
+            opfer = t
+            break
+    if opfer is None:
+        return False
+    board.BuildConnectivity()
+    vorher = board.GetConnectivity().GetUnconnectedCount(True)
+    board.Remove(opfer)
+    board.BuildConnectivity()
+    nachher = board.GetConnectivity().GetUnconnectedCount(True)
+    if nachher <= vorher:
+        return True
+    board.Add(opfer)          # das Loch wurde doch gebraucht
+    board.BuildConnectivity()
     return False
 
 
@@ -225,6 +357,13 @@ def main(pfad):
             if _t_abzweig_schliessen(board, px, py, netz, lage):
                 zerlegt += 1
                 continue
+            if _kreuzung_aufloesen(board, px, py, netz, lage):
+                zerlegt += 1
+                entfernt += 1
+                break
+            if _beweisbar_nutzlose_via_entfernen(board, px, py, netz):
+                entfernt += 1
+                break        # die Via ist weg, andere Lage erledigt sich
             ungeloest.append((x, y, netzname, lage_name,
                                bester[0] / 1e6 if bester else None))
 

@@ -1,0 +1,20 @@
+{
+  "//": "MicroPython-Stubs fuer pyright (nvim/VS Code). typings/ = Symlink auf ~/.micropico-stubs/included",
+  "typeshedPath": "typings",
+  "extraPaths": [
+    "typings",
+    ".",
+    "sockel",
+    "modul"
+  ],
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "standard",
+  "reportMissingModuleSource": "none",
+  "ignore": [
+    "typings"
+  ],
+  "exclude": [
+    "typings",
+    "**/__pycache__"
+  ]
+}

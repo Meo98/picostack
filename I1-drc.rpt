@@ -1,0 +1,22 @@
+** Drc report for I1.kicad_pcb **
+** Created on 2026-09-16T14:24:27 **
+** Report includes: Errors **
+
+** Found 0 DRC violations **
+
+** Found 1 unconnected pads **
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(6.2875 mm, 21.4500 mm): Pad 6 [/NCLR] of U101 on F.Cu
+    @(4.8425 mm, 25.1800 mm): Pad 1 [/NCLR] of C101 on F.Cu
+
+** Found 0 Footprint errors **
+
+** Ignored checks **
+    - Footprint has no courtyard defined
+    - Track endpoint not centered on via
+    - Tuning profile track geometries
+    - Footprint doesn't match symbol's footprint filters
+    - Footprint component type doesn't match footprint pads
+
+** End of Report **

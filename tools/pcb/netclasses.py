@@ -31,8 +31,11 @@ Aufruf: python3 tools/pcb/netclasses.py <projekt.kicad_pro> <spec_modul>
 import json, os, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
+for _d in (HERE, os.path.join(HERE, "..")):
+    if _d not in sys.path:
+        sys.path.insert(0, _d)
 import fertigung
+import stack_spec as S
 
 
 # Die Vorgabe-Netzklasse, wie KiCad 10.0.5 sie selbst schreibt.
@@ -99,20 +102,40 @@ def main(pro, leistungsnetze):
         "via_diameter": 0.8,
         "via_drill": 0.4,
     })
-    ns["classes"] = [vorlage, leistung]
+    # v2.1, Aufgabe D3: dritte Klasse fuer den 24-V-Stamm.
+    #
+    # Bis v2.1 trugen /PWR_IN und /+24V dieselbe Klasse wie ein
+    # einzelner Kanal. Das war der Entwurfsfehler, den
+    # tools/pcb/strombelastung.py gefunden hat: durch den Stamm muss die
+    # SUMME (stack_spec.STROMBUDGET["modul_gesamt_a"] = 4,0 A), durch
+    # einen Kanal nur der Kanalstrom. Eine Klasse fuer beides heisst,
+    # eine der beiden Zahlen ist falsch -- 1,00 mm traegt 3,25 A.
+    stamm = dict(vorlage)
+    stamm.update({
+        "name": "Stamm",
+        "track_width": fertigung.TRACK_STAMM,
+        "via_diameter": 0.8,
+        "via_drill": 0.4,
+    })
+    ns["classes"] = [vorlage, leistung, stamm]
 
     # Zuordnung ueber Muster, damit sie auch fuer spaeter neu
     # hinzukommende Netze gilt und nicht per Hand nachgezogen werden muss.
-    leistungsnetze = set(leistungsnetze)
-    ns["netclass_patterns"] = [
-        {"netclass": "Leistung", "pattern": n} for n in sorted(leistungsnetze)
-    ]
+    # Reihenfolge zaehlt: KiCad nimmt das ERSTE passende Muster, also
+    # muessen die Stammnetze VOR den uebrigen Leistungsnetzen stehen --
+    # sonst bekaeme /+24V die schmalere Leistungsklasse.
+    stammnetze = [n for n in S.STROMBUDGET["stamm_netze"] if n in set(leistungsnetze)]
+    uebrige = sorted(set(leistungsnetze) - set(stammnetze))
+    ns["netclass_patterns"] = (
+        [{"netclass": "Stamm", "pattern": n} for n in stammnetze]
+        + [{"netclass": "Leistung", "pattern": n} for n in uebrige])
     ns.pop("netclass_assignments", None)
 
     json.dump(d, open(pro, "w", encoding="utf-8"), indent=2, ensure_ascii=False)
-    print("Default %.2f mm, Leistung %.2f mm fuer: %s"
-          % (fertigung.TRACK_SIGNAL, fertigung.TRACK_POWER,
-             ", ".join(sorted(leistungsnetze))))
+    print("Default %.2f mm | Stamm %.2f mm fuer %s | Leistung %.2f mm fuer %s"
+          % (fertigung.TRACK_SIGNAL,
+             fertigung.TRACK_STAMM, ", ".join(stammnetze) or "(keine)",
+             fertigung.TRACK_POWER, ", ".join(uebrige) or "(keine)"))
     return 0
 
 

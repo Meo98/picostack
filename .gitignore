@@ -9,3 +9,6 @@ __pycache__/
 # selbst (.kicad_pcb) gehoert ins Repo, der Weg dorthin nicht.
 *.dsn
 *.ses
+
+# MicroPython-Stubs (lokaler Symlink, siehe firmware/pyrightconfig.json)
+firmware/typings

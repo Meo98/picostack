@@ -253,6 +253,51 @@ def erzeugen(ziel=None):
                  " (vsys_diode)" if S.VERSORGUNG["vsys_diode"] else "",
                  S.VERSORGUNG["gate_teiler_an"]),
              "",
+             "## Strombudget der 24-V-Verteilung",
+             "",
+             "Der Verpolschutz Q90 (IRFR5305, TO-252) liegt im Strang "
+             "JEDES Moduls. Sein Datenblatt (Infineon/IR PD-95025A) "
+             "nennt RDS(on) %.3f Ohm und \"power dissipation levels up "
+             "to %.1f watts are possible\" -- daraus %.2f A als "
+             "absolute Obergrenze. Zugesagt wird deshalb:"
+             % (S.STROMBUDGET["q90_rdson_ohm"],
+                S.STROMBUDGET["q90_verlust_max_w"],
+                (S.STROMBUDGET["q90_verlust_max_w"]
+                 / S.STROMBUDGET["q90_rdson_ohm"]) ** 0.5),
+             "",
+             tabelle(["Groesse", "Wert", "Woher"], [
+                 ("Summe aller Lasten hinter Q90",
+                  "%.1f A" % S.STROMBUDGET["modul_gesamt_a"],
+                  "Q90 verbraet dabei %.2f W = %.0f %% der belegten %.1f W"
+                  % (S.STROMBUDGET["q90_rdson_ohm"]
+                     * S.STROMBUDGET["modul_gesamt_a"] ** 2,
+                     100 * S.STROMBUDGET["q90_rdson_ohm"]
+                     * S.STROMBUDGET["modul_gesamt_a"] ** 2
+                     / S.STROMBUDGET["q90_verlust_max_w"],
+                     S.STROMBUDGET["q90_verlust_max_w"])),
+                 ("Durchleitung in den Stapel",
+                  "%.1f A" % S.STROMBUDGET["stapel_durchleitung_a"],
+                  "Nennstrom EINES Kontakts von STECKER_LEISTUNG -- sicher "
+                  "auch dann, wenn von den zwei parallelen Kontakten einer "
+                  "schlecht sitzt"),
+                 ("je LED-Kanal", "%.1f A" % S.STROMBUDGET["kanal_a"],
+                  "NCE6020AK/SS36C -- gilt fuer EINEN Kanal, die Summe "
+                  "bleibt beim Modulbudget"),
+                 ("Motorausgang", "%.3f A" % S.STROMBUDGET["motor_a"],
+                  "DRV8876-Choppinglimit"),
+                 ("Einspeiseklemme", "%.0f A" % S.STROMBUDGET["klemme_a"],
+                  "KF350-3.5-2P -- nicht der Engpass"),
+             ]),
+             "",
+             "**Ein Modul, das mehr als %.1f A zieht, muss an seiner "
+             "eigenen Klemme J90 gespeist werden**, nicht ueber den "
+             "Stapel. Ein Vierkanal-Dimmer kann also EINEN Kanal mit "
+             "vollen %.1f A fahren, aber nicht vier: %.1f A liegen weit "
+             "ueber dem Modulbudget. Diese Grenze steht auch auf dem "
+             "Bestueckungsdruck jeder Platine."
+             % (S.STROMBUDGET["stapel_durchleitung_a"],
+                S.STROMBUDGET["kanal_a"], 4 * S.STROMBUDGET["kanal_a"]),
+             "",
              "## Randpads",
              "",
              "Jeder als \"frei\" deklarierte Pico-Pin (und mehrere "

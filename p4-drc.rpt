@@ -1,0 +1,86 @@
+** Drc report for p4.kicad_pcb **
+** Created on 2026-09-16T11:42:43 **
+** Report includes: Errors **
+
+** Found 15 DRC violations **
+[tracks_crossing]: Tracks crossing
+    Local override; error
+    @(6.9000 mm, 25.2000 mm): Track [GND] on F.Cu, length 2.9000 mm
+    @(6.5500 mm, 26.5000 mm): Track [/NCLR] on F.Cu, length 1.9000 mm
+[clearance]: Clearance violation ( clearance 0.2000 mm; actual 0.1750 mm)
+    Local override; error
+    @(6.5500 mm, 26.5000 mm): Track [/NCLR] on F.Cu, length 1.9000 mm
+    @(8.0000 mm, 26.0000 mm): Track [GND] on F.Cu, length 0.5040 mm
+[tracks_crossing]: Tracks crossing
+    Local override; error
+    @(6.5500 mm, 26.5000 mm): Track [/NCLR] on F.Cu, length 1.9000 mm
+    @(6.6000 mm, 27.4000 mm): Track [GND] on F.Cu, length 1.9799 mm
+[clearance]: Clearance violation ( clearance 0.2000 mm; actual 0.0750 mm)
+    Local override; error
+    @(8.0000 mm, 26.0000 mm): Via [GND] on F.Cu - B.Cu
+    @(6.5500 mm, 26.5000 mm): Track [/NCLR] on F.Cu, length 1.9000 mm
+[clearance]: Clearance violation ( clearance 0.2000 mm; actual 0.0727 mm)
+    Local override; error
+    @(8.0000 mm, 26.0000 mm): Via [GND] on F.Cu - B.Cu
+    @(8.4500 mm, 26.5000 mm): Via [/NCLR] on F.Cu - B.Cu
+[clearance]: Clearance violation ( clearance 0.2000 mm; actual 0.1727 mm)
+    Local override; error
+    @(8.4500 mm, 26.5000 mm): Via [/NCLR] on F.Cu - B.Cu
+    @(8.0000 mm, 26.0000 mm): Track [GND] on B.Cu, length 0.2700 mm
+[shorting_items]: Items shorting two nets (nets 3V3 and /NCLR)
+    Local override; error
+    @(7.2000 mm, 21.6000 mm): Track [3V3] on F.Cu, length 0.1000 mm
+    @(8.7500 mm, 19.9500 mm): Track [/NCLR] on F.Cu, length 2.0506 mm
+[clearance]: Clearance violation ( clearance 0.2000 mm; actual 0.0500 mm)
+    Local override; error
+    @(7.2000 mm, 21.7000 mm): Track [3V3] on F.Cu, length 0.8000 mm
+    @(8.7500 mm, 19.9500 mm): Track [/NCLR] on F.Cu, length 2.0506 mm
+[shorting_items]: Items shorting two nets (nets 3V3 and /NCLR)
+    Local override; error
+    @(7.9000 mm, 20.9000 mm): Track [3V3] on F.Cu, length 0.9899 mm
+    @(8.7500 mm, 19.9500 mm): Track [/NCLR] on F.Cu, length 2.0506 mm
+[shorting_items]: Items shorting two nets (nets 3V3 and /NCLR)
+    Local override; error
+    @(7.9000 mm, 20.9000 mm): Via [3V3] on F.Cu - B.Cu
+    @(8.7500 mm, 19.9500 mm): Track [/NCLR] on F.Cu, length 2.0506 mm
+[clearance]: Clearance violation ( clearance 0.2000 mm; actual 0.0500 mm)
+    Local override; error
+    @(11.8000 mm, 35.0000 mm): Track [GND] on F.Cu, length 0.5657 mm
+    @(4.6000 mm, 35.3000 mm): Track [/SEL_CLK] on F.Cu, length 7.6000 mm
+[clearance]: Clearance violation ( clearance 0.2000 mm; actual 0.0662 mm)
+    Local override; error
+    @(8.7500 mm, 19.9500 mm): Track [/NCLR] on F.Cu, length 2.0506 mm
+    @(7.2000 mm, 21.7000 mm): Track [3V3] on F.Cu, length 0.5657 mm
+[tracks_crossing]: Tracks crossing
+    Local override; error
+    @(6.5500 mm, 26.5000 mm): Track [/NCLR] on F.Cu, length 1.9000 mm
+    @(6.8000 mm, 28.0000 mm): Track [GND] on F.Cu, length 2.2000 mm
+[clearance]: Clearance violation ( clearance 0.2000 mm; actual 0.1727 mm)
+    Local override; error
+    @(8.0000 mm, 26.0000 mm): Track [GND] on B.Cu, length 0.7071 mm
+    @(8.4500 mm, 26.5000 mm): Via [/NCLR] on F.Cu - B.Cu
+[clearance]: Clearance violation ( clearance 0.2000 mm; actual 0.1750 mm)
+    Local override; error
+    @(6.5500 mm, 26.5000 mm): Track [/NCLR] on F.Cu, length 1.9000 mm
+    @(6.8000 mm, 25.8000 mm): Track [GND] on F.Cu, length 0.2828 mm
+
+** Found 2 unconnected pads **
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(0.5000 mm, 0.5000 mm): Zone 'GND F.Cu' [GND] on F.Cu, priority 0
+    @(0.5000 mm, 0.5000 mm): Zone 'GND B.Cu' [GND] on B.Cu, priority 0
+[unconnected_items]: Missing connection between items
+    Local override; error
+    @(14.9875 mm, 15.3250 mm): Pad 4 [3V3] of U100 on F.Cu
+    @(15.7000 mm, 16.2000 mm): Track [3V3] on B.Cu, length 1.8385 mm
+
+** Found 0 Footprint errors **
+
+** Ignored checks **
+    - Footprint has no courtyard defined
+    - Track endpoint not centered on via
+    - Tuning profile track geometries
+    - Footprint doesn't match symbol's footprint filters
+    - Footprint component type doesn't match footprint pads
+
+** End of Report **

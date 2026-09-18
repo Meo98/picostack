@@ -32,10 +32,50 @@ Muster, das diese Datei gerade vermeiden soll.
 """
 
 TRACK_SIGNAL = 0.25       # mm, Signalbahnen
-TRACK_POWER = 1.00        # mm, Leistungsbahnen (Motor- und 24V-Strang)
+TRACK_POWER = 1.00        # mm, Leistungsbahnen (Motorausgang, LED-Kanal)
+# v2.1, Aufgabe D3: eine DRITTE Breite fuer den 24-V-Stamm.
+#
+# WARUM ZWEI LEISTUNGSBREITEN STATT EINER. TRACK_POWER (1,00 mm) wurde
+# nach der "Recommended"-Spalte von KiCadRoutingTools docs/power-nets.md
+# fuer die 2-5-A-Stufe gewaehlt. Nachgerechnet mit IPC-2221
+# (I = 0,048 x dT^0,44 x A^0,725, 1 oz, 20 K) traegt sie 3,25 A -- das
+# deckt einen LED-Kanal (3,0 A) und einen Motorausgang (2,538 A), aber
+# NICHT den Stamm, durch den beides zusammen plus die Stapel-
+# Durchleitung muss: stack_spec.STROMBUDGET["modul_gesamt_a"] = 4,0 A
+# verlangt 1,335 mm. Bis v2.1 trugen /PWR_IN und /+24V dieselbe
+# 1,00-mm-Klasse wie ein einzelner Kanal -- das war der eigentliche
+# Entwurfsfehler, den tools/pcb/strombelastung.py aufgedeckt hat (der
+# Router hatte daran keine Schuld).
+#
+# 1,40 mm traegt bei 20 K 4,14 A, also 3,5 % ueber den zugesagten
+# 4,0 A. Nicht mehr, weil jede weitere Zehntelmillimeter-Breite den
+# Korridor auf einem 82x73-mm-Zweilagenbrett verengt, auf dem das
+# Routing schon bei 1,00 mm gekaempft hat (s. task-v21d2-report.md).
+TRACK_STAMM = 1.40        # mm, 24-V-Stamm (/PWR_IN, /+24V)
 
 VIA_PAD = 0.60             # mm
 VIA_DRILL = 0.30           # mm
+
+# Kupferdicke im Via-Loch (mm).
+#
+# Gebraucht von tools/pcb/strombelastung.py: ein Via ist im Strompfad
+# kein Punkt, sondern ein Leiter mit dem Querschnitt
+# pi x Bohrdurchmesser x dieser Dicke. IPC-6012 Klasse 2 verlangt
+# 20 um Durchschnitt und 18 um Minimum je Loch; gerechnet wird mit dem
+# MINIMUM, nicht mit dem Durchschnitt -- eine Pruefung soll am
+# schlechtesten zulaessigen Los nicht knapp durchfallen, sondern am
+# schlechtesten zulaessigen Los bestehen.
+VIA_KUPFER = 0.018         # mm
+
+# Enddicke der Aussenlagen (mm) und Leiterplattendicke (mm).
+#
+# 1 oz (35 um) ist JLCs Vorgabe fuer ein 2-Lagen-Brett ohne
+# Sonderwunsch; 1,6 mm ebenso (s. hardware/fertigung/ORDERING.md).
+# Die Plattendicke ist die LAENGE eines Vias im Strompfad -- ohne sie
+# koennte strombelastung.py ein Via nicht gegen seine eigene
+# Kurzhals-Grenze halten.
+KUPFER_AUSSEN = 0.035      # mm (1 oz)
+PLATINE_DICKE = 1.60       # mm
 
 # Wie stark pcbnew den Hof gegenueber der Datei aufblaeht.
 #
