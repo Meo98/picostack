@@ -63,7 +63,7 @@
     "ssh_key": ""
   },
   "meta": {
-    "filename": "Dimmer4_routed.kicad_prl",
+    "filename": "Dimmer4.kicad_prl",
     "version": 5
   },
   "net_inspector_panel": {

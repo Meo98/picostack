@@ -178,9 +178,37 @@ EDGE_CLEARANCE = M.EDGE_CLEARANCE
 # der Landepunkt LAG in seinem Hof (0,00 mm statt 1,5). Nach der
 # Verschiebung (D4 neu x=53,10) bleiben 1,71 mm Reserve.
 _VERSORGUNG_PLATZ = {
-    "R90": Platz("R90", 53.64, 0.50, 3.70, 1.90, 0, False),
-    "R91": Platz("R91", 57.94, 0.50, 3.70, 1.90, 0, False),
-    "J90": Platz("J90", 53.64, 3.00, 8.00, 8.60, 0, True),
+    # -- v2.1 Aufgabe D4: J90 AN DIE OBERKANTE, R90/R91 DARUNTER.
+    #
+    # Sichtbefund des Nutzers am 3D-Bild: "zwei Wiederstaende vor dem
+    # Ausgang ... die Anschlussklemmen sollten wirklich am Boardrand
+    # liegen ohne irgendwelche Wiederstaende davor". Nachgemessen war es
+    # schlimmer als gemeldet: R90/R91 standen bei y 0,50..2,40 zwischen
+    # J90 (ab y 3,00) und der Oberkante, UND J90 selbst war um 180 Grad
+    # verdreht -- seine Drahtoeffnung zeigte nach innen (gemessen mit
+    # klemmenprobe.py: "dorthin sind es 61,43 mm, zur naechsten Kante
+    # nur 3,02 mm"). An diese Klemme war kein Kabel anschliessbar.
+    #
+    # Die Oeffnungsrichtung der Bauform ist jetzt Vertragsdatum
+    # (stack_spec.KLEMME_OEFFNUNG, aus dem STEP-Modell gemessen) und
+    # klemmenprobe.py haelt R1 rot -- vorher war R1 eine Regel ohne
+    # Pruefung, die beim Platzieren von Hand befolgt wurde.
+    #
+    # NEUE LAGE, gerechnet statt geschaetzt:
+    #   J90  Drehung 180 -> Oeffnung zeigt nach -y (oben). Hof-Oberkante
+    #        auf y=0,00, also buendig (R1, K2). Kontakte liegen lokal
+    #        auf y=0, bei Drehung 180 also 5,00 mm unter der
+    #        Hof-Oberkante -> global y=5,00; Padradius 1,20 -> naechste
+    #        Kupferkante 3,80 mm von der Kante, ueber den 2,00 mm aus R5.
+    #   R90/R91 wandern in das Band, das J90 dabei freigibt: J90 endet
+    #        jetzt bei y=8,60 statt 11,60, darunter liegt bis D90
+    #        (y=15,20 Dimmer / 17,20 Motor) freie Flaeche. y=9,20 haelt
+    #        COURTYARD_GAP (0,60) zu J90 ein, die x-Lagen bleiben
+    #        unveraendert -- der Gate-Teiler behaelt seine kurze
+    #        Anbindung an Q90s Gate.
+    "J90": Platz("J90", 53.64, 0.00, 8.00, 8.60, 180, True),
+    "R90": Platz("R90", 53.64, 9.20, 3.70, 1.90, 0, False),
+    "R91": Platz("R91", 57.94, 9.20, 3.70, 1.90, 0, False),
     # Q90 (Hof bis x=73,34) muss y >= 7,51 halten, sonst greift das
     # M3-Freihaltequadrat der rechten oberen Bohrung (78|4, Kante bis
     # x=74,5/y=7,5) -- ROT-NACHWEIS: bei y=3,00 (buendig mit J90) meldet
@@ -585,22 +613,20 @@ def _funktions_labels(kanaele):
     dieselbe eingebaute Konvention wie C90s "+"), eigene "+"/"-"-Texte
     entfallen deshalb hier wie dort.
 
-    LAGE weicht vom Motormodul ab (dort: OBERHALB von J90). Grund: auf
-    dem Dimmer-Board sitzt J90 in der verdichteten Versorgungszelle
-    (Pads y=5,40..7,80 statt 10,10..12,50) direkt UNTER R90/R91 --
-    zwischen deren Referenztext (endet y=2,13) und J90s Klemmenkoerper
-    (beginnt y=3,38) bleiben nur 1,25 mm frei, weniger als die reale
-    Texthoehe (~1,36 mm bei 0,8 mm nominell) -- "oberhalb" passt hier
-    schlicht nicht. UNTERHALB dagegen (zwischen J90s Klemmenkoerper,
-    endet y=11,22, und D90s Klemmenkoerper, beginnt y=15,24) sind 4,02 mm
-    frei. Text bei y=13,20: 1,3 mm Abstand zu beiden Koerpern.
+    LAGE ist mit v2.1/Aufgabe D4 auf BEIDEN Boardfamilien dieselbe
+    geworden (66,00|3,80), weil J90 auf beiden an die Oberkante
+    gewandert ist -- die volle Herleitung steht bei
+    spec_motor.FUNKTIONS_LABELS und gilt hier wortgleich. Die frueheren,
+    je Boardfamilie verschiedenen Lagen (Motor oberhalb, Dimmer
+    unterhalb von J90) sind damit hinfaellig; beide lagen an J90s alter,
+    nach innen versetzter Stelle.
 
     ROT-NACHWEIS (verworfener erster Wurf, y=10,50): lag noch INNERHALB
     von J90s Klemmenkoerper (bis y=11,22) -- vom 3D-Rendering verdeckt,
     genau die K2-Falle (pad-frei ist nicht koerper-frei), s.
     spec_motor.FUNKTIONS_LABELS fuer denselben Fund am Motormodul.
     """
-    aus = [("6-30V", 57.64, 13.20)]
+    aus = [("6-30V", 66.00, 3.80)]
     for n in range(1, kanaele + 1):
         aus.append(("LED%d" % n, _klemme_x(n, kanaele) + 2.25, 62.50))
     return tuple(aus)
@@ -664,6 +690,11 @@ def beschreibung(kanaele):
         # v2.1 (Aufgabe C1): dieselbe bewusste Ausnahme wie
         # spec_motor.EDGE_FLUSH_REFS, fuer alle Kanal-Klemmen dieses
         # Boards (R1, kantenbuendig).
+        # v2.1 (Aufgabe D4): J90 kommt dazu -- die Einspeise-
+        # klemme sitzt jetzt kantenbuendig an der OBERkante,
+        # aus demselben Grund wie die Lastklemmen an der
+        # unteren (R1).
         "EDGE_FLUSH_REFS": frozenset(
-            "J%d" % (4 + n) for n in range(1, kanaele + 1)),
+            ["J90"]
+            + ["J%d" % (4 + n) for n in range(1, kanaele + 1)]),
     }

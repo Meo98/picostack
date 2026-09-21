@@ -632,7 +632,26 @@ PLACEMENT = {
     # Alternativlesart (kleinere Haelfte, 5,8 mm, kantenbuendig) bliebe
     # die Kupferkante noch 4,50 mm von der Kante -- R5 haelt in JEDER
     # denkbaren Zuordnung von "vorne"/"hinten" bei dieser Bauform.
-    "J5": Platz("J5", 35.415, 60.80, 11.17, 12.20, 180, True),
+    # v2.1 Aufgabe D4: DREHUNG 180 -> 0. Die Herleitung darueber
+    # ("die GROESSERE Haelfte zeigt zur Platinenkante") war
+    # falsch und sagt das selbst: sie raeumt ein, vorne und
+    # hinten nicht unterscheiden zu koennen, und prueft dann nur
+    # R5 (haelt in beiden Lesarten) statt R1 (haengt genau davon
+    # ab). Nachgemessen am STEP-Modell der Bauform (s.
+    # stack_spec.KLEMME_OEFFNUNG) liegt die Drahtoeffnung bei
+    # BEIDEN Klemmenbauformen dieses Projekts auf lokal +y; die
+    # groessere Hofhaelfte ist der RUECKEN. Bei Drehung 180 zeigte
+    # J5s Oeffnung also nach INNEN (klemmenprobe.py: "dorthin sind
+    # es 60,82 mm, zur naechsten Kante nur 0,03 mm").
+    #
+    # Der Hof aendert sich dabei NICHT: 11,17 x 12,20 mm ist bei 0
+    # und bei 180 Grad dasselbe Rechteck, x/y bleiben 35,415 /
+    # 60,80. Es wandern nur die Kontakte -- lokal y=0, bei
+    # Drehung 0 also 6,40 mm unter der Hof-Oberkante ->
+    # global y=67,20, 5,80 mm von der Unterkante; Padradius 1,30
+    # -> Kupferkante 4,50 mm von der Kante, weiter ueber den
+    # 2,00 mm aus R5 als vorher noetig.
+    "J5": Platz("J5", 35.415, 60.80, 11.17, 12.20, 0, True),
 
     # -- Versorgungszelle, rechts oben. v2.1: um dx=+2,10 mm nach OSTEN
     # verschoben (x 53,64..74,74 statt 51,54..72,64), y-Lagen sonst
@@ -662,9 +681,37 @@ PLACEMENT = {
     # (78|4) bleibt Q90 mit x1=73,34 unveraendert klar (K1, s. Vertrag/
     # Bericht) -- 1,16 mm Reserve statt der urspruenglichen 3,26 mm,
     # aber weiterhin positiv.
-    "R90": Platz("R90", 53.64, 0.50, 3.70, 1.90, 0, False),
-    "R91": Platz("R91", 57.94, 0.50, 3.70, 1.90, 0, False),
-    "J90": Platz("J90", 53.64, 7.70, 8.00, 8.60, 0, True),
+    # -- v2.1 Aufgabe D4: J90 AN DIE OBERKANTE, R90/R91 DARUNTER.
+    #
+    # Sichtbefund des Nutzers am 3D-Bild: "zwei Wiederstaende vor dem
+    # Ausgang ... die Anschlussklemmen sollten wirklich am Boardrand
+    # liegen ohne irgendwelche Wiederstaende davor". Nachgemessen war es
+    # schlimmer als gemeldet: R90/R91 standen bei y 0,50..2,40 zwischen
+    # J90 (ab y 3,00) und der Oberkante, UND J90 selbst war um 180 Grad
+    # verdreht -- seine Drahtoeffnung zeigte nach innen (gemessen mit
+    # klemmenprobe.py: "dorthin sind es 61,43 mm, zur naechsten Kante
+    # nur 3,02 mm"). An diese Klemme war kein Kabel anschliessbar.
+    #
+    # Die Oeffnungsrichtung der Bauform ist jetzt Vertragsdatum
+    # (stack_spec.KLEMME_OEFFNUNG, aus dem STEP-Modell gemessen) und
+    # klemmenprobe.py haelt R1 rot -- vorher war R1 eine Regel ohne
+    # Pruefung, die beim Platzieren von Hand befolgt wurde.
+    #
+    # NEUE LAGE, gerechnet statt geschaetzt:
+    #   J90  Drehung 180 -> Oeffnung zeigt nach -y (oben). Hof-Oberkante
+    #        auf y=0,00, also buendig (R1, K2). Kontakte liegen lokal
+    #        auf y=0, bei Drehung 180 also 5,00 mm unter der
+    #        Hof-Oberkante -> global y=5,00; Padradius 1,20 -> naechste
+    #        Kupferkante 3,80 mm von der Kante, ueber den 2,00 mm aus R5.
+    #   R90/R91 wandern in das Band, das J90 dabei freigibt: J90 endet
+    #        jetzt bei y=8,60 statt 11,60, darunter liegt bis D90
+    #        (y=15,20 Dimmer / 17,20 Motor) freie Flaeche. y=9,20 haelt
+    #        COURTYARD_GAP (0,60) zu J90 ein, die x-Lagen bleiben
+    #        unveraendert -- der Gate-Teiler behaelt seine kurze
+    #        Anbindung an Q90s Gate.
+    "J90": Platz("J90", 53.64, 0.00, 8.00, 8.60, 180, True),
+    "R90": Platz("R90", 53.64, 9.20, 3.70, 1.90, 0, False),
+    "R91": Platz("R91", 57.94, 9.20, 3.70, 1.90, 0, False),
     "Q90": Platz("Q90", 62.24, 7.70, 11.10, 7.00, 0, False),
     "D90": Platz("D90", 53.64, 17.20, 9.80, 6.70, 0, False),
     "D91": Platz("D91", 64.10, 17.20, 9.80, 6.70, 0, False),
@@ -1023,7 +1070,10 @@ POWER_NETS = ("/PWR_IN", "/+24V", "/Out1", "/Out2")
 # build.bauen() den Bau ("J5 ragt unten hinaus"), obwohl die Lage genau
 # der Auflage entspricht. S. Kommentar bei PLACEMENT["J5"] und
 # geometry.check_all()s EDGE_FLUSH_REFS-Dokumentation.
-EDGE_FLUSH_REFS = frozenset(("J5",))
+# v2.1 (Aufgabe D4): J90 kommt dazu -- die Einspeiseklemme sitzt
+# jetzt kantenbuendig an der OBERkante, aus demselben Grund wie J5
+# an der unteren (R1).
+EDGE_FLUSH_REFS = frozenset(("J5", "J90"))
 
 # --- Board-Identitaet (R9, Audit-Befund W7) --------------------------
 # build.board_identity() verlangt beide Felder, s. dort.
@@ -1084,12 +1134,33 @@ MODULTYP = 0x01     # stack_spec.MODULTYPEN[0x01] = {"name": "Motor", ...}
 #     beginnt schon bei y=17,24 -- nur 1,32 mm frei, weniger als die
 #     reale Texthoehe (~1,36 mm bei 0,8 mm nominell, pcbnew-
 #     Boundingbox), der Text lag wieder verdeckt.
-# JETZT: y=6,00, OBERHALB von J90 -- zwischen R90/R91s Referenztext
-# (endet y=3,71) und J90s Klemmenkoerper (beginnt y=8,08), 4,37 mm frei,
-# genug Abstand zu beiden Seiten, um nicht wie eine R90/R91-Beschriftung
-# misszuverstehen zu sein.
+#
+# v2.1 Aufgabe D4 -- NEUE LAGE, weil J90 an die Oberkante gewandert ist.
+# Die alte Lage (Motor y=6,00 "oberhalb von J90", Dimmer y=13,20
+# "unterhalb") ist beide Male hinfaellig: J90s Klemmenkoerper belegt
+# jetzt y 0,38..8,22, der Motortext haette MITTEN IM Klemmenkoerper
+# gelegen. Darunter ist kein Platz mehr -- zwischen J90s Hof (endet
+# 8,60) und R90/R91 (ab 9,20) sind 0,60 mm, weniger als die halbe reale
+# Texthoehe (~1,36 mm bei 0,8 mm nominell).
+#
+# JETZT RECHTS NEBEN J90, auf gleicher Hoehe: x 62,24..74,50 / y
+# 0,00..7,60 ist auf BEIDEN Boards vollstaendig unbebaut (naechste
+# Nachbarn: J90 endet x=61,64, Q90 beginnt y=7,60 bzw. 7,70, das
+# M3-Freihaltequadrat der Bohrung (78|4) beginnt x=74,50). Mitte
+# (66,00|3,80): der Text reicht damit etwa x 63,75..68,25 und y
+# 3,12..4,48 -- 2,11 mm zu J90, 3,12 mm zu Q90, 6,25 mm zum
+# M3-Quadrat. Kein Pico darueber (PICO_SCHATTEN endet x=50,00), der
+# Text ist im gesteckten Zustand lesbar.
+#
+# POLARITAET bleibt ohne eigenen Text richtig, OHNE dass diese Datei
+# etwas nachfuehren muesste: die Zuordnung +/- steht auf dem Footprint
+# selbst (Pfeil-Dreieck an Pin 1), und das dreht mit dem Bauteil mit.
+# Durch die 180-Grad-Drehung tauschen die Kontakte ihre x-Lagen --
+# PWR_IN/+ liegt jetzt bei x=59,39, GND/- bei x=55,89 (vorher
+# umgekehrt). Genau deshalb steht hier kein eigener "+"-Text: er waere
+# bei dieser Drehung stehengeblieben und haette gelogen.
 FUNKTIONS_LABELS = (
     ("NOTAUS", 10.29, 40.50),
     ("MOTOR", 41.00, 57.00),
-    ("6-30V", 57.64, 6.00),
+    ("6-30V", 66.00, 3.80),
 )

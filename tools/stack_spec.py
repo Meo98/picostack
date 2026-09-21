@@ -1933,6 +1933,133 @@ LAYOUT_AUFLAGEN = (
 # ausdruecklich als "unbelegt"/"Konvention" markiert (R5, R6, R8, R9),
 # steht das auch hier woertlich so -- ein "beleg"-Feld, das eine
 # Konvention als "belegt" tarnte, waere schlimmer als gar keines.
+# --- v2.1: Wo die Drahtoeffnung einer Klemme liegt ------------------
+#
+# Diese Zahl entscheidet, in welche Richtung eine Klemme gedreht wird,
+# und sie ist mit v2.1 NACHGEMESSEN worden, nachdem ein Sichtbefund des
+# Nutzers ("die Anschlussklemmen sollten wirklich am Boardrand liegen")
+# eine falsche Drehung auf allen vier Brettern aufgedeckt hat.
+#
+# WAS VORHER GALT UND WARUM ES FALSCH WAR. spec_motor.PLACEMENT["J5"]
+# leitete die Drehung aus der Asymmetrie des Hofes ab: "die GROESSERE
+# Haelfte zeigt zur Platinenkante". Derselbe Kommentar raeumt ein, dass
+# er vorne und hinten NICHT unterscheiden kann ("R5 haelt in JEDER
+# denkbaren Zuordnung von 'vorne'/'hinten' bei dieser Bauform") -- er
+# prueft dann die Regel, die in beiden Lesarten haelt (R5, Kupfer-
+# abstand), und nicht die, die von der Zuordnung abhaengt (R1,
+# Drahtoeffnung nach aussen). Die groessere Haelfte ist in Wahrheit der
+# RUECKEN: hinter dem Klemmkaefig sitzt der Rest des Gehaeuses.
+#
+# WAS NICHT ALS BELEG TAUGT. Das gefuellte Dreieck, das der
+# KiCad-Footprintgenerator auf F.SilkS setzt, sieht wie eine
+# Richtungsmarke aus, ist aber keine: ueber die 105 Horizontal-
+# Footprints der Bibliothek TerminalBlock_Phoenix liegt es 75-mal auf
+# der flacheren und 30-mal auf der tieferen Gehaeuseseite, korreliert
+# also nicht mit der Bauform, und dieselbe Marke steht auch auf
+# VERTIKALEN Klemmen, die ueberhaupt keine waagerechte Oeffnung haben.
+#
+# WAS GEMESSEN WURDE. Im STEP-Modell der Bauform (kicad-packages3d,
+# TerminalBlock_Phoenix.3dshapes) gibt es genau ein Merkmal, das die
+# Drahtseite eindeutig macht: eine EBENE FLAECHE MIT INNENKONTUR --
+# im B-Rep eine ADVANCED_FACE mit mehr als einer Begrenzung, also der
+# Aussenkontur plus dem Loch. Die Rueckwand hat nur eine Begrenzung.
+# Gefunden wurde sie bei beiden Bauformen mit Normale entlang y:
+#
+#   PT-1,5-2-3.5-H : Flaeche bei Modell-y -2,00, z 0,65..5,05
+#   MKDS-3-2-5.08  : Flaechen bei Modell-y -5,28 und -2,00, z 3,30..8,00
+#
+# Die z-OBERGRENZE dieser Flaechen ist bei beiden GENAU die Hoehe der
+# Schraubenbohrung (aus denselben Modellen: Zylinder mit senkrechter
+# Achse bei z=5,05 bzw. z=8,00) -- die Flaeche ist der Klemmkaefig, in
+# den der Draht laeuft. Das ist Herstellergeometrie, keine
+# Zeichenkonvention.
+#
+# ACHSENLAGE (die Stelle, an der man sich vertun kann): KiCad-3D-
+# Modelle stehen gegenueber den Footprintkoordinaten in y GESPIEGELT.
+# Nicht angenommen, sondern an den Koerperausdehnungen beider Modelle
+# nachgerechnet:
+#
+#   PT   Footprint F.Fab y -3,10..+4,50   Modell y -4,50..+3,05
+#   MKDS Footprint F.Fab y -5,90..+4,80   Modell y -5,28..+5,92
+#
+# Beide Male faellt die tiefe Seite des Footprints auf die negative
+# Seite des Modells (4,50 <-> -4,50 und -5,90 <-> +5,92, auf 0,05 mm).
+# Modell-y = -Footprint-y. Die Oeffnung liegt im Modell auf -y, also
+# im FOOTPRINT auf +y -- bei beiden Bauformen.
+#
+# DRITTER, UNABHAENGIGER BELEG: die Lastklemmen J5..J8 der Dimmer
+# wurden in Aufgabe C1 bewusst mit ihrer lokalen +y-Seite buendig an
+# die Unterkante gesetzt, um R1 zu erfuellen. Sie sind die einzigen
+# Klemmen des Projekts, die schon vor v2.1 richtig herum standen.
+#
+# Angegeben ist der Einheitsvektor der Oeffnung in LOKALEN
+# Footprintkoordinaten (vor Drehung/Spiegelung). klemmenprobe.py dreht
+# ihn mit der tatsaechlichen Bauteillage.
+KLEMME_OEFFNUNG = {
+    "TerminalBlock_Phoenix_PT-1,5-2-3.5-H_1x02_P3.50mm_Horizontal":
+        (0.0, 1.0),
+    "TerminalBlock_Phoenix_MKDS-3-2-5.08_1x02_P5.08mm_Horizontal":
+        (0.0, 1.0),
+}
+
+def KLEMME_OEFFNUNG_GLOBAL(footprint, drehung_grad, gespiegelt=False):
+    """Oeffnungsrichtung einer Klemme in PLATINENkoordinaten.
+
+    Nimmt den gemessenen lokalen Vektor aus KLEMME_OEFFNUNG und dreht
+    ihn in die Lage, in der das Bauteil wirklich sitzt. Steht hier und
+    nicht in klemmenprobe.py, damit die Rechnung ohne KiCad pruefbar
+    ist -- klemmenprobe.py braucht pcbnew, tests/ nicht.
+
+    KiCad dreht in der Aufsicht gegen den Uhrzeigersinn, die y-Achse
+    zeigt nach unten; ein lokaler Vektor (x,y) landet damit bei
+    (x cos + y sin, -x sin + y cos).
+
+    Wirft KeyError, wenn die Bauform nicht vermessen ist. Das ist
+    Absicht: eine unbekannte Klemme still durchzulassen waere genau der
+    Fehler, der J90 auf vier Brettern verdreht stehen liess.
+
+    GESPIEGELTE KLEMMEN werden ABGELEHNT statt gerechnet. KiCad
+    spiegelt beim Umsetzen auf die Rueckseite den Footprint UND kehrt
+    den Drehwinkel um; welche der beiden Umkehrungen in
+    GetOrientationDegrees() schon enthalten ist, haette ich raten
+    muessen -- und Raten an genau dieser Stelle hat die verdrehten
+    Klemmen ueberhaupt erst verursacht. Kein Brett dieses Projekts hat
+    eine Klemme auf der Rueckseite (alle sind bedrahtet und oben
+    bestueckt), es gibt also nichts nachzumessen und nichts zu
+    verlieren. Wer je eine SMD-Klemme unten bestueckt, bekommt hier
+    einen Fehler und muss die Regel VORHER an einem echten Brett
+    nachmessen -- lieber rot als still falsch.
+    """
+    import math
+
+    if gespiegelt:
+        raise NotImplementedError(
+            "Oeffnungsrichtung einer auf der Rueckseite bestueckten "
+            "Klemme ist in diesem Projekt nie nachgemessen worden "
+            "(es gibt keine) -- erst messen, dann rechnen")
+    lx, ly = KLEMME_OEFFNUNG[footprint.split(":")[-1]]
+    w = math.radians(drehung_grad)
+    c, s = math.cos(w), math.sin(w)
+    return (round(lx * c + ly * s, 9), round(-lx * s + ly * c, 9))
+
+
+# Wie weit eine Klemme hoechstens hinter der Platinenkante zurueckstehen
+# darf. KONVENTION, ausdruecklich keine Norm -- in derselben Weise
+# gekennzeichnet wie R5/R6/R8/R9.
+#
+# Herleitung: R1 sagt "buendig". Der einzige Grund, ueberhaupt eine
+# Toleranz zuzulassen, ist die Rundung der Platzierungsrechnung; die
+# laeuft im Projekt auf 0,001 mm. 0,10 mm liegt zwei Zehnerpotenzen
+# darueber und damit sicher ueber jedem Rundungsrest, aber weit unter
+# jedem Mass, das mechanisch etwas aendern koennte. Ein groesserer Wert
+# waere eine verdeckte Erlaubnis, Klemmen nach innen zu ruecken -- und
+# genau das war der Befund, der diese Zusage ausgeloest hat.
+#
+# Ueberstand nach AUSSEN ist nicht erlaubt (0,00 mm): eine Klemme, die
+# ueber den Umriss ragt, kollidiert im Nutzen mit dem Fraesschlitz.
+KLEMME_KANTENABSTAND_MAX = 0.10
+KLEMME_UEBERSTAND_MAX = 0.00
+
 LAYOUT_REGELN = {
     "R1": {
         "text": "Klemmen an der Kante: Klemmenkoerper buendig zur "
