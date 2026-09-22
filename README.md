@@ -51,7 +51,7 @@ it may exist.
   instead of sprawling across a desk. Design one module and it composes
   with all the others.
 - **You want to see a fully generative KiCad workflow** — schematic
-  generators, placement specs, headless autorouting (freerouting 2.3),
+  generators, placement specs, headless autorouting (a native A* router),
   copper-pour healing, DRC gates — all reproducible from the command line.
 - **You like tests that can actually fail.** Every check in this repository
   ships with a proof that it turns red when the thing it guards is broken.
@@ -86,7 +86,9 @@ it may exist.
 tools/sch/<board>.py      →  KiCad schematic (generated, ERC-clean)
 tools/pcb/spec_<board>.py →  placement + pre-routes + stitching, no KiCad needed
 tools/pcb/build.py        →  fresh .kicad_pcb from netlist + spec
-tools/pcb/autoroute.py    →  freerouting 2.3 headless, DSN repaired on the fly
+tools/pcb/verlegen.sh     →  the ten-step routing recipe: power first, on bare
+                             copper, widened before the signals ever run
+tools/pcb/autoroute.py    →  freerouting 2.3 headless (v1/v2 path, superseded)
 tools/pcb/masseheiler.py  →  finds isolated copper islands, heals them with vias
 tools/pcb/steckerprobe.py →  measures the finished board against the contract
 tools/pcb/strombelastung.py → measures whether the routed copper really carries
@@ -143,8 +145,11 @@ docs/               project website (GitHub Pages)
 
 ## Building the boards yourself
 
-You need KiCad 10, Python 3, and Java ≥ 25 for the bundled
-freerouting 2.3 flow. Then:
+You need KiCad 10 and Python 3. Routing additionally needs
+[KiCadRoutingTools](https://github.com/tedaligy/KiCadRoutingTools) and a
+Python with numpy/scipy/shapely; `tools/pcb/verlegen.sh` wires both up.
+(The older freerouting 2.3 path still exists in `autoroute.py` and needs
+Java ≥ 25, but no v2.1 board was routed with it.) Then:
 
 ```bash
 python3 tests/run_all.py                 # every suite, no board tools needed

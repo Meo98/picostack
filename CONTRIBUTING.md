@@ -46,8 +46,10 @@ tools/sch/<board>.py       one generator per board -> hardware/kicad/.../<board>
 tools/pcb/spec_<board>.py  placement, pre-routes, stitching vias -- pure Python,
                            importable without KiCad
 tools/pcb/build.py         builds a fresh .kicad_pcb from netlist + spec
-tools/pcb/autoroute.py     freerouting 2.3 headless (see below), DSN repair,
-                           SES import with dedup
+tools/pcb/verlegen.sh      the whole routing recipe as one command: power
+                           nets first on bare copper, widen, then signals
+tools/pcb/autoroute.py     freerouting 2.3 headless, DSN repair, SES import
+                           -- the v1/v2 path, superseded by verlegen.sh
 tools/pcb/masseheiler.py   finds isolated ground-copper clusters after routing
                            and heals them (vias, bridges, or removal)
 tools/pcb/steckerprobe.py  measures the BUILT board against the contract
@@ -165,7 +167,7 @@ J105 pin row -- 0.05 mm of offset was the whole fix). Neighbouring
 segments do not move; they stay connected because their endpoints remain
 inside the widened copper, and DRC confirms it afterwards.
 
-Routing is *not deterministic* (freerouting single-thread still varies) —
+Routing is *not deterministic* (net ordering and rip-up decisions vary) —
 the committed board file is the artifact of record, and the DRC + probe
 suite is what makes it trustworthy, not the ability to regenerate it
 bit-identically.

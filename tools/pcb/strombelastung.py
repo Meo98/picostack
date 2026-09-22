@@ -599,7 +599,33 @@ def baue_graph(board, netz):
             for (x, y, lage) in punkte:
                 if not p.IsOnLayer(lage):
                     continue
-                if p.HitTest(pcbnew.VECTOR2I(x * TOL, y * TOL), 0):
+                # Mit dem KUPFERRADIUS des Knotens, nicht punktgenau.
+                #
+                # WARUM (Aufgabe D5, gemessen am Motormodul). Eine Bahn
+                # muss nicht mit ihrem MITTELPUNKT im Pad enden, um es
+                # anzuschliessen -- es genuegt, dass ihr Kupfer das Pad
+                # ueberdeckt. Gemessen: /+24V lief mit einer 1,335 mm
+                # breiten Bahn auf (53,90|22,60) zu, waehrend D90s
+                # SMC-Pad (3,30 x 2,50 mm, Mitte (55,14|20,55)) bei
+                # (53,49|21,80) seine naechste Ecke hat. Der Endpunkt
+                # liegt 0,80 mm NEBEN dem Pad, die Mittellinie aber nur
+                # 0,276 mm von der Ecke -- bei 0,668 mm Halbbreite
+                # ueberdeckt das Kupfer die Ecke um 0,39 mm. KiCad
+                # zaehlt das als verbunden (DRC 0 unconnected, und mit
+                # entferntem /+24V-Kupfer meldet dasselbe DRC prompt 13
+                # offene Verbindungen -- es prueft das Netz also sehr
+                # wohl). Dieses Modell zerlegte /+24V trotzdem in zwei
+                # Inseln und meldete fuenf Pads als "von der Quelle aus
+                # nicht erreichbar".
+                #
+                # Das ist dieselbe Fehlerklasse, die steckerprobe.py
+                # schon einmal hatte (dort andersherum: eine
+                # Kreisnaeherung meldete ein 3,0 x 1,0 mm grosses Pad
+                # zu nah). Ein Gate, das Falschalarme schlaegt, wird
+                # ignoriert -- das ist auf Dauer so gefaehrlich wie
+                # eines, das nie rot wird.
+                if p.HitTest(pcbnew.VECTOR2I(x * TOL, y * TOL),
+                             int(radius.get((x, y, lage), 0))):
                     g.union((x, y, lage), schl)
     return g, sorted(pad_knoten)
 
@@ -922,8 +948,48 @@ def main(board_pfad, spec_pfad):
     return fehler
 
 
+def breiten(spec_name):
+    """Druckt je Leistungsnetz die NOETIGE Bahnbreite in mm.
+
+    Damit der Router und dieses Gate DIESELBE Zahl benutzen. Vorher zog
+    tools/pcb/verlegen.sh die Vorgabe aus fertigung.TRACK_STAMM /
+    TRACK_POWER -- Werte der Netzklasse, also der Auslegungsabsicht. Das
+    ist nicht dasselbe wie der Strombedarf, und der Unterschied ist
+    nicht harmlos: verlangt man vom Router MEHR als noetig, scheitert er
+    an engen Stellen und faellt auf die SIGNALBREITE zurueck, nicht auf
+    die noetige. GEMESSEN am Motormodul: /Out1 und /Out2 brauchen je
+    0,713 mm, bekamen als Vorgabe 1,000 mm -- und lagen am Ende bei
+    0,250 bis 0,600 mm. Wer 1,0 verlangt, wo 0,713 reicht, bekommt 0,25.
+    """
+    import importlib
+    spec = importlib.import_module(spec_name)
+    plan = pad_stroeme(spec)
+    for netz in getattr(spec, "POWER_NETS", ()):
+        if netz not in plan:
+            continue
+        _quellen, senken, deckel, _gruppen = plan[netz]
+        # Der STAMM fuehrt die Summe aller Senken, nicht die groesste --
+        # begrenzt durch die Vertragszusage (deckel). Mit der groessten
+        # Einzelsenke gerechnet kaeme /+24V auf 0,898 statt 1,335 mm,
+        # und der Router legte von vornherein zu schmales Kupfer.
+        i_stamm = sum(senken.values())
+        if deckel:
+            i_stamm = min(i_stamm, deckel)
+        # 3 % Zuschlag, auf 0,01 mm aufgerundet. Der Router legt die
+        # Vorgabe exakt; waere sie exakt die Gate-Schwelle, entschiede
+        # die letzte Rundungsstelle ueber rot oder gruen. Der Zuschlag
+        # ist Rundungsreserve, KEINE Aufweichung -- geprueft wird
+        # weiterhin gegen die unverschobene IPC-Breite.
+        import math as _m
+        print("%s %.3f" % (netz, _m.ceil(erf_breite(i_stamm) * 103) / 100.0))
+    return 0
+
+
 if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "--breiten":
+        raise SystemExit(breiten(sys.argv[2]))
     if len(sys.argv) != 3:
         raise SystemExit(
-            "Aufruf: strombelastung.py <board.kicad_pcb> <spec_modul>")
+            "Aufruf: strombelastung.py <board.kicad_pcb> <spec_modul>\n"
+            "        strombelastung.py --breiten <spec_modul>")
     raise SystemExit(main(sys.argv[1], sys.argv[2]))
