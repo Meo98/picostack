@@ -104,6 +104,21 @@ echo "### 2/10 blankes Kupfer"
 NICHT_LEISTUNG=""
 for NETZ in GND $LEISTUNG; do NICHT_LEISTUNG="$NICHT_LEISTUNG '!$NETZ'"; done
 
+# Netze, die die Beschreibung VON HAND verdrahtet (PRE_TRACKS/PRE_VIAS)
+# -- tabu fuer jeden Aufreisser. Sie existieren genau deshalb, weil der
+# Router sie nicht kann ("only what the router fundamentally cannot do
+# is pre-wired", CONTRIBUTING.md). GEMESSEN am Motormodul: Lauf 3 riss
+# /NRST auf (U102.3 -> U100.6, von build.pre_tracks() gelegt) und bekam
+# es nicht wieder zu; DRC meldete es danach als offen. Sie hinterher
+# neu zu legen hilft nicht -- der Versuch erzeugte 11 DRC-Verstoesse,
+# weil der Router die Stelle inzwischen belegt hatte.
+NICHT_HAND=$(cd "$WURZEL" && PYTHONPATH="tools:tools/pcb" python3 -c "
+import importlib
+b = importlib.import_module('$SPEC')
+netze = sorted({e[0] for e in getattr(b, 'PRE_TRACKS', ())}
+               | {v[0] for v in getattr(b, 'PRE_VIAS', ())})
+print(' '.join(chr(39) + '!' + n + chr(39) for n in netze))")
+
 if [ -n "$FEINRASTER" ]; then
   for REF in $FEINRASTER; do
     echo "### 3b/10 Pins von $REF herausfuehren (vor dem Leistungslauf)"
@@ -161,17 +176,23 @@ echo "### 9/10 Via-Tenting normalisieren, Masseflaeche heilen"
 # Gemessen an Dimmer4: /FLASH_TX (U100.17 -> J100.1) blieb offen, der
 # Reparaturlauf schloss es in 0,24 s ohne ein anderes Netz zu verlieren.
 echo "### 10/10 Reparatur offener Netze (falls noetig)"
+# Zwei Durchgaenge: der erste raeumt oft den Korridor frei, den der
+# zweite braucht. Gemessen am Motormodul blieben nach einem Durchgang
+# zwei Verbindungen offen, die einzeln gut verlegbar waren.
+for _DURCHGANG in 1 2; do
 OFFEN=$(kicad-cli pcb drc --severity-error --refill-zones           -o "$ARBEIT/drc.rpt" "$B" 2>/dev/null | grep -oP '\d+(?= unconnected)' || echo 0)
 if [ "${OFFEN:-0}" -gt 0 ]; then
   NETZE=$(grep -oP '\[/[^]]+\]' "$ARBEIT/drc.rpt" | tr -d '[]' | sort -u | tr '\n' ' ')
   echo "  $OFFEN offene Verbindung(en), betroffene Netze: $NETZE"
   cp "$B" "$ARBEIT/rep_in.kicad_pcb"
-  router "'$ARBEIT/rep_in.kicad_pcb' '$ARBEIT/rep.kicad_pcb' --nets $NETZE       --rip-existing-nets '/FLASH*' '/GP*' '/ID*' '/PWM*' '/SEL*' '/I2C*'       $GEMEINSAM --track-width 0.25" | tail -5
+  router "'$ARBEIT/rep_in.kicad_pcb' '$ARBEIT/rep.kicad_pcb' --nets $NETZE       --rip-existing-nets '*' '!GND' $NICHT_LEISTUNG $NICHT_HAND       $GEMEINSAM --track-width 0.25" | tail -5
   cp "$ARBEIT/rep.kicad_pcb" "$B"
   "$S/kipy" "$S/stamp_via_tenting.py" "$B"
   "$S/kipy" "$S/masseheiler.py" "$B"
 else
   echo "  nichts offen"
+  break
 fi
+done
 
 echo "### fertig: $B"

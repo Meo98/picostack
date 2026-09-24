@@ -508,6 +508,18 @@ def pre_tracks(board, beschreibung):
             t.SetWidth(mm(breite))
             t.SetLayer(lagen[lage])
             t.SetNetCode(code)
+            # GESPERRT. Handverdrahtung ist genau das Kupfer, das der
+            # Router nicht legen kann ("only what the router
+            # fundamentally cannot do is pre-wired") -- also darf er es
+            # auch nicht wieder aufreissen. GEMESSEN am Motormodul
+            # (Aufgabe D5): Lauf 3 riss /NRST auf (U102.3 -> U100.6) und
+            # bekam es nicht wieder zu; DRC meldete es als offen. Es
+            # hinterher neu zu legen half nicht -- der Versuch erzeugte
+            # 11 DRC-Verstoesse, weil der Router die Stelle inzwischen
+            # belegt hatte. Dieselbe Sperre, mit der stammtrennung.py
+            # --sperren das Leistungskupfer vor Lauf 3 schuetzt, nur
+            # gesetzt, wo das Kupfer entsteht.
+            t.SetLocked(True)
             board.Add(t)
             n += 1
     return n
@@ -538,6 +550,7 @@ def pre_vias(board, beschreibung):
         v.SetNetCode(code)
         v.SetFrontTentingMode(pcbnew.TENTING_MODE_TENTED)
         v.SetBackTentingMode(pcbnew.TENTING_MODE_TENTED)
+        v.SetLocked(True)          # s. pre_tracks(): Handverdrahtung ist tabu
         board.Add(v)
         n += 1
     return n

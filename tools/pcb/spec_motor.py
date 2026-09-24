@@ -578,13 +578,102 @@ PLACEMENT = {
     "U4": Platz("U4", 0.50, 52.50, 10.90, 7.20, 0, False),
     "U5": Platz("U5", 12.00, 52.50, 10.90, 7.20, 0, False),
 
-    # -- Motorstufe: in der Luecke zwischen den Stapelreihen
-    #    (x 33,16..45,84), y < 42,9 -- ausserhalb ANTENNE_FREI und weit
-    #    unter der 8,5-mm-Steckhoehe des Pico (0805/TSSOP-Bauhoehe) --
-    "C11": Platz("C11", _m(35.60), 15.80, 3.76, 1.96, 0, False),
-    "U1": Platz("U1", _m(35.60), 18.90, 7.80, 5.50, 0, False),
-    "C10": Platz("C10", _m(36.40), 25.00, 1.96, 3.76, 90, False),
-    "C9": Platz("C9", _m(39.00), 25.00, 1.96, 3.76, 90, False),
+    # -- Motorstufe: v2.1/Aufgabe D5 RECHTS NEBEN den Stapelreihen,
+    #    nicht mehr zwischen ihnen.
+    #
+    # WARUM SIE UMGEZOGEN IST. Die alte Lage (x 35,60..43,40, y
+    # 15,80..28,76) lag in der Luecke zwischen den beiden Stapelsteckern
+    # -- J100 endet bei x=32,38, J105 beginnt bei x=46,62, macht 14,24 mm
+    # Kanal. U1 selbst ist 7,80 mm breit und liess dort 3,22 mm links und
+    # 3,22 mm rechts frei; C10/C9 verengten den Rest auf 0,64 mm
+    # Zwischenraum. Durch DENSELBEN Kanal muessen rund 40 Signalbahnen
+    # vom Pico nach unten.
+    #
+    # GEMESSEN (drei Verlegelaeufe mit verschiedenen Einstellungen --
+    # Fanout ueber alle Netze bzw. nur Signalnetze, Netzklassenbreite
+    # bzw. Strombedarfsbreite): /+24V, /Out1 und /Out2 landeten jedes
+    # Mal bei 0,25..0,42 mm ueber 11 bis 23 mm Laenge, noetig sind
+    # 0,713 bzw. 1,335 mm. Das ist keine Routereinstellung, das ist der
+    # Kanal. Dasselbe Urteil hatte schon Aufgabe D2 gefaellt.
+    #
+    # DIE NEUE LAGE nutzt den freien Block rechts von J105 (x
+    # 50,16..75,60 bis zur RANDPAD_ZONE, y 49,82 unter J103/J104 bis
+    # 60,80 an die KLEMMENZONE -- 25,4 x 11,0 mm, auf keiner anderen
+    # Platine dieser Familie belegt). Sie passt zur Pinlage des
+    # HTSSOP-16 (nachgemessen am gebauten Brett, Drehung 0):
+    #   links  (rel x -2,90): Pins 1..8, die Steuersignale UND /Out1
+    #   rechts (rel x +2,90): /Out2, /+24V, /VCP, /CPH, /CPL
+    # Die Steuersignale schauen damit auf J105, ueber den sie vom Pico
+    # kommen; /+24V schaut nach oben zur Versorgungszelle; /Out1 und
+    # /Out2 haben rund 10 mm statt 22 mm zur Motorklemme, die mit
+    # umzieht. Der Kanal zwischen den Steckern bleibt den Signalen.
+    #
+    # _m() (_MOTOR_DX) faellt hier weg: es verschob U1 gegen den
+    # Landepunkt-Spiegel des Stapelsteckers im Kanal. Ausserhalb des
+    # Kanals gibt es nichts mehr zu verschieben.
+    #
+    # Die drei Kondensatoren sitzen alle RECHTS von U1, weil ihre Pins
+    # dort liegen (C9 an /+24V+/VCP, C10 an /CPH+/CPL, C11 als
+    # /+24V-Stuetze). Abstaende je 0,60 mm = COURTYARD_GAP.
+    # y=53,60 und nicht 50,60: build.stecker_funktion() setzt das
+    # LEISTUNG-Schild fest auf (Mitte des Leistungssteckers | 52,50) --
+    # eine fuer ALLE VIER Boards gemeinsame Luecke, die nicht je Board
+    # verschoben werden darf. Der erste Wurf (y=50,60) legte U1s rechte
+    # Pinreihe (x 60,05..61,55) genau dorthin, und build.py brach
+    # korrekt ab: "Text 'LEISTUNG' bei (63,77|52,50) liegt auf einem
+    # Pad ... (R7/R8/R9 verlangen pad-frei)". Mit y=53,60 beginnen U1s
+    # Pads bei y=54,08, das Schild endet bei y=53,20 -- 0,88 mm frei.
+    # x=54,00 und nicht weiter links. Der Versuch, U1 auf x=51,00 an
+    # J105 heranzuruecken (um rechts Platz zu schaffen), wurde von
+    # tests/test_spec_motor.py rot gemeldet: "U1: Hof naeher als 1,5 mm
+    # am Landepunkt (51,39|60,57)" -- gemessen 1,47 mm. Die
+    # Landepunkt-Spiegel von J105 bilden bei x=51,39 eine durchgehende
+    # Spalte (y 45,33..63,11 im Achtelraster), U1s Hof muss also
+    # mindestens 52,89 beginnen. Der Platz fuer den /+24V-Zulauf
+    # entsteht deshalb RECHTS von U1, indem die Kondensatoren wandern.
+    "U1": Platz("U1", 54.00, 53.60, 7.80, 5.50, 0, False),
+    # Die Kondensatoren stehen 2,00 mm TIEFER als U1 (y=55,60) und in
+    # der Reihenfolge C11, C9, C10 von innen nach aussen. Zwei Gruende,
+    # beide gemessen:
+    #   * build.py setzt jeden Referenztext UEBER sein Bauteil
+    #     (1,76 mm hoch). Bei y=53,60 reichte C9s "C9" bis y=51,89 und
+    #     ueberlappte das LEISTUNG-Schild (endet y=53,20) -- build.py
+    #     brach ab ("ueberlappt einen anderen Silkscreen-Text"). Ab
+    #     y=55,60 beginnt der Text bei 53,84, also 0,64 mm darunter.
+    #   * Reihenfolge C9, C10, C11 von innen nach aussen. Der erste
+    #     Wurf stellte C11 (die VM-Stuetze) nach vorn, weil das fuer die
+    #     Entkopplung naeher waere -- und verstellte damit den Weg fuer
+    #     DREI Netze: /VCP, /CPH und /CPL laufen von U1s rechter
+    #     Pinreihe (x=61,55, y 54,08..58,63) zu C9/C10, und C11 lag mit
+    #     x 62,40..66,16 / y 55,60..57,56 genau davor. Gemessen blieben
+    #     sie alle drei unverlegt (DRC "5 unconnected", dieselben Netze
+    #     mit und ohne Fanout). C11 haengt dagegen am /+24V-Stamm, der
+    #     ohnehin 1,335 mm breit ankommt -- ein paar Millimeter mehr
+    #     Weg kosten dort nichts.
+    #   * 2,60 mm Spalt zwischen U1 und C9, nicht COURTYARD_GAP (0,60).
+    #     GEMESSEN: /+24V muss U1s VM-Pin (Pin 11, rechte Pinreihe bei
+    #     y=57,33) erreichen, und der einzige Weg dorthin fuehrt an U1s
+    #     rechter Kante entlang nach unten. Mit 0,60 mm Spalt legte der
+    #     Router dort eine 0,310 mm breite Bahn ueber 7,2 mm (gemessen
+    #     62,30|50,20 -> 62,30|57,40), waehrend der eigentliche Stamm mit
+    #     1,380 mm daneben zu C11 lief -- zwei parallele Pfade, von denen
+    #     der duenne 2,64 der 4,00 A trug. 1,38 mm Bahn plus zweimal
+    #     0,20 mm Abstand brauchen 1,78 mm; 2,60 mm lassen Luft fuer die
+    #     Fertigungstoleranz und fuer /VCP//CPH//CPL, die denselben Spalt
+    #     queren.
+    #     AUF 2,60 mm BELASSEN, obwohl der Papierbedarf fuer Stamm plus
+    #     die drei Ladungspumpensignale (/VCP, /CPH, /CPL) rechnerisch
+    #     ~3,35 mm waere. Der Versuch mit 4,00 mm (C9 bei x=65,80) wurde
+    #     GEMESSEN VERWORFEN: drei Laeufe hintereinander meldeten
+    #     strombelastung ROT, waehrend dieselbe Kette mit 2,60 mm in
+    #     drei von vier Laeufen gruen war. Grund: C11 haengt am
+    #     /+24V-Netz, und die Kondensatoren zu verschieben aendert den
+    #     Spannbaum des Stammes -- der Zugewinn im Spalt kostete an der
+    #     Stammfuehrung mehr, als er einbrachte. Die uebrigen Signale
+    #     weichen stattdessen auf B.Cu aus.
+    "C9": Platz("C9", 64.40, 55.60, 1.96, 3.76, 90, False),
+    "C10": Platz("C10", 66.96, 55.60, 1.96, 3.76, 90, False),
+    "C11": Platz("C11", 69.52, 55.60, 3.76, 1.96, 0, False),
 
     # J5 -- Motorklemme, v2.1 (Aufgabe C1): zieht in KLEMMENZONE
     # (23,80..58,20 x 60,80..73,00), Kante unten (R1) -- loest Audit-
@@ -651,6 +740,20 @@ PLACEMENT = {
     # global y=67,20, 5,80 mm von der Unterkante; Padradius 1,30
     # -> Kupferkante 4,50 mm von der Kante, weiter ueber den
     # 2,00 mm aus R5 als vorher noetig.
+    # v2.1/Aufgabe D5: BLEIBT, obwohl U1 nach rechts umgezogen ist.
+    # Der erste Wurf zog die Klemme mit (x=52,315, mittig unter U1) und
+    # wurde von tests/test_spec_motor.py rot gemeldet: "J5: Pad naeher
+    # als 1,5 mm am Landepunkt (61,41|67,71)". Nachgerechnet gegen alle
+    # LANDEPUNKTE_VERDREHT() im Klemmenband (y 62..73) bleibt fuer J5
+    # bei Drehung 0 GENAU EIN zulaessiger Streifen: x0 33,40..40,45 --
+    # die Spiegel von J105 (x=51,39) und des Leistungssteckers
+    # (x=61,41) sperren die rechte Haelfte der KLEMMENZONE vollstaendig.
+    # 35,415 liegt darin. /Out1 und /Out2 laufen deshalb von U1 nach
+    # links durch das offene Band zwischen J105s Unterkante (y=52,30)
+    # und der KLEMMENZONE (y=60,80) -- 8,5 mm hoch, unbebaut ab x=23
+    # (U4/U5 enden bei x=22,90) und unterhalb von ANTENNE_FREI (endet
+    # y=51,90). Das ist immer noch ein offenes Feld statt des 14,24-mm-
+    # Kanals mit 40 Signalbahnen darin.
     "J5": Platz("J5", 35.415, 60.80, 11.17, 12.20, 0, True),
 
     # -- Versorgungszelle, rechts oben. v2.1: um dx=+2,10 mm nach OSTEN
@@ -784,12 +887,27 @@ PIN1_MARKE = (25.50, 2.27)
 KLEMMEN_POS = (14.00, 68.00)
 
 # --- Waermepfad des DRV8876 -------------------------------------------
-# U1-Hof plus 1 mm Rand, wie in v1 -- x wandert mit _MOTOR_DX mit
-# (jetzt 0,0, s. dort), sonst laege die Waermeschutzflaeche neben dem
-# Baustein, den sie schuetzen soll.
+# NICHT MEHR "U1-Hof plus 1 mm" wie in v1, sondern das WAERMEPAD plus
+# 0,30 mm.
+#
+# WARUM ENGER (Aufgabe D5, gemessen). Der Hof-Ansatz deckte beide
+# Pinreihen mit ab (Signalpins x 54,25..61,55, Waermepad nur
+# x 56,20..59,60). Damit war auf B.Cu unter den Pins weder Bahn noch Via
+# erlaubt -- die Pins konnten NUR ueber F.Cu weg, und dort liegt rechts
+# von U1 schon der 1,38-mm-/+24V-Stamm. Ergebnis: /CPH blieb offen, mit
+# einem Via bei (67,50|58,10), dessen B.Cu-Seite nirgendwohin fuehrte,
+# weil sie U1s Pin 13 (x=60,80) nicht erreichen durfte.
+# Die Sperrflaeche schuetzt die Waermeabfuhr UNTER DEM PAD; dort bleibt
+# sie unveraendert wirksam (4,00 x 5,60 mm massives Gusskupfer). Unter
+# den Pinreihen hat sie thermisch nie etwas beigetragen.
+# Mit Aufgabe D5 an U1s neue Lage nachgefuehrt (54,00..61,80 x 50,60..56,10 plus 1 mm) -- eine
+# Waermeschutzflaeche, die am alten Ort stehen bleibt, schuetzt nichts
+# und sperrt dafuer Kupfer, das dort jetzt gebraucht wird. Rechte
+# Kante auf 62,00 statt 62,80 gekuerzt: C9 beginnt bei 62,40, und
+# eine B.Cu-Sperre unter seinem Pad wuerde dessen Via blockieren.
 RULE_AREAS = (
     ("Waermepfad DRV8876", ("B.Cu",),
-     (_m(34.60), 17.90, _m(44.40), 25.40), frozenset(("bahnen", "vias"))),
+     (55.90, 53.55, 59.90, 59.15), frozenset(("bahnen", "vias"))),
 
     # ANTENNE_FREI -- BINDEND (s. Moduldocstring): auf F.Cu (der Seite,
     # auf der der Pico steckt) weder Bahn noch Via noch Guss.
