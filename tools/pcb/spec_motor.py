@@ -976,6 +976,51 @@ _LEISTUNG = fertigung.TRACK_POWER
 # "obere Gruppe") -- eine reine Parallelverschiebung aendert an keinem
 # Winkel oder Abstand innerhalb der Gruppe etwas.
 PRE_TRACKS = (
+    # -- /VCP: U1 Pin 12 -> C9 Pad 2, von Hand (Aufgabe D5) ------------
+    #
+    # WARUM DER ROUTER DAS NICHT KANN. Der /+24V-Stamm kommt von Norden
+    # bei x=64,20 herunter und schneidet dann DIAGONAL durch das
+    # Ladungspumpen-Band -- gemessen (64,27|55,07) -> (61,87|57,47).
+    # Damit ist U1s Pin 12 (60,80|56,675) von seinem Kondensator C9.2
+    # (65,380|56,443) abgeschnitten: zwischen der Padkante (x=61,55) und
+    # der Stammkante (bei y=56,675 liegt sie auf x=62,50) bleiben
+    # 0,95 mm. Ein Via braucht 0,60 mm plus zweimal 0,20 mm Abstand =
+    # 1,00 mm. Es passt um 0,05 mm NICHT. Entsprechend meldete
+    # py_router/route.py /VCP auch nach vollstaendigem Aufreissen des
+    # Netzes als "failed" -- in vierzehn Verlegelaeufen blieb es immer
+    # wieder offen.
+    #
+    # DER WEG HIER TAUCHT SOFORT AB und laesst den F.Cu-Korridor frei:
+    #   F.Cu  Pin 12 -> (62,10|56,675)   -- 1,30 mm Stummel
+    #   Via   (62,10|56,675)
+    #   B.Cu  -> (64,00|54,775) -> (65,38|54,775)
+    #   Via   (65,38|54,775)
+    #   F.Cu  -> C9 Pad 2 (senkrecht in den eigenen Pad-Hof)
+    #
+    # ROT-NACHWEIS EINES VERWORFENEN ERSTEN WURFS. Zuerst lief dieser
+    # Draht noerdlich am Stamm vorbei: Pin 12 -> (61,90|56,675) ->
+    # (61,90|54,30) -> (63,80|54,30), dann erst auf B.Cu. Das war
+    # geometrisch sauber und DRC-frei -- und machte /CPH und /CPL
+    # UNVERLEGBAR. py_router meldete beide mit verdict
+    # "boxed_in_static" und nannte als Blockierer namentlich /VCP: die
+    # Senkrechte bei x=61,90 riegelte genau den Nordkorridor ab, ueber
+    # den Pin 13 und Pin 14 herauskommen. Der Korridor traegt ZWEI der
+    # drei Ladungspumpennetze, nicht drei. Deshalb jetzt: /VCP
+    # verlaesst die Oberseite sofort und belegt im Korridor nichts.
+    #
+    # Nachgerechnete Abstaende: das Via bei x=62,10 (0,60 mm) beginnt
+    # 0,25 mm oestlich der Padkante x=61,55 und liegt 2,20 mm oestlich
+    # der B.Cu-Waermesperre (endet x=59,90). Das zweite Via sitzt bei
+    # y=54,775 NOERDLICH von C9s Hof (beginnt y=55,60), also nicht
+    # unter dem Bauteil.
+    ("/VCP", "F.Cu", (("PAD", "U1", "12"), (62.10, 56.675))),
+    # Der B.Cu-Sprung laeuft ueber einen 45-Grad-Knick: die
+    # Vorverdrahtung darf nur 0/45/90 Grad haben (build.py haelt das
+    # rot -- schiefe Draehte haben frueher freerouting haengen
+    # lassen, s. Fehlermeldung dort).
+    ("/VCP", "B.Cu", ((62.10, 56.675), (64.00, 54.775), (65.38, 54.775))),
+    ("/VCP", "F.Cu", ((65.38, 54.775), ("PAD", "C9", "2"))),
+
     ("/SEL_OUT", "F.Cu", (("PAD", "U102", "1"), ("PAD", "U102", "2"))),
     ("/NQ", "F.Cu", (("PAD", "U102", "6"), ("PAD", "U102", "7"))),
 
@@ -1055,6 +1100,8 @@ PRE_TRACKS = (
 # U1-Ostgassen-Vias (/+24V, /CPL, /CPH, /VCP) der v2-Fassung, zusammen
 # mit den PRE_TRACKS, an deren Lagenwechseln sie sassen.
 PRE_VIAS = (
+    ("/VCP", 62.10, 56.675),     # s. PRE_TRACKS-Kommentar bei /VCP
+    ("/VCP", 65.38, 54.775),
     ("/SEL_OUT", 19.35, 23.90),
     ("/SEL_OUT", 14.88, 19.95),
     ("3V3", 17.68, 20.40),
