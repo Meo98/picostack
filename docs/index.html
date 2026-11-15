@@ -151,7 +151,7 @@ footer .cols{display:flex;gap:40px;flex-wrap:wrap;justify-content:space-between}
       microcontroller on the module and no firmware to flash: the Pico
       drives every channel directly through a GPIO <i>bank</i>, chosen by a
       solder matrix on the board. Power it over USB while you program, from
-      the 6–30 V terminal once it's installed — both at the same time is fine.
+      the 6–30 V terminal once it's installed — both at once is allowed by design.
     </p>
     <div class="cta">
       <a class="btn primary" href="https://github.com/Meo98/picostack">View on GitHub</a>
@@ -235,10 +235,11 @@ footer .cols{display:flex;gap:40px;flex-wrap:wrap;justify-content:space-between}
         <ul>
           <li><b>6–30 V in.</b> Reverse-polarity P-FET with a Zener-clamped gate
               (fully on at 6 V, safe at 30 V), TVS, bulk capacitors, a TPS5430
-              buck to 5 V, and a Schottky diode into VSYS.</li>
+              buck to 4.9 V, and a Schottky diode into VSYS.</li>
           <li><b>USB and terminal at once.</b> The Pico's own VBUS diode and the
               module's Schottky form an OR — program over USB, run from the
-              terminal, nothing feeds back into either.</li>
+              terminal, nothing feeds back into either. That is the design;
+              the first assembled board has to prove it (see ORDERING.md).</li>
           <li><b>Shared rail through the stack.</b> A 1×4 stacking row carries VIN
               and GND to the boards below; 3 A per contact.</li>
           <li><b>Qwiic and a user header.</b> GP4/GP5 come out as a JST SH Qwiic
@@ -260,10 +261,10 @@ footer .cols{display:flex;gap:40px;flex-wrap:wrap;justify-content:space-between}
               drive each channel directly. A 0603 solder matrix picks the bank
               (factory default: motor = A, dimmer = B). Four banks of four PWM
               pins, three ADC pins, a wired-AND emergency stop on GP6.</li>
-          <li><b>Smaller, cheaper, buildable.</b> 74 × 58 mm instead of 82 × 73,
-              about a third of the bill of materials, one stacking-header type
-              for everything, and a MicroPython library that makes a dimmer
-              three lines of code.</li>
+          <li><b>Smaller, simpler, buildable.</b> 74 × 58 mm instead of 82 × 73;
+              no second microcontroller, no logic ICs, no SMD connector pairs,
+              one stacking-header type for everything; and a MicroPython
+              library that makes a dimmer three lines of code.</li>
         </ul>
       </div>
     </div>
@@ -335,9 +336,10 @@ MONTAGE_REGEL = "ERST stecken, DANN schrauben."</pre>
       At 56 mm the mirrored socket row lands 0.44 mm from the real one. The
       contract computes the distance; 58 mm gives 2.44 mm, and the test proves
       56 fails.</li>
-    <li><b>A pad inside a no-copper zone.</b> The first antenna keep-out
-      covered the Pico's own socket pads — eight nets could never leave.
-      The zone now lies strictly between the rows.</li>
+    <li><b>An enable pin tied to 30 V.</b> The first draft of the buck cell
+      tied the TPS5430's EN pin to the input rail; the pin is rated for 7 V.
+      ERC saw a properly driven input. The netlist probe now asserts the pin
+      is left open, and the datasheet limit sits next to the check.</li>
   </ul>
   <div class="stats">
     <div class="stat"><b>9</b><span>test suites, plain Python</span></div>
