@@ -32,7 +32,8 @@ tools/sch/dimmermodul.py     schematic generator (1/3/4 channels)
 tools/pcb/spec_dimmer_basis.py  placement, pre-wired trunk, labels
 tools/pcb/verlegen_v3.sh <board>   schematic → ERC → build → netclasses →
                              router (power, then signals) → via tenting →
-                             ground healing → DRC → probes
+                             ground healing (masseheiler.py) → DRC →
+                             steckerprobe.py, klemmenprobe.py, strombelastung.py
 tools/fertigung.sh <board>   gerbers, drill, pos, centroids, BOM, CPL
 ```
 

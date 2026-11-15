@@ -78,8 +78,10 @@ layers.
 - **You want to see a fully generative KiCad workflow**: schematic
   generators, a hand-placed description, headless routing
   ([KiCadRoutingTools](https://github.com/drandyhaas/KiCadRoutingTools)),
-  copper-pour healing, DRC and current-capacity gates, all from the command
-  line (`tools/pcb/verlegen_v3.sh dimmer4`).
+  copper-pour healing (`tools/pcb/masseheiler.py`), DRC and a
+  current-capacity gate that walks every power net's real copper path
+  (`tools/pcb/strombelastung.py`), all from the command line
+  (`tools/pcb/verlegen_v3.sh dimmer4`).
 - **You like tests that can actually fail.** Every check in this repository
   ships with a proof that it turns red when the thing it guards is broken.
   ERC and DRC caught *none* of the real bugs found during development,
