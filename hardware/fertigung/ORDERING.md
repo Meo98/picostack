@@ -1,116 +1,70 @@
-# Ordering an assembled board at JLCPCB
+# Ordering an assembled PicoStack v3 board at JLCPCB
 
-Covers the four **v2** boards: **Motormodul** (motor), and the **Dimmer**
-family (dimmer1, dimmer3, dimmer4 — 1/3/4 LED channels). Same steps for
-each; screenshots below use Dimmer4, the largest of the four.
-
-The v1 **Sockelplatine** is **not part of the v2 product line** anymore —
-its role (Pico carrier + 24 V supply) is now built into every module as
-the versorgung cell (J90/Q90/R90/R91/D90/C90/U90/C91/D91). Its files under
-`hardware/fertigung/sockel/` are kept for archive purposes only; do not
-order it as a v2 deliverable, and do not copy its steps below without
-checking against a current v2 board first — some of what changed between
-v1 and v2 (see the traps section) started life as a v1 mistake on this
-exact board.
+Applies to `dimmer1`, `dimmer3`, `dimmer4`. **No v3 board has been
+manufactured yet** — the first order is the real test of this document.
 
 ## Files you need (already in `hardware/fertigung/<board>/`)
 
-| File | Used for |
+| File | What for |
 |---|---|
 | `<board>-gerber-jlc.zip` | the PCB itself (upload as-is) |
-| `jlc-bom.csv` | parts list, JLC BOM format |
-| `jlc-cpl.csv` | pick-and-place positions, JLC CPL format |
-| `UNBESTUECKT.txt` | what you will solder / fit by hand, and why |
+| `jlc-bom.csv` | bill of materials, JLC column layout, LCSC numbers where verified |
+| `jlc-cpl.csv` | pick-and-place positions (pad centroids for THT families) |
+| `UNBESTUECKT.txt` | every position that is deliberately not assembled, with the reason |
+
+Regenerate them with `tools/fertigung.sh <board>` after any change (it
+refuses to run on a board whose DRC is not clean).
 
 ## Step by step
 
-1. **jlcpcb.com → "Instant Quote"** and upload `<board>-gerber-jlc.zip`.
-   JLC should detect the board outline (75 × 65 mm on all four v2 boards —
-   grown from v1's 64 × 60 mm to fit the second stacking row, the per-board
-   supply cell and the edge pads) and 2 layers. Keep the defaults (FR-4,
-   1.6 mm, HASL, any colour, qty 5 — that is the minimum).
-2. Toggle **"PCB Assembly"** on. Choose *Economic*, *Top side* — every
-   populated part on all four boards sits on the top layer; nothing on
-   the bottom is machine-placed (see "unpopulated by design" below).
-   Assembly quantity 2 is usually enough for prototypes.
-3. Upload `jlc-bom.csv` and `jlc-cpl.csv` when asked.
-4. **Check the part matching page carefully.** Most BOM lines carry an
-   LCSC part number that was verified against the actual LCSC product
-   page (see the constants at the top of `tools/jlc.py` and the evidence
-   trail in `hardware/bauteile*.md`) — those match automatically. The
-   remaining lines (a few small parts with no verified number, e.g. the
-   DRV8876 on the Motormodul, the Notaus pin header, the current-limit
-   resistor position) are either matched by JLC from their description or
-   deliberately left for you to source/solder — check `UNBESTUECKT.txt`
-   and the BOM comment text for each blank LCSC field.
-5. **Check the placement preview.** JLC's rotation convention differs
-   from KiCad's for some packages — this project already applies a
-   correction table in `tools/jlc.py` (`ROT_KORREKTUR`: SOT-353/363
-   +180°, TSSOP +270°, VSSOP-8 +180°) and pad-centroid positions for the
-   THT families (`tools/pcb/zentroide.py`: terminal blocks, the
-   electrolytic, the DC/DC converter). Still **verify pin-1 / cathode
-   orientation** in the render for U100 (MCU, TSSOP-20), U101–U103 and
-   U6/U7 (SC-70/SOT, VSSOP), the diodes (D90 TVS, D91 and D1–D4
-   Schottky), and both MOSFET families (Q90 IRFR5305, Q1–Q4 NCE6020AK on
-   the dimmers) — this is the step that catches most assembly mistakes,
-   and the correction table does not cover every footprint (TO-252 and
-   the DO-214AB diodes are deliberately NOT in it, see the comment above
-   `ROT_KORREKTUR`).
-6. If JLC flags THT parts (C90 electrolytic, J5/J90/J6–J8 terminals) as
-   not assemblable in Economic: deselect them and solder them yourself —
-   they are the easiest parts on the board.
-7. Order. The stack connectors (J100, J105, J101–J104) are **hand-fitted
-   on purpose** (see `UNBESTUECKT.txt` and `stack_spec.MONTAGE_REGEL`):
-   solder them in the mated stack so the contacts align without strain.
-   J95/J96 (the edge-pad rows) are also unpopulated — see below.
+1. **jlcpcb.com → "Instant Quote"**, upload `<board>-gerber-jlc.zip`.
+   2 layers, 1.6 mm, 74 × 58 mm. Surface finish: HASL is fine; choose
+   ENIG if you want the 0603 matrix easier to rework.
+2. **PCB Assembly: on**, top side only, 5 boards is the minimum.
+3. Upload `jlc-bom.csv` and `jlc-cpl.csv`.
+4. **Check the BOM match.** Lines without an LCSC number (currently
+   `100uF 16V SMD-Elko 6.3x7.7`, C94) must be matched by hand: pick a
+   6.3 × 7.7 mm SMD electrolytic, 100 µF, ≥ 10 V. Lines *with* a number
+   should match automatically; if JLC reports a shortfall, pick the same
+   value in the same package from the Basic library (0603/0805/1210 passives
+   are all generic).
+5. **Check the placement preview, part by part.** This is where v1 cost
+   money. Known traps:
+   - `U90` (TPS5430, SOIC-8-EP): the rotation correction for SOIC-8 in
+     `tools/jlc.py` is a guess until the first order confirms it. Pin 1
+     (dot) must sit at the top-left of the footprint as drawn in KiCad.
+   - `Q1..Q4` (TO-252, tab down) and `Q90` (TO-252, tab down): the tab is the
+     wide pad toward the terminals / toward the bottom of the board.
+   - `D90`, `D91`, `D93`, `D1..D4` (SMC): cathode band on the side the
+     footprint marks.
+   - `C90`, `C94` (SMD electrolytic): "+" towards the silk marker.
+   - `L90` (6 × 6 inductor): no polarity.
+   - `J4` (JST SH Qwiic): opening towards the board edge.
+6. Order. Hand-populate after arrival (see below).
 
-## Unpopulated by design
+## Unpopulated by design (hand-soldered after arrival)
 
-Every v2 board carries two rows of bare solder pads along one edge —
-`J95` (18 GPIO) and `J96` (2× 3V3 + 2× GND), `stack_spec.RANDPADS`. They
-are **never meant to be assembled**: they exist so a finished module can
-be probed or hand-wired to a free GPIO without opening the stack. Both
-are SMD pads on the bottom copper layer (`B.Cu`) — this is new in v2 (v1
-had no equivalent). Because they are always unpopulated, **the
-bottom-layer change has no effect on `jlc-cpl.csv`**: nothing on the
-bottom side of any v2 board is ever machine-placed (the only other
-bottom-side footprints, J102/J104, were already hand-soldered stack
-connectors before this change) — checked board by board against
-`pos.csv`/`jlc-cpl.csv` while building this fabrication data, not
-assumed.
+- `J1`, `J2`: Pimoroni Pico Stacking Headers (1×20, socket 8.5 mm, pin 11 mm).
+- `J3`: a 1×4 piece cut from the same stacking header.
+- `J10`: 1×6 pin header, 2.54 mm.
+- `JA*`, `JC*`, `JD*`: the three non-default rows of the bank matrix. To
+  move a module to another bank, desolder the four 0603 bridges in the `JB`
+  row and place them in the row of the new bank. Column = signal,
+  row = bank (silkscreen: C, D, A, B from top).
 
-The stack connectors (J100/J105 left/right Pico rows, J101–J104 chain and
-power connectors) are likewise always in `UNBESTUECKT.txt`: they must be
-soldered **in the mated stack**, after stacking, so the contacts align
-without strain (`MONTAGE_REGEL`). J105 is new in v2 — v1 had a single
-2×20 stacking header (`J100`); v2 splits it into two 1×20 sockets
-(`J100` pins 1–20, `J105` pins 21–40).
-
-## Traps that already cost real money in v1 — check these every time
-
-- **JLC's placement-preview rotation check is not optional.** The
-  correction table in `tools/jlc.py` fixes the *known* package families;
-  it does not guarantee every footprint. A wrongly-rotated part that
-  slips through the preview is a wrong assembly, not a wrong file.
-- **SS36C (SMC / DO-214AB) is not SS36 (SMA).** The free-wheeling and
-  VSYS diodes on every v2 board are **SS36C**, LCSC **C16237** — MDD's
-  plain "SS36" (**C16015**) is the smaller SMA package and does not fit
-  these pads. Confirm the footprint column reads `D_SMC`, not an SMA
-  package, before accepting JLC's auto-match.
-- **R100/R101 encode the module type — never "optimise" them to a
-  common value.** They are read back by the module's own firmware at
-  boot (`stack_spec.TYPCODE_WIDERSTAENDE`) to tell modules apart; a well
-  -meaning BOM cleanup that merges "two identical-looking resistor rows"
-  into one silently bricks the type detection. This is not theoretical:
-  on **Dimmer3** (type code 0x11), R100 *and* R101 both resolve to the
-  **same value, 680 Ω** (`TYPCODE_WIDERSTAENDE(0x11) == (680, 680)`) —
-  two BOM rows, same value, same footprint, and still two electrically
-  and semantically distinct designators that must stay on separate rows.
-  Do not let anyone "simplify" that away because the values match.
+Solder the stacking headers **in the plugged-together stack**, with the
+Pico in place: that is the only way the contacts line up without strain
+(`MONTAGE_REGEL`: plug first, then screw the standoffs — 12 mm M3).
 
 ## After the boards arrive
 
-- Populate the connectors and any deselected THT parts.
-- Flash the module MCU through the stack (or SWD for the first board).
-- Please open an issue with photos — the first real-world build report
-  is worth more than any simulation.
+1. Before any Pico: 6–30 V on `J90`, check 4.9 V after `D93`/`L90` (on
+   `C94`) and ~4.5 V on VSYS (pin 39). The green LED must light.
+2. Reverse the supply briefly: nothing must get warm, LED off.
+3. Pico on USB only, no terminal supply: `picostack.Dimmer()` must run and
+   the FET gates must toggle (scope on `RG` pads).
+4. Both supplies at once: no current into the USB host (measure on the
+   USB lead), VSYS stays at the higher of the two.
+5. Load a channel with 3 A for 10 minutes: FET tab hand-warm, trunk cool.
+6. Write what you measured into `docs/` — that is the first time a v3
+   board exists outside this repository.
