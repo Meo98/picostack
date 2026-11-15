@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "790b670b-9d09-4ca4-9782-fcc28ebf9c4b")
+	(uuid "07efe9b0-e246-4ce4-9abc-588fedbfb072")
 	(paper "A2")
 	(title_block
 		(title "Dimmer1")
@@ -5701,7 +5701,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "J1")
 					(unit 1)
 				)
@@ -5765,7 +5765,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "J2")
 					(unit 1)
 				)
@@ -5831,7 +5831,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#FLG1")
 					(unit 1)
 				)
@@ -5897,7 +5897,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#FLG2")
 					(unit 1)
 				)
@@ -5961,7 +5961,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "J3")
 					(unit 1)
 				)
@@ -6025,7 +6025,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "J4")
 					(unit 1)
 				)
@@ -6089,7 +6089,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "J10")
 					(unit 1)
 				)
@@ -6165,7 +6165,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "JA1")
 					(unit 1)
 				)
@@ -6241,7 +6241,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "JB1")
 					(unit 1)
 				)
@@ -6317,7 +6317,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "JC1")
 					(unit 1)
 				)
@@ -6393,7 +6393,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "JD1")
 					(unit 1)
 				)
@@ -6469,7 +6469,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "J90")
 					(unit 1)
 				)
@@ -6535,7 +6535,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#FLG90")
 					(unit 1)
 				)
@@ -6611,7 +6611,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "Q90")
 					(unit 1)
 				)
@@ -6677,7 +6677,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#FLG92")
 					(unit 1)
 				)
@@ -6753,7 +6753,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "R91")
 					(unit 1)
 				)
@@ -6829,7 +6829,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "D92")
 					(unit 1)
 				)
@@ -6905,7 +6905,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "D90")
 					(unit 1)
 				)
@@ -6967,9 +6967,21 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C72523"
+			(at 368.3 101.6 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "C90")
 					(unit 1)
 				)
@@ -7031,9 +7043,21 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C5796173"
+			(at 383.54 101.6 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "C91")
 					(unit 1)
 				)
@@ -7095,9 +7119,21 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C5796173"
+			(at 398.78 101.6 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "C92")
 					(unit 1)
 				)
@@ -7173,7 +7209,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "U90")
 					(unit 1)
 				)
@@ -7235,9 +7271,21 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C2971995"
+			(at 444.5 83.82 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "C93")
 					(unit 1)
 				)
@@ -7313,7 +7361,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "D93")
 					(unit 1)
 				)
@@ -7389,7 +7437,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "L90")
 					(unit 1)
 				)
@@ -7453,7 +7501,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "C94")
 					(unit 1)
 				)
@@ -7529,7 +7577,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "R92")
 					(unit 1)
 				)
@@ -7605,7 +7653,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "R93")
 					(unit 1)
 				)
@@ -7671,7 +7719,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#FLG91")
 					(unit 1)
 				)
@@ -7747,7 +7795,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "D91")
 					(unit 1)
 				)
@@ -7823,7 +7871,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "R94")
 					(unit 1)
 				)
@@ -7885,9 +7933,21 @@
 				(hide yes)
 			)
 		)
+		(property "LCSC" "C2297"
+			(at 292.1 134.62 270)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+				(hide yes)
+			)
+		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "LED90")
 					(unit 1)
 				)
@@ -7963,7 +8023,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "Q1")
 					(unit 1)
 				)
@@ -8039,7 +8099,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "RG1")
 					(unit 1)
 				)
@@ -8115,7 +8175,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "RP1")
 					(unit 1)
 				)
@@ -8191,7 +8251,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "D1")
 					(unit 1)
 				)
@@ -8267,7 +8327,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "J5")
 					(unit 1)
 				)
@@ -8333,7 +8393,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR229")
 					(unit 1)
 				)
@@ -8399,7 +8459,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR231")
 					(unit 1)
 				)
@@ -8465,7 +8525,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR233")
 					(unit 1)
 				)
@@ -8531,7 +8591,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR235")
 					(unit 1)
 				)
@@ -8597,7 +8657,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR237")
 					(unit 1)
 				)
@@ -8663,7 +8723,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR239")
 					(unit 1)
 				)
@@ -8729,7 +8789,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR241")
 					(unit 1)
 				)
@@ -8795,7 +8855,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR243")
 					(unit 1)
 				)
@@ -8861,7 +8921,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR245")
 					(unit 1)
 				)
@@ -8927,7 +8987,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR247")
 					(unit 1)
 				)
@@ -8993,7 +9053,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR249")
 					(unit 1)
 				)
@@ -9059,7 +9119,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR251")
 					(unit 1)
 				)
@@ -9125,7 +9185,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR253")
 					(unit 1)
 				)
@@ -9191,7 +9251,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR255")
 					(unit 1)
 				)
@@ -9257,7 +9317,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR257")
 					(unit 1)
 				)
@@ -9323,7 +9383,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR259")
 					(unit 1)
 				)
@@ -9389,7 +9449,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR261")
 					(unit 1)
 				)
@@ -9455,7 +9515,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR263")
 					(unit 1)
 				)
@@ -9521,7 +9581,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR265")
 					(unit 1)
 				)
@@ -9587,7 +9647,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR267")
 					(unit 1)
 				)
@@ -9653,7 +9713,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR269")
 					(unit 1)
 				)
@@ -9719,7 +9779,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR271")
 					(unit 1)
 				)
@@ -9785,7 +9845,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR273")
 					(unit 1)
 				)
@@ -9851,7 +9911,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR275")
 					(unit 1)
 				)
@@ -9917,7 +9977,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR277")
 					(unit 1)
 				)
@@ -9983,7 +10043,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR279")
 					(unit 1)
 				)
@@ -10049,7 +10109,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR281")
 					(unit 1)
 				)
@@ -10115,7 +10175,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR283")
 					(unit 1)
 				)
@@ -10181,7 +10241,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR285")
 					(unit 1)
 				)
@@ -10247,7 +10307,7 @@
 		)
 		(instances
 			(project "Dimmer1"
-				(path "/790b670b-9d09-4ca4-9782-fcc28ebf9c4b"
+				(path "/07efe9b0-e246-4ce4-9abc-588fedbfb072"
 					(reference "#PWR287")
 					(unit 1)
 				)

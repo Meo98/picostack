@@ -1,21 +1,19 @@
 # -*- coding: utf-8 -*-
-"""Erzeugt BOM und CPL im JLCPCB-Format fuer eine PicoStack-Platine.
+"""Erzeugt BOM und CPL im JLCPCB-Format fuer eine PicoStack-v3-Platine.
 
-    python3 tools/jlc.py sockel
-    python3 tools/jlc.py motor
+    python3 tools/jlc.py dimmer4
 
 Liest hardware/fertigung/<board>/pos.csv (kicad-cli pcb export pos) und
-schreibt hardware/fertigung/<board>/jlc-bom.csv und jlc-cpl.csv.
-
-Konventionen woertlich aus dem LED-Dimmer-Generator uebernommen
-(~/Dokumente/Espace_des_Inventions/led_dimmer/hardware/generator/
-gen_jlc.py), inklusive der bindenden Regel: LCSC-Nummern stehen nur
-dort, wo sie von einer Produktseite stammen (geprueft=True); sonst
+zentroide.csv (tools/pcb/zentroide.py) und schreibt jlc-bom.csv,
+jlc-cpl.csv und UNBESTUECKT.txt. Bindende Regel: LCSC-Nummern stehen
+nur dort, wo sie von einer Produktseite stammen (geprueft=True); sonst
 bleibt das Feld leer und die Beschreibung so genau, dass JLCs
-BOM-Abgleich eindeutig trifft. Nicht bestueckte Positionen fallen aus
-BEIDEN Dateien heraus -- steht ein Designator in der CPL, den die BOM
-nicht kennt, weist JLC den Auftrag zurueck; fehlt umgekehrt ein
-BOM-Designator in der CPL, bricht dieses Skript ab.
+BOM-Abgleich eindeutig trifft. Jede Position der Platine ist entweder
+bestueckt oder mit Begruendung unbestueckt -- sonst bricht das Skript ab.
+
+Die Stueckliste selbst kommt NICHT aus einer zweiten Liste hier, sondern
+aus den Generatoren (tools/sch/versorgung.py TEILE, tools/sch/
+dimmermodul.py): Wert und LCSC-Feld jedes Bauteils stehen dort einmal.
 """
 import csv
 import os
@@ -23,133 +21,23 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import stack_spec as S  # noqa: E402  (Kennwiderstaende aus dem Typcode)
+sys.path.insert(0, os.path.join(HERE, "sch"))
+import stack_spec as S   # noqa: E402
+import versorgung        # noqa: E402
+import dimmermodul       # noqa: E402
 
 REPO = os.path.join(HERE, "..")
 
-# Gepruefte Nummern aus dem LED-Dimmer-Projekt (dort von der
-# LCSC-Produktseite uebernommen, Bauform identisch):
-LCSC_KLEMME_508_2P = "C395868"    # DB128L-5.08-2P, passt aufs MKDS-3/2-Bild
-LCSC_K7805 = "C909765"            # K7805-1000R3 (DEXU), SIP-3, 6-30 V
-                                  # Eingang, 5 V / 1 A. ZWEITER Ersatz
-                                  # 2026-09-07: C2931187 (DEXU 2 A) ist
-                                  # abgekuendigt, und der erste Ersatz
-                                  # C5378008 (JETEKPS "K7805-2000R3")
-                                  # vertraegt laut LCSC-Rohdaten nur
-                                  # 7-18 V -- an 24 V unbrauchbar.
-                                  # 1-A-Herleitung und Datenblattzitat in
-                                  # tools/sch/sockelplatine.py
-LCSC_NMOS_TO252 = "C108639"       # NCE6020AK, 60 V 20 A N-MOSFET,
-                                  # TO-252 -- Ersatz 2026-09-04 fuer den
-                                  # bei JLC/LCSC ausverkauften NCE6050KA
-                                  # (C96013); Herleitung in
-                                  # tools/sch/dimmermodul.py
-
-# Gepruefte Nummern aus hardware/bauteile.md / bauteile-1b.md (dort
-# jeweils mit LCSC-Produktseite belegt):
-LCSC_MCU = "C5456198"             # STM32C011F6P6, TSSOP-20
-LCSC_1G175 = "C202238"            # SN74LVC1G175DCKR, SC-70-6
-LCSC_2G00 = "C206109"             # SN74LVC2G00DCUR, VSSOP-8
-LCSC_1G08 = "C7832"               # SN74LVC1G08DCKR, SC-70-5
-LCSC_1G07 = "C7830"               # SN74LVC1G07DCKR, SC-70-5, Buffer/
-                                  # Driver mit Open-Drain-Ausgang -- der
-                                  # NOTAUS-FIX (Aufgabe 5d/2026-09-08):
-                                  # ersetzt auf U6/U7 den 1G06 unten, weil
-                                  # dessen invertierender Ausgang bei
-                                  # offenem Notaus-Kontakt (Ruhestrom-
-                                  # Umbau) die Sammelleitung staendig auf
-                                  # LOW zoege statt HIGH -- Herleitung und
-                                  # TI-Datenblattzitat in
-                                  # tools/sch/motormodul.py (INVERTER_WERT,
-                                  # felder={"LCSC": "C7830"})
-LCSC_1G06 = "C7828"               # SN74LVC1G06DCKR, SC-70-5, Open-Drain
-                                  # -- NICHT MEHR VERBAUT (v2): v1 setzte
-                                  # dies auf U6/U7 des Motormoduls ein,
-                                  # das war fuer den Ruhestrom-Notaus
-                                  # FALSCH gepolt (s. LCSC_1G07 oben).
-                                  # Konstante bleibt fuer den Beleg in
-                                  # hardware/bauteile-1b.md erhalten, wird
-                                  # in BOARDS aber nirgends mehr benutzt.
-LCSC_PMOS_TO252 = "C2624"         # IRFR5305PbF, P-Kanal, D-Pak
-LCSC_PC817 = "C97308"             # PC817X1CSP9F, SMD-Gullwing
-LCSC_R3K3_1206 = "C26032"         # 1206W4F3301T5E, 3,3 kOhm 250 mW
-LCSC_R10K_0805 = "C17414"         # 0805W8F1002T5E, 10 kOhm
-LCSC_SMCJ30A = "C340696"          # SMCJ30A, DO-214AB (sockelplatine.py)
-
-# Am 2026-09-04 fuer die Dimmer-Bestellung an der jeweiligen
-# LCSC-Produktseite gesichtet:
-LCSC_R100R_0805 = "C17408"        # 0805W8F1000T5E, 100 Ohm 1% (8,2 Mio Lager)
-LCSC_SS36C = "C16237"             # MDD SS36C -- Achtung: das MDD "SS36"
-                                  # (C16015) ist SMA! Der C-Suffix ist SMC
-LCSC_ELKO_220U35 = "C45078"       # Chengx GR227M..., 220u 35V D8x12 RM3.5
-LCSC_KLEMME_35_2P = "C474892"     # KF350-3.5-2P, 3,5mm 2P 10A 300V --
-                                  # THT-Klon zum Phoenix-PT-Footprint,
-                                  # Sitz im JLC-Preview gegenpruefen
-LCSC_R100K_0805 = "C149504"       # 0805W8F1003T5E, 100 kOhm. Achtung:
-                                  # denselben Widerstand gibt es bei LCSC
-                                  # doppelt -- C17407 traegt den Vermerk
-                                  # "SMT-Geschaeft vorbehalten" und
-                                  # meldete im JLC-Dialog trotzdem
-                                  # shortfall; C149504 ist der Eintrag
-                                  # der JLC-Bestueckungsbibliothek
-                                  # (jlcpcb.com/partdetail/160838-.../
-                                  # C149504). JLCs Auto-Match C5713386
-                                  # war ebenfalls leer
-LCSC_R680R_0805 = "C17798"        # 0805W8F6800T5E, 680 Ohm (JLC-Basic)
-LCSC_R1K5_0805 = "C4310"          # 0805W8F1501T5E, 1,5 kOhm (JLC-Basic)
-LCSC_R0_0805 = "C17477"           # 0805W8F0000T5E, 0-Ohm-Bruecke
-
-# JLC-Bestellrunde 3 (2026-09-07): headless-Chrome-Sichtung der
-# JLC-Teileseiten (componentLibraryType/overseasStockCount im
-# Seiten-JSON). Alles hier ist "base" (JLC-Basic: keine 3-$-Feeder-
-# Gebuehr, matcht und selektiert automatisch):
-LCSC_C100N_0805 = "C49678"        # YAGEO CC0805KRX7R9BB104, 100n 50V X7R
-LCSC_C1U_0805 = "C28323"          # Samsung CL21B105KBFNNNE, 1u 50V X7R
-LCSC_C22U_0805 = "C45783"         # Samsung CL21A226MAQNNNE, 22u 25V X5R
-LCSC_R4K7_0805 = "C17673"         # 0805W8F4701T5E, 4,7 kOhm
-
-# Kennwiderstands-Stufen (stack_spec.ID_WIDERSTAENDE) -> gesichtete
-# Nummer, soweit eine Stufe von einem existierenden Modultyp gebraucht
-# wird. Fehlt eine Stufe hier, bleibt das LCSC-Feld schlicht leer.
-LCSC_KENN = {0: LCSC_R0_0805, 680: LCSC_R680R_0805, 1500: LCSC_R1K5_0805}
-
-
-def _kenn(typcode):
-    """BOM-Zeilen fuer die Kennwiderstaende eines Modultyps."""
-    r0, r1 = S.TYPCODE_WIDERSTAENDE(typcode)
-
-    def fmt(r):
-        if r == 0:
-            return "0Ohm Bruecke 0805"
-        if r >= 1000:
-            return "%gkOhm 0805 1%%" % (r / 1000.0)
-        return "%gOhm 0805 1%%" % r
-
-    return [
-        (fmt(r0) + " (Kennwiderstand ID0)", ["R100"],
-         LCSC_KENN.get(int(r0), ""), int(r0) in LCSC_KENN),
-        (fmt(r1) + " (Kennwiderstand ID1)", ["R101"],
-         LCSC_KENN.get(int(r1), ""), int(r1) in LCSC_KENN),
-    ]
-
-
 # JLCs Bauteilbibliothek hat fuer einige Gehaeusefamilien eine andere
-# Null-Drehung als KiCad -- im Bestueckungs-Preview standen U100-U103
-# verdreht (Bestellrunde 2026-09-07). Korrekturwinkel aus den beiden
-# Community-Datenbanken, die sich fuer genau diese Familien einig sind
-# (JLCKicadTools cpl_rotations_db.csv und Fabrication-Toolkit
-# transformations.csv, beide am 2026-09-07 gesichtet); angewandt wie
-# dort: (KiCad-Winkel + Korrektur) mod 360. TO-252 steht bewusst in
-# KEINER der beiden Tabellen (die NCE-FETs lagen im Preview richtig);
-# das verdrehte IRFR5305-Modell ist eine Teil-Eigenheit, die nur im
-# Preview selbst zu richten ist. Erster Treffer gewinnt.
+# Null-Drehung als KiCad (Bestellrunde 2026-09-07; JLCKicadTools
+# cpl_rotations_db.csv und Fabrication-Toolkit transformations.csv).
 ROT_KORREKTUR = (
     ("SOT-353", 180.0),
     ("SOT-363", 180.0),
     ("TSSOP-", 270.0),
-    ("VSSOP-8_", 180.0),   # gilt fuer unsere 2.3x2mm-Variante; die
-                           # 3.0x3.0-Variante braeuchte laut beiden
-                           # Datenbanken 270
+    ("VSSOP-8_", 180.0),
+    ("SOIC-8", 270.0),      # TI SOIC-8 in JLCs Bibliothek: Pin 1 links oben
+                            # -> im Preview GEGENPRUEFEN (noch nicht bestellt)
 )
 
 
@@ -160,204 +48,76 @@ def _jlc_winkel(package, rot):
     return rot
 
 
-# Stapel-Steckerteile werden IMMER von Hand bestueckt: die Kontakte
-# muessen im gesteckten Verbund fluchten (stack_spec.MONTAGE_REGEL --
-# erst stecken, dann schrauben), und ein maschinell schief gesetzter
-# SMD-Stecker laesst sich nicht nachbiegen.
-_STECKER_HAND = ("von Hand - im gesteckten Verbund ausgerichtet, damit "
+_STECKER_HAND = ("von Hand -- im gesteckten Verbund ausgerichtet, damit "
                  "die Stapelkontakte ohne Zwang fluchten (MONTAGE_REGEL)")
 
-def _dimmer(kanaele, typcode):
-    """BOM/Unbestueckt-Definition einer Dimmer-Variante (v2).
 
-    Gegenueber v1 (Etappe 1b) neu: die Versorgungszelle aus
-    tools/sch/versorgung.py (J90/Q90/R90/R91/D90/C90/U90/C91/D91) ersetzt
-    den vorherigen board-eigenen Verpolschutz -- J4+n/Q10/D10/C12 aus der
-    alten Fassung dieser Funktion existieren auf der Platine nicht mehr
-    (per pos.csv nachgemessen, nicht angenommen), Q10 wurde zu Q90, D10 zu
-    D90, C12 zu C90. Neu dazu: die Gate-Entstoerkondensatoren C102-C104
-    (gleicher Wert wie C100, in dieselbe BOM-Zeile gemergt, da identisches
-    Bauteil) und die unbestueckten Randpad-Reihen J95/J96
-    (stack_spec.RANDPADS) sowie der zweite Stapelstecker J105 (Pico-Pins
-    21-40, vorher Teil eines einzelnen 2x20-Steckers J100).
+def _dimmer(kanaele):
+    """BOM/Unbestueckt-Definition einer Dimmer-Variante (v3).
+
+    Zeilen: (Kommentar, [Refs], LCSC, geprueft). Gleiche Teile werden
+    zu einer Zeile gemergt (JLC will je Teil eine Zeile).
     """
-    bom = [
-        ("100nF 50V X7R 0805",
-         ["C100", "C102", "C103", "C104"], LCSC_C100N_0805, True),
-        ("1uF 50V X7R 0805",                  ["C101"], LCSC_C1U_0805,
-         True),
-        ("22uF 25V X5R 0805",                 ["C91"], LCSC_C22U_0805,
-         True),
-        ("220uF 35V Elko radial D8 RM3.5",    ["C90"],
-         LCSC_ELKO_220U35, True),
-        ("100kOhm 0805 1%",
-         ["R102"] + ["RP%d" % n for n in range(1, kanaele + 1)],
-         LCSC_R100K_0805, True),
-        ("100Ohm 0805 1%",
-         ["RG%d" % n for n in range(1, kanaele + 1)],
-         LCSC_R100R_0805, True),
-        ("10kOhm 0805 1%",
-         ["R90", "R91", "R104", "R105"],       LCSC_R10K_0805, True),
-        ("SMCJ30A TVS unidirektional DO-214AB", ["D90"],
-         LCSC_SMCJ30A, True),
-        ("SS36C Schottky 60V 3A DO-214AB (SMC)",
-         ["D91"] + ["D%d" % n for n in range(1, kanaele + 1)],
-         LCSC_SS36C, True),
-        ("IRFR5305 P-MOSFET -55V TO-252",     ["Q90"],
-         LCSC_PMOS_TO252, True),
-        ("NCE6020AK N-MOSFET 60V 20A TO-252",
-         ["Q%d" % n for n in range(1, kanaele + 1)],
-         LCSC_NMOS_TO252, True),
-        ("KF350-3.5-2P Klemme 3.5mm 2P 10A",
-         ["J90"] + ["J%d" % (4 + n) for n in range(1, kanaele + 1)],
-         LCSC_KLEMME_35_2P, True),
-        ("K7805-1000R3 DC/DC 5V 1A 6-30V SIP-3", ["U90"], LCSC_K7805,
-         True),
-        ("SN74LVC1G08DCKR AND SC-70-5",       ["U103"], LCSC_1G08, True),
-        ("SN74LVC1G175DCKR D-Flipflop SC-70-6", ["U101"],
-         LCSC_1G175, True),
-        ("SN74LVC2G00DCUR Dual-NAND VSSOP-8", ["U102"], LCSC_2G00, True),
-        ("STM32C011F6P6 MCU TSSOP-20",        ["U100"], LCSC_MCU, True),
-    ] + _kenn(typcode)
-    unbestueckt = {
-        "J95": "Randpads GPIO 1x18, unbestueckt (SMD-Loetpad, "
-               "Rueckseite, B.Cu)",
-        "J96": "Randpads Versorgung 1x04 (2x 3V3 + 2x GND), "
-               "unbestueckt (SMD-Loetpad, Rueckseite, B.Cu)",
-        "J100": "Stapelstecker links, Pico-Pins 1-20 (Buchse) "
-                + _STECKER_HAND,
-        "J105": "Stapelstecker rechts, Pico-Pins 21-40 (Buchse) "
-                + _STECKER_HAND,
-        "J101": "Kettenstecker Buchse (SMD) " + _STECKER_HAND,
-        "J102": "Kettenstecker Stift (SMD) " + _STECKER_HAND,
-        "J103": "Leistungsstecker Buchse (SMD) " + _STECKER_HAND,
-        "J104": "Leistungsstecker Stift (SMD) " + _STECKER_HAND,
+    T = versorgung.TEILE
+    zeilen = {}
+
+    def add(kommentar, ref, lcsc):
+        zeilen.setdefault((kommentar, lcsc), []).append(ref)
+
+    # Versorgungszelle, Beschreibung aus TEILE (Wert) + Bauform
+    beschreibung = {
+        "Q90": "AOD409 P-MOSFET -60V 26A TO-252",
+        "R91": "100kOhm 0805 1%",
+        "D92": "BZT52C12 Zener 12V SOD-123",
+        "D90": "SMCJ30A TVS unidirektional DO-214AB",
+        "C90": "47uF 50V SMD-Elko 6.3x7.7",
+        "C91": "10uF 50V X7R 1210",
+        "C92": "10uF 50V X7R 1210",
+        "U90": "TPS5430DDAR Buck 3A SOIC-8-EP",
+        "C93": "10nF 50V X7R 0805",
+        "L90": "SWPA6045S150MT 15uH 2A 6x6mm",
+        "D93": "SS36C Schottky 60V 3A DO-214AB (SMC)",
+        "C94": "100uF 16V SMD-Elko 6.3x7.7",
+        "R92": "10kOhm 0603 1%",
+        "R93": "3.3kOhm 0603 1%",
+        "D91": "SS36C Schottky 60V 3A DO-214AB (SMC)",
+        "LED90": "LED gruen 0805",
+        "R94": "10kOhm 0805 1%",
+        "J90": "KF350-3.5-2P Klemme 3.5mm 2P 10A",
     }
-    return {"pcb": "Dimmer%d" % kanaele, "bom": bom,
-            "unbestueckt": unbestueckt}
+    for ref, text in beschreibung.items():
+        add(text, ref, T[ref][2])
+    for n in range(1, kanaele + 1):
+        add("NCE6020AK N-MOSFET 60V 20A TO-252", "Q%d" % n, dimmermodul.QK_LCSC)
+        add("SS36C Schottky 60V 3A DO-214AB (SMC)", "D%d" % n, dimmermodul.DK_LCSC)
+        add("100Ohm 0603 1%", "RG%d" % n, dimmermodul.RG_LCSC)
+        add("100kOhm 0603 1%", "RP%d" % n, dimmermodul.RP_LCSC)
+        add("KF350-3.5-2P Klemme 3.5mm 2P 10A", "J%d" % (4 + n), "C474892")
+        add("0Ohm 0603 Bruecke (Slot-Matrix, Bank %s)" % S.BANK_VORGABE["Dimmer"],
+            S.MATRIX_REF(n, S.BANK_VORGABE["Dimmer"]), S.MATRIX_LCSC)
+    add("JST SH SM04B-SRSS-TB 4P 1.0mm (Qwiic)", "J4", "C160404")
+
+    bom = [(k[0], refs, k[1], bool(k[1])) for k, refs in zeilen.items()]
+    unbestueckt = {
+        "J1": "Stapelbuchse 1x20, Pico-Pins 1..20 " + _STECKER_HAND,
+        "J2": "Stapelbuchse 1x20, Pico-Pins 21..40 " + _STECKER_HAND,
+        "J3": "Stapelbuchse 1x4 (VIN/GND), aus 1x20 abgelaengt " + _STECKER_HAND,
+        "J10": "Stiftleiste 1x6 (User GP0..3, 3V3, GND), von Hand",
+    }
+    for n in range(1, kanaele + 1):
+        for bank in S.BAENKE:
+            if bank != S.BANK_VORGABE["Dimmer"]:
+                unbestueckt[S.MATRIX_REF(n, bank)] = (
+                    "Slot-Matrix Bank %s: unbestueckt (0 Ohm 0603 "
+                    "umloeten, um die Bank zu wechseln)" % bank)
+    return {"pcb": "Dimmer%d" % kanaele, "bom": sorted(bom), "unbestueckt": unbestueckt}
 
 
-BOARDS = {
-    "dimmer1": None,   # unten gefuellt (braucht _kenn/_STECKER_HAND)
-    "dimmer3": None,
-    "dimmer4": None,
-    # ------------------------------------------------------------------
-    # DEPRECATED (v1-Archiv): die Sockelplatine ist mit v2 nicht mehr Teil
-    # der Produktlinie (ersetzt durch die Versorgungszelle, die jetzt in
-    # JEDEM Modul steckt -- tools/sch/versorgung.py). Dieser Eintrag bleibt
-    # nur, damit ein alter v1-Auftrag aus dem Repo heraus nachvollziehbar
-    # bleibt; er wird von keinem v2-Liefergegenstand mehr erzeugt oder
-    # bestellt. python3 tools/jlc.py sockel LAEUFT NOCH (die BOM/CPL-Logik
-    # ist unveraendert), aber pos.csv/zentroide.csv unter
-    # hardware/fertigung/sockel/ sind der letzte v1-Stand -- fuer sie gibt
-    # es kein v2-Board, gegen das sie neu erzeugt werden koennten
-    # (tests/test_sockelplatine.py und tests/test_spec_sockel.py sind aus
-    # demselben Grund bereits ROT, s. tests/run_all.py-Restliste).
-    "sockel": {
-        "pcb": "Sockelplatine",
-        "bom": [
-            ("100nF 50V X7R 0805",                ["C1"],
-             LCSC_C100N_0805, True),
-            ("22uF 25V X5R 0805",                 ["C2"],
-             LCSC_C22U_0805, True),
-            ("220uF 35V Elko radial D8 RM3.5",    ["C3"],
-             LCSC_ELKO_220U35, True),
-            ("SMCJ30A TVS unidirektional DO-214AB", ["D1"],
-             LCSC_SMCJ30A, True),
-            ("DB128L-5.08-2P-GN-S Klemme 16A 300V", ["J1"],
-             LCSC_KLEMME_508_2P, True),
-            ("4.7kOhm 0805 1%",                   ["R1", "R2"],
-             LCSC_R4K7_0805, True),
-            ("K7805-1000R3 DC/DC 5V 1A 6-30V SIP-3", ["U2"],
-             LCSC_K7805, True),
-        ],
-        "unbestueckt": {
-            "U1": "Pico-Buchsenleisten von Hand - 2 Streifen, mit "
-                  "gestecktem Pico ausgerichtet",
-            "J2": "Stapelstecker 2x20 " + _STECKER_HAND,
-            "J3": "Kettenstecker (SMD-Stift) " + _STECKER_HAND,
-            "J4": "Leistungsstecker (SMD-Stift) " + _STECKER_HAND,
-        },
-    },
-    # v2: Versorgungszelle (J90/Q90/R90/R91/D90/C90/U90/C91/D91) ersetzt
-    # das alte Q1/D1/C12 (nachgemessen in pos.csv -- keiner dieser drei
-    # Bezeichner existiert mehr auf der Platine); neu dazu die
-    # Gate-Entstoerkondensatoren C17-C19 (gleicher Wert wie C100, gleiche
-    # BOM-Zeile) und J95/J96/J105 wie beim Dimmer (s. _dimmer()-Docstring).
-    "motor": {
-        "pcb": "Motormodul",
-        "bom": [
-            ("22nF 50V X7R 0805",                 ["C10"],       "", False),
-            ("100nF 50V X7R 0805",
-             ["C9", "C11", "C13", "C14", "C15", "C16", "C17", "C18",
-              "C19", "C100"],
-             LCSC_C100N_0805, True),
-            ("1uF 50V X7R 0805",                  ["C101"],
-             LCSC_C1U_0805, True),
-            ("22uF 25V X5R 0805",                 ["C91"],
-             LCSC_C22U_0805, True),
-            ("100kOhm 0805 1%",                   ["R102"],
-             LCSC_R100K_0805, True),
-            ("220uF 35V Elko radial D8 RM3.5",    ["C90"],
-             LCSC_ELKO_220U35, True),
-            ("SMCJ30A TVS unidirektional DO-214AB", ["D90"],
-             LCSC_SMCJ30A, True),
-            ("SS36C Schottky 60V 3A DO-214AB (SMC)", ["D91"],
-             LCSC_SS36C, True),
-            ("DB128L-5.08-2P-GN-S Klemme 16A 300V", ["J5"],
-             LCSC_KLEMME_508_2P, True),
-            ("KF350-3.5-2P Klemme 3.5mm 2P 10A",  ["J90"],
-             LCSC_KLEMME_35_2P, True),
-            ("Stiftleiste 1x04 2.54mm THT",       ["J3"],        "", False),
-            ("IRFR5305 P-MOSFET -55V TO-252",     ["Q90"],
-             LCSC_PMOS_TO252, True),
-            ("100Ohm 0805 1%",                    ["R7", "R8", "R9"],
-             LCSC_R100R_0805, True),
-            ("1.3kOhm 0805 1%",                   ["R5"],        "", False),
-            ("3.3kOhm 1206 1%",
-             ["R16", "R17", "R18", "R19"],         LCSC_R3K3_1206, True),
-            ("4.7kOhm 0805 1%",                   ["R20", "R21"],
-             LCSC_R4K7_0805, True),
-            ("10kOhm 0805 1%",
-             ["R13", "R15", "R90", "R91", "R104", "R105"],
-             LCSC_R10K_0805, True),
-            ("K7805-1000R3 DC/DC 5V 1A 6-30V SIP-3", ["U90"],
-             LCSC_K7805, True),
-            ("DRV8876PWPR H-Bruecke HTSSOP-16 PowerPAD", ["U1"],  "", False),
-            ("SN74LVC1G08DCKR AND SC-70-5",       ["U3", "U103"],
-             LCSC_1G08, True),
-            ("SN74LVC1G07DCKR Buffer OD SC-70-5", ["U6", "U7"],
-             LCSC_1G07, True),
-            ("SN74LVC1G175DCKR D-Flipflop SC-70-6", ["U101"],
-             LCSC_1G175, True),
-            ("SN74LVC2G00DCUR Dual-NAND VSSOP-8", ["U102"],
-             LCSC_2G00, True),
-            ("STM32C011F6P6 MCU TSSOP-20",        ["U100"], LCSC_MCU, True),
-            ("PC817 Optokoppler SMD Gullwing",    ["U4", "U5"],
-             LCSC_PC817, True),
-        ] + _kenn(0x01),
-        "unbestueckt": {
-            "R10": "Stromgrenze, ab Werk unbestueckt",
-            "J95": "Randpads GPIO 1x18, unbestueckt (SMD-Loetpad, "
-                   "Rueckseite, B.Cu)",
-            "J96": "Randpads Versorgung 1x04 (2x 3V3 + 2x GND), "
-                   "unbestueckt (SMD-Loetpad, Rueckseite, B.Cu)",
-            "J100": "Stapelstecker links, Pico-Pins 1-20 (Buchse) "
-                    + _STECKER_HAND,
-            "J105": "Stapelstecker rechts, Pico-Pins 21-40 (Buchse) "
-                    + _STECKER_HAND,
-            "J101": "Kettenstecker Buchse (SMD) " + _STECKER_HAND,
-            "J102": "Kettenstecker Stift (SMD) " + _STECKER_HAND,
-            "J103": "Leistungsstecker Buchse (SMD) " + _STECKER_HAND,
-            "J104": "Leistungsstecker Stift (SMD) " + _STECKER_HAND,
-        },
-    },
-}
+BOARDS = {"dimmer1": _dimmer(1), "dimmer3": _dimmer(3), "dimmer4": _dimmer(4)}
 
-
-BOARDS["dimmer1"] = _dimmer(1, 0x10)
-BOARDS["dimmer3"] = _dimmer(3, 0x11)
-BOARDS["dimmer4"] = _dimmer(4, 0x12)
+# THT-Familien, deren KiCad-Anker auf Pin 1 liegt statt in der Mitte --
+# JLC setzt sein Modell auf Mid X/Y (Bestellrunde 2026-09-07).
+_THT_PIN1_ANKER = ("CP_Radial", "TerminalBlock", "PinHeader", "PinSocket")
 
 
 def erzeugen(board):
@@ -370,18 +130,6 @@ def erzeugen(board):
         for r in csv.DictReader(f):
             platz[r["Ref"]] = r
 
-    # KiCads Positionsexport liefert den Footprint-ANKER; bei den
-    # THT-Familien liegt der auf Pin 1 statt in der Bauteilmitte, und
-    # JLC setzt sein Modell auf Mid X/Y (Elko und Klemmen schwebten im
-    # Bestueckungs-Preview 1,75 mm neben ihren Loechern, Runde
-    # 2026-09-07). tools/pcb/zentroide.py schreibt die echten
-    # Pad-Zentroiden aus pcbnew; nur diese Familien werden ersetzt --
-    # bei SMD ist der Anker die Gehaeusemitte und damit schon richtig
-    # (TO-252: Pad-Zentroid waere FALSCH, er liegt neben dem Gehaeuse).
-    _THT_PIN1_ANKER = ("CP_Radial", "TerminalBlock", "PinHeader",
-                       "Converter_DCDC")   # U2 (SIP-3) ankert ebenfalls
-                                           # auf Pin 1 -- fiel erst im
-                                           # Sockel-Preview auf (2026-09-07)
     betroffen = [ref for ref, r in platz.items()
                  if r["Package"].startswith(_THT_PIN1_ANKER)]
     if betroffen:
@@ -397,16 +145,15 @@ def erzeugen(board):
             platz[ref]["PosX"] = mitte[ref]["MidX"]
             platz[ref]["PosY"] = mitte[ref]["MidY"]
 
-    # Vollstaendigkeitsabgleich in beide Richtungen: jede Position der
-    # Platine ist entweder bestueckt oder mit Begruendung unbestueckt.
-    alle = set(platz) | {"U1"} if board == "sockel" else set(platz)
-    # (Der Pico U1 des Sockels ist THT ohne SMD-Pads und fehlt in der
-    # pos.csv -- er gehoert trotzdem begruendet in die Liste.)
-    offen = alle - set(bestueckt) - set(b["unbestueckt"])
+    offen = set(platz) - set(bestueckt) - set(b["unbestueckt"])
     offen = {r for r in offen if not r.startswith("H")}   # M3-Bohrungen
     if offen:
         raise SystemExit("%s: weder bestueckt noch begruendet: %s"
                          % (board, ", ".join(sorted(offen))))
+    fehlt = set(bestueckt) - set(platz)
+    if fehlt:
+        raise SystemExit("%s: in der BOM, aber nicht auf der Platine: %s"
+                         % (board, ", ".join(sorted(fehlt))))
 
     with open(os.path.join(verz, "jlc-bom.csv"), "w", newline="") as f:
         w = csv.writer(f)
@@ -417,16 +164,10 @@ def erzeugen(board):
 
     rows = []
     for ref in bestueckt:
-        r = platz.get(ref)
-        if r is None:
-            continue
-        rows.append([ref, "%.4fmm" % float(r["PosX"]),
-                     "%.4fmm" % float(r["PosY"]),
+        r = platz[ref]
+        rows.append([ref, "%.4fmm" % float(r["PosX"]), "%.4fmm" % float(r["PosY"]),
                      "Top" if r["Side"] == "top" else "Bottom",
                      "%.0f" % _jlc_winkel(r["Package"], float(r["Rot"]))])
-    gefunden = {r[0] for r in rows}
-    fehlend = [r for r in bestueckt if r not in gefunden]
-
     with open(os.path.join(verz, "jlc-cpl.csv"), "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["Designator", "Mid X", "Mid Y", "Layer", "Rotation"])
@@ -436,13 +177,11 @@ def erzeugen(board):
         for ref in sorted(b["unbestueckt"]):
             f.write("%-6s %s\n" % (ref, b["unbestueckt"][ref]))
 
-    print("%s: BOM %d Zeilen (%d Bauteile), CPL %d Positionen, "
-          "%d unbestueckt (begruendet)"
-          % (board, len(b["bom"]), len(bestueckt), len(rows),
-             len(b["unbestueckt"])))
-    if fehlend:
-        raise SystemExit("FEHLER: in der CPL fehlen %s -- JLC wuerde den "
-                         "Auftrag zurueckweisen" % ", ".join(fehlend))
+    ohne = [k for k, _r, l, _g in b["bom"] if not l]
+    print("%s: BOM %d Zeilen (%d Bauteile), CPL %d Positionen, %d unbestueckt; "
+          "ohne LCSC-Nummer: %s"
+          % (board, len(b["bom"]), len(bestueckt), len(rows), len(b["unbestueckt"]),
+             ", ".join(ohne) or "keine"))
 
 
 if __name__ == "__main__":

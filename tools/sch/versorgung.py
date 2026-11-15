@@ -74,18 +74,19 @@ TEILE = {
     "R91": ("100k", FP_R0805, "C149504"),
     "D92": ("BZT52C12", FP_SOD123, "C19077410"),
     "D90": ("SMCJ30A", FP_SMC, "C340696"),
-    "C90": ("47u/50V", FP_CP_63, ""),
-    "C91": ("10u/50V", FP_C1210, ""),
-    "C92": ("10u/50V", FP_C1210, ""),
+    "C90": ("47u/50V", FP_CP_63, "C72523"),     # RVT1H470M0607, 6.3x7.7
+    "C91": ("10u/50V", FP_C1210, "C5796173"),   # X7R 1210, Lager 2k (jlcpcb-parts 2026-11-15)
+    "C92": ("10u/50V", FP_C1210, "C5796173"),
     "U90": ("TPS5430DDAR", FP_SOIC8EP, "C9864"),
-    "C93": ("10n", FP_C0805, ""),
+    "C93": ("10n", FP_C0805, "C2971995"),       # C0G 50V 0805
     "L90": ("15u", FP_L6045, "C83374"),                         # SWPA6045S150MT
     "D93": ("SS36C", FP_SMC, "C16237"),
-    "C94": ("100u/16V", FP_CP_63, ""),
+    "C94": ("100u/16V", FP_CP_63, ""),          # 6.3x7.7; LCSC beim Bestellen
+                                                 # per JLC-Abgleich waehlen
     "R92": ("10k", FP_R0603, "C25804"),      # 0603: Platz links von U90
     "R93": ("3.3k", FP_R0603, "C22978"),
     "D91": ("SS36C", FP_SMC, "C16237"),
-    "LED90": ("gruen", FP_LED0805, ""),
+    "LED90": ("gruen", FP_LED0805, "C2297"),    # KT-0805G, JLC-Basic
     "R94": ("10k", FP_R0805, "C17414"),
 }
 
