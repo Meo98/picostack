@@ -24,7 +24,7 @@ PROJEKTNAME = "PicoStack"
 
 # --- Umriss und Mechanik ---------------------------------------------
 BOARD_W = 74.0
-BOARD_H = 50.0
+BOARD_H = 58.0
 CORNER_R = 3.0
 PLATINE_DICKE = 1.6      # mm, JLCPCB-Standard; Basis der Stapelrechnung
 
@@ -43,7 +43,7 @@ def M3_HOLES_FUER(w, h):
 
 
 M3_HOLES = M3_HOLES_FUER(BOARD_W, BOARD_H)
-# (4|4) (4|46) (70|4) (70|46)
+# (4|4) (4|54) (70|4) (70|54)
 
 # --- Stapel -----------------------------------------------------------
 # Ein Bauteiltyp fuer alle Stapelverbindungen: Buchsenleiste mit langem,
@@ -118,10 +118,13 @@ USB_UEBERSTAND = 1.3           # mm, Micro-USB ragt ueber die Pico-Kante
 # Das Pico-Brett ragt 1,37 mm ueber die Endpins und 1,61 mm ueber die
 # Reihen hinaus ((51-48,26)/2 bzw. (21-17,78)/2).
 PICO_SCHATTEN = (7.63, 8.39, 58.63, 29.39)
-# Pico W: Antenne am USB-fernen Ende zwischen den Reihen. Datenblatt
+# Pico W: Antenne am USB-fernen Ende ZWISCHEN den Reihen. Datenblatt
 # 2.2.1 verlangt eine kupferfreie Zone unter der Antenne; hier beide
-# Lagen, bis 2 mm ueber das Brettende hinaus.
-ANTENNE_FREI = (46.0, 8.39, 60.6, 29.39)
+# Lagen, bis 2 mm ueber das Brettende hinaus. Die Zone liegt zwischen
+# den Reihenhoefen (y 11,77 .. 26,01), NICHT ueber den Pads der Reihen:
+# ein Pad in einer bahnenfreien Zone koennte sonst nie angeschlossen
+# werden (erster Router-Lauf 2026-11-15: 8 Netze "boxed in").
+ANTENNE_FREI = (46.0, 11.9, 60.6, 25.9)
 
 # --- Pinrollen (Pico-Pinnummern 1..40) -------------------------------------
 _GND = {3, 8, 13, 18, 23, 28, 33, 38}
@@ -193,16 +196,17 @@ for _gp in USER_GP:
     PIN_ROLLE[GP_PIN[_gp]] = "USER_GP%d" % _gp
 
 # --- Slot-Matrix ----------------------------------------------------------
-# Je Modulsignal S_k (k = 1..4) vier 0603-Plaetze JB<k><Bank> nach
-# BAENKE[Bank][k-1]; genau einer ist mit 0 Ohm bestueckt. Fuer das
-# Analogsignal drei Plaetze JA26/JA27/JA28.
+# Je Modulsignal S_k (k = 1..4) vier 0603-Plaetze J<Bank><k> (JA1, JB1,
+# JC1, JD1 fuer Signal 1) nach BAENKE[Bank][k-1]; genau einer ist mit
+# 0 Ohm bestueckt. Fuer das Analogsignal drei Plaetze JX26/JX27/JX28.
+# Referenzen enden auf eine Zahl, wie KiCads Annotation es verlangt.
 MATRIX_FOOTPRINT = "Resistor_SMD:R_0603_1608Metric"
 MATRIX_WERT = "0"
 MATRIX_LCSC = "C21189"       # 0 Ohm 0603, JLCPCB-Basic
 
 
 def MATRIX_REF(signal, bank):
-    return "JB%d%s" % (signal, bank)
+    return "J%s%d" % (bank, signal)
 
 
 def MATRIX_GP(signal, bank):
@@ -211,7 +215,7 @@ def MATRIX_GP(signal, bank):
 
 
 def ADC_REF(gp):
-    return "JA%d" % gp
+    return "JX%d" % gp
 
 
 # --- Versorgung -------------------------------------------------------------
@@ -356,10 +360,10 @@ STECKER_POS = {
         "zweck": "Stapelbuchse 1x4: VIN, VIN, GND, GND (Durchleitung)",
         "stecker": "STECKER_STAPEL",
         "footprints": (FP_STAPEL_4,),
-        "pin1": (26.00, 4.00),
+        "pin1": (27.00, 4.00),
         "drehung": 90,
         "pins": {1: "VIN", 2: "VIN", 3: "GND", 4: "GND"},
-        "flaeche": (24.23, 2.23, 35.39, 5.77),
+        "flaeche": (25.23, 2.23, 36.39, 5.77),
     },
 }
 
@@ -405,7 +409,13 @@ KLEMME_KANTENABSTAND_MAX = 0.10
 KLEMME_UEBERSTAND_MAX = 0.00
 # Klemmenreihe: untere Kante, zwischen den M3-Freihaltekreisen.
 # Tiefe = Hof der PT-1,5-Klemme (8,60 mm) + Reserve.
-KLEMMENZONE = (7.5, 41.0, 66.5, 50.0)
+# WARUM 58 UND NICHT 50 mm HOEHE (Platzprobe Dimmer4, 2026-11-15): unter
+# dem Pico (13 mm zwischen den Reihen) sitzt die Buck-Zelle, darunter
+# brauchen Freilaufdioden (6,7) und FETs mit Beinen nach oben (11,1)
+# zwei Reihen vor der Klemmenzone. 56 mm schied aus: dort laege eine
+# verdrehte Pico-Reihe 0,44 mm neben der echten -- ein verdrehtes Modul
+# haette gesteckt (VERDREHT_STECKT_NIRGENDS, Rot-Nachweis im Test).
+KLEMMENZONE = (7.5, 49.0, 66.5, 58.0)
 
 
 def KLEMME_OEFFNUNG_GLOBAL(footprint, drehung_grad, gespiegelt=False):

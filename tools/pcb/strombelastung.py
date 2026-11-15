@@ -201,11 +201,16 @@ def _welligkeit(budget_a):
 
 
 def pad_stroeme(spec):
-    """{netz: (quellen, {pad: strom_a}, deckel_a)} fuer dieses Modul.
+    """{netz: (quellen, {pad: strom_a}, deckel_a, gruppen)} fuer dieses Modul.
 
     `quellen` ist eine Menge von (ref, padnummer); `deckel_a` begrenzt
     den Strom, den eine Kante dieses Netzes ueberhaupt tragen kann --
-    das ist die Vertragszusage, nicht eine Bequemlichkeit (s. Docstring).
+    das ist die Vertragszusage, nicht eine Bequemlichkeit.
+
+    v3 (2026-11-15): Netze /PWR_IN, /VIN (vorher /+24V), /+5V_LOKAL,
+    /VSW, /LEDn; Leistungsreihe J3 (1x4 Stapelbuchse, VIN doppelt);
+    Buck-Zelle statt SIP-3-Regler. Motormodul folgt auf demselben
+    Vertrag (Netze /Out1, /Out2).
     """
     budget = BUDGET["modul_gesamt_a"]
     stapel = BUDGET["stapel_durchleitung_a"]
@@ -220,75 +225,63 @@ def pad_stroeme(spec):
     #     zieht, inklusive dessen, was es in den Stapel weitergibt.
     aus["/PWR_IN"] = ({("J90", "1")}, {("Q90", "2"): budget}, budget, {})
 
-    # --- /+24V: lokale Schiene hinter Q90. Quelle ist Q90s Source.
+    # --- /VIN: lokale Schiene hinter Q90. Quelle ist Q90s Source.
     gemeinsam = {
-        ("U90", "1"): I_REGLER_EIN,
+        ("U90", "7"): I_REGLER_EIN,
         ("C90", "1"): _welligkeit(budget),
+        ("C91", "1"): I_ABBLOCK,
+        ("C92", "1"): I_ABBLOCK,
         ("D90", "1"): I_KLEINSIGNAL,
-        ("R90", "2"): I_KLEINSIGNAL,
-        # Leistungsstecker: zwei Kontaktstellen je Ader, jede fuer sich
-        # auf die volle Stapel-Durchleitung bemessen. Begruendung steht
-        # im Vertrag (STROMBUDGET["stapel_durchleitung_a"]): faellt einer
-        # der beiden parallelen Kontakte aus, traegt der andere alles --
-        # deshalb bekommt JEDE Stelle den ganzen Wert, nicht die Haelfte.
-        # Ihre SUMME ist aber trotzdem nur einmal die Durchleitung, nicht
-        # zweimal -- dafuer sorgt GRUPPEN unten (ohne die verlangte die
-        # Pruefung auf dem gemeinsamen Zulauf 6 A statt 3 A).
-        ("J103", "1"): stapel,
-        ("J103", "3"): stapel,
-        # J104 sitzt Pad auf Pad auf J103 (Buchse oben / Stift unten,
-        # derselbe Ort) -- dieselbe Kontaktstelle, kein zweiter Strom.
-        ("J104", "1"): 0.0,
-        ("J104", "3"): 0.0,
+        ("D92", "1"): I_KLEINSIGNAL,
+        ("R94", "1"): I_KLEINSIGNAL,
+        # Leistungsreihe J3: zwei Kontakte je Ader, jeder fuer sich auf
+        # die volle Durchleitung bemessen (faellt einer aus, traegt der
+        # andere alles); ihre SUMME ist trotzdem nur einmal die
+        # Durchleitung -- dafuer sorgt GRUPPEN.
+        ("J3", "1"): stapel,
+        ("J3", "2"): stapel,
     }
-    # Pads, die sich EINEN Strom teilen: erreicht eine Kante mehrere
-    # Mitglieder, zaehlt hoechstens der Gruppenwert, nicht die Summe.
-    gruppen = {"stapel": ({("J103", "1"), ("J103", "3"),
-                            ("J104", "1"), ("J104", "3")}, stapel)}
+    gruppen = {"stapel": ({("J3", "1"), ("J3", "2")}, stapel)}
 
     if "/Out1" in netze or "/Out2" in netze:
         # ---------------------------------------------------- Motormodul
-        v24 = dict(gemeinsam)
-        v24[("U1", "11")] = motor        # DRV8876 VM -- speist die ganze
-                                          # Endstufe (EIN Strompfad
-                                          # VM -> Out -> Motor -> Out -> GND)
-        v24[("C9", "1")] = I_ABBLOCK
-        v24[("C11", "2")] = I_ABBLOCK
-        v24[("R16", "1")] = I_KLEINSIGNAL
-        v24[("R17", "1")] = I_KLEINSIGNAL
-        aus["/+24V"] = ({("Q90", "3")}, v24, budget, gruppen)
-        # Motorausgang: der Strom kommt aus der Bruecke und geht zur
-        # Klemme (bzw. umgekehrt -- die Richtung wechselt mit der
-        # Drehrichtung, der Betrag nicht).
+        vin = dict(gemeinsam)
+        vin[("U1", "11")] = motor
+        vin[("C9", "1")] = I_ABBLOCK
+        vin[("C11", "2")] = I_ABBLOCK
+        aus["/VIN"] = ({("Q90", "3")}, vin, budget, gruppen)
         aus["/Out1"] = ({("U1", "8")}, {("J5", "1"): motor}, motor, {})
         aus["/Out2"] = ({("U1", "10")}, {("J5", "2"): motor}, motor, {})
     elif led_netze:
         # ---------------------------------------------------- Dimmermodul
-        v24 = dict(gemeinsam)
+        vin = dict(gemeinsam)
         for n in range(1, len(led_netze) + 1):
-            v24[("J%d" % (4 + n), "1")] = kanal    # Klemme, Plus-Seite
-            v24[("D%d" % n, "1")] = I_FREILAUF     # Freilaufdiode, Kathode
-        aus["/+24V"] = ({("Q90", "3")}, v24, budget, gruppen)
+            vin[("J%d" % (4 + n), "1")] = kanal    # Klemme, Plus-Seite
+            vin[("D%d" % n, "1")] = I_FREILAUF     # Freilaufdiode, Kathode
+        aus["/VIN"] = ({("Q90", "3")}, vin, budget, gruppen)
         for n in range(1, len(led_netze) + 1):
             # Geschaltetes Minus: die Last haengt an der Klemme, der
-            # Strom laeuft von dort in den Kanal-FET.
+            # Strom laeuft von dort in den Kanal-FET (Tab = Drain).
             aus["/LED%d" % n] = (
                 {("J%d" % (4 + n), "2")},
                 {("Q%d" % n, "2"): kanal, ("D%d" % n, "2"): I_FREILAUF},
                 kanal, {})
     else:
         raise SystemExit("Unbekannter Brett-Typ: weder /Out1 noch /LEDn "
-                          "in POWER_NETS")
+                         "in POWER_NETS")
 
-    # --- /+5V_LOKAL: steht in KEINEM POWER_NETS (Signalklasse), traegt
-    #     aber den vollen Reglerstrom. Genau deshalb wird es hier
-    #     mitgeprueft: es ist das Netz, bei dem die Netzklasse allein
-    #     nichts zusichert.
+    # --- Buck-Zelle: /VSW (Schaltknoten) und /+5V_LOKAL tragen den
+    #     vollen Reglerstrom (TPS5430 bis 3 A; die Zusage ist 1 A fuer
+    #     VSYS, s. tools/sch/versorgung.py).
+    aus["/VSW"] = (
+        {("U90", "8")},
+        {("L90", "1"): 1.0, ("D93", "1"): 1.0, ("C93", "2"): I_KLEINSIGNAL},
+        1.0, {})
     aus["/+5V_LOKAL"] = (
-        {("U90", "3")},
-        {("D91", "2"): 1.0,        # K7805-1000R3-Nennstrom, ganz ueber
-                                    # die VSYS-Diode (tools/sch/versorgung.py)
-         ("C91", "1"): 0.3},        # Ausgangskondensator, Welligkeitsanteil
+        {("L90", "2")},
+        {("D91", "2"): 1.0,          # alles ueber die VSYS-Diode
+         ("C94", "1"): 0.3,          # Ausgangselko, Welligkeitsanteil
+         ("R92", "1"): I_KLEINSIGNAL},
         1.0, {})
     return aus
 

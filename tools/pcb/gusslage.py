@@ -56,6 +56,15 @@ def erreicht(zonen, x, y, lagen=(pcbnew.F_Cu, pcbnew.B_Cu)):
     return all(stueck(zonen, lage, x, y) is not None for lage in lagen)
 
 
+def eckradius(board):
+    """Radius der Rundecken aus Edge.Cuts (groesster Bogen), in nm; 0 ohne Bogen."""
+    r = 0
+    for d in board.GetDrawings():
+        if d.GetLayer() == pcbnew.Edge_Cuts and d.GetShape() == pcbnew.SHAPE_T_ARC:
+            r = max(r, int(d.GetRadius()))
+    return r
+
+
 def frei(board, x, y, radius, eigenes_netz, frei_mm=FREI, nur_lage=None):
     """Darf hier Kupfer von `eigenes_netz` mit diesem Radius hin?
 
@@ -79,6 +88,20 @@ def frei(board, x, y, radius, eigenes_netz, frei_mm=FREI, nur_lage=None):
     if not (bb.GetLeft() + mm(0.8) < x < bb.GetRight() - mm(0.8)
             and bb.GetTop() + mm(0.8) < y < bb.GetBottom() - mm(0.8)):
         return False
+    # Rundecken: innerhalb des Eckquadrats zaehlt der Abstand zum
+    # Bogenmittelpunkt, nicht zum Rechteck. Gefunden am Dimmer1 (v3,
+    # 2026-11-15): ein Heilvia bei (1,75|1,00) lag 0,34 mm vom R3-Bogen
+    # -- DRC copper_edge_clearance, obwohl das Rechteck 0,8 mm hergab.
+    r = eckradius(board)
+    if r > 0:
+        for cx, cy, sx, sy in ((bb.GetLeft() + r, bb.GetTop() + r, -1, -1),
+                               (bb.GetRight() - r, bb.GetTop() + r, 1, -1),
+                               (bb.GetLeft() + r, bb.GetBottom() - r, -1, 1),
+                               (bb.GetRight() - r, bb.GetBottom() - r, 1, 1)):
+            # Im Eckquadrat jenseits des Bogenmittelpunkts (Richtung Ecke)?
+            if (x - cx) * sx > 0 and (y - cy) * sy > 0:
+                if ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5 > r - mm(0.8):
+                    return False
     for f in board.GetFootprints():
         for p in f.Pads():
             einseitig = p.GetAttribute() == pcbnew.PAD_ATTRIB_SMD

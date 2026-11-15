@@ -1,187 +1,119 @@
-"""Prueft die Versorgungszelle (tools/sch/versorgung.py) gegen den Vertrag
-stack_spec.VERSORGUNG -- der Verpolschutz-Rot-Nachweis fuer PicoStack v2.
+"""Netzlisten-Zusagen der Versorgungszelle v3 (tools/sch/versorgung.py).
 
-Der v1-Fehler, den diese Zelle behebt (motormodul.py, Q1/R11/R12,
-`_endstufe_leistung()`): der P-Kanal-MOSFET saß mit dem SOURCE an der
-rohen Einspeisung ("PWR24V") und mit dem DRAIN an der bereits
-geschuetzten, lokalen Schiene ("+24V") -- genau umgekehrt zur richtigen
-Schutzschaltung. Der Gate-Teiler (R11/R12) haengt dort ausserdem an
-PWR24V, nicht an der lokalen Schiene. Bei verpolter Einspeisung bilden
-die Body-Diode des FET UND die (bei Verpolung in Durchlassrichtung
-liegende) TVS-Diode einen Kurzschluss-Pfad ("Crowbar") statt den
-Rueckstrom zu sperren -- der Schutz schuetzt in diesem Fall gar nichts.
+Prueft am ERZEUGTEN Blatt (nicht am Quelltext), welche Pins an welchem
+Netz haengen -- genau die Topologie, die stack_spec.VERSORGUNG
+verspricht. ERC prueft nur, ob Verbindungen vorhanden sind; ob der
+Drain an der richtigen Seite haengt, sieht er nicht (v1-Fehler).
 
-tools/stack_spec.py.VERSORGUNG haelt seit dieser Etappe die korrekte
-Topologie als Vertrag fest:
-    schutz_drain_an = "PWR_IN"        -- Drain an der Einspeisung
-    gate_teiler_an  = "+24V_LOKAL"    -- Gate-Teiler an der lokalen Schiene
-    vsys_diode      = True            -- Schottky-Diode vor VSYS
-    eingang_v       = (6.0, 30.0)     -- zulaessiges Eingangsfenster
-
-Diese Zelle (tools/sch/versorgung.py, Referenzen J90/Q90/R90/R91/D90/
-U90/D91/C90/C91) ist die Implementierung genau dieser Zusagen. Die vier
-Kern-Checks unten stammen woertlich aus dem Aufgabenbrief (Task 3);
-`_netz_pins()` ist woertlich aus tests/test_modulsockel.py uebernommen
-(dort dokumentiert, warum ein reiner Textvergleich im .kicad_sch die
-falsche Pruefung waere -- er triffe Pinnamen im Symbol, nicht
-tatsaechliche Verdrahtung).
-
-MIGRATIONS-NACHWEIS (unten, eigener Abschnitt): bis Task 5 (2026-09-08)
-stand hier ein ROT-NACHWEIS, der denselben Drain-Check zusaetzlich
-gegen die damals noch unveraenderte motormodul.py-v1-Netzliste (Q1)
-laufen liess und dort den eingangs beschriebenen, umgekehrten Fehler
-bestaetigte. Task 5 hat motormodul.py auf genau diese Zelle umgestellt
-(Q1/R11/R12/D1/C12 entfallen, `versorgung.bauen()` eingebunden,
-Referenzen Q90/R90/.../J90) -- der ROT-NACHWEIS ist damit hinfaellig
-geworden (Q1 existiert nicht mehr) und wurde durch einen POSITIV-
-NACHWEIS ersetzt: derselbe Drain-Check laeuft weiterhin gegen die
-ECHTE, gerade generierte motormodul.py-Netzliste und bestaetigt dort
-jetzt, dass Q90 die VERSORGUNG-Pledges tatsaechlich einhaelt. Das
-bleibt eine echte Assertion gegen motormodul.bauen(), kein blosser
-Kommentar: faellt sie irgendwann um (weil motormodul.py wieder einen
-eigenen, moeglicherweise falsch gepolten Verpolschutz bekommt), macht
-sich das hier bemerkbar.
+Rot-Nachweis: dieselbe Drain-Probe gegen eine absichtlich verkehrt
+gebaute Zelle (Source an PWR_IN) muss anschlagen.
 """
 import os
 import sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-for _d in ("tools", "tools/sch"):
-    sys.path.insert(0, os.path.join(HERE, "..", _d))
-import gen                 # noqa: E402
-import motormodul           # noqa: E402  (nur fuer den Rot-Nachweis unten)
-import versorgung           # noqa: E402
+HIER = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HIER, "..", "tools"))
+sys.path.insert(0, os.path.join(HIER, "..", "tools", "sch"))
+
+import gen           # noqa: E402
+import stack_spec as S  # noqa: E402
+import versorgung    # noqa: E402
 
 fails = []
 
 
-def check(label, got, want):
+def check(label, got, want=True):
     if got != want:
         fails.append("{}: {!r} != {!r}".format(label, got, want))
 
 
-def _netz_pins(sch, gen_mod, netzname):
-    """Aus tests/test_modulsockel.py uebernommen (s. Task-3-Brief), mit
-    derselben Erweiterung wie tests/test_sockelplatine.py's eigene Kopie:
-    alle (ref, pinnr, libid, value) an Pins, deren Stichleitung auf
-    einem Label ODER Power-Symbol `netzname` endet -- GND laeuft in
-    dieser Zelle ueber ein Power-Symbol (gen.PWR), nicht ueber ein
-    Label; die reine Label-Fassung aus test_modulsockel.py (dort nur
-    fuer das Label-Netz "NRST" gebraucht) faende GND-Treffer nicht."""
-    label_pts = {(x, y) for x, y, rot, txt in sch.LABELS if txt == netzname}
-    label_pts |= {pos for libid, pos, rot, value in sch.POWERS if value == netzname}
+def netz_pins(sch, netzname):
+    """{(ref, pin)} aller Pins, deren Stichleitung auf Label/Power `netzname` endet."""
+    pts = {(x, y) for x, y, _rot, txt in sch.LABELS if txt == netzname}
+    pts |= {pos for _lib, pos, _rot, value in sch.POWERS if value == netzname}
     pin_pts = set()
     for a, b in sch.WIRES:
-        if a in label_pts:
+        if a in pts:
             pin_pts.add(b)
-        if b in label_pts:
+        if b in pts:
             pin_pts.add(a)
-    treffer = []
-    for ref, libid, pos, rot, value, fp, _, _, einheit in sch.COMPS:
-        einheiten = sch.UNITPINS.get(libid)
-        nums = einheiten[einheit] if einheiten else sch.PINS[libid].keys()
-        for num in nums:
-            p = sch.PINS[libid][num]
-            xy = gen_mod.xf(pos, (p[0], p[1]), rot)
-            if xy in pin_pts:
-                treffer.append((ref, num, libid, value))
-    return treffer
+    aus = set()
+    for ref, libid, pos, rot, _v, _fp, _r, _vv, _einheit in sch.COMPS:
+        for num, p in sch.PINS[libid].items():
+            if gen.xf(pos, (p[0], p[1]), rot) in pin_pts:
+                aus.add((ref, num))
+    return aus
 
 
-# ------------------------------------------------------ Zelle aufbauen
-_sch = gen.Schaltplan("versorgung_test", "Versorgungszelle (Test)", "")
-versorgung.bauen(_sch, 0.0, 0.0)
+sch = gen.Schaltplan("versorgung_test", "Versorgungszelle (Test)", "")
+versorgung.bauen(sch, 0.0, 0.0)
+N = {n: netz_pins(sch, n) for n in ("PWR_IN", "VIN", "GND", "+5V_LOKAL", "VSYS",
+                                    "Q90_GATE", "VSW", "BOOT", "FB")}
 
-_NETZE = ("PWR_IN", "+24V", "GND", "+5V_LOKAL", "VSYS", "Q90_GATE")
-pins = {name: {(r, n) for r, n, _, _ in _netz_pins(_sch, gen, name)}
-        for name in _NETZE}
+# Verpolschutz: Drain an der Einspeisung, Source an der lokalen Schiene,
+# Zener zwischen Gate und Source, Gate-Widerstand nach GND.
+check("Q90-Drain an PWR_IN", ("Q90", "2") in N["PWR_IN"])
+check("Q90-Source an VIN", ("Q90", "3") in N["VIN"])
+check("Q90-Gate an Q90_GATE", ("Q90", "1") in N["Q90_GATE"])
+check("D92 Kathode an VIN (Source)", ("D92", "1") in N["VIN"])
+check("D92 Anode am Gate", ("D92", "2") in N["Q90_GATE"])
+check("R91 Gate -> GND", ("R91", "1") in N["Q90_GATE"] and ("R91", "2") in N["GND"])
+check("kein Widerstand an PWR_IN (v2-Fehlerklasse Gate-Teiler)",
+      not any(r.startswith("R") for r, _ in N["PWR_IN"]))
+# TVS und Stuetzung HINTER dem Schutz
+check("D90 an VIN", ("D90", "1") in N["VIN"] and ("D90", "2") in N["GND"])
+for c in ("C90", "C91", "C92"):
+    check("%s an VIN/GND" % c, (c, "1") in N["VIN"] and (c, "2") in N["GND"])
+# Buck
+check("U90 VIN-Pin an VIN", ("U90", "7") in N["VIN"])
+check("U90 EN offen (vertraegt max. 7 V)", ("U90", "5") not in N["VIN"])
+check("U90 PH an VSW", ("U90", "8") in N["VSW"])
+check("Boot-C zwischen BOOT und VSW", ("C93", "1") in N["BOOT"] and ("C93", "2") in N["VSW"])
+check("Freilauf D93: Kathode VSW, Anode GND",
+      ("D93", "1") in N["VSW"] and ("D93", "2") in N["GND"])
+check("Spule VSW -> +5V_LOKAL", ("L90", "1") in N["VSW"] and ("L90", "2") in N["+5V_LOKAL"])
+check("Teiler R92 +5V->FB, R93 FB->GND",
+      ("R92", "1") in N["+5V_LOKAL"] and ("R92", "2") in N["FB"]
+      and ("R93", "1") in N["FB"] and ("R93", "2") in N["GND"])
+check("FB am VSENSE-Pin", ("U90", "4") in N["FB"])
+check("Teiler ergibt die Vertragsspannung",
+      round(1.221 * (1 + 10.0 / 3.3), 2) == S.VERSORGUNG["ausgang_v"])
+# VSYS nur ueber die Diode
+check("D91 Anode +5V_LOKAL, Kathode VSYS",
+      ("D91", "2") in N["+5V_LOKAL"] and ("D91", "1") in N["VSYS"])
+check("VSYS haengt an nichts anderem als D91", {r for r, _ in N["VSYS"]} == {"D91"})
+check("Vertrag: vsys_diode", S.VERSORGUNG["vsys_diode"])
+# Jedes Teil der Zelle ist platziert
+refs = {c[0] for c in sch.COMPS if not c[0].startswith("#")}
+check("alle TEILE platziert (fehlt: %s)" % sorted(set(versorgung.TEILE) - refs),
+      set(versorgung.TEILE) <= refs)
 
-# --------------------------------------------- Die vier Kern-Checks (Brief)
-check("Schutz-Drain an der Einspeisung", ("Q90", "2") in pins["PWR_IN"], True)
-check("Schutz-Source an der lokalen Schiene", ("Q90", "3") in pins["+24V"], True)
-check("Gate-Teiler an der lokalen Schiene", ("R90", "2") in pins["+24V"], True)
-check("VSYS nur ueber die Diode", ("D91", "1") in pins["VSYS"]
-      and not any(r == "U90" for r, _ in pins["VSYS"]), True)
+# ROT-NACHWEIS: Zelle bauen, dann die Labels an Q90s Drain- und
+# Source-Stummel vertauschen (die v1-Topologie) -- dieselbe Drain-Probe
+# muss jetzt anschlagen.
+rot = gen.Schaltplan("versorgung_rot", "verkehrt", "")
+versorgung.bauen(rot, 0.0, 0.0)
+drain, source = rot.pinpos("Q90", "2"), rot.pinpos("Q90", "3")
 
-# --------------------------------------------- Vollstaendigkeits-Checks
-_ALLE_REFS = {c[0] for c in _sch.COMPS}
-for _ref in ("J90", "Q90", "R90", "R91", "D90", "U90", "D91", "C90", "C91"):
-    check("%s ist platziert" % _ref, _ref in _ALLE_REFS, True)
 
-# R91 schliesst den Gate-Teiler nach GND, nicht Q90_GATE ins Leere.
-check("R90 Gate-seitig an Q90_GATE", ("R90", "1") in pins["Q90_GATE"], True)
-check("R91 an Q90_GATE", ("R91", "1") in pins["Q90_GATE"], True)
-check("R91 nach GND", ("R91", "2") in pins["GND"], True)
-check("Q90-Gate selbst an Q90_GATE", ("Q90", "1") in pins["Q90_GATE"], True)
+def nahe(p, q):
+    return abs(p[0] - q[0]) < 6 and abs(p[1] - q[1]) < 6
 
-# D90 (SMCJ30A) klemmt die lokale Schiene gegen Masse: Kathode an +24V.
-check("D90 Kathode an +24V", ("D90", "1") in pins["+24V"], True)
-check("D90 Anode an GND", ("D90", "2") in pins["GND"], True)
 
-# U90 (K7805-1000R3): IN von der lokalen 24V-Schiene, OUT auf +5V_LOKAL.
-check("U90 Eingang (IN) an +24V", ("U90", "1") in pins["+24V"], True)
-check("U90 Ausgang (OUT) an +5V_LOKAL", ("U90", "3") in pins["+5V_LOKAL"], True)
-check("U90 GND-Pin an GND", ("U90", "2") in pins["GND"], True)
-
-# C90 (220u) stuetzt die lokale 24V-Schiene, C91 (22u) die 5V-Schiene.
-check("C90 an +24V", ("C90", "1") in pins["+24V"], True)
-check("C91 an +5V_LOKAL", ("C91", "1") in pins["+5V_LOKAL"], True)
-
-# D91 (SS36C): Anode an +5V_LOKAL (Regler-Ausgang), Kathode an VSYS --
-# damit die 5V-Schiene VSYS speisen kann, ein USB-gespeister Pico aber
-# nicht rueckwaerts in den lokalen Regler einspeist.
-check("D91 Anode an +5V_LOKAL", ("D91", "2") in pins["+5V_LOKAL"], True)
-
-# J90 (Klemme) ist die einzige Quelle von PWR_IN in dieser Zelle.
-check("J90 speist PWR_IN", ("J90", "1") in pins["PWR_IN"], True)
-
-# Keine unverbundenen Pins -- dieselbe Selbstpruefung, die auch
-# sch.schreiben() vor dem Schreiben laufen laesst.
-check("keine unverbundenen Pins in der Zelle", _sch.selbstpruefung(), [])
-
-# --------------------------- Migrations-Nachweis: motormodul.py nach Task 5
-# Bis Task 5 (2026-09-08) stand hier ein ROT-NACHWEIS: derselbe
-# Drain-Check lief zusaetzlich gegen die damals noch unveraenderte
-# v1-Endstufe in motormodul.py und bestaetigte dort den umgekehrten,
-# falschen Anschluss (Q1-Drain an der bereits geschuetzten Schiene
-# "+24V" statt an der rohen Einspeisung "PWR24V") -- eine echte
-# Assertion gegen die generierte Netzliste, die rot wurde, sobald jemand
-# motormodul.py auf diese Zelle umstellte, OHNE diesen Testabschnitt
-# anzupassen.
-#
-# Task 5 hat motormodul.py genau darauf umgestellt: der ganze
-# Q1/R11/R12/D1/C12-Strang ist entfallen, `motormodul.bauen()` ruft
-# jetzt `versorgung.bauen()` auf (Referenzen werden zu Q90/R90/R91/D90/
-# C90/J90). Der alte ROT-NACHWEIS ist damit hinfaellig geworden -- Q1
-# existiert schlicht nicht mehr, ein Test auf sein Fehlen waere nur noch
-# vacuous wahr. An seine Stelle tritt dieser POSITIV-NACHWEIS: derselbe
-# Drain-Check laeuft weiterhin gegen die ECHTE, gerade generierte
-# motormodul.py-Netzliste (nicht nur gegen versorgung.py fuer sich
-# allein oben) und bestaetigt dort, dass Q90 (nicht mehr Q1) die
-# VERSORGUNG-Pledges tatsaechlich einhaelt: Drain an PWR_IN
-# (motormodul.py speist versorgung.bauen() ueber J90, seine EIGENE
-# Klemme -- s. Kommentar vor `_stapel_speist_lokal()` dort), Source an
-# der lokalen Schiene +24V, Gate-Teiler R90 an derselben lokalen
-# Schiene. Faellt diese Zelle irgendwann wieder um (weil motormodul.py
-# erneut einen eigenen, moeglicherweise falsch gepolten Verpolschutz
-# bekommt, ohne versorgung.py zu nutzen), macht sich das hier bemerkbar.
-_sch_mm = gen.Schaltplan("motormodul_versorgung_nachweis",
-                         "Motormodul (Versorgung-Nachweis)", "")
-motormodul.bauen(_sch_mm, 0.0, 0.0)
-_mm_pwr_in = {(r, n) for r, n, _, _ in _netz_pins(_sch_mm, gen, "PWR_IN")}
-_mm_24v = {(r, n) for r, n, _, _ in _netz_pins(_sch_mm, gen, "+24V")}
-check("motormodul.py (nach Task 5): Q1 existiert nicht mehr",
-      any(c[0] == "Q1" for c in _sch_mm.COMPS), False)
-check("motormodul.py: Q90-Drain (Schutz) haengt an der Einspeisung PWR_IN",
-      ("Q90", "2") in _mm_pwr_in, True)
-check("motormodul.py: Q90-Source (Schutz) haengt an der lokalen "
-      "Schiene +24V", ("Q90", "3") in _mm_24v, True)
-check("motormodul.py: Gate-Teiler R90 haengt an der lokalen Schiene "
-      "+24V (nicht an PWR_IN)", ("R90", "2") in _mm_24v, True)
+neu = []
+for x, y, r, t in rot.LABELS:
+    if t == "PWR_IN" and nahe((x, y), drain):
+        t = "VIN"
+    elif t == "VIN" and nahe((x, y), source):
+        t = "PWR_IN"
+    neu.append((x, y, r, t))
+rot.LABELS = neu
+check("Rot-Nachweis: verkehrter Drain faellt durch",
+      ("Q90", "2") in netz_pins(rot, "PWR_IN"), False)
 
 if fails:
-    print("FEHLGESCHLAGEN:")
+    print("FEHLER:")
     for f in fails:
         print("  -", f)
     raise SystemExit(1)
-print("alle Pruefungen bestanden")
+print("Versorgungszelle v3: alle Pruefungen bestanden")

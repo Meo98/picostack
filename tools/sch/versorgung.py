@@ -48,6 +48,7 @@ for _d in (HERE, os.path.join(HERE, "..")):
 import stack_spec as S  # noqa: E402
 
 FP_R0805 = "Resistor_SMD:R_0805_2012Metric"
+FP_R0603 = "Resistor_SMD:R_0603_1608Metric"
 FP_C0805 = "Capacitor_SMD:C_0805_2012Metric"
 FP_C1210 = "Capacitor_SMD:C_1210_3225Metric"
 FP_CP_63 = "Capacitor_SMD:CP_Elec_6.3x7.7"
@@ -57,7 +58,10 @@ FP_TO252 = "Package_TO_SOT_SMD:TO-252-3_TabPin2"
 FP_SMC = "Diode_SMD:D_SMC"
 FP_SOD123 = "Diode_SMD:D_SOD-123"
 FP_L6045 = "Inductor_SMD:L_Sunlord_SWPA6045S"
-FP_SOIC8EP = "Package_SO:SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.29x3mm_ThermalVias"
+# OHNE die _ThermalVias-Variante: deren 0,2-mm-Bohrungen liegen unter der
+# 0,3-mm-Regel des Projekts (DRC drill_out_of_range, 2026-11-15). Die
+# Waermevias setzt spec_dimmer_basis als PRE_VIAS mit 0,3 mm.
+FP_SOIC8EP = "Package_SO:SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.29x3mm"
 FP_LED0805 = "LED_SMD:LED_0805_2012Metric"
 FP_KLEMME_35 = S.FP_KLEMME_35
 
@@ -78,8 +82,8 @@ TEILE = {
     "L90": ("15u", FP_L6045, "C83374"),                         # SWPA6045S150MT
     "D93": ("SS36C", FP_SMC, "C16237"),
     "C94": ("100u/16V", FP_CP_63, ""),
-    "R92": ("10k", FP_R0805, "C17414"),
-    "R93": ("3.3k", FP_R0805, "C26010"),
+    "R92": ("10k", FP_R0603, "C25804"),      # 0603: Platz links von U90
+    "R93": ("3.3k", FP_R0603, "C22978"),
     "D91": ("SS36C", FP_SMC, "C16237"),
     "LED90": ("gruen", FP_LED0805, ""),
     "R94": ("10k", FP_R0805, "C17414"),

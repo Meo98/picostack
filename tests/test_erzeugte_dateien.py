@@ -1,36 +1,13 @@
 """Prueft, dass jede erzeugte Datei im Repo zu ihrem Generator passt.
 
-Betroffen sind die beiden Schaltplaene und docs/vertrag.md -- alles,
+Betroffen: die drei Dimmer-Schaltplaene und docs/vertrag.md -- alles,
 was ein Werkzeug schreibt und trotzdem eingecheckt ist.
 
-WARUM ES DIESEN TEST GIBT (2026-09-01, vor Aufgabe 6 gefunden).
-Der Sockelschaltplan im Repo war veraltet: er trug an J3/J4 noch die
-BEDRAHTETEN Steckerfootprints, obwohl tools/sch/modulsockel.py in
-Commit fa46a9f auf SMD-PAARE umgestellt worden war (Aufgabe 5e). Der
-Generator war richtig, sein Erzeugnis nicht -- er ist danach nie wieder
-gelaufen. Der Motormodul-Schaltplan war zufaellig in Ordnung, weil er
-nach fa46a9f noch einmal erzeugt wurde (a750b59).
+WARUM (2026-09-01): Der Sockelschaltplan im Repo war veraltet -- der
+Generator war richtig, sein Erzeugnis nicht, und alle Testreihen
+blieben gruen, weil sie den Generator pruefen, nie die Datei.
 
-Warum das teuer geworden waere: stack_spec.STECKER_POS rechnet die Lage
-der Stecker aus den SMD-Hoefen (die Loetpads liegen SEITLICH neben den
-Stiften, bei den bedrahteten Teilen mittig darunter). Aufgabe 6 haette
-aus der veralteten Datei bedrahtete Stecker an SMD-Koordinaten gesetzt --
-der Stapel haette mechanisch nicht gepasst, und zwar erst nach der
-Fertigung sichtbar.
-
-Warum kein bestehendes Gate das gefunden hat -- nachgemessen, nicht
-vermutet: mit der veralteten Datei liefen ALLE SIEBEN Testreihen gruen
-und kicad-cli ERC meldete unveraendert 0 Fehler / 1 Warnung. Die
-Testreihen pruefen den GENERATOR gegen den Vertrag; die eingecheckte
-Datei sehen sie nie an. ERC prueft Verbindungen, und die waren richtig --
-nur das Bauteil darunter war ein anderes. Vierter Fall in diesem Projekt,
-in dem ERC/DRC einen echten Fehler nicht sehen konnten.
-
-Der Test vergleicht nicht Byte fuer Byte: gen.Schaltplan vergibt dem
-Blatt bei jedem Lauf eine neue Kennung (sheet_uuid), die auch in jedem
-sheet-Instanzpfad auftaucht. Beim Sockel waren das 72 der 80 geaenderten
-Zeilen. Diese Kennungen werden vor dem Vergleich vereinheitlicht -- alles
-andere zaehlt als Unterschied.
+Der Vergleich ignoriert UUIDs (gen.Schaltplan vergibt je Lauf neue).
 """
 import os
 import re
@@ -41,103 +18,49 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "tools"))
 sys.path.insert(0, os.path.join(HERE, "..", "tools", "sch"))
 
-import motormodul
-import vertrag_doku
+import dimmermodul   # noqa: E402
+import vertrag_doku  # noqa: E402
 
 fails = []
-
-# Jeder Generator, der eine Datei im Repo erzeugt: (Modul, Aufruf zum
-# Beheben). Neue Module gehoeren hierher -- sonst gilt fuer sie wieder,
-# was oben schiefging.
-#
-# docs/vertrag.md steht bewusst mit in dieser Liste, obwohl der
-# gefundene Fall ein Schaltplan war: es ist dieselbe Gattung -- ein
-# Erzeugnis im Repo, das von seiner Quelle (tools/stack_spec.py)
-# abweichen kann, ohne dass es jemandem auffaellt. Und es ist das
-# Dokument, das fremde Modulbauer lesen; eine veraltete Fassung davon
-# ist teurer als ein veralteter Schaltplan.
-#
-# sockelplatine ABSICHTLICH NICHT hier: die Sockelplatine ist seit
-# VERTRAG_VERSION = 2 (stack_spec.py) v1-only und eingefroren (s.
-# tools/sch/sockelplatine.py-Docstring). Ihr Generator importiert
-# stack_spec.STECKER_POS["stapel"], das es im v2-Vertrag nicht mehr gibt
-# ("stapel_links"/"stapel_rechts" ersetzen es) -- ihn hier gegen sich
-# selbst zu pruefen wuerde nur die bekannte v1/v2-Vertragsluecke erneut
-# melden, nicht einen neuen Fehler. Siehe tests/test_sockelplatine.py
-# und tests/test_spec_sockel.py fuer denselben Entscheid.
-GENERATOREN = (
-    (motormodul, "python3 tools/sch/motormodul.py"),
-    (vertrag_doku, "python3 tools/vertrag_doku.py"),
-)
-
-# Der Dimmer-Generator schreibt DREI Dateien (eine je Vertragsvariante)
-# -- er laeuft unten in einer eigenen Schleife ueber dimmermodul._ZIELE,
-# mit demselben UUID-normalisierten Vergleich.
-import dimmermodul  # noqa: E402
-
-_UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-"
-                   r"[0-9a-f]{4}-[0-9a-f]{12}")
+_UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 
 
 def ohne_uuids(text):
     return _UUID.sub("UUID", text)
 
 
-for modul, behebe in GENERATOREN:
-    name = modul.__name__
-
-    # Die Angaben stehen als Modulkonstanten und werden hier NICHT
-    # abgeschrieben: erzeugen() ist dieselbe Funktion, die auch der
-    # __main__-Aufruf benutzt.
-    if not os.path.exists(modul.ZIEL):
-        fails.append("{}: {} fehlt".format(name, modul.ZIEL))
-        continue
-
+def vergleiche(name, ziel, erzeuge, behebe):
+    if not os.path.exists(ziel):
+        fails.append("%s: %s fehlt" % (name, ziel))
+        return
     with tempfile.TemporaryDirectory() as tmp:
-        frisch = modul.erzeugen(
-            os.path.join(tmp, os.path.basename(modul.ZIEL)))
+        frisch = erzeuge(os.path.join(tmp, os.path.basename(ziel)))
         neu = ohne_uuids(open(frisch, encoding="utf-8").read())
-    alt = ohne_uuids(open(modul.ZIEL, encoding="utf-8").read())
-
+    alt = ohne_uuids(open(ziel, encoding="utf-8").read())
     if neu == alt:
-        continue
-
-    # Nicht bloss "ungleich" melden: die erste abweichende Zeile sagt,
-    # WAS veraltet ist. Beim gefundenen Fall waren es genau die vier
-    # Footprint- und Wert-Zeilen von J3/J4.
+        return
     a, b = alt.splitlines(), neu.splitlines()
     for i in range(max(len(a), len(b))):
         za = a[i] if i < len(a) else "<Datei zu Ende>"
         zb = b[i] if i < len(b) else "<Datei zu Ende>"
         if za != zb:
-            fails.append(
-                "{}: {} ist nicht der Stand des Generators -- "
-                "erste Abweichung Zeile {}:\n"
-                "      eingecheckt: {}\n"
-                "      erzeugt:     {}\n"
-                "      Beheben mit: {}"
-                .format(name, os.path.relpath(modul.ZIEL,
-                                              os.path.join(HERE, "..")),
-                        i + 1, za.strip(), zb.strip(), behebe))
+            fails.append("%s: nicht der Stand des Generators -- Zeile %d:\n"
+                         "      eingecheckt: %s\n      erzeugt:     %s\n      Beheben: %s"
+                         % (name, i + 1, za.strip()[:100], zb.strip()[:100], behebe))
             break
+
+
+vergleiche("vertrag_doku", vertrag_doku.ZIEL, vertrag_doku.erzeugen,
+           "python3 tools/vertrag_doku.py")
+for kanaele, ziel in sorted(dimmermodul._ZIELE.items()):
+    vergleiche("Dimmer%d" % kanaele, ziel,
+               lambda p, k=kanaele: dimmermodul.erzeugen(p, kanaele=k),
+               "python3 tools/sch/dimmermodul.py")
 
 if fails:
     print("FEHLER:")
     for f in fails:
         print("  -", f)
     raise SystemExit(1)
-for kanaele, ziel in sorted(dimmermodul._ZIELE.items()):
-    if not os.path.exists(ziel):
-        fails.append("dimmermodul: %s fehlt" % ziel)
-        continue
-    with tempfile.TemporaryDirectory() as tmp:
-        frisch = dimmermodul.erzeugen(
-            os.path.join(tmp, os.path.basename(ziel)), kanaele=kanaele)
-        neu = ohne_uuids(open(frisch, encoding="utf-8").read())
-    alt = ohne_uuids(open(ziel, encoding="utf-8").read())
-    if neu != alt:
-        fails.append("Dimmer%d: %s veraltet -- behebe mit: "
-                     "python3 tools/sch/dimmermodul.py" % (kanaele, ziel))
-
-print("%d erzeugte Dateien auf dem Stand ihrer Generatoren -- "
-      "alle Pruefungen bestanden" % (len(GENERATOREN) + len(dimmermodul._ZIELE)))
+print("%d erzeugte Dateien auf dem Stand ihrer Generatoren -- alle Pruefungen bestanden"
+      % (1 + len(dimmermodul._ZIELE)))

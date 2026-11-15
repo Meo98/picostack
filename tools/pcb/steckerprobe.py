@@ -227,7 +227,9 @@ def kennzeichnungsprobe(board, beschreibung):
     # v2 Kontakt 1 von stapel_links (dort zaehlt das Pico-Datenblatt
     # selbst Pin 1); "stapel" bleibt als Rueckfall stehen, damit die
     # Probe auch gegen einen v1-Vertrag noch laeuft.
-    _stapel = S.STECKER_POS.get("stapel_links") or S.STECKER_POS["stapel"]
+    _stapel = (S.STECKER_POS.get("stapel_unten")          # v3
+               or S.STECKER_POS.get("stapel_links")       # v2
+               or S.STECKER_POS["stapel"])                # v1
     ax, ay = _stapel["pin1"]
     einsen = [t for t in texte if t[0] == "1"
               and math.hypot(t[1] - ax, t[2] - ay) < 6.0]
@@ -410,7 +412,11 @@ def pruefen(beschreibung, board_pfad):
 
     fails += umrissprobe(board, beschreibung)
     fails += kennzeichnungsprobe(board, beschreibung)
-    fails += verdrehtprobe(board, beschreibung)
+    if hasattr(S, "LANDEPUNKTE_VERDREHT"):
+        # v1/v2: Kupferregel an den Landepunkten. v3 hat sie gestrichen
+        # (ein verdrehtes Modul steckt nirgends, s. Vertrag) -- der
+        # Vertrag kennt die Funktion dann nicht mehr.
+        fails += verdrehtprobe(board, beschreibung)
 
     # Die M3-Bohrungen gehoeren zum selben Vertrag und kosten nichts.
     loecher = sorted((p.GetPosition().x / 1e6, p.GetPosition().y / 1e6)

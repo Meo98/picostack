@@ -1,245 +1,143 @@
-"""Prueft die gemeinsame Platinenbeschreibung der Dimmer-Module (v2).
+"""Platzierung der Dimmer-Module v3 gegen Vertrag und Regeln, KiCad-frei.
 
-Drei Varianten aus EINER Quelle (spec_dimmer_basis.beschreibung): was
-hier rot werden kann, ist fuer alle drei rot. Nest und alle sechs
-Vertragsstecker kommen woertlich vom Motormodul -- der Test sichert
-genau diese Zusage: wandert das Nest im Motormodul, MUSS diese Pruefung
-mitwandern (dann bewusst), statt dass die Dimmer still auf alten
-Plaetzen bauen.
-
-v2-NEUAUFLAGE (Aufgabe 8a). Die alte Fassung pruefte einen 64x60-Umriss
-und v1-Referenzen (Q90 fehlte als "Kanal-FET" ausgeschlossen, die
-Versorgungszelle J90/Q90/... kam gar nicht vor, KLEMMEN_POS/J-Pad-Zeilen
-waren auf den alten Umriss gerechnet). Diese Fassung prueft den echten
-75x65-Vertrag: Board-Mass, Vertragssteckerlage gegen
-stack_spec.STECKER_POS[...]["pin1"] (nicht nur gegen sich selbst),
-ANTENNE_FREI, Randpads auf B.Cu, und zusaetzlich die Verdreht-
-Kupferklausel (approximiert ueber Bauteil-Hoefe -- die scharfe Pruefung
-gegen echte Pad-Koordinaten macht steckerprobe.py an der gebauten
-Platine, s. Bericht zu Aufgabe 8).
+Prueft tools/pcb/spec_dimmer_basis.beschreibung(k) fuer k = 1, 3, 4:
+  * geometry.check_all: keine Hof-Ueberlappung, nichts ueber der Kante,
+    nichts im M3-Freihaltebereich
+  * Vertragsplaetze J1/J2/J3 liegen exakt auf STECKER_POS
+  * Klemmen in KLEMMENZONE, kantenbuendig, Kanalreihenfolge von links,
+    Einspeisung ganz rechts (R1/R2)
+  * nichts Hohes im Pico-Schatten, keine Teile in ANTENNE_FREI (R3/P5)
+  * Platzierungsregeln P1-P4 als Hof-Abstaende
+  * Slot-Matrix: je Signal vier Plaetze, Referenzen aus dem Vertrag
+Rot-Nachweis: eine absichtlich verschobene Klemme und ein in die
+Antennenzone geschobener Kondensator muessen anschlagen.
 """
 import os
 import sys
-import types
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(HERE, "..", "tools"))
-sys.path.insert(0, os.path.join(HERE, "..", "tools", "pcb"))
+HIER = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HIER, "..", "tools"))
+sys.path.insert(0, os.path.join(HIER, "..", "tools", "pcb"))
 
 import geometry           # noqa: E402
 import spec_dimmer_basis  # noqa: E402
-import spec_motor as M    # noqa: E402
 import stack_spec as S    # noqa: E402
+from platz import Platz, hof_abstand  # noqa: E402
 
 fails = []
 
 
-def check(label, got, want):
-    if got != want:
-        fails.append("{}: {!r} != {!r}".format(label, got, want))
+def check(label, bedingung, detail=""):
+    if not bedingung:
+        fails.append("%s%s" % (label, (" -- %s" % (detail,)) if detail else ""))
 
 
-# -- Vertragsstecker, gegen S.STECKER_POS[...]["pin1"] nachgerechnet,
-# nicht nur gegen die eigene Platzierung. Dieselbe Rechnung wie
-# steckerprobe.py (S.HOF aus pin1+drehung), hier ohne KiCad, damit sie
-# in run_all.py mitlaeuft. --------------------------------------------
-_VERTRAGSSTECKER = {
-    "J100": "stapel_links", "J105": "stapel_rechts",
-    "J101": "kette", "J102": "kette",
-    "J103": "leistung", "J104": "leistung",
-}
+class _B:
+    def __init__(self, d):
+        self.__dict__.update(d)
 
-for kanaele in (1, 3, 4):
-    b = types.ModuleType("dimmer%d" % kanaele)
-    b.__dict__.update(spec_dimmer_basis.beschreibung(kanaele))
-    tag = "Dimmer%d" % kanaele
 
-    # -- Board-Mass: der v2-Vertrag, nicht mehr 64x60 --------------------
-    check("%s BOARD_W" % tag, b.BOARD_W, S.BOARD_W)
-    check("%s BOARD_H" % tag, b.BOARD_H, S.BOARD_H)
-    check("%s M3_HOLES" % tag, b.M3_HOLES, S.M3_HOLES)
+def innerhalb(p, zone):
+    x0, y0, x1, y1 = zone
+    return (p.x >= x0 - 1e-6 and p.y >= y0 - 1e-6
+            and p.x + p.w <= x1 + 1e-6 and p.y + p.h <= y1 + 1e-6)
 
-    # -- Geometrie: keine Ueberlappungen, keine M3-Kollision, kein
-    # Ueberstand -- reine Python-Pruefung, kein KiCad noetig. Die
-    # Kanal-Klemmen sitzen kantenbuendig (R1); b.EDGE_FLUSH_REFS sagt
-    # geometry.check_all() das bereits (s. dort), kein Filter noetig. --
-    bad = geometry.check_all(b.PLACEMENT, b)
-    fails.extend("%s Geometrie: %s" % (tag, x) for x in bad)
 
-    # -- Vertragsstecker: Hof exakt aus S.HOF(footprint, pin1, drehung),
-    # nicht nur "irgendein Platz". VERTRAGSPLATZ muss diese sechs
-    # Referenzen den richtigen Plaetzen zuordnen (steckerprobe.py haengt
-    # daran, s. spec_motor.VERTRAGSPLATZ-Docstring). -------------------
-    check("%s VERTRAGSPLATZ" % tag,
-          {r: b.VERTRAGSPLATZ.get(r) for r in _VERTRAGSSTECKER},
-          _VERTRAGSSTECKER)
-    for ref, slot in _VERTRAGSSTECKER.items():
-        e = S.STECKER_POS[slot]
-        fp = b.FOOTPRINTS[ref]
-        soll = S.HOF(fp, e["pin1"], e["drehung"])
-        p = b.PLACEMENT[ref]
-        ist = (round(p.x, 3), round(p.y, 3),
-              round(p.x + p.w, 3), round(p.y + p.h, 3))
-        check("%s %s Hof gegen STECKER_POS[%s]['pin1']" % (tag, ref, slot),
-              ist, soll)
+def schneidet(p, zone):
+    x0, y0, x1, y1 = zone
+    return not (p.x + p.w <= x0 or x1 <= p.x or p.y + p.h <= y0 or y1 <= p.y)
 
-    # -- Nest woertlich vom Motormodul: dieselben Koordinaten, dieselbe
-    # Drehung, dieselbe Seite -- fuer ALLE 19 uebernommenen Referenzen
-    # (die sechs Vertragsstecker eingeschlossen). -----------------------
-    for ref in spec_dimmer_basis.NEST_REFS:
-        p, q = b.PLACEMENT[ref], M.PLACEMENT[ref]
-        check("%s %s auf Motormodul-Platz" % (tag, ref),
-              (p.x, p.y, p.rot, p.unten), (q.x, q.y, q.rot, q.unten))
-        check("%s %s Footprint wie Motormodul" % (tag, ref),
-              b.FOOTPRINTS[ref], M.FOOTPRINTS[ref])
 
-    # -- Randpads (J95/J96) auf F.Cu, an den Vertragskoordinaten (v2.1:
-    # SENKRECHT, s. spec_motor.PLACEMENT-Kommentar). Die Nest-Verbatim-
-    # Pruefung oben deckt "identisch zum Motormodul" bereits ab; hier
-    # zusaetzlich explizit gegen den Vertrag selbst (RANDPADS/RAND_X/
-    # RAND_Y0), falls beide je auseinanderlaufen sollten. ------
-    for ref in ("J95", "J96"):
-        p = b.PLACEMENT[ref]
-        check("%s %s auf F.Cu (unten=False)" % (tag, ref), p.unten, False)
-        # Alle Pads teilen sich RAND_X (senkrechte Reihe); Platz.x ist
-        # der Hof-Rand (RAND_X - 1,3, s. spec_motor.PLACEMENT-Kommentar).
-        check("%s %s x auf RAND_X" % (tag, ref),
-              round(p.x + 1.3, 3), S.RAND_X)
-    # J96 traegt die ersten vier Kontakte (Versorgung), J95 die
-    # restlichen 18 (GPIO) -- zusammen die 22 RANDPADS-Koordinaten,
-    # Pad-Mitte(y) = Platz.y + 0.45 + i * RAND_RASTER (Herleitung in
-    # spec_motor.PLACEMENT).
-    rand_y = sorted(round(p[2][1], 2) for p in S.RANDPADS)
-    gebaut_y = sorted(
-        round(b.PLACEMENT["J96"].y + 0.45 + i * S.RAND_RASTER, 2)
-        for i in range(4)) + sorted(
-        round(b.PLACEMENT["J95"].y + 0.45 + i * S.RAND_RASTER, 2)
-        for i in range(18))
-    check("%s Randpad-y-Koordinaten == RANDPADS" % tag,
-          sorted(gebaut_y), rand_y)
+HOCH = {"CP63": 7.7, "KLEMME": 8.5, "L6045": 4.5, "STAPEL20": 8.5, "STAPEL4": 8.5}
 
-    # -- ANTENNE_FREI: kein Bauteil-Hof (ausser den Vertragssteckern
-    # J100/J105 selbst, die als Anker dort liegen DUERFEN, s.
-    # pcb_checks.STECKER_AUSNAHME) darf das Rechteck beruehren. ---------
-    ax0, ay0, ax1, ay1 = S.ANTENNE_FREI
-    for ref, p in b.PLACEMENT.items():
-        if ref in ("J100", "J105"):
-            continue
-        x0, y0, x1, y1 = p.x, p.y, p.x + p.w, p.y + p.h
-        if x0 < ax1 and ax0 < x1 and y0 < ay1 and ay0 < y1:
-            fails.append("%s %s liegt im ANTENNE_FREI-Rechteck" % (tag, ref))
+for k in (1, 3, 4):
+    b = _B(spec_dimmer_basis.beschreibung(k))
+    P = b.PLACEMENT
+    tag = "Dimmer%d" % k
 
-    # -- Verdreht-Kupferklausel, approximiert ueber Bauteil-Hoefe (die
-    # scharfe Pruefung gegen echte Pads macht steckerprobe.py, s.
-    # Bericht -- diese hier ist die BILLIGE Voranzeige ohne KiCad und
-    # war der Fund, der drei Bauteilgruppen dieser Beschreibung an ihren
-    # jetzigen Platz gebracht hat: Q1 (gedreht), die Nest-Stuetzkonden-
-    # satoren C102-104 und die Gatewiderstaende RG/RP). Ausgenommen sind
-    # J95/J96 (B.Cu-SMD -- die Klausel gilt nur der Oberseite, s.
-    # steckerprobe.verdrehtprobe) und die vier Vertragsstecker (sie SIND
-    # der Anker, s.o.). ---------------------------------------------
-    punkte = S.LANDEPUNKTE_VERDREHT()
+    bad = geometry.check_all(P, b)
+    check("%s geometry.check_all" % tag, bad == [], bad)
 
-    def _hof_abstand(p, px, py):
-        dx = max(abs(px - (p.x + p.w / 2.0)) - p.w / 2.0, 0.0)
-        dy = max(abs(py - (p.y + p.h / 2.0)) - p.h / 2.0, 0.0)
-        return (dx * dx + dy * dy) ** 0.5
+    for ref, platz in b.VERTRAGSPLATZ.items():
+        e = S.STECKER_POS[platz]
+        p = P[ref]
+        check("%s %s auf Vertragslage" % (tag, ref),
+              p.rechteck() == e["flaeche"] and p.rot == e["drehung"], p)
 
-    # Die Kanal-Klemmen (J5..J8, TerminalBlock_Phoenix_PT-1,5-2-3.5-H)
-    # bekommen HIER die SCHARFE Pruefung gegen die beiden echten Pads
-    # statt der Hof-Naeherung (Aufgabe C1). Grund: ihr Hof (8,00 mm) ist
-    # gegenueber ihren beiden Kontakten (3,5 mm Abstand, je 2,25 mm vom
-    # Hofrand eingerueckt) so grosszuegig bemessen, dass die Hof-
-    # Naeherung hier KEINE billige Voranzeige mehr ist, sondern falsch
-    # alarmiert: KLEMMENZONE liegt fuer alle drei Kanalzahlen im
-    # Ueberschneidungsbereich der Landepunkt-Spiegelspalten von
-    # stapel_links/-rechts (x=33,61 bzw. 51,39, s. stack_spec.
-    # KLEMMENZONE-Kommentar fuer die volle Eskalation) -- eine Klemme,
-    # die diese Spalten mit ihren PADS (nicht mit ihrem leeren Hof-Rand)
-    # meidet, ist verdreht-sicher, auch wenn ihr Hof den Streifen noch
-    # ueberlappt. Radius 1,2 mm = halbe Pad-Kantenlaenge (2,4 x 2,4 mm,
-    # aus TerminalBlock_Phoenix_PT-1,5-2-3.5-H.kicad_mod gemessen).
-    _KLEMMEN_REFS = tuple("J%d" % (4 + n) for n in range(1, 5))
+    klemmen = ["J%d" % (4 + n) for n in range(1, k + 1)] + ["J90"]
+    for ref in klemmen:
+        p = P[ref]
+        check("%s %s in KLEMMENZONE" % (tag, ref), innerhalb(p, S.KLEMMENZONE), p)
+        check("%s %s kantenbuendig" % (tag, ref), abs(p.y + p.h - S.BOARD_H) < 1e-6, p)
+        check("%s %s Oeffnung nach aussen" % (tag, ref),
+              S.KLEMME_OEFFNUNG_GLOBAL(b.FOOTPRINTS[ref], p.rot) == (0.0, 1.0))
+        check("%s %s nicht im Pico-Schatten" % (tag, ref), not schneidet(p, S.PICO_SCHATTEN))
+    xs = [P["J%d" % (4 + n)].x for n in range(1, k + 1)]
+    check("%s Kanalklemmen von links in Reihenfolge" % tag, xs == sorted(xs), xs)
+    check("%s Einspeisung ganz rechts" % tag, P["J90"].x > max(xs))
 
-    def _klemme_pad_abstand(p, px, py):
-        pin1 = (p.x + 2.25, p.y + 3.6)
-        pin2 = (pin1[0] + 3.5, pin1[1])
-        beste = 1e9
-        for cx, cy in (pin1, pin2):
-            dx = max(abs(px - cx) - 1.2, 0.0)
-            dy = max(abs(py - cy) - 1.2, 0.0)
-            beste = min(beste, (dx * dx + dy * dy) ** 0.5)
-        return beste
+    for ref, p in P.items():
+        art = [a for a, (fp, _w, _h) in spec_dimmer_basis.FP.items()
+               if fp == b.FOOTPRINTS[ref]]
+        hoehe = HOCH.get(art[0], 2.0) if art else 2.0
+        if schneidet(p, S.PICO_SCHATTEN) and ref not in ("J1", "J2"):
+            check("%s %s unter dem Pico <= %.1f mm hoch"
+                  % (tag, ref, S.BAUTEILHOEHE_PICO_SCHATTEN_MAX),
+                  hoehe <= S.BAUTEILHOEHE_PICO_SCHATTEN_MAX, hoehe)
+        check("%s %s <= %.1f mm hoch" % (tag, ref, S.BAUTEILHOEHE_OBEN_MAX),
+              hoehe <= S.BAUTEILHOEHE_OBEN_MAX)
+        if ref not in ("J1", "J2"):
+            check("%s %s nicht in ANTENNE_FREI" % (tag, ref),
+                  not schneidet(p, S.ANTENNE_FREI), p)
 
-    for ref, p in b.PLACEMENT.items():
-        if ref in ("J95", "J96") or ref in _VERTRAGSSTECKER:
-            continue
-        pruefen = _klemme_pad_abstand if ref in _KLEMMEN_REFS else _hof_abstand
-        for px, py in punkte:
-            if pruefen(p, px, py) < S.LANDE_SPERRRADIUS - 1e-6:
-                fails.append(
-                    "%s %s: %s naeher als %.1f mm am Landepunkt "
-                    "(%.2f|%.2f)" % (tag, ref,
-                                     "Pad" if ref in _KLEMMEN_REFS else "Hof",
-                                     S.LANDE_SPERRRADIUS, px, py))
-                break
+    # P1: Abblock-/Eingangskeramik am IC. P2: Spule und Freilauf am IC.
+    R = S.LAYOUT_REGELN
+    check("%s P2 Spule am Buck" % tag, hof_abstand(P["U90"], P["L90"]) <= R["P2"]["max_mm"])
+    check("%s P2 Freilauf am Buck" % tag, hof_abstand(P["U90"], P["D93"]) <= R["P2"]["max_mm"])
+    check("%s P2 Eingangskeramik am Buck" % tag,
+          hof_abstand(P["U90"], P["C91"]) <= R["P2"]["max_mm"])
+    check("%s P1 Boot-C am Buck" % tag, hof_abstand(P["U90"], P["C93"]) <= R["P1"]["max_mm"])
+    for n in range(1, k + 1):
+        q, j, rg, d = P["Q%d" % n], P["J%d" % (4 + n)], P["RG%d" % n], P["D%d" % n]
+        check("%s P3 Q%d an seiner Klemme" % (tag, n),
+              hof_abstand(q, j) <= R["P3"]["max_mm"], hof_abstand(q, j))
+        check("%s P4 RG%d am Gate" % (tag, n),
+              hof_abstand(q, rg) <= R["P4"]["max_mm"], hof_abstand(q, rg))
+        check("%s Freilauf D%d am FET" % (tag, n), hof_abstand(q, d) <= 6.0)
+        check("%s Q%d Beine nach oben (rot 270)" % (tag, n), q.rot == 270)
 
-    # -- Kanalzahl schlaegt ueberall durch -------------------------------
-    check("%s Kanal-FETs" % tag,
-          sorted(r for r in b.PLACEMENT
-                 if r.startswith("Q") and r != "Q90"),
-          ["Q%d" % n for n in range(1, kanaele + 1)])
-    check("%s Kanal-Dioden" % tag,
-          sorted(r for r in b.PLACEMENT
-                 if r.startswith("D") and r not in ("D90", "D91")),
-          ["D%d" % n for n in range(1, kanaele + 1)])
-    check("%s Klemmen" % tag,
-          sorted(r for r in b.PLACEMENT
-                 if r.startswith("J") and r not in
-                 ("J90", "J95", "J96", "J100", "J101", "J102", "J103",
-                  "J104", "J105")),
-          sorted("J%d" % (4 + n) for n in range(1, kanaele + 1)))
-    check("%s Leistungsnetze" % tag,
-          sorted(b.POWER_NETS),
-          sorted(["/PWR_IN", "/+24V"]
-                 + ["/LED%d" % n for n in range(1, kanaele + 1)]))
+    # Slot-Matrix
+    for n in range(1, k + 1):
+        for bank in S.BAENKE:
+            ref = S.MATRIX_REF(n, bank)
+            check("%s Matrix %s platziert" % (tag, ref), ref in P)
+            check("%s Matrix %s ist 0603" % (tag, ref),
+                  b.FOOTPRINTS.get(ref) == S.MATRIX_FOOTPRINT)
+    check("%s keine Matrix-Plaetze fuer fehlende Signale" % tag,
+          not any(r.startswith("J") and r[1] in "ABCD" and int(r[2:]) > k for r in P))
+    check("%s BANK = Vorgabe" % tag, b.BANK == S.BANK_VORGABE["Dimmer"])
+    check("%s Naehvias vorhanden" % tag, len(b.STITCH_VIAS) >= 8, len(b.STITCH_VIAS))
+    check("%s Rule Area Antenne beide Lagen" % tag,
+          any(set(l) == {"F.Cu", "B.Cu"} and z == S.ANTENNE_FREI
+              for _n, l, z, _v in b.RULE_AREAS))
 
-    # -- Beschreibung vollstaendig: jeder Platz hat einen Footprint und
-    # umgekehrt. ---------------------------------------------------------
-    check("%s jedes Bauteil hat einen Footprint" % tag,
-          sorted(set(b.PLACEMENT) - set(b.FOOTPRINTS)), [])
-    check("%s jeder Footprint ist platziert" % tag,
-          sorted(set(b.FOOTPRINTS) - set(b.PLACEMENT)), [])
-
-    # -- Naehte frei: kein STITCH_VIA im Hof eines Bauteils --------------
-    via_r = 0.5
-    for vx, vy in b.STITCH_VIAS:
-        for ref, p in b.PLACEMENT.items():
-            if (p.x - via_r < vx < p.x + p.w + via_r
-                    and p.y - via_r < vy < p.y + p.h + via_r):
-                fails.append("%s Naehvia (%.2f|%.2f) im Hof von %s"
-                             % (tag, vx, vy, ref))
-
-    # -- Vorverdrahtung darf nur an tatsaechlich vorhandenen Referenzen
-    # haengen (Rot-Nachweis der v1-Falle: die alte Fassung filterte nur
-    # nach Netznamen und haette U6/U7/R13-Stummel des Motormoduls an
-    # nicht existierende Pads gehaengt, s. Moduldocstring). -------------
-    for entry in b.PRE_TRACKS:
-        for punkt in entry[2]:
-            if (isinstance(punkt, tuple) and len(punkt) == 3
-                    and punkt[0] == "PAD" and punkt[1] not in b.PLACEMENT):
-                fails.append("%s PRE_TRACKS haengt an fehlender Referenz %s"
-                             % (tag, punkt[1]))
-
-# -- Typcode-Bindung: die Kennwiderstaende der Stueckliste MUESSEN aus
-# dem Vertrag kommen. ---------------------------------------------------
-check("Dimmer1-Typcode existiert", 0x10 in S.MODULTYPEN, True)
-check("Dimmer3-Typcode existiert", 0x11 in S.MODULTYPEN, True)
-check("Dimmer4-Typcode existiert", 0x12 in S.MODULTYPEN, True)
+# --- Rot-Nachweise ---------------------------------------------------------
+b = _B(spec_dimmer_basis.beschreibung(4))
+P = dict(b.PLACEMENT)
+P["J5"] = Platz("J5", P["J5"].x, P["J5"].y - 3.0, P["J5"].w, P["J5"].h, 0, True)
+check("Rot-Nachweis: Klemme 3 mm von der Kante weg ist nicht kantenbuendig",
+      abs(P["J5"].y + P["J5"].h - S.BOARD_H) > 1e-6)
+P["C94"] = Platz("C94", 48.0, 13.0, 9.4, 7.1)
+check("Rot-Nachweis: Elko in der Antennenzone wird erkannt",
+      schneidet(P["C94"], S.ANTENNE_FREI))
+P2 = dict(b.PLACEMENT)
+P2["Q1"] = Platz("Q1", P2["Q1"].x + 10.0, P2["Q1"].y, P2["Q1"].w, P2["Q1"].h, 270)
+check("Rot-Nachweis: verschobener FET ueberlappt",
+      any("Ueberlappung" in x for x in geometry.check_all(P2, b)))
 
 if fails:
     print("FEHLER:")
     for f in fails:
         print("  -", f)
     raise SystemExit(1)
-print("Dimmerbeschreibungen: 1/3/4 Kanaele -- alle Pruefungen bestanden")
+print("Dimmer-Platzierung 1/3/4: alle Pruefungen bestanden")

@@ -595,6 +595,19 @@ def rule_areas(board, beschreibung):
         z.SetZoneName(name)
         board.Add(z)
         n += 1
+        if "bahnen" in verbote:
+            # v3: KiCadRoutingTools liest Sperrflaechen NICHT aus der
+            # Regelflaeche, sondern aus gr_rect/gr_poly auf User.2
+            # (py_router/kicad_parser.parse_keepout_zones, --keepout).
+            # Dieselbe Flaeche also zusaetzlich dort einzeichnen; die
+            # DRC prueft weiterhin gegen die Regelflaeche.
+            sh = pcbnew.PCB_SHAPE(board)
+            sh.SetShape(pcbnew.SHAPE_T_RECT)
+            sh.SetStart(pcbnew.VECTOR2I(mm(x0), mm(y0)))
+            sh.SetEnd(pcbnew.VECTOR2I(mm(x1), mm(y1)))
+            sh.SetLayer(pcbnew.User_2)
+            sh.SetWidth(mm(0.1))
+            board.Add(sh)
     return n
 
 
@@ -1316,6 +1329,10 @@ def stecker_funktion(board, beschreibung):
     """
     if not getattr(beschreibung, "IST_MODUL", False):
         return 0
+    if "kette" not in S.STECKER_POS:
+        # v3: keine Kette mehr; Stecker-Funktionen kommen aus
+        # beschreibung.FUNKTIONS_LABELS (R7), wie bei den Klemmen.
+        return 0
     pads = _pad_rechtecke(board)
     kette = S.STECKER_POS["kette"]["flaeche"]
     leistung = S.STECKER_POS["leistung"]["flaeche"]
@@ -1415,6 +1432,23 @@ def board_identity(board, beschreibung):
     pads = _pad_rechtecke(board)
     text = "%s %s v%s 0x%02X" % (S.PROJEKTNAME, beschreibung.MODULNAME,
                                  S.VERTRAG_VERSION, beschreibung.MODULTYP)
+    # v3 (R9): Lage und Bank-Vorgabe aus der Beschreibung, wenn sie eine
+    # nennt -- die alte Stelle (2,0 | BOARD_H-2,0) liegt in v3 unter der
+    # Klemmenreihe.
+    pos = getattr(beschreibung, "IDENTITY_POS", None)
+    bank = getattr(beschreibung, "BANK", None)
+    if pos is not None:
+        # Drei kurze Zeilen statt einer langen -- die v3-Platine hat
+        # keine 20 mm freie Zeile mehr, aber eine 12 mm breite Spalte.
+        x, y = pos
+        zeilen = ["%s %s" % (S.PROJEKTNAME, beschreibung.MODULNAME),
+                  "v%s 0x%02X" % (S.VERTRAG_VERSION, beschreibung.MODULTYP)
+                  + (" Bank %s" % bank if bank else "")]
+        for i, z in enumerate(zeilen):
+            _text_pruefen(board, beschreibung, pads, "BOARD_IDENTITY_%d" % i, z,
+                         x, y + 1.8 * i, fertigung.SILK_TEXT, fertigung.SILK_DICKE,
+                         halign="L", valign="T")
+        return " / ".join(zeilen)
     _text_pruefen(board, beschreibung, pads, "BOARD_IDENTITY", text, 2.0,
                  beschreibung.BOARD_H - 2.0, fertigung.SILK_TEXT,
                  fertigung.SILK_DICKE, halign="L", valign="T")

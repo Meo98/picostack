@@ -56,8 +56,9 @@ soll_schatten = (round(S.PICO_PIN1[0] - ueber_x, 2), round(S.PICO_PIN21[1] - ueb
                  round(unten[20][0] + ueber_x, 2), round(S.PICO_PIN1[1] + ueber_y, 2))
 check("PICO_SCHATTEN aus Pins hergeleitet", S.PICO_SCHATTEN == soll_schatten,
       "%s statt %s" % (S.PICO_SCHATTEN, soll_schatten))
-check("ANTENNE_FREI liegt im/ am Pico-Schatten",
-      S.ANTENNE_FREI[1] == S.PICO_SCHATTEN[1] and S.ANTENNE_FREI[3] == S.PICO_SCHATTEN[3]
+check("ANTENNE_FREI liegt zwischen den Reihen, nicht auf ihren Pads",
+      S.ANTENNE_FREI[1] >= S.STECKER_POS["stapel_oben"]["flaeche"][3]
+      and S.ANTENNE_FREI[3] <= S.STECKER_POS["stapel_unten"]["flaeche"][1]
       and S.ANTENNE_FREI[0] > S.PICO_SCHATTEN[0] and S.ANTENNE_FREI[2] >= S.PICO_SCHATTEN[2])
 check("USB-Ueberstand bleibt auf der Platine",
       S.PICO_SCHATTEN[0] - S.USB_UEBERSTAND > 0)
@@ -125,6 +126,13 @@ S.STECKER_POS = {
 _d, _ok = S.VERDREHT_STECKT_NIRGENDS()
 check("Rot-Nachweis symmetrische Reihen stecken", not _ok, _d)
 S.STECKER_POS = _pos
+# ROT-NACHWEIS 2: bei 56 mm Hoehe (erster Platzprobe-Kandidat) laege die
+# verdrehte untere Reihe 0,44 mm neben der echten -- gesteckt haette es.
+_h = S.BOARD_H
+S.BOARD_H = 56.0
+_d, _ok = S.VERDREHT_STECKT_NIRGENDS()
+check("Rot-Nachweis 56 mm Hoehe steckt", not _ok and _d < 0.5, _d)
+S.BOARD_H = _h
 
 # --- 6. Zonen und Loecher -------------------------------------------------------
 def schneidet(a, b):

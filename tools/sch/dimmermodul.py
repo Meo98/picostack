@@ -38,15 +38,15 @@ for _d in (HERE, os.path.join(HERE, "..")):
 import stack_spec as S  # noqa: E402
 import versorgung        # noqa: E402
 
-FP_R0805 = versorgung.FP_R0805
+FP_R0603 = versorgung.FP_R0603   # RG/RP: 0603, passt in die Kanal-Luecken
 FP_TO252 = "Package_TO_SOT_SMD:TO-252-3_TabPin2"
 FP_SMC = versorgung.FP_SMC
 FP_KLEMME = S.FP_KLEMME_35
 
 QK_WERT, QK_LCSC = "NCE6020AK", "C108639"
 DK_WERT, DK_LCSC = "SS36C", "C16237"
-RG_WERT, RG_LCSC = "100", "C17408"
-RP_WERT, RP_LCSC = "100k", "C149504"
+RG_WERT, RG_LCSC = "100", "C22775"      # 0603 100 Ohm, JLC-Basic
+RP_WERT, RP_LCSC = "100k", "C25803"     # 0603 100 k, JLC-Basic
 
 VARIANTEN = {1: 0x10, 3: 0x11, 4: 0x12}
 FAMILIE = "Dimmer"
@@ -146,12 +146,12 @@ def _kanal(sch, n, ox, oy):
     sch.netz(q, "2", "U", led)          # D -> Klemme (Minus der Last)
     sch.netz(q, "3", "D", "GND")        # S
 
-    sch.bauteil(rg, "Device:R", (ox - 17.78, oy + 10.16), RG_WERT, FP_R0805,
+    sch.bauteil(rg, "Device:R", (ox - 17.78, oy + 10.16), RG_WERT, FP_R0603,
                 rot=90, roff=(-1.27, -2.54), voff=(1.27, -2.54), felder={"LCSC": RG_LCSC})
     sch.netz(rg, "1", "L", sig)
     sch.netz(rg, "2", "R", sig + "_G")
 
-    sch.bauteil(rp, "Device:R", (ox - 12.7, oy + 12.7), RP_WERT, FP_R0805,
+    sch.bauteil(rp, "Device:R", (ox - 12.7, oy + 12.7), RP_WERT, FP_R0603,
                 rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27), felder={"LCSC": RP_LCSC})
     sch.netz(rp, "1", "U", sig + "_G")
     sch.netz(rp, "2", "D", "GND")

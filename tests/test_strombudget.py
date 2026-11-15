@@ -68,7 +68,7 @@ B = S.STROMBUDGET
 
 # --- 1. Die Zusage rechnet gegen die Bauteile auf -------------------
 q90_max = (B["q90_verlust_max_w"] / B["q90_rdson_ohm"]) ** 0.5
-check("Q90-Grenzstrom 4,80 A", round(q90_max, 2), 4.80)
+check("Q90-Grenzstrom 6,12 A (AOD409)", round(q90_max, 2), 6.12)
 check("Modulbudget unter dem Q90-Grenzstrom",
       B["modul_gesamt_a"] < q90_max, True)
 # Echte Reserve, keine Punktlandung: hoechstens 75 % der belegten
@@ -76,7 +76,8 @@ check("Modulbudget unter dem Q90-Grenzstrom",
 q90_verlust = B["q90_rdson_ohm"] * B["modul_gesamt_a"] ** 2
 check("Q90-Verlust <= 75 % des Datenblattwerts",
       q90_verlust <= 0.75 * B["q90_verlust_max_w"], True)
-check("Q90-Verlust bei Budget = 1,04 W", round(q90_verlust, 2), 1.04)
+# v3: AOD409 (40 mOhm) statt IRFR5305 (65 mOhm): 0,04 x 16 = 0,64 W.
+check("Q90-Verlust bei Budget = 0,64 W", round(q90_verlust, 2), 0.64)
 
 # Stapel-Durchleitung: hoechstens so viel, wie EIN Kontakt des
 # Leistungssteckers allein traegt (s. Vertragskommentar: die
@@ -120,7 +121,6 @@ BRETTER = {
     "dimmer1/Dimmer1": ("/LED1",),
     "dimmer3/Dimmer3": ("/LED1", "/LED2", "/LED3"),
     "dimmer4/Dimmer4": ("/LED1", "/LED2", "/LED3", "/LED4"),
-    "motor/Motormodul": ("/Out1", "/Out2"),
 }
 for brett, leistungsnetze in sorted(BRETTER.items()):
     pro = os.path.join(WURZEL, "hardware", "kicad", brett + ".kicad_pro")

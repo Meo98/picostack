@@ -83,7 +83,7 @@ except KeyError:
 import importlib   # noqa: E402
 
 verbaut = {}
-for modul in ("spec_motor", "spec_dimmer1", "spec_dimmer3", "spec_dimmer4"):
+for modul in ("spec_dimmer1", "spec_dimmer3", "spec_dimmer4"):
     b = importlib.import_module(modul)
     for ref, fp in getattr(b, "FOOTPRINTS", {}).items():
         if "TerminalBlock" in fp:
