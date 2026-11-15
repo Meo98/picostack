@@ -1,1183 +1,284 @@
-"""Der Vertrag von PicoStack: Steckerbelegung, Umriss, Modultypen.
+"""Der Vertrag von PicoStack v3: Umriss, Pico-Lage, Pinrollen, Baenke.
 
 Bewusst ohne KiCad-Abhaengigkeit, damit er ohne KiCad geprueft werden
-kann -- und damit fremde Werkzeuge ihn lesen koennen, ohne KiCad zu
-installieren.
+kann -- und damit fremde Werkzeuge ihn lesen koennen.
 
 Was hier steht, ist die Zusage an alle, die eigene Module bauen.
 Aendert sich etwas davon, sind fremde Module unbrauchbar. Alles andere
 im System darf sich aendern.
 
-Grundlage: docs/superpowers/specs/2026-08-28-picostack-design.md
+Grundlage: docs/superpowers/specs/2026-11-15-picostack-v3-design.md.
+Vorgaenger (v1-v2.1, VERTRAG_VERSION 1-3) im Git-Verlauf und im Tag
+v0.2.0. Was v3 gegenueber v2.1 streicht und warum, steht in der Spec,
+Abschnitt "Warum v3"; kurz: kein Modul-MCU, keine Auswahlkette, keine
+SMD-Steckerpaare, keine Randpads. Der Pico treibt jeden Kanal direkt
+ueber GPIO-Baenke.
 
---- v2: der Pico ist der Stapel (2026-09-0x, Commit 7daaad3) -----------
-v1 hatte eine eigene Sockelplatine, die EINEN Pico trug und seine 40
-Pins ueber einen gemeinsamen 2x20-Stapelstecker (STECKER_POS["stapel"],
-Bauform "Buchse mit durchgehendem Stift") an den Rest des Stapels
-weiterreichte. v2 streicht diese Sonderrolle: JEDES Modul bekommt seine
-zwei eigenen 1x20-Buchsenreihen in echter Pico-Geometrie (Reihenabstand
-17,78 mm -- das Pico-Datenblattmass, nicht mehr ein beliebiges
-2,54-mm-Raster) und damit seinen eigenen, dort eingesteckten Pico.
-STECKER_POS["stapel"] gibt es deshalb nicht mehr; an seiner Stelle
-stehen STECKER_POS["stapel_links"] und ["stapel_rechts"] (eine Reihe je
-Pico-Seite, s. Kommentar dort). VERTRAG_VERSION haelt diesen Bruch
-maschinenlesbar fest, damit ein Werkzeug, das noch mit v1 rechnet, sich
-selbst erkennt, statt still falsche Koordinaten zu benutzen.
-
-Aus demselben Grund sind PICO_POS, PICO_ANTENNE_HOF und
-ANTENNE_SPERRBEREICH in v2 nicht mehr Teil dieses Vertrags: sie
-beschrieben die Lage EINES bestimmten, huebsch aufgeloeteten Pico auf
-GENAU EINER Platine (der Sockelplatine). Wenn stattdessen jedes Modul
-seinen Pico selbst traegt, gibt es keine einzelne, ausgezeichnete
-Pico-Position mehr, gegen die sich das pruefen liesse -- die Flaeche,
-die der Pico einnimmt, IST jetzt die Flaeche von stapel_links/rechts
-zusammen. Was dabei verloren geht: der WLAN-Antennen-Sperrbereich des
-Pico ist eine reale Pflicht (Datenblatt, Abschnitt 2.2.1), die v1 hier
-maschinenlesbar hielt. Sie ist in v2 NICHT neu hergeleitet -- das
-haette eine eigene, nicht in Aufgabe 2 verlangte Entscheidung ueber die
-Pico-Orientierung auf dem neuen Umriss gebraucht (liegt die Antenne
-ueber freiem Rand oder ueber Kupfer?). Offener Punkt fuer eine
-Folgeaufgabe, s. Bericht zu Aufgabe 2.
-
---- v2.1: bedienbares Layout (2026-09-10, Aufgabe B) --------------------
-Der Audit `.superpowers/sdd/2026-09-07-picostack-v2/audit-layout-v2.md`
-fand einen Blocker (B1: die Kanal-1-/Motor-Klemme sitzt im PICO_SCHATTEN
--- fuer eine Klemme war schlicht keine andere Flaeche mehr frei) und
-mehrere Wichtig-Befunde (Referenzen unsichtbar, keine Funktions-
-beschriftung, Randpads nur am obersten Stapelmodul erreichbar). Ursache
-war immer dieselbe: 75x65 mm hatte keine Reserve fuer eine kanten-
-buendige Klemmenreihe UND eine erreichbare Randpad-Zone gleichzeitig.
-v2.1 loest das durch WACHSTUM, nicht durch Umsortieren:
-
-  * STECKER_POS (beide Stapelreihen, Kette, Leistung) und PIN_ROLLE
-    bleiben eingefroren -- das ist der eigentliche Stapelvertrag, der
-    Module verschiedener Baugroesse trotzdem zusammenstecken laesst.
-  * BOARD_W/BOARD_H wachsen von 75x65 auf 82x73 mm (Herleitung in
-    tools/platzprobe_v2_1.py, Rot-Nachweis und Kandidatenrechnung in
-    .superpowers/sdd/2026-09-07-picostack-v2/task-v21a-report.md,
-    Abschnitt 9). Der Ursprung (0|0 = linke obere Ecke) bleibt stehen;
-    das Rechteck waechst nur nach rechts (+x) und unten (+y).
-  * M3_HOLES sind NICHT laenger eingefroren, sondern werden aus
-    M3_HOLES_FUER(w, h) hergeleitet (dieselbe "4,0 mm von jeder Kante"-
-    Regel wie v1/v2, jetzt als Funktion statt vier fester Zahlen) --
-    Begruendung des Controllers: kein v2-Board wurde je gefertigt,
-    Stapelkompatibilitaet mit einem nicht existierenden Board ist
-    wertlos, der Preis der Einfrierung (eine Klemmenzone, die um ein
-    starres Eckloch bei y=61 ausweichen muss) war dagegen real.
-  * LANDEPUNKTE_VERDREHT() ist UNVERAENDERT (die Funktion spiegelte
-    schon vorher an den jeweils aktuellen BOARD_W/BOARD_H-Modulwerten,
-    nicht an eingefrorenen Zahlen) -- sie liefert automatisch die 46
-    Punkte des NEUEN Umrisses.
-  * Neu: KLEMMENZONE (R1/R2/R4) und RANDPAD_ZONE (R5/R8), beide
-    hergeleitet in tools/platzprobe_v2_1.py und woertlich aus
-    task-v21a-report.md Abschnitt 9 uebernommen.
-  * RANDPADS wandern von B.Cu auf F.Cu (s. Kommentar dort) -- die
-    urspruengliche B.Cu-Entscheidung loeste einen Widerspruch mit der
-    Verdreh-Kupferklausel; v2.1 loest denselben Widerspruch jetzt
-    ANDERS, durch eine eigene, von den Landepunkten fern genug
-    liegende Zone (RANDPAD_ZONE), nicht mehr durch die Rueckseite.
-  * Neun pruefbare Layoutregeln (R1-R9, s. LAYOUT_REGELN unten) aus der
-    Recherche `.superpowers/sdd/2026-09-07-picostack-v2/
-    recherche-hat-layout.md` -- jede mit ihrem Belegstatus (belegt,
-    teilweise belegt, oder ausdruecklich nur Projektkonvention).
-
-VERTRAG_VERSION wird deshalb auf 3 angehoben: STECKER_POS/PIN_ROLLE
-(der Stapelvertrag im engeren Sinn) sind unveraendert, aber jedes
-Werkzeug, das BOARD_W/BOARD_H/M3_HOLES/RANDPADS hart gegen die v2-Zahlen
-prueft (z. B. eine gebaute v2-Platine), muss das jetzt erkennen koennen,
-statt still mit falschen Zahlen weiterzurechnen.
+Koordinaten: Millimeter, Ursprung (0|0) = linke obere Ecke der
+Platine, x nach rechts, y nach UNTEN (KiCad-Konvention).
 """
+import math
 
-VERTRAG_VERSION = 3
+VERTRAG_VERSION = 4
+PROJEKTNAME = "PicoStack"
 
-BOARD_W = 82.0
-BOARD_H = 73.0
-# v2.1 (Aufgabe B, 2026-09-10): 75x65 -> 82x73, hergeleitet in
-# tools/platzprobe_v2_1.py und nachvollziehbar in .superpowers/sdd/
-# 2026-09-07-picostack-v2/task-v21a-report.md, Abschnitt 9 (die
-# massgebliche, spaeter korrigierte Fassung -- die erste Fassung des
-# Berichts kam mit eingefrorenen M3_HOLES noch auf 85x80, s. Abschnitt 9
-# fuer die Begruendung der Korrektur). Der Zuwachs (+7,0 mm rechts,
-# +8,0 mm unten) traegt zwei neue Pflichtzonen, die im alten Umriss
-# keinen Platz mehr hatten: KLEMMENZONE (unten, 12,2 mm tief) und
-# RANDPAD_ZONE (rechts, 4,0 mm breit, zwischen den beiden wandernden
-# rechten M3-Eckloechern hindurch). S. Kommentare dort fuer die
-# vollstaendige Arithmetik.
+# --- Umriss und Mechanik ---------------------------------------------
+BOARD_W = 74.0
+BOARD_H = 50.0
 CORNER_R = 3.0
-
-PLATINE_DICKE = 1.6      # mm, Standard-PCB-Dicke (JLCPCB); auch Grundlage
-# der Spaltrechnung unten und der Gehaeuse-Konstruktion (Aufgabe 9).
+PLATINE_DICKE = 1.6      # mm, JLCPCB-Standard; Basis der Stapelrechnung
 
 M3_DRILL = 3.2
-M3_RAND_ABSTAND = 4.0   # mm von jeder Kante -- die Zahl selbst ist seit
-# v1 unveraendert; v2.1 macht nur ihre ANWENDUNG variabel (s.
-# M3_HOLES_FUER unten), statt sie vier Mal fest in eine Zahlenliste zu
-# schreiben.
+M3_RAND_ABSTAND = 4.0    # mm von jeder Kante
+M3_KEEPOUT = 7.0         # mm Durchmesser Freihaltekreis (Bolzen/Schraubenkopf)
 
 
 def M3_HOLES_FUER(w, h):
     """Die vier M3-Eckloecher eines w x h-Umrisses, 4,0 mm von jeder Kante.
-
-    Wie v1/v2: nicht von der Mitte aus, sondern 4,0 mm von jeder der vier
-    Kanten ab-/dazugezogen (M3_RAND_ABSTAND). v2.1 (Aufgabe B, Ruling des
-    Controllers, s. Moduldocstring) macht daraus eine Funktion statt vier
-    fester Zahlen, weil M3_HOLES nicht mehr an einem eingefrorenen Umriss
-    haengen soll, sondern mit BOARD_W/BOARD_H mitwaechst.
-
-    ROT-NACHWEIS DER HERLEITUNG (tests/test_stack_spec.py): diese Funktion
-    muss bei w=75, h=65 (dem alten v2-Mass) exakt die vier alten,
-    fest eingetragenen M3_HOLES reproduzieren --
-    [(4,4), (4,61), (71,4), (71,61)]. Das beweist, dass die Funktion die
-    alte v1/v2-Herleitung VERALLGEMEINERT, statt sie stillschweigend zu
-    ersetzen.
-    """
+    Punktsymmetrisch zur Plattenmitte -- deshalb muss STECKER_POS so
+    liegen, dass ein verdreht angeschraubtes Modul nirgends steckt
+    (s. VERDREHT_STECKT_NIRGENDS)."""
     a = M3_RAND_ABSTAND
     return [(a, a), (a, h - a), (w - a, a), (w - a, h - a)]
 
 
 M3_HOLES = M3_HOLES_FUER(BOARD_W, BOARD_H)
-# Bei 82x73 (v2.1): (4, 4), (4, 69), (78, 4), (78, 69). Lochbild damit
-# 74 x 65 mm (vorher 67 x 57 mm bei 75x65) -- die beiden rechten
-# Loecher WANDERN mit der Kante (s. Moduldocstring), die beiden linken
-# bleiben an ihrer alten Stelle (der Ursprung ist frozen).
+# (4|4) (4|46) (70|4) (70|46)
 
-STAPEL_ABSTAND = 13.6     # mm zwischen zwei Platinen (Platinenoberkante
-# zu Platinenoberkante). Vierte Runde, 2026-08-31 -- ersetzt 13,5 mm,
-# das nur Stunden vorher 13,0 mm das seinerseits die urspruenglichen 15,0 mm ersetzt
-# hatte. Herleitung, siehe hardware/bauteile-1b.md, Beleg 6 (zweite
-# Runde), Beleg 13.5 und Beleg 14:
-#
-#   Spalt G = STAPEL_ABSTAND - PLATINE_DICKE = 13,6 - 1,6 = 12,00 mm
-#   Kettenstecker  : Einstecktiefe = 17,00 - 12,00 = 5,00 mm (EINSTECKTIEFE_KETTE())
-#   Leistungsstecker: dieselbe Rechnung             = 5,00 mm (EINSTECKTIEFE_LEISTUNG())
-#   Stapelstecker  : Einstecktiefe = 19,36 - 12,00 = 7,36 mm (EINSTECKTIEFE_STAPEL())
-#   Luft Stiftkoerper/Buchsenoberkante = 12,00 - 8,50 - 2,50
-#                                                   = 1,00 mm (LUFT_STIFTKOERPER())
-#
-# WARUM AUSGERECHNET 13,6. Der Spalt G IST die Bauhoehe der Abstands-
-# bolzen, die den Stapel mechanisch tragen -- und 11,90 mm gibt es
-# nicht zu kaufen. Handelsuebliche M3-Bolzen kommen in 10/11/12/15 mm.
-# 13,6 mm trifft mit G = 12,00 mm ein Katalogmass genau, bei 1,00 mm
-# Luft statt 0,90 und einer Einstecktiefe, die nur 0,10 mm unter der
-# von 13,5 liegt. Der Fehler war geerbt: auch 13,0 mm ergab mit
-# 11,40 mm kein Katalogmass, es hat nur niemand nachgesehen, weil die
-# Bolzen erst im Gehaeuse (Aufgabe 9) vorkommen -- dort waere es als
-# Sonderanfertigung oder als Stapel aus Unterlegscheiben aufgefallen,
-# lange nachdem die Platinen gefertigt sind.
-#
-# WARUM 13,5 UND NICHT 13,0. Die 0,40 mm Luft, die 13,0 mm liess, waren
-# der engste Punkt des ganzen Stapels: der Isolierkoerper der SMD-
-# Stiftleiste kann nicht in die Buchse eintauchen, er muss ueber deren
-# Oberkante bleiben. Im unguenstigen Toleranzstapel (+-0,2 mm je
-# Bauteil, +-10 % Platinendicke) faellt er auf null, und dann stossen
-# die beiden Kunststoffe aneinander, BEVOR die Abstandsbolzen sitzen --
-# die Platinen liessen sich nicht mehr flach verschrauben. Bei 13,5 mm
-# sind es 0,90 mm; derselbe Toleranzstapel laesst davon noch etwa die
-# Haelfte uebrig.
-#
-# WAS DAS KOSTET, vollstaendig aufgezaehlt (nur zwei Werte sinken,
-# beide um genau 0,50 mm, beide bleiben weit ueber ihrer Reissleine):
-#   Einstecktiefe SMD-Paar   5,60 -> 5,10 mm  (Reissleine 2,0 mm)
-#   Einstecktiefe Stapel     7,96 -> 7,46 mm  (Reissleine 2,0 mm)
-# Alles andere waechst:
-#   Luft ueber der Buchse    0,40 -> 0,90 mm
-#   Luft ueber der Klemme    1,30 -> 1,80 mm  (KLEMME_HOEHE_MM 10,10)
-#   Luft ueber dem K7805     1,20 -> 1,70 mm  (K7805_HOEHE_MM 10,2)
-#   Rest im Stapelstecker vor dem Anschlagen des Stifts am Buchsengrund
-#     (Buchse 8,5 mm tief)   0,54 -> 1,04 mm
-#   Rest der Steckstiftlaenge des SMD-Paars (Stift 6,0 mm frei)
-#                            0,40 -> 0,90 mm
-# In der Ebene aendert sich NICHTS: STECKER_POS, die Hoefe, die freien
-# Flaechen und VERDREHT_MINDESTABSTAND_MM haengen nicht am Abstand.
-#
-# Der gueltige Bereich, in dem STAPEL_ABSTAND ueberhaupt liegen darf:
-#   nach UNTEN begrenzt die Luft ueber der Buchse -- G >= 8,5 + 2,5 =
-#     11,0 mm, also STAPEL_ABSTAND >= 12,6 mm. Das ist enger als die
-#     Klemmen (G >= 10,10 mm, also >= 11,7 mm).
-#   nach OBEN begrenzt die Einstecktiefe -- erst ab 16,6 mm faellt sie
-#     unter die 2,0-mm-Reissleine des Tests.
-# 13,5 mm liegt damit 0,9 mm ueber der unteren und 3,1 mm unter der
-# oberen Grenze -- ungefaehr mittig, statt wie 13,0 mm dicht am Rand.
-#
-# Klemmenhoehe belegt (nicht geschaetzt) gegen genau diesen Spalt:
-#   DB128L-5.08-2P/-3P (C395868/C395869): 10,10 mm -- Datenblatt DORABO
-#     "DB128L-5.08-XXP-C-S" (Zeichnung datiert 2022.11.25, Bemassung
-#     "10.10" in der Seitenansicht; ein Zeichnungssatz fuer alle
-#     Polzahlen, Hoehe unabhaengig von XX). -> Rest ueber der Klemme:
-#     11,90 - 10,10 = 1,80 mm.
-#   K7805-2000R3 (C2931187), SIP-3, als hoechstes denkbares Bauteil
-#     falls ein Modul es je verwendet: 10,2 mm -- Datenblatt DEXU
-#     Electronics "K78xx-2000R3", Rev. A0-2018.12, S. 2 (Tabelle
-#     "外观尺寸" / Aussenmasse), "长*宽*高 11.6*7.5*10.2mm". Rest:
-#     11,90 - 10,2 = 1,70 mm.
-# Siehe KLEMME_HOEHE_MM / K7805_HOEHE_MM unten fuer die maschinen-
-# lesbaren Werte.
-#
-# ACHTUNG, zwei offene Punkte, die nicht in diesem Modul stehen koennen:
-#   1. Das Gehaeuse (Aufgabe 9 dieser Etappe) wurde gegen den alten Wert
-#      15,0 mm entworfen und muss auf 13,5 mm nachgezogen werden. Es
-#      existiert in diesem Repo noch nicht -- die Aenderung kostet
-#      deshalb heute nichts.
-#   2. Der Spalt G IST die Bauhoehe der Abstandsbolzen: 11,90 mm ist
-#      kein Katalogmass (ueblich sind 10, 11, 12, 15 mm). Das war schon
-#      bei 13,0 mm so (11,40 mm) und wird hier nicht schlechter, aber
-#      es bleibt zu entscheiden -- s. Bericht zu Aufgabe 5g, Bedenken 1.
-
-# --- Steckerbelegung ------------------------------------------------
-# Pico-Pins 1..40. Die Nummern folgen dem Pico-Datenblatt, nicht der
-# GPIO-Nummer: der Stecker traegt Pins, nicht GPIO.
-#
-# Dieser 2x20-Stecker ist seit 2026-08-31 der Stapelstecker (Buchse mit
-# durchgehendem Stift, STECKER_STAPEL unten) -- passend fuer alle
-# Leitungen, die im ganzen Stapel dasselbe Netz sind (Bus- und
-# Global-Signale, Versorgung, freie GPIO). Nur die Auswahlkette (SEL)
-# muss von Modul zu Modul aufgetrennt werden (Schieberegister,
-# tools/kette.py) und laeuft deshalb NICHT mehr ueber diesen Stecker,
-# sondern ueber einen eigenen, zweipoligen STECKER_KETTE mit normaler
-# Buchse/Stiftleiste. SEL ist deshalb kein Pin dieses Steckers mehr.
-RESERVIERT = (
-    "I2C_SDA", "I2C_SCL",     # Bus zu den Modulen
-    "FLASH_TX", "FLASH_RX",   # Bootlader der Modul-MCU
-    "SEL_CLK",                # global: Takt der Auswahlkette. Jedes
-                              # Modul haelt die Auswahl in einem
-                              # D-Flipflop; ein Takt schiebt sie eine
-                              # Position tiefer (tools/kette.py).
-    "FLASH_MODE",             # global: Stapel im Flash-Modus
-    "NOTAUS",                 # global, wired-OR, wirkt ohne Software
-    "SEL_OUT",                # der Pico-Pin, der die Auswahlkette treibt
-                              # (Pin 4 / GP2). KEIN Pin des 2x20-Stapel-
-                              # steckers -- laeuft ausserhalb davon auf
-                              # STECKER_KETTE (s. Kommentar dort). Bis
-                              # 2026-08-31 (Aufgabe-4-Fix-1-Runde) stand
-                              # dafuer lokal, unreserviert Pin 11 (GP8)
-                              # auf der Sockelplatine; das kollidierte,
-                              # sobald Befund 1 derselben Runde jeden
-                              # freien GPIO -- auch Pin 11 -- zum Stapel
-                              # durchreichte (zwei Ausgaenge auf einem
-                              # Netz, sobald ein Modul GP8 selbst nutzt).
-                              # Pin 4 (GP2) war vor der Steckertrennung
-                              # bereits SEL und bekommt die Rolle jetzt
-                              # zurueck, s. Kommentar bei PIN_ROLLE[4]
-                              # unten und .superpowers/sdd/
-                              # 2026-08-31-etappe-1b-sockel-und-motormodul/
-                              # aufgabe-4-fix1-report.md.
-)
-
-_GND = {3, 8, 13, 18, 23, 28, 33, 38}
-_VERSORGUNG = _GND | {36, 37, 39, 40}    # 3V3_OUT, 3V3_EN, VSYS, VBUS
-
-
-def IST_VERSORGUNG(pin):
-    return pin in _VERSORGUNG
-
-
-# Pins, die eine Rolle TRAGEN, aber trotzdem nicht benutzbar sind.
-#
-# Warum es diesen Eintrag gibt (2026-09-01, Aufgabe 6, beim Lesen der
-# Netzliste gefunden). PIN_ROLLE gab bis dahin drei Pins einen
-# Versorgungsnamen -- 37 "3V3_EN", 39 "VSYS", 40 "VBUS" --, und
-# IST_VERSORGUNG() bestaetigte das. Getrieben hat sie NIEMAND: der
-# Generator legte sie auf jeder Platine auf no_connect, Sockelseite wie
-# Modulseite. Auf dem Sockel gibt es sogar eine 5-V-Schiene (der K7805
-# speist damit U1 Pin 39), sie erreicht den Stapelstecker nur nicht.
-# Wer sich auf den Vertrag verliess, haelt drei Pins fuer belegt, an
-# denen nichts liegt.
-#
-# Das ist genau die Luecke, die der Vertrag fuer Pin 30 und 35 schon
-# selbst benennt ("ein Modulautor, der sich auf PIN_ROLLE verlaesst,
-# haelt einen Pin fuer benutzbar, der es nicht ist"). Bei diesen dreien
-# stand nirgends etwas; sie sassen bloss im selben elif-Zweig von
-# tools/sch/modulsockel.py wie 30 und 35. Die Liste stand damit im
-# GENERATOR und nicht im Vertrag -- dieselbe Trennung, die dieses
-# Projekt sonst ueberall aufloest.
-#
-# RULING (2026-09-01): Der Vertrag wird ehrlich gemacht, es wird KEINE
-# 5-V-Schiene verteilt.
-#   Fuer das Verteilen spraeche: der K7805 kann 2 A, die Schiene
-#   existiert auf dem Sockel bereits, eine Bahn zu J2 Pin 39 waere
-#   billig.
-#   Dagegen spricht dreierlei. (1) Es gibt heute keinen Verbraucher:
-#   das Motormodul zieht 24 V aus dem Leistungsstecker und 3V3 aus
-#   Pin 36. Eine Schiene ohne Verbraucher ist eine Zusage, die nie
-#   erprobt wird. (2) VSYS ist am Pico ein EINGANG. Sobald der Sockel
-#   ihn treibt, muss der Vertrag zusaetzlich regeln, dass kein Modul
-#   ihn ebenfalls speisen darf -- sonst stehen zwei Quellen auf einem
-#   Netz. Diese Regel gaebe es dann nur, weil die Schiene existiert.
-#   (3) Die Entscheidung laesst sich spaeter mit einem echten Bedarf
-#   im Ruecken treffen; heute waere sie geraten.
-# Kosten wenn falsch: eine Bahn auf dem Sockel und eine Vertragszeile,
-# solange keine Platine gefertigt ist. Genau deshalb wird sie
-# aufgeschoben und nicht vorweggenommen.
-#
-# TEILWEISE AUFGEHOBEN fuer Pin 39 (VSYS), Fix-Runde 1, Task-5-Review,
-# 2026-09-08. Das RULING oben stammt aus Aufgabe 6 (v1) und ging davon
-# aus, dass niemand VSYS speist -- Grund (1) war "es gibt heute keinen
-# Verbraucher". Das stimmt seit der v2-VERSORGUNG-Zusage
-# (VERSORGUNG["vsys_diode"] == True) nicht mehr: JEDES Modul bekommt
-# ueber tools/sch/versorgung.py eine Schottky-Diode (D91), die genau
-# dafuer gebaut ist, VSYS zu speisen -- der Verbraucher, dessen Fehlen
-# Grund (1) trug, existiert jetzt in jeder Modul-Stueckliste. Grund (2)
-# ("dann muss der Vertrag zusaetzlich regeln, dass kein Modul VSYS
-# OHNE Diode speisen darf") ist damit nicht entfallen, sondern GENAU
-# das, was diese Runde regelt: erlaubt ist ausschliesslich die
-# Einspeisung UEBER die Entkopplungsdiode der Versorgungszelle (s.
-# vsys_diode-Kommentar bei VERSORGUNG oben), eine direkte, ungeschuetzte
-# Verbindung bleibt verboten. Gefunden wurde die Luecke, weil ein zuerst
-# fehlender Verbindungspunkt fuer VSYS in einem generierten Schaltplan
-# als `isolated_pin_label`-ERC-Warnung sichtbar wurde (Task 5,
-# Motormodul) -- der Vertrag verbot genau das Netz, das die eigene
-# VERSORGUNG-Zusage verlangt. RUN/ADC_VREF/3V3_EN/VBUS sind von diesem
-# Ruling nicht betroffen und bleiben unveraendert nicht belegbar (keiner
-# von ihnen hat ein Gegenstueck in VERSORGUNG).
-NICHT_BELEGBAR = {
-    30: "RUN -- Reset des RP2040, aktiv-LOW mit eigenem Pullup "
-        "(Pico Datasheet Rel. 21, Abschnitt 2.1). Ein Modul, das ihn "
-        "treibt, setzt den Pico zurueck.",
-    35: "ADC_VREF -- analoge Referenzspannung des ADC, kein "
-        "Digitalanschluss.",
-    37: "3V3_EN -- schaltet den internen Regler des Pico ab. Nach "
-        "aussen gefuehrt waere das ein Ausschalter fuer den ganzen "
-        "Stapel, den jedes Modul versehentlich ziehen koennte.",
-    40: "VBUS -- liegt nur an, wenn am Pico ein USB-Kabel steckt. Eine "
-        "Schiene, die von einem Zufall abhaengt, ist keine Zusage.",
+# --- Stapel -----------------------------------------------------------
+# Ein Bauteiltyp fuer alle Stapelverbindungen: Buchsenleiste mit langem,
+# durchgehendem Stift (Arduino-/Pimoroni-"Stacking Header"). Die
+# Pico-Reihen sind 1x20, die Leistungsreihe ein auf 1x4 abgelaengtes
+# Stueck derselben Leiste.
+STECKER_STAPEL = {
+    "typ": "Buchsenleiste 2,54 mm mit durchgehendem Stift (Stacking Header)",
+    "durchgehend": True,
+    "montage_oben": "THT",
+    "montage_unten": "THT",
+    "haelften_gleiche_netze": True,
+    "mpn": "Pimoroni Pico Stacking Headers (Paar 1x20)",
+    "lcsc": None,                  # keine LCSC-Quelle; Handbestueckung
+    "strom_pro_kontakt_a": 3.0,    # Pimoroni-Produktseite: "3A"
+    "gehaeusehoehe_mm": 8.5,       # Pimoroni: "female header height 8.5mm"
+    "stiftlaenge_unter_gehaeuse_mm": 11.0,   # Pimoroni: "pin length 11mm"
+    "quelle": "https://shop.pimoroni.com/products/pico-stacking-headers "
+              "(Spec-Tabelle, 2026-11-15); ZU VERIFIZIEREN am Teil",
 }
-# Pin 39 (VSYS) stand hier bis Fix-Runde 1 (Task-5-Review, 2026-09-08)
-# ebenfalls drin -- s. Absatz oben. Er ist jetzt belegbar, aber NUR
-# ueber die Entkopplungsdiode der Versorgungszelle (VERSORGUNG
-# ["vsys_diode"]); eine direkte Verbindung waere trotzdem falsch, das
-# regelt IST_BELEGBAR() alleine nicht (s. dortiger Docstring).
+
+STAPEL_ABSTAND = 12.0     # mm Platinenoberkante zu Platinenoberkante
+# Warum 12 und nicht 11: der Stift fuehrt erst durch die eigene Platine
+# (11,0 - 1,6 = 9,4 mm bleiben), dann in die Buchse darunter. Bei 11,0
+# waere der Spalt 9,4 mm -- der Stift stiesse genau auf die Platine
+# darunter. Bei 12,0 bleiben 1,0 mm Luft unter dem Stift, 7,5 mm
+# Einstecktiefe und 1,9 mm zwischen Buchsenoberkante und Platine
+# darueber (Loetstellen). M3-Bolzen 12 mm sind Katalogware.
+
+
+def SPALT():
+    """Luft zwischen zwei Platinen (Oberkante unten bis Unterkante oben)."""
+    return STAPEL_ABSTAND - PLATINE_DICKE
+
+
+def STIFT_UNTER_PLATINE():
+    """Stiftlaenge, die unter der eigenen Platine herausragt."""
+    return STECKER_STAPEL["stiftlaenge_unter_gehaeuse_mm"] - PLATINE_DICKE
+
+
+def EINSTECKTIEFE_STAPEL():
+    """Wie tief der Stift in die Buchse darunter eintaucht."""
+    return STIFT_UNTER_PLATINE() + STECKER_STAPEL["gehaeusehoehe_mm"] - SPALT()
+
+
+def LUFT_STIFTENDE():
+    """Abstand Stiftende zur Platine darunter (muss > 0 sein)."""
+    return SPALT() - STIFT_UNTER_PLATINE()
+
+
+def LUFT_BUCHSENOBERKANTE():
+    """Abstand Buchsenoberkante zur Platine darueber (muss > 0 sein)."""
+    return SPALT() - STECKER_STAPEL["gehaeusehoehe_mm"]
+
+
+BAUTEILHOEHE_OBEN_MAX = 9.5     # mm: SPALT() 10,4 minus 0,9 Reserve
+BAUTEILHOEHE_PICO_SCHATTEN_MAX = 8.0   # mm unter dem Pico (Buchse 8,5)
+
+# --- Pico-Lage ----------------------------------------------------------
+# Der Pico liegt QUER: USB zeigt zur linken Kante (x=0), Antenne nach
+# rechts. Reihe "unten" (Pins 1..20) laeuft nach +x, Reihe "oben"
+# (Pins 21..40) nach -x -- das ist das Pico-Pinbild von oben gesehen,
+# um 90 Grad gegen den Uhrzeigersinn gedreht.
+RASTER = 2.54
+PICO_REIHENABSTAND = 17.78     # Pico-Datenblatt
+PICO_LAENGE = 51.0
+PICO_BREITE = 21.0
+PICO_PIN1 = (9.00, 27.78)      # Pin 1 (GP0), Reihe unten
+PICO_PIN21 = (57.26, 10.00)    # Pin 21 (GP16), Reihe oben
+USB_UEBERSTAND = 1.3           # mm, Micro-USB ragt ueber die Pico-Kante
+
+# Das Pico-Brett ragt 1,37 mm ueber die Endpins und 1,61 mm ueber die
+# Reihen hinaus ((51-48,26)/2 bzw. (21-17,78)/2).
+PICO_SCHATTEN = (7.63, 8.39, 58.63, 29.39)
+# Pico W: Antenne am USB-fernen Ende zwischen den Reihen. Datenblatt
+# 2.2.1 verlangt eine kupferfreie Zone unter der Antenne; hier beide
+# Lagen, bis 2 mm ueber das Brettende hinaus.
+ANTENNE_FREI = (46.0, 8.39, 60.6, 29.39)
+
+# --- Pinrollen (Pico-Pinnummern 1..40) -------------------------------------
+_GND = {3, 8, 13, 18, 23, 28, 33, 38}
+NICHT_BELEGBAR = {
+    30: "RUN -- Reset des RP2040, aktiv-LOW mit eigenem Pullup.",
+    33: "AGND -- analoge Masse, nicht als Rueckleiter fuer Lasten.",
+    35: "ADC_VREF -- analoge Referenzspannung, kein Digitalanschluss.",
+    37: "3V3_EN -- schaltet den Pico-Regler ab; ein Ausschalter fuer "
+        "den ganzen Stapel, den jedes Modul versehentlich ziehen koennte.",
+    40: "VBUS -- liegt nur an, wenn am Pico ein USB-Kabel steckt.",
+}
 
 
 def IST_BELEGBAR(pin):
-    """Darf ein Modul diesen Pin benutzen?
+    return pin not in NICHT_BELEGBAR and pin not in _GND
 
-    Die Frage, die ein Modulautor wirklich stellt -- PIN_ROLLE allein
-    beantwortet sie nicht, weil dort auch Namen stehen, hinter denen
-    nichts liegt.
-    """
-    return pin not in NICHT_BELEGBAR
+
+# GP-Nummer -> Pico-Pin (alle 26 GPIO des Pico).
+GP_PIN = {
+    0: 1, 1: 2, 2: 4, 3: 5, 4: 6, 5: 7, 6: 9, 7: 10, 8: 11, 9: 12,
+    10: 14, 11: 15, 12: 16, 13: 17, 14: 19, 15: 20, 16: 21, 17: 22,
+    18: 24, 19: 25, 20: 26, 21: 27, 22: 29, 26: 31, 27: 32, 28: 34,
+}
+PIN_GP = {pin: gp for gp, pin in GP_PIN.items()}
+
+RESERVIERT = {
+    4: "I2C_SDA",     # Qwiic-Port
+    5: "I2C_SCL",
+    6: "NOTAUS",      # open-drain, wired-AND, LOW = gesperrt
+}
+
+# Baenke: vier PWM-faehige GPIO je Bank. Ein Modul belegt genau EINE
+# Bank, gewaehlt ueber seine Slot-Matrix (s. unten).
+BAENKE = {
+    "A": (8, 9, 10, 11),
+    "B": (12, 13, 14, 15),
+    "C": (16, 17, 18, 19),
+    "D": (20, 21, 22, 7),
+}
+ADC_BANK = (26, 27, 28)
+USER_GP = (0, 1, 2, 3)      # am User-Header, kein Modul belegt sie
+
+# Vorgabe ab Werk, damit "ein Motor + ein Dimmer" ohne Loeten laeuft.
+BANK_VORGABE = {"Motor": "A", "Dimmer": "B"}
+ADC_VORGABE = {"Motor": 26}
+
+
+def PWM_KANAL(gp):
+    """(Slice, Kanal) des RP2040-PWM fuer einen GPIO. Zwei GPIO mit
+    demselben Paar teilen sich einen Zaehler und koennen nicht
+    unabhaengig dimmen -- die Baenke sind so gewaehlt, dass das nie
+    vorkommt (Test)."""
+    return ((gp >> 1) & 7, gp & 1)
 
 
 PIN_ROLLE = {}
 for _p in range(1, 41):
     PIN_ROLLE[_p] = "GND" if _p in _GND else "frei"
-PIN_ROLLE.update({
-    36: "3V3", 37: "3V3_EN", 39: "VSYS", 40: "VBUS",
-    1:  "FLASH_TX",     # GP0
-    2:  "FLASH_RX",     # GP1
-    # 4 (GP2) war SEL, dann (Etappe 1b, erste Runde) kurz wieder frei --
-    # SEL laeuft seit der Steckertrennung ueber STECKER_KETTE, nicht
-    # mehr ueber den 2x20-Stapelstecker. "Frei" war dabei nur halb
-    # richtig: die vorige Runde liess den Pin zwar ungenutzt am 2x20-
-    # Stecker, verdrahtete ihn dann aber lokal auf der Sockelplatine
-    # unreserviert an Pin 11 (GP8) als SEL-Treiber -- eine stille
-    # Kollision, sobald ein Modul GP8 selbst braucht (Aufgabe-4-Fix-1-
-    # Runde, Befund 2). Pin 4 (GP2) traegt die Rolle deshalb jetzt
-    # wieder als echte Vertragsrolle SEL_OUT (s. RESERVIERT oben):
-    # treibt STECKER_KETTE direkt vom Pico aus, weiterhin KEIN Pin
-    # dieses 2x20-Steckers.
-    4:  "SEL_OUT",      # GP2
-    5:  "FLASH_MODE",   # GP3
-    6:  "I2C_SDA",      # GP4
-    7:  "I2C_SCL",      # GP5
-    9:  "NOTAUS",       # GP6
-    10: "SEL_CLK",      # GP7
-    # Pin 30 (RUN) und 35 (ADC_VREF) sind KEINE GPIO, obwohl die
-    # Voreinstellung oben sie mangels eigener Rolle als "frei" fuehrte.
-    # Das ist dieselbe Luecke wie bei Pin 4 (Befund 2 der Aufgabe-4-Fix-1-
-    # Runde), nur eine Stufe weiter: ein Modulautor, der sich auf
-    # PIN_ROLLE verlaesst, haelt einen Pin fuer benutzbar, der es nicht
-    # ist. RUN ist der Reset des RP2040, aktiv-LOW mit eigenem Pullup
-    # (Pico Datasheet Release 21, Abschnitt 2.1, S. 7) -- ein Modul, das
-    # ihn als GPIO treibt, setzt den Pico zurueck. ADC_VREF ist die
-    # analoge Referenz, kein Digitalanschluss. Beide bleiben deshalb vom
-    # Stapelstecker getrennt (s. _stapelstecker in tools/sch/modulsockel.py).
-    30: "RUN",
-    35: "ADC_VREF",
-})
+PIN_ROLLE.update({36: "3V3", 37: "3V3_EN", 39: "VSYS", 40: "VBUS",
+                  30: "RUN", 35: "ADC_VREF", 33: "AGND"})
+for _gp, _rolle in RESERVIERT.items():
+    PIN_ROLLE[GP_PIN[_gp]] = _rolle
+for _bank, _gps in BAENKE.items():
+    for _i, _gp in enumerate(_gps):
+        PIN_ROLLE[GP_PIN[_gp]] = "BANK_%s_S%d" % (_bank, _i + 1)
+for _i, _gp in enumerate(ADC_BANK):
+    PIN_ROLLE[GP_PIN[_gp]] = "ADC_%d" % _gp
+for _gp in USER_GP:
+    PIN_ROLLE[GP_PIN[_gp]] = "USER_GP%d" % _gp
 
-# --- v2: footprint-lokale Kontakte -> Pico-Pin (stapel_links/rechts) --
-# PIN_ROLLE oben ist UNVERAENDERT: sie kennt nur Pico-Pin-Nummern
-# (1..40), keine Steckerplaetze. Was sich mit v2 aendert, ist allein,
-# WELCHER footprint-lokale Kontakt (PAD_LAGEN(), s. unten) welchen
-# Pico-Pin traegt -- in v1 galt Kontakt k == Pico-Pin k fuer den
-# gesamten 2x20-Block; in v2 gilt das nur noch INNERHALB je einer
-# Reihe, und die Zuordnung ist bewusst so gewaehlt, dass eine einzige
-# Formel je Reihe reicht (keine Tabelle, kein Umdrehen von Hand):
-#
-#   stapel_links,  Drehung 0   : Pico-Pin == footprint-lokaler Kontakt
-#                                 (k = 1..20)
-#   stapel_rechts, Drehung 180 : Pico-Pin == footprint-lokaler Kontakt
-#                                 + 20 (k = 1..20 -> Pico-Pin 21..40)
-#
-# Das ist keine neue Zusage -- es folgt zwingend aus der Pin-1-Lage,
-# die STECKER_POS["stapel_rechts"] bereits eintraegt (Kontakt 1 unten,
-# waechst nach oben, s. dortiger Kommentar) und aus der geforderten
-# Zaehlrichtung "21-40 rechts unten->oben". Ein Modullayout, das
-# PAD_LAGEN(footprint, pin1, drehung) fuer stapel_rechts aufruft, muss
-# also 20 zum zurueckgegebenen Kontaktschluessel addieren, um den
-# Pico-Pin (und damit die PIN_ROLLE) zu bekommen.
+# --- Slot-Matrix ----------------------------------------------------------
+# Je Modulsignal S_k (k = 1..4) vier 0603-Plaetze JB<k><Bank> nach
+# BAENKE[Bank][k-1]; genau einer ist mit 0 Ohm bestueckt. Fuer das
+# Analogsignal drei Plaetze JA26/JA27/JA28.
+MATRIX_FOOTPRINT = "Resistor_SMD:R_0603_1608Metric"
+MATRIX_WERT = "0"
+MATRIX_LCSC = "C21189"       # 0 Ohm 0603, JLCPCB-Basic
 
-# --- v2: freie GPIO an den Rand -- RANDPADS ---------------------------
-# Jeder der 18 Pico-Pins mit PIN_ROLLE == "frei" bekommt ein eigenes,
-# beschriftetes Loetpad -- damit ein Modulautor, der einen freien GPIO
-# braucht, ihn ohne eigene Durchkontaktierung von den beiden
-# Pico-Buchsenreihen abgreifen kann, genau wie in v1 (dort lagen die
-# freien Pins einfach unbenutzt im 2x20-Block, ohne eigenen
-# Zugriffspunkt). Dazu vier Versorgungspads (2x 3V3, 2x GND), die die
-# GPIO-Strecke an beiden Enden einrahmen -- uebliche Header-Praxis, und
-# praktisch fuer ein Multimeter oder einen Pull-up/-down-Widerstand in
-# Griffnaehe zum jeweiligen GPIO.
-#
-# v2.1 (Aufgabe B, 2026-09-10): SEITENWECHSEL UND ACHSENWECHSEL. Bis
-# hierher lag die Reihe HORIZONTAL nahe der unteren Kante (RAND_X0 fest
-# wachsend, ein gemeinsames RAND_Y) auf B.Cu. Beides aendert sich:
-#
-#   SEITE (B.Cu -> F.Cu). Die alte RULING (Fix-Runde 2 zu Aufgabe 7,
-#   Historie s. Git) hatte einen echten Widerspruch aufgeloest: auf
-#   einem 2,54-mm-Raster nahe der unteren Kante liegt IMMER ein Pad
-#   innerhalb der LANDE_SPERRRADIUS-Reissleine (1,5 mm) um einen
-#   gespiegelten Stapelkontakt -- unloesbar auf F.Cu, deshalb B.Cu.
-#   v2.1 loest DENSELBEN Widerspruch nicht durch eine Ausnahme, sondern
-#   durch eine eigene Zone (RANDPAD_ZONE, s. dort): weit genug von jedem
-#   Punkt aus LANDEPUNKTE_VERDREHT() entfernt, dass F.Cu wieder zulaessig
-#   wird (nachgerechnet: der naechste Landepunkt ist >= 14,5 mm entfernt,
-#   s. RANDPAD_ZONE-Kommentar -- die 1,5-mm-Klausel gilt weiterhin ohne
-#   Ausnahme, s. Aufgabenbrief "wird NICHT aufgeweicht").
-#
-#   WARUM UEBERHAUPT ZURUECK AUF DIE OBERSEITE: Stapel-Erreichbarkeit
-#   (Audit-Befund K4). Auf B.Cu zeigt die Randpad-Reihe eines Moduls auf
-#   die OBERSEITE des Moduls darunter -- von Hand loet-/messbar nur am
-#   jeweils obersten Modul des Stapels. Auf F.Cu liegt sie dagegen unter
-#   dem naechsten Modul DARUEBER, mit STAPEL_ABSTAND (13,6 mm) Luft dazu
-#   -- an jedem einzelnen Modul im Stapel erreichbar, nicht nur am
-#   obersten.
-#
-#   ACHSE (horizontal -> vertikal). RANDPAD_ZONE ist ein schmaler,
-#   SENKRECHTER Streifen nahe der rechten Kante (4,0 mm breit, 55,88 mm
-#   hoch) -- ein waagrechter Streifen dieser Laenge haette dort keinen
-#   Platz mehr gehabt (die Kante ist nur 82 mm breit, die Zone muesste
-#   zwischen den beiden wandernden rechten M3-Freihaltequadraten
-#   hindurchpassen, s. RANDPAD_ZONE-Kommentar). Die 22 Pads laufen daher
-#   jetzt in Y statt in X: EIN gemeinsames RAND_X (statt vorher RAND_Y),
-#   RAND_Y0 als Start der laufenden Koordinate (statt vorher RAND_X0).
-#   Die Pin-/Label-Reihenfolge (_RAND_REIHENFOLGE unten) ist UNVERAENDERT
-#   -- nur die Richtung, in der sie ablaeuft, hat sich gedreht.
-RAND_PAD_B = 0.90       # mm Padbreite quer zur Reihe (jetzt in X, vorher
-                        # in Y) -- unveraendert aus v2 uebernommen, kein
-                        # neuer Grund, die Padbreite zu aendern.
-RAND_LAYER = "F.Cu"     # v2.1: vorher "B.Cu" -- s. Docstring-Absatz oben.
-RAND_LABEL_LAYER = "F.Silkscreen"   # die Beschriftung (R8) liegt auf
-                        # derselben Seite wie das Kupfer, nicht mehr
-                        # spiegelbildlich auf B.Silkscreen.
-RAND_RASTER = 2.54
-RAND_X = 77.60   # mm, fest fuer alle 22 Pads (quer zur Reihe). Mitte von
-                 # RANDPAD_ZONE: (75,60 + 79,60) / 2 = 77,60 -- damit
-                 # bleibt RAND_PAD_B/2 = 0,45 mm Kupferrand beidseitig
-                 # klar innerhalb der 4,0 mm Zonenbreite (Marge 1,55 mm
-                 # je Seite).
-RAND_Y0 = 9.83   # mm, erstes Pad (RAND_Y0 + i * RAND_RASTER fuer die
-                 # weiteren). = RANDPAD_ZONE-Kante (8,56) + RAND_RASTER/2
-                 # (1,27) -- dieselbe halbe-Raster-Marge wie am anderen
-                 # Ende: letztes Pad bei 9,83 + 21 x 2,54 = 63,17 mm,
-                 # RANDPAD_ZONE endet bei 64,44 -- ebenfalls 1,27 mm
-                 # Marge. Die Reihe sitzt damit symmetrisch IN der Zone,
-                 # nicht an ihrer Kante (anders als in v2, wo RAND_X0
-                 # bewusst nahe an die M3-Reichweite herangefahren war --
-                 # in v2.1 gibt die Zonenbreite/-hoehe diese Marge von
-                 # selbst her, s. RANDPAD_ZONE-Kommentar).
 
-# Pico-Pin -> GPIO-Nummer, NUR fuer die frei bleibenden Pins. Aus dem
-# offiziellen Pico-Pinout (Raspberry Pi Pico Datasheet, Release 21,
-# Abschnitt 2 "Pinout"): die Pins zaehlen GP0..GP22 lueckenlos durch
-# (unterbrochen nur von den acht GND-Pins und Pin 30/RUN), dann folgen
-# GP26/ADC0 (Pin 31), GP27/ADC1 (Pin 32), GND/AGND (Pin 33), GP28/ADC2
-# (Pin 34), ADC_VREF (Pin 35) -- exakt das Bild, das PIN_ROLLE oben
-# schon unveraendert traegt. Diese Tabelle ordnet den 18 frei
-# bleibenden Pins nur noch ihre GPIO-Nummer zu, sie vergibt keine neue
-# Rolle.
-_GP_NUMMER = {
-    11: 8, 12: 9, 14: 10, 15: 11, 16: 12, 17: 13,
-    19: 14, 20: 15, 21: 16, 22: 17, 24: 18, 25: 19,
-    26: 20, 27: 21, 29: 22, 31: 26, 32: 27, 34: 28,
-}
+def MATRIX_REF(signal, bank):
+    return "JB%d%s" % (signal, bank)
 
-# Reihenfolge auf der Kante: GND, 3V3, dann die 18 GPIO aufsteigend
-# nach Pico-Pin, dann noch einmal 3V3, GND -- die Versorgung rahmt die
-# GPIO-Strecke symmetrisch ein. Pin 3 und Pin 38 sind zwei
-# VERSCHIEDENE GND-Pico-Pins (beide ohnehin dasselbe Netz, s.
-# IST_VERSORGUNG/_GND oben); Pin 36 (3V3) versorgt beide 3V3-Randpads,
-# weil es am Pico nur diesen einen 3V3-Ausgangspin gibt.
-_RAND_REIHENFOLGE = (
-    [(3, "GND"), (36, "3V3")]
-    + [(p, "GP%d" % _GP_NUMMER[p]) for p in sorted(_GP_NUMMER)]
-    + [(36, "3V3"), (38, "GND")]
-)
 
-# v2.1: (x, y) je Pad ist jetzt (RAND_X, laufende y) statt (laufende x,
-# RAND_Y) -- Achsentausch, s. Docstring-Absatz oben. Der Pin/Label-Teil
-# jedes Eintrags (aus _RAND_REIHENFOLGE) ist BYTE-FUER-BYTE unveraendert.
-RANDPADS = tuple(
-    (pin, label, (RAND_X, round(RAND_Y0 + i * RAND_RASTER, 2)))
-    for i, (pin, label) in enumerate(_RAND_REIHENFOLGE)
-)
+def MATRIX_GP(signal, bank):
+    """GPIO, den Signal `signal` (1..4) auf Bank `bank` bekommt."""
+    return BAENKE[bank][signal - 1]
 
-# --- v2: Verpolschutz-Zusagen an jedes Modul --------------------------
-# Jedes Modul hat jetzt seine eigene Einspeisung (6..30 V, ueber
-# STECKER_LEISTUNG) UND seinen eigenen Pico -- also auch seinen eigenen
-# Verpolschutz, statt dass ihn (wie in v1) nur die Sockelplatine traegt.
-# VERSORGUNG haelt fest, WAS jedes Modul an dieser Stelle zusagen muss;
-# WIE (welches Bauteil, welcher Footprint) ist Sache der jeweiligen
-# spec_*.py und bleibt dort -- dieser Vertrag zwingt nur die Topologie
-# fest, nicht die Stueckliste.
-#
-#   schutz_drain_an = "PWR_IN"    : der P-Kanal-MOSFET (oder aequivalente
-#     Schutzschaltung), der Verpolung an der Einspeisung abfaengt, haengt
-#     mit seinem Drain-Anschluss AN DER EINSPEISUNG (STECKER_LEISTUNG,
-#     vor jeder eigenen Schutz-/Reglerstufe) -- nicht irgendwo dahinter.
-#     Nur so schuetzt er auch alles, was danach kommt.
-#   gate_teiler_an = "+24V_LOKAL" : der Spannungsteiler, der das Gate
-#     dieses MOSFETs ansteuert, haengt an der LOKALEN, bereits
-#     verpolungsrichtigen 24-V-Schiene des Moduls (hinter dem Schutz)
-#     -- nicht an der rohen Einspeisung. Haenge er dort, koennte eine
-#     verpolte Einspeisung das Gate direkt falsch ansteuern und den
-#     Schutz umgehen, den er herstellen soll.
-#   vsys_diode = True             : zwischen dem lokalen Regler-Ausgang
-#     und Pico-VSYS sitzt eine Schottky-Diode (in Sperrichtung fuer den
-#     Fall, dass der Pico stattdessen ueber USB versorgt wird) -- ohne
-#     sie speisten zwei Quellen (Modul-Regler und USB-VBUS-Pico-
-#     Regler) denselben Knoten gegeneinander.
-#     ZUSATZ (Fix-Runde 1, Task-5-Review, 2026-09-08): genau DESHALB ist
-#     Pin 39 (VSYS) seit dieser Runde belegbar (s. NICHT_BELEGBAR unten)
-#     -- aber NUR auf diesem Weg. Die v1-Sperre galt der DIREKTEN,
-#     ungeschuetzten Einspeisung (Rueckspeisegefahr in den internen
-#     Pico-Regler, kein Verbraucher, keine Diode); diese Zusage erlaubt
-#     ausschliesslich die Einspeisung UEBER die Entkopplungsdiode der
-#     Versorgungszelle. Ein Modul, das VSYS ohne diese Diode direkt
-#     ansteuert, verletzt die Zusage genauso, wie es sie vor dieser
-#     Runde verletzt haette -- IST_BELEGBAR(39) prueft nur, ob der Pin
-#     ueberhaupt eine Rolle tragen darf, nicht WIE er verdrahtet wird;
-#     das bleibt Sache des Generators (s. tools/sch/versorgung.py: D91).
-#   eingang_v = (6.0, 30.0)       : das Fenster, in dem die
-#     Eingangsspannung liegen darf. Untergrenze 6 V: der lokale
-#     Linearregler (K7805-1000R3, s. STAPEL_ABSTAND-Kommentar oben,
-#     "K7805_HOEHE_MM") braucht laut Datenblatt mindestens Ausgangs-
-#     spannung + 2 V Dropout, hier grosszuegig auf 6 V aufgerundet.
-#     Obergrenze 30 V: die K7805-1000R3-Familie ist bis 30 V
-#     Eingangsspannung spezifiziert (DEXU Electronics "K78xx-1000R3"
-#     Datenblatt, "Absolute Maximum Ratings", "Input Voltage: 30V");
-#     mehr wuerde den Regler ausserhalb seines Datenblatts betreiben.
+
+def ADC_REF(gp):
+    return "JA%d" % gp
+
+
+# --- Versorgung -------------------------------------------------------------
 VERSORGUNG = {
-    "schutz_drain_an": "PWR_IN",
-    "gate_teiler_an": "+24V_LOKAL",
-    "vsys_diode": True,
-    "eingang_v": (6.0, 30.0),
+    "eingang_v": (6.0, 30.0),          # Zusage an der Klemme
+    "regler": "TPS5430DDAR",           # JLCPCB-Basic C9864, 5,5-36 V, 3 A
+    "regler_eingang_v": (5.5, 36.0),   # TI SLVS632L, S. 4
+    "regler_abs_max_v": 40.0,
+    "ausgang_v": 4.92,                 # 1,221 V x (1 + 10 k / 3,3 k)
+    "schutz_fet": "AOD409",            # P-Kanal TO-252, LCSC C36220
+    "schutz_drain_an": "PWR_IN",       # Drain an der Einspeisung (Body-
+                                       # diode sperrt bei Verpolung)
+    "gate_klemmung": "Zener 12 V Gate-Source",   # Vgs = -min(Vin, 12 V)
+    "vsys_diode": True,                # Schottky zwischen Regler und VSYS
+    "usb_parallel": True,              # USB am Pico darf gleichzeitig anliegen
+    "tvs": "SMCJ30A",                  # nur Transienten; klemmt > 36 V
 }
 
-# --- v2.1: das Strombudget der 24-V-Verteilung ------------------------
-# WARUM DAS IN DEN VERTRAG GEHOERT (Aufgabe D3, 2026-09-15). Bis v2.1
-# stand NIRGENDS, wie viel Strom die 24-V-Verteilung eines Moduls
-# tragen darf. Die Folge war keine Luecke, sondern eine STILLE,
-# FALSCHE Annahme: `tools/pcb/strombelastung.py` (Aufgabe D2) leitete
-# den schlimmsten Fall aus Kirchhoffs Knotenregel her -- "keine
-# Verriegelung gegen gleichzeitigen Vollbetrieb aller Kanaele
-# dokumentiert, also 4 x 3 A = 12 A" -- und verurteilte damit Dimmer3
-# und Dimmer4 zu 4,1 bzw. 6,1 mm Bahnbreite auf einem 82x73-mm-
-# Zweilagenbrett. Die Knotenregel war richtig; die Praemisse war es
-# nicht. Nachgerechnet an den Bauteilen, die in genau diesem Strang
-# SITZEN, war der Fall nie herstellbar:
-#
-#   * Q90 (IRFR5305, D-Pak/TO-252) liegt als Verpolschutz im Strang
-#     JEDES Moduls -- zwischen PWR_IN und der lokalen 24-V-Schiene.
-#     RDS(on) 0,065 Ohm (Datenblatt Infineon/IR PD-95025A, woertlich
-#     zitiert in tools/sch/motormodul.py); dasselbe Datenblatt nennt
-#     fuer typische SMD-Montage "Power dissipation levels up to 1.5
-#     watts are possible". Daraus: I_max = sqrt(1,5 W / 0,065 Ohm) =
-#     4,80 A. Bei den unterstellten 12 A waeren es 0,065 x 144 =
-#     9,4 W in einem TO-252 -- das Bauteil ist lange vorher tot,
-#     gleich wie breit das Kupfer ist. Die 12 A konnten also nie
-#     fliessen; eine Bahn dafuer zu bauen waere Kupfer fuer einen
-#     Betriebsfall gewesen, den das Brett gar nicht erreicht.
-#   * STECKER_LEISTUNG (unten) traegt 3,0 A je Kontakt, zwei Kontakte
-#     je Ader. Der Vertrag markiert die 6,0-A-Parallelsumme dort
-#     selbst als "keine Herstelleraussage ueber den Parallelbetrieb
-#     bei ungleichen Kontaktwiderstaenden" -- also wird sie hier auch
-#     nicht gebucht.
-#   * J90 / J5..J8 (KF350-3.5-2P, LCSC C474892): 10 A. Nicht der
-#     Engpass.
-#
-# DIE ZUSAGE, die daraus folgt (und die ab jetzt PRUEFBAR ist --
-# tools/pcb/strombelastung.py rechnet gegen genau diese Zahlen,
-# tests/test_strombudget.py haelt sie KiCad-frei fest):
-#
-#   modul_gesamt_a = 4,0   Summe ALLER Lasten hinter Q90 eines Moduls.
-#     Q90 verbraet dabei 0,065 x 16 = 1,04 W = 69 % der belegten 1,5 W
-#     -- 31 % Reserve, keine Punktlandung auf dem Grenzwert.
-#   stapel_durchleitung_a = 3,0   Was ueber STECKER_LEISTUNG in den
-#     Rest des Stapels weitergereicht werden darf. Bewusst NICHT die
-#     6,0-A-Parallelsumme, sondern der Nennwert EINES Kontakts: so
-#     bleibt die Verbindung auch dann innerhalb des Datenblatts, wenn
-#     von den zwei parallelen Kontakten einer schlecht sitzt und der
-#     andere alles traegt. Praktische Konsequenz, die auf den
-#     Bestueckungsdruck gehoert: EIN MODUL, DAS MEHR ALS 3,0 A ZIEHT,
-#     MUSS AN SEINER EIGENEN KLEMME J90 GESPEIST WERDEN, nicht ueber
-#     den Stapel.
-#   kanal_a = 3,0   je LED-Kanal, unveraendert (NCE6020AK 40 mOhm x
-#     (3 A)^2 = 0,36 W, tools/sch/dimmermodul.py; SS36C 3 A) -- ABER
-#     nur, solange die Summe aller gleichzeitig laufenden Kanaele
-#     modul_gesamt_a nicht ueberschreitet. Dimmer4 kann also einen
-#     Kanal mit vollen 3 A fahren, nicht vier.
-#   motor_a = 2,538   DRV8876-Choppinglimit (tools/sch/motormodul.py:
-#     ITRIP = 3,3 / (1300 x 0,001)), unveraendert.
-#
-# WAS HIER GESENKT WURDE, damit es niemand nachschlagen muss: die
-# frueher unterstellten 9 A (Dimmer3) bzw. 12 A (Dimmer4) gelten NICHT
-# mehr. Sie sind durch modul_gesamt_a = 4,0 A ersetzt. Das ist eine
-# Verkleinerung der Zusage gegenueber dem, was die Kanalzahl nahelegt
-# -- sie steht deshalb hier im Vertrag, auf dem Bestueckungsdruck
-# (tools/pcb/strombudget_druck.py) und in docs/vertrag.md, nicht nur
-# in einem Bericht.
 STROMBUDGET = {
     "modul_gesamt_a": 4.0,
-    # Die Netze, durch die modul_gesamt_a VOLLSTAENDIG hindurch muss --
-    # auf jedem Modultyp dieselben zwei: die rohe Einspeisung vor dem
-    # Verpolschutz und die lokale Schiene dahinter (s. VERSORGUNG).
-    # netclasses.py gibt genau ihnen fertigung.TRACK_STAMM.
-    "stamm_netze": ("/PWR_IN", "/+24V"),
+    "stamm_netze": ("/PWR_IN", "/VIN"),
     "stapel_durchleitung_a": 3.0,
     "kanal_a": 3.0,
     "motor_a": 2.538,
-    # Die Belege, gegen die oben gerechnet wurde -- maschinenlesbar,
-    # damit tests/test_strombudget.py die Herleitung nachrechnen kann
-    # statt sie zu glauben.
-    "q90_rdson_ohm": 0.065,
+    "q90_rdson_ohm": 0.040,
     "q90_verlust_max_w": 1.5,
-    "q90_quelle": "Infineon/IR PD-95025A (IRFR5305PbF), 'Power "
-                  "dissipation levels up to 1.5 watts are possible'; "
-                  "RDS(on) 0.065 Ohm -- zitiert in tools/sch/motormodul.py",
+    "q90_quelle": "AOD409 (AOS), RDS(on) 40 mOhm @ 10 V (LCSC-Attribut "
+                  "C36220); 1,5 W fuer TO-252 auf Kupferflaeche "
+                  "(konservativ, wie IRFR5305-Datenblatt PD-95025A)",
     "klemme_a": 10.0,
-    "klemme_quelle": "LCSC C474892 (KF350-3.5-2P): '10A' -- "
-                     "hardware/bauteile-dimmer.md",
+    "klemme_quelle": "LCSC C474892 (KF350-3.5-2P): '10A'",
 }
 
-# --- Die vier Steckerplaetze ------------------------------------------
-# Vier Steckerplaetze (v2: stapel_links, stapel_rechts, kette,
-# leistung), zwei Bauprinzipien. Der Unterschied ist keine
-# Geschmacksfrage, sondern folgt aus genau einer Frage: fuehren die
-# Haelfte OBEN und die Haelfte UNTEN dasselbe Netz?
-#
-#   ja   -> EIN durchgehender Stapelstecker (Buchse oben und langer
-#           Stift unten sind derselbe Leiter, ein einziges Bauteil).
-#           So die beiden 1x20-Signalstecker (stapel_links/rechts, seit
-#           v2 zwei Plaetze statt eines 2x20-Platzes, s. STECKER_POS-
-#           Kommentar): alle 40 Leitungen sind im ganzen Stapel
-#           dasselbe Netz, nur eben auf zwei Reihen verteilt statt auf
-#           eine.
-#   nein -> ZWEI getrennte Haelften, die trotzdem am SELBEN Ort sitzen
-#           muessen. So der Kettenstecker: SEL kommt von oben als
-#           SEL_IN herein und geht nach unten als SEL_OUT weiter.
-#
-# WARUM BEIDE HAELFTEN AM SELBEN ORT SITZEN MUESSEN. Alle Platinen des
-# Stapels sind gleich. Der Stift an der Unterseite von Modul N trifft
-# die Buchse an der Oberseite von Modul N+1 nur, wenn beide dieselbe
-# (x|y) haben: zwischen zwei GLEICHEN Platinen hebt sich eine
-# Verschiebung nicht auf, sie summiert sich (eine Verschiebung hat
-# keinen Fixpunkt). Deshalb steht in STECKER_POS unten je EINE Flaeche
-# pro Stecker, nicht zwei.
-#
-# WARUM DIE KETTE KEIN DURCHGEHENDER STIFT SEIN DARF -- nachgerechnet,
-# nicht behauptet: bei durchgehenden Kontakten ist Kontakt k EIN Netz
-# ueber den ganzen Stapel. Alle Module sind gleich und verbinden also
-# denselben Modulknoten mit demselben Kontakt. Laege SEL_OUT auf
-# Kontakt a und SEL_IN auf Kontakt b, verlangte die Kette
-# SEL_OUT(n) = SEL_IN(n+1) fuer JEDES n -- das geht nur, wenn Netz(a)
-# und Netz(b) dasselbe Netz sind, und dann liegen ALLE SEL_IN und ALLE
-# SEL_OUT des Stapels auf einem einzigen Knoten: D und Q jedes
-# Flipflops kurzgeschlossen, das Schieberegister aus tools/kette.py
-# waere sinnlos. Das gilt unabhaengig von der Kontaktzahl -- auch zwei
-# oder zwanzig Kontakte des 2x20-Stapelsteckers koennen die Kette
-# nicht tragen. Genau deshalb hat sie einen eigenen Stecker.
-#
-# ZWEI GETRENNTE HAELFTEN AM SELBEN ORT GEHEN NUR OBERFLAECHENMONTIERT.
-# Zwei BEDRAHTETE Bauteile am selben Ort brauchten dieselben
-# Bohrungen; dieselbe Bohrung ist aber derselbe Leiter, also wieder ein
-# durchgehender Kontakt -- und der ist fuer die Kette gerade verboten.
-# Die Mischung geht auch nicht: die Bohrungen der bedrahteten Haelfte
-# liegen genau dort, wo die Kontakte der SMD-Haelfte auf der Gegenseite
-# liegen muessten. Es bleibt: BEIDE Haelften SMD, Buchse oben,
-# Stiftleiste unten, auf demselben Kontaktraster, ohne Durch-
-# kontaktierung dazwischen.
-#
-# Bis zum 2026-08-31 (Aufgabe 5e) trugen Ketten- UND Leistungsstecker
-# zwei BEDRAHTETE Haelften am selben Ort -- so nicht baubar. Der Fehler
-# ist hier behoben; tests/test_stack_spec.py haelt die Regel seither
-# fest ("kein Steckerpaar mit zwei bedrahteten Haelften").
-#
-# Die Felder "durchgehend", "montage_oben" und "montage_unten" sind
-# genau dafuer da: sie machen die Bauart maschinenlesbar, statt sie nur
-# in "typ" zu erzaehlen.
+# --- Steckerlagen -----------------------------------------------------------
+FP_STAPEL_20 = "Connector_PinSocket_2.54mm:PinSocket_1x20_P2.54mm_Vertical"
+FP_STAPEL_4 = "Connector_PinSocket_2.54mm:PinSocket_1x04_P2.54mm_Vertical"
+FP_QWIIC = "Connector_JST:JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal"
+FP_USER = "Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical"
 
-STECKER_STAPEL = {
-    "typ": "1x20 (oder 2x 1x10 in Reihe), 2,54 mm, Buchse mit "
-           "durchgehendem Stift (PC104/Arduino-Stapelleisten-Prinzip) "
-           "-- je EINE Reihe (stapel_links ODER stapel_rechts, s. "
-           "STECKER_POS), nicht mehr die ganze 2x20-Pico-Bahn wie in "
-           "v1",
-    "durchgehend": True,           # EIN Bauteil, Buchse und Stift sind
-                                   # derselbe Leiter -> beide Seiten
-                                   # zwangslaeufig dasselbe Netz.
-    "montage_oben": "THT",
-    "montage_unten": "THT",
-    "haelften_gleiche_netze": True,
-    # RULING (Fix-Runde 1, 2026-09-08): der urspruengliche Vorschlag
-    # dieser Aufgabe -- ein fertiges 2x20-PC104-Teil (C35165) nehmen und
-    # je Reihenplatz nur EINE seiner beiden Kontaktspalten bestuecken --
-    # ist MECHANISCH NICHT BAUBAR. C35165 ist ein einziges, durch-
-    # gespritztes Gehaeuse mit ZWEI Pinreihen 2,54 mm auseinander; die
-    # zweite (elektrisch unbenutzte) Reihe braucht trotzdem ihre eigenen
-    # Bohrungen/ihren eigenen Platz im Lochbild -- ein 1x20-Lochbild
-    # (nur EINE Bohrreihe, s. FOOTPRINT_HOF oben) haelt dafuer keinen
-    # Platz vor. Das waere kein "eine Spalte bleibt frei", sondern ein
-    # Gehaeuse, das gar nicht erst aufsteckbar ist.
-    #
-    # Der Vertrag geht deshalb auf den Plan-Fallback: eine ECHTE
-    # EINREIHIGE Stapelleiste (Buchse oben, langer durchgehender Stift
-    # unten), entweder als fertiges 1x20-Teil oder als zwei 1x10-Stuecke
-    # stumpf hintereinander (dieselbe Bauform, gaengig als "Arduino-
-    # Stapelheader" -- lange Buchsenstifte mit 2,54-mm-Raster, in
-    # 1x6/1x8/1x10 verbreitet). Ein solches Teil mit OFFENER
-    # Produktseite wurde waehrend dieser Aufgabe NICHT gefunden (LCSC/
-    # JLCPCB-Websuche, Fix-Runde 1, 2026-09-08) -- die eingesehene
-    # PC104-Reihe fuehrt dort nur die zweireihigen C35165/C5307344
-    # (2x20) und C5307345 (2x40), hardware/bauteile-1b.md Beleg 13.
-    # buchse_lcsc/stift_lcsc/buchse_mpn/stift_mpn bleiben deshalb LEER,
-    # bis die Fertigungs-Sichtung (Aufgabe 9 dieser Etappe) ein
-    # tatsaechlich bestellbares 1x20- oder 1x10-Teil gefunden hat --
-    # eine erfundene Nummer waere schlimmer als eine ehrliche Luecke.
-    #
-    # C35165 taucht hier trotzdem noch auf, aber nur noch als BAUFORM-
-    # BELEG: es beweist, dass "Buchse mit durchgehendem Stift" (PC104-
-    # Prinzip) als Bauform real existiert und mit einer offenen
-    # Produktseite bestellbar ist (s. hardware/bauteile-1b.md, Beleg 1)
-    # -- NICHT als das hier zu bestueckende Teil. gehaeusehoehe_mm und
-    # stiftlaenge_unter_gehaeuse_mm unten sind deshalb ZIELWERTE
-    # (von C35165 als bauformaehnlicher Platzhalter uebernommen, weil
-    # STAPEL_ABSTAND/EINSTECKTIEFE_STAPEL() ohne irgendeine Zahl gar
-    # nicht rechnen koennten), keine Messwerte DIESES Teils -- ein
-    # gefundenes 1x20/1x10-Teil muss gegen sie geprueft werden, nicht
-    # umgekehrt.
-    "buchse_lcsc": None,           # offen bis Fertigungs-Sichtung (T9)
-    "stift_lcsc": None,            # offen bis Fertigungs-Sichtung (T9)
-    "buchse_mpn": None,            # offen bis Fertigungs-Sichtung (T9)
-    "stift_mpn": None,             # offen bis Fertigungs-Sichtung (T9)
-    "strom_pro_kontakt_a": 3.0,    # Zielwert, uebernommen von C35165
-                                   # (LCSC-Produktseite, "Current
-                                   # Rating: 3A") als Bauform-Platzhalter
-    "gehaeusehoehe_mm": 8.5,       # Zielwert, uebernommen von C35165
-                                   # (Datenblatt, Masszeichnung
-                                   # "8.5+-0.2") als Bauform-Platzhalter
-    "stiftlaenge_unter_gehaeuse_mm": 12.46,  # Zielwert, uebernommen von
-                                   # C35165 (Datenblatt, "12.46+-0.2")
-                                   # als Bauform-Platzhalter
-    "quelle": "hardware/bauteile-1b.md, Beleg 1 (Fassung 2026-08-31, "
-              "C35165 als Bauform-Beleg); Sourcing-Ruling fuer 1x20 s. "
-              "Kommentar oben (Aufgabe 2, Fix-Runde 1, 2026-09-08)",
-}
-
-# --- Die beiden kleinen Stecker: SMD-Paare ---------------------------
-# Beide bestehen aus zwei Bauteilen am SELBEN Ort, beide oberflaechen-
-# montiert (Begruendung im Block oben). Die Masse:
-#
-#   F = Isolationshoehe der Buchse ueber ihrer Platine        = 8,50 mm
-#   M = Isolierkoerper des Stifts + freie Steckstiftlaenge
-#       = 2,50 + 6,00                                        = 8,50 mm
-#     (SMD: nichts geht in der Platine verloren -- anders als beim
-#      bedrahteten Stift, dessen Loetschwanz 3,0 mm kostet, und anders
-#      als beim Stapelstecker, dessen Stift erst durch die eigene
-#      Platine muss.)
-#   G = STAPEL_ABSTAND - PLATINE_DICKE                       = 11,90 mm
-#
-#   Einstecktiefe   = (M + F) - G = 17,00 - 11,90 = 5,10 mm
-#   Luft ueber der Buchse (Stift-Isolierkoerper gegen Buchsenoberkante)
-#                   = G - F - Isolierkoerper = 11,90 - 8,50 - 2,50
-#                   = 0,90 mm
-#
-# Die 5,10 mm sind immer noch deutlich mehr als die 3,1 mm, die das
-# alte bedrahtete Paar hatte -- weil der Loetschwanz wegfaellt. Die
-# 0,90 mm sind das Ergebnis der Aufgabe 5g: bei STAPEL_ABSTAND = 13,0 mm
-# waren es nur 0,40 mm, und die konnten im unguenstigen Toleranzstapel
-# (+-0,2 mm je Bauteil, +-10 % Platinendicke) auf null fallen -- dann
-# stossen die beiden Isolierkoerper aneinander, bevor die Abstands-
-# bolzen sitzen. Deshalb ist STAPEL_ABSTAND auf 13,5 mm gestiegen
-# (Herleitung im Block dort). LUFT_STIFTKOERPER() rechnet den Wert
-# nach, der Test haelt ihn > 0.
-#
-# Bauteilbelege: alle vier Steckerhaelften haben seit Aufgabe 5g
-# (2026-08-31) eine LCSC-Nummer von einer tatsaechlich geoeffneten
-# Produktseite -- Einzelheiten in hardware/bauteile-1b.md, Beleg 14.
-# Damit sind beide Platinen bestueckt bestellbar; alle vier Teile sind
-# ausserdem in der JLCPCB-Bestueckungsbibliothek gefuehrt (Abfrage der
-# JLCPCB-SMT-Bauteilsuche, componentLibraryType "expand" = Extended
-# Part, allowPostFlag true).
-#
-#   Buchse 1x2 (Kette)    C46635838  hanxia "HX PM2.54-1x2P TP H8.5-YQ"
-#     "Mounting Type: Surface Mount, Vertical", "Holes Structure: 1x2P",
-#     "Insulation Height: 8.5mm", "Current Rating: 3A", Messing
-#     vergoldet, "Packaging: SMD, P=2.54mm (Staggered Pins)".
-#   Stift  1x2 (Kette)    C41417359  hanxia "HX PZ2.54-1x2P TP-YQ"
-#     "Mounting Type: Surface Mount, Vertical", "Pin Structure: 1x2P",
-#     "Insulation Height: 2.5mm", "Length of Mating Pin: 6mm",
-#     "Current Rating: 3A", Messing vergoldet.
-#   Buchse 2x2 (Leistung) C3975147   HCTL "PM254-2-02-S-8.5"
-#     "Mounting Type: Surface Mount, Vertical", "Holes Structure: 2x2P",
-#     "Row Spacing: 2.54mm", "Insulation Height: 8.5mm",
-#     "Current Rating: 3A", Kupferlegierung.
-#   Stift  2x2 (Leistung) C919361    BOOMELE "2.54-2*2P"
-#     "Mounting Type: Surface Mount, Vertical", "Pin Structure: 2x2P",
-#     "Insulation Height: 2.5mm", "Length of Mating Pin: 6mm",
-#     "Current Rating: 3A".
-#
-# Alle vier bestaetigen genau die drei Masse, mit denen dieser Vertrag
-# rechnet (8,50 / 2,50 / 6,00 mm) -- die Geometrie oben ist damit nicht
-# mehr nur an einer Bauform belegt, sondern an den wirklich bestellten
-# Teilen.
-#
-# Belegte Ersatztypen, falls einer ausgeht (dieselbe Bauform, dieselben
-# Masse, ebenfalls Produktseiten gesehen):
-#   Buchse 1x2: C55218893 (SHOU HAN "PM2.54-1x2PLT-H8.5-R", 8,5 mm, 3 A)
-#               und C48641753 (hanxia "HX PM2.54-1x2P TP H8.5-ZQ").
-#   Buchse 2x2: kein zweiter Typ mit geoeffneter Produktseite. Die
-#               JLCPCB-Bauteilsuche zeigt zwar weitere 2x2-Buchsen in
-#               "立贴" (SMD senkrecht) mit 8,5 mm, deren Produktseiten
-#               sind aber NICHT geoeffnet worden -- sie stehen deshalb
-#               hier bewusst nicht mit Nummer.
-#   Stift 2x2:  C192300 (BOOMELE 2.54-2*4P, 2x4) belegt dieselbe
-#               Bauform in anderer Polzahl.
-BUCHSE_SMD_HOEHE_MM = 8.5      # LCSC C46635838/C3975147, "Insulation
-                               # Height: 8.5mm"
-STIFT_SMD_KOERPER_MM = 2.5     # LCSC C41417359/C919361, "Insulation
-                               # Height: 2.5mm"
-STIFT_SMD_STECKLAENGE_MM = 6.0  # LCSC C41417359/C919361, "Length of
-                               # Mating Pin: 6mm"
-
-STECKER_KETTE = {
-    "typ": "SMD-Buchse oben / SMD-Stiftleiste unten (auftrennbar), "
-           "1x2, 2,54 mm",
-    "zweck": "traegt SEL (Auswahlkette) und eine GND daneben",
-    "durchgehend": False,          # zwei Bauteile am selben Ort
-    "montage_oben": "SMD",
-    "montage_unten": "SMD",
-    "haelften_gleiche_netze": False,   # oben SEL_IN, unten SEL_OUT
-    "buchse_lcsc": "C46635838",    # hanxia "HX PM2.54-1x2P TP H8.5-YQ",
-                                   # SMD senkrecht, 1x2, Isolations-
-                                   # hoehe 8,5 mm, 3 A, Messing
-                                   # vergoldet -- Produktseite gesehen
-                                   # (2026-08-31), s. Block oben
-    "buchse_spec": "Buchsenleiste 1x2, 2,54 mm, SMD senkrecht, "
-                   "Isolationshoehe 8,5 mm, >= 1 A",
-    "stift_lcsc": "C41417359",     # hanxia "HX PZ2.54-1x2P TP-YQ",
-                                   # SMD senkrecht, 1x2, Isolier-
-                                   # koerper 2,5 mm, Steckstift 6,0 mm,
-                                   # 3 A -- Produktseite gesehen
-    "stift_spec": "Stiftleiste 1x2, 2,54 mm, SMD senkrecht, "
-                  "Isolierkoerper <= 2,5 mm, Steckstift 6,0 mm",
-    "buchse_mpn": "hanxia HX PM2.54-1x2P TP H8.5-YQ",
-    "stift_mpn": "hanxia HX PZ2.54-1x2P TP-YQ",
-    "pins": {1: "SEL", 2: "GND"},
-    "buchsenhoehe_mm": BUCHSE_SMD_HOEHE_MM,
-    "stiftkoerper_mm": STIFT_SMD_KOERPER_MM,
-    "stiftlaenge_mm": STIFT_SMD_STECKLAENGE_MM,
-    "quelle": "hardware/bauteile-1b.md, Beleg 13 und 14 (2026-08-31)",
-}
-
-# Der Leistungsstecker stand bisher nur in hardware/bauteile-1b.md
-# (Beleg 4) und in STECKER_POS -- seine Bauart war damit nirgends
-# maschinenlesbar, und genau deshalb ist der Konstruktionsfehler dort
-# so lange unbemerkt geblieben. Jetzt steht er im Vertrag.
-#
-# WARUM ER KEIN 2x2-STAPELSTECKER IST, obwohl seine beiden Haelften
-# Pin fuer Pin dasselbe Netz fuehren und ein durchgehender Stift hier
-# also erlaubt WAERE: es gibt keinen. Gesucht wurde bei LCSC/JLCPCB
-# (Belege in hardware/bauteile-1b.md, Beleg 13); die Stapelstecker-
-# Reihe hat dort nur 2x20 (C35165, C5307344) und 2x40 (C5307345). Das
-# naechstliegende "langbeinige" Teil, C72555 (BOOMELE 2.54-2*8P3.8,
-# "Heightened, Pins are long 3.8mm"), ueberbrueckt den Spalt nicht
-# einmal: M = 3,8 - 1,6 = 2,2 mm, M + F = 2,2 + 8,5 = 10,7 mm < G =
-# 11,9 mm (und lag auch bei den frueheren 11,4 mm darunter).
-#
-# Und warum die Leistung nicht ueber Kontakte des vorhandenen
-# 2x20-Stapelsteckers laeuft: dort ist kein Kontakt frei. Alle 40
-# tragen Pico-Pins (PIN_ROLLE oben), und die Sockelplatine verbindet
-# sie mit dem Pico -- 24 V auf einem davon zerstoert ihn. Elektrisch
-# tot sind allein die Kontakte 30 (RUN) und 35 (ADC_VREF), die kein
-# Modul anfassen darf; das waere EIN Pfad fuer 24 V mit 3 A
-# (C35165-Produktseite) direkt neben 3,3-V-GPIO im 2,54-mm-Raster --
-# unter dem Bedarf des Motormoduls (DRV8876 ueber 2,5 A) und gegen die
-# ausdrueckliche Vorgabe des Design-Dokuments, Motorstroeme vom
-# Signalstecker getrennt zu fuehren.
-STECKER_LEISTUNG = {
-    "typ": "SMD-Buchse oben / SMD-Stiftleiste unten, 2x2, 2,54 mm",
-    "zweck": "24 V und GND in den Stapel, je zwei Kontakte parallel",
-    "durchgehend": False,          # zwei Bauteile am selben Ort
-    "montage_oben": "SMD",
-    "montage_unten": "SMD",
-    "haelften_gleiche_netze": True,    # oben wie unten PWR24V/GND
-    "buchse_lcsc": "C3975147",     # HCTL "PM254-2-02-S-8.5", SMD
-                                   # senkrecht, 2x2, Reihenabstand
-                                   # 2,54 mm, Isolationshoehe 8,5 mm,
-                                   # 3 A, Kupferlegierung --
-                                   # Produktseite gesehen (2026-08-31)
-    "buchse_spec": "Buchsenleiste 2x2, 2,54 mm, SMD senkrecht, "
-                   "Isolationshoehe 8,5 mm, >= 2,5 A je Kontakt",
-    "stift_lcsc": "C919361",       # BOOMELE "2.54-2*2P", SMD
-                                   # senkrecht, 2,5 mm Isolierkoerper,
-                                   # 6,0 mm Steckstift, 3 A, gesehen
-                                   # auf der LCSC-Produktseite
-    "stift_spec": "Stiftleiste 2x2, 2,54 mm, SMD senkrecht, "
-                  "Isolierkoerper <= 2,5 mm, Steckstift 6,0 mm",
-    "buchse_mpn": "HCTL PM254-2-02-S-8.5",
-    "stift_mpn": "BOOMELE 2.54-2*2P",
-    "pins": {1: "PWR24V", 2: "GND", 3: "PWR24V", 4: "GND"},
-    "buchsenhoehe_mm": BUCHSE_SMD_HOEHE_MM,
-    "stiftkoerper_mm": STIFT_SMD_KOERPER_MM,
-    "stiftlaenge_mm": STIFT_SMD_STECKLAENGE_MM,
-    # Beide Haelften tragen 3 A je Kontakt: Buchse C3975147 ("Current
-    # Rating: 3A") und Stift C919361 ("Current Rating: 3A"). Bis
-    # Aufgabe 5g stand hier 2,5 A -- das war der Wert der damals
-    # ersatzweise herangezogenen 2x5-Buchse C261072, nicht der eines
-    # Teils in der gebrauchten Polzahl. Seit die 2x2-Buchse belegt ist,
-    # ist der Engpass verschwunden.
-    # Zwei Kontakte je Ader ergeben rechnerisch 6,0 A vor Derating --
-    # dieselbe Vorsicht wie in hardware/bauteile-1b.md, Beleg 4: eine
-    # Parallel-Summe von Einzelkontakt-Nennwerten, keine Hersteller-
-    # aussage ueber den Parallelbetrieb bei ungleichen Kontakt-
-    # widerstaenden. Der DRV8876 des Motormoduls zieht ueber 2,5 A; EIN
-    # Motormodul passt damit mit Faktor 2,4, mehrere gleichzeitig unter
-    # Volllast weiterhin nicht.
-    "strom_pro_kontakt_a": 3.0,
-    "kontakte_je_ader": 2,
-    "quelle": "hardware/bauteile-1b.md, Beleg 4, 13 und 14",
-}
-
-
-def EINSTECKTIEFE_STAPEL():
-    """Rechnerische Einstecktiefe des Stapelsteckers bei STAPEL_ABSTAND.
-
-    M+F ueberbruecken den Spalt G = STAPEL_ABSTAND - PLATINE_DICKE; der
-    Stift von Modul A fuehrt zuerst durch dessen eigene Platine (M wird
-    dadurch um PLATINE_DICKE kuerzer), siehe hardware/bauteile-1b.md,
-    Beleg 1, Nachtrag.
-    """
-    g = STAPEL_ABSTAND - PLATINE_DICKE
-    m = STECKER_STAPEL["stiftlaenge_unter_gehaeuse_mm"] - PLATINE_DICKE
-    f = STECKER_STAPEL["gehaeusehoehe_mm"]
-    return (m + f) - g
-
-
-def EINSTECKTIEFE_SMD_PAAR(stecker):
-    """Einstecktiefe eines SMD-Paars (Buchse oben, Stiftleiste unten).
-
-    Der Stift sitzt AUF der Unterseite, nicht in ihr: seine wirksame
-    Laenge unter der Platine ist Isolierkoerper + Steckstift, ohne
-    Abzug fuer die Platine und ohne Loetschwanz.
-    """
-    g = STAPEL_ABSTAND - PLATINE_DICKE
-    m = stecker["stiftkoerper_mm"] + stecker["stiftlaenge_mm"]
-    f = stecker["buchsenhoehe_mm"]
-    return (m + f) - g
-
-
-def LUFT_STIFTKOERPER(stecker):
-    """Luft zwischen Stift-Isolierkoerper und Buchsenoberkante.
-
-    Der Isolierkoerper des Stifts kann nicht in die Buchse eintauchen;
-    er muss ueber deren Oberkante bleiben, sonst stossen die beiden
-    Kunststoffe aneinander, bevor die Abstandsbolzen die Platinen auf
-    Abstand gebracht haben. Muss > 0 sein.
-    """
-    g = STAPEL_ABSTAND - PLATINE_DICKE
-    return g - stecker["buchsenhoehe_mm"] - stecker["stiftkoerper_mm"]
-
-
-def EINSTECKTIEFE_KETTE():
-    """Rechnerische Einstecktiefe des Kettensteckers bei STAPEL_ABSTAND."""
-    return EINSTECKTIEFE_SMD_PAAR(STECKER_KETTE)
-
-
-def EINSTECKTIEFE_LEISTUNG():
-    """Rechnerische Einstecktiefe des Leistungssteckers."""
-    return EINSTECKTIEFE_SMD_PAAR(STECKER_LEISTUNG)
-
-
-
-# --- Wo die Stecker auf der Platine sitzen ---------------------------
-# Bis hierher legte der Vertrag fest, WELCHE Rolle auf welchem Pin
-# liegt und WIE HOCH die Stecker bauen -- aber nirgends, WO sie sitzen.
-# Zwei unabhaengig entstehende Layouts (Sockel, Motormodul) passen
-# damit nicht zusammen, ein fremdes Modul erst recht nicht. Deshalb
-# gehoert die Lage hierher und nicht in die einzelnen
-# Platinenbeschreibungen: es gibt EINE Koordinatenmenge fuer ALLE
-# Platinen des Stapels. Der Stapelstecker der Sockelplatine steht
-# senkrecht ueber dem jedes Moduls, Ketten- und Leistungsstecker
-# ebenso -- sonst steckt der Stapel mechanisch nicht.
-#
-# Koordinatensystem: mm, Ursprung linke obere Ecke der Platine, x nach
-# rechts, y nach unten (KiCad-Konvention). Dasselbe System wie
-# M3_HOLES oben.
-#
-# Nur die Lage des Pico (PICO_POS) gilt ausschliesslich fuer die
-# Sockelplatine -- er ist das einzige Bauteil, das genau eine Platine
-# im Stapel traegt. Er steht trotzdem hier und nicht in
-# tools/pcb/spec_sockel.py, weil sein Antennen-Sperrbereich
-# (ANTENNE_SPERRBEREICH) gegen dieselben Stecker geprueft werden muss.
-
-M3_KEEPOUT = 7.0   # mm Durchmesser Freihaltebereich um jede M3-Bohrung.
-# Nicht der Bohrdurchmesser (M3_DRILL = 3,2 mm), sondern der Platz fuer
-# Schraubenkopf/Unterlegscheibe und den Abstandsbolzen. Uebernommen aus
-# der gebauten Platine des Vorlaeuferprojekts
-# (PecheAuxCanards/tools/pcb/spec.py, M3_KEEPOUT = 7.0); dort gegen
-# echte M3-Bolzen erprobt. tools/pcb/geometry.py liest den Wert ueber
-# getattr aus der Platinenbeschreibung und faellt sonst auf dieselbe
-# 7,0 zurueck -- hier steht er, damit beide PicoStack-Platinen ihn aus
-# EINER Quelle bekommen.
-
-# Wie weit die Eckloch-Freihaltung von der linken Kante nach INNEN
-# reicht: Lochmitte plus halber Freihaltekreis. Gebraucht fuer die
-# Randpad-Rechnung oben (RAND_PAD_B) und dieselbe Zahl, die
-# platzprobe_v2.M3_REICHWEITE aus denselben zwei Groessen bildet -- hier
-# abgeleitet statt abgeschrieben.
-M3_REICHWEITE = round(min(x for x, _y in M3_HOLES) + M3_KEEPOUT / 2.0, 3)
-
-# Hoefe (F.CrtYd) der Footprints, jeweils (x0, y0, x1, y1) relativ zur
-# Mitte von KONTAKT 1 -- also zu der Achse, in die der Stift eines
-# Nachbarmoduls faehrt, nicht zu einem Loetpad. Bei den bedrahteten
-# Footprints ist das dasselbe (Pad 1 sitzt auf der Steckachse); bei den
-# SMD-Footprints NICHT: dort liegen die Loetpads seitlich neben den
-# Stiften. Der Bezug auf den Kontakt ist der richtige, weil genau er im
-# Stapel zusammenpassen muss.
-# GEMESSEN, nicht geschaetzt: aus den echten .kicad_mod-Dateien der
-# KiCad-Standardbibliothek (kicad-footprints, nixpkgs-Ableitung
-# a2d01395d2, gelesen mit KiCad 10.0.5), aufgeloest ueber
-# tools/pcb/kicadlibs.py. Als Konstanten hier eingetragen und nicht per
-# Aufruf geholt, damit der Vertrag ohne KiCad lesbar bleibt.
-#
-# Die SMD-Werte sind zusaetzlich SYMMETRIERT: das kleinste Rechteck um
-# das Kontaktfeld herum, das den Hof enthaelt. Grund: die Buchse wird
-# im Layout gespiegelt platziert (sie sitzt oben und muss zum Stift der
-# Platine darueber passen, dessen Footprint auf der Unterseite liegt).
-# Ohne Symmetrierung haenge der Vertragswert davon ab, welche
-# Spiegelung das Layout waehlt -- das waere genau die Art stiller
-# Abhaengigkeit, die dieser Vertrag verhindern soll. Die Symmetrierung
-# kostet hoechstens 0,05 mm (KiCad zeichnet den Buchsenhof leicht
-# unsymmetrisch: -4,50 gegen +4,55).
-#
-# ACHTUNG, das bleibt der wunde Punkt dieser Masse: alle fuenf
-# Header-Footprints sind PLATZHALTER aus der Standardbibliothek
-# (dieselben, die tools/sch/modulsockel.py eintraegt). Die wirklichen
-# Bauteile -- der PC104-Stapelstecker C35165 und die SMD-Paare aus
-# STECKER_KETTE/STECKER_LEISTUNG -- brauchen eigene .kicad_mod. Deren
-# Isolierkoerper und Pads koennen groesser sein.
-# tests/test_stack_spec.py prueft deshalb, dass die hier genannten
-# Footprint-Namen noch dieselben sind wie in modulsockel.py: wer sie
-# gegen die echten austauscht, faellt in den roten Test und muss die
-# Lage neu nachrechnen, statt sie stillschweigend zu erben.
+# Hoefe (F.CrtYd) footprint-lokal, mit pcbnew gemessen (2026-11-15,
+# KiCad-Bibliothek 25a0b01dd7), um HOF_STRICH 0,045 geschrumpft.
 FOOTPRINT_HOF = {
-    # bedrahtet: Kontakt 1 == Pad 1
-    "Connector_PinHeader_2.54mm:PinHeader_2x20_P2.54mm_Vertical":
-        (-1.77, -1.78, 4.32, 50.03),     # 6,09 x 51,81 mm
-    # v2-Stapelbuchse (eine Reihe, 1x20, echte Pico-Geometrie). Kontakt 1
-    # == Pad 1 (bedrahtet). Pinspanne 19 x 2,54 = 48,26 mm (Pin 1 bis
-    # Pin 20, Mitte-zu-Mitte -- das Pico-Datenblattmass).
-    #
-    # KORRIGIERT (Fix-Runde 1 zu Aufgabe 7, 2026-09-09). Hier stand
-    # (-2,55 | -1,27 | 2,55 | 49,53), also 5,10 x 50,80 mm, abgeleitet
-    # aus dem RESERVIERUNGSMASS PICO_REIHE_L/B des Aufgabenzettels
-    # (tools/platzprobe_v2.py) statt aus dem Footprint, der wirklich
-    # gebaut wird -- der Kommentar sagte das sogar selbst ("Kein
-    # gemessener .kicad_mod ... Rot-Nachweis wird nachgeholt").
-    #
-    # Genau das war der Fehler, und er war nicht harmlos: build.place()
-    # legt die Hof-ECKE des ECHTEN Footprints auf die Ecke des
-    # Rechtecks, das aus dieser Tabelle kommt. Eine Reservierungs-
-    # schaetzung in dieser Tabelle verschiebt daher KUPFER. Der echte
-    # Hof der Bibliotheksbuchse ist 3,54 x 51,80 mm; die halbe Differenz
-    # zur Schaetzung, (-0,78 | +0,50) mm, sass am Motormodul als Versatz
-    # BEIDER Stapelreihen gegen den Vertrag -- gefunden von
-    # steckerprobe.py an der gebauten Platine (Vertrag pin1 (30,61|2,27),
-    # gebaut (29,83|2,77)).
-    #
-    # Jetzt gemessen, nicht geschaetzt: mit build.courtyard_bbox aus
-    # Connector_PinSocket_2.54mm.pretty gelesen, relativ zu Pad 1
-    # (= Kontakt 1, bedrahtet). Rand 1,77 mm auf allen vier Seiten um das
-    # Kontaktgitter -- derselbe Familienrand wie beim 2x20-Header
-    # darueber, und genau das prueft tests/test_stack_spec.py jetzt nach
-    # ("Hofrand ... ist der Familienrand").
-    #
-    # Das 50,8-x-5,1-Reservierungsmass bleibt gueltig als PLATZBEDARF
-    # eines spaeteren, echten Stapelsteckers (STECKER_STAPEL ist noch
-    # nicht bestellt) -- es gehoert aber in die Platzprobe, nicht in die
-    # Tabelle, aus der die Platzierung Koordinaten zieht. Wer den
-    # Footprint austauscht, muss diesen Eintrag neu MESSEN.
-    "Connector_PinSocket_2.54mm:PinSocket_1x20_P2.54mm_Vertical":
-        (-1.77, -1.77, 1.77, 50.03),     # 3,54 x 51,80 mm, gemessen
-    # SMD-Paar Kettenstecker (1x2). Kontakt 1 liegt im Footprint bei
-    # (0 | -1,27), die Pads bei (-1,655 | -1,27) und (1,655 | 1,27).
-    "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical_SMD_Pin1Left":
-        (-3.41, -1.77, 3.41, 4.31),      # 6,82 x 6,08 mm
-    "Connector_PinSocket_2.54mm:PinSocket_1x02_P2.54mm_Vertical_SMD_Pin1Left":
-        (-3.10, -1.88, 3.10, 4.42),      # 6,20 x 6,30 mm
-    # SMD-Paar Leistungsstecker (2x2). Kontakt 1 liegt im Footprint bei
-    # (-1,27 | -1,27) (Stift) bzw. (1,27 | -1,27) (Buchse, gespiegelt);
-    # beide Hoefe sind hier um das Kontaktfeld symmetriert.
-    "Connector_PinHeader_2.54mm:PinHeader_2x02_P2.54mm_Vertical_SMD":
-        (-4.60, -1.77, 7.14, 4.31),      # 11,74 x 6,08 mm
-    "Connector_PinSocket_2.54mm:PinSocket_2x02_P2.54mm_Vertical_SMD":
-        (-3.28, -1.78, 5.77, 4.32),      # 9,05 x 6,10 mm
-        # Rechts 5,77 statt 5,82: an der gebauten Platine nachgemessen
-        # (steckerprobe meldete am Motormodul 0,05 mm Hof-Abweichung;
-        # der reale KiCad-Hof endet strichbereinigt bei +5,77).
-    "Module:RaspberryPi_Pico_Common_THT":
-        (-2.65, -3.17, 20.43, 50.68),    # 23,08 x 53,85 mm
+    FP_STAPEL_20: (-1.77, -1.77, 1.77, 50.03),
+    FP_STAPEL_4: (-1.77, -1.77, 1.77, 9.39),
+    FP_QWIIC: (-3.90, -3.28, 3.90, 3.28),
+    FP_USER: (-1.77, -1.77, 1.77, 14.47),
 }
-
-
-# Loetpad-Schwerpunkt relativ zum Kontaktfeld-Schwerpunkt, je
-# Footprint. Die SMD-Buchse 2x02 traegt ASYMMETRISCHE Ausleger (die
-# Loetpads ragen links 1,3 und rechts 1,2 mm ueber die Kontakte
-# hinaus) -- ihr Pad-Schwerpunkt liegt deshalb 0,05 mm westlich des
-# Kontaktrasters, bei exakt vertragskonformer Lage der KONTAKTE.
-# steckerprobe.pruefen() rechnet diesen Versatz beim
-# Schwerpunktvergleich heraus (gefunden 2026-09-03 am Motormodul:
-# die Probe meldete 0,05 mm Versatz, die Kontaktprobe war gruen).
-# In FOOTPRINT-Koordinaten (Drehung 0); die Probe dreht mit.
-PAD_SCHWERPUNKT_VERSATZ = {
-    "Connector_PinSocket_2.54mm:PinSocket_2x02_P2.54mm_Vertical_SMD":
-        (-0.05, 0.0),
+FOOTPRINT_RASTER = {
+    FP_STAPEL_20: (1, 20),
+    FP_STAPEL_4: (1, 4),
+    FP_USER: (1, 6),
 }
+SPALTEN_GESPIEGELT = frozenset()
+PAD_SCHWERPUNKT_VERSATZ = {}
 
 
 def LAGE(rechteck, pin1, drehung):
-    """Ein footprint-relatives Rechteck in Platinenkoordinaten drehen.
-
-    `drehung` in Grad, KiCad-Konvention (im Bildschirmbild gegen den
-    Uhrzeigersinn; die gespeicherte y-Achse zeigt nach unten). Ein
-    Punkt (fx, fy) des Footprints landet bei
-        0 Grad   -> (px + fx, py + fy)
-        90 Grad  -> (px + fy, py - fx)
-        180 Grad -> (px - fx, py - fy)
-        270 Grad -> (px - fy, py + fx)
-    mit (px, py) = Lage von KONTAKT 1 (nicht von Pad 1 -- bei den
-    SMD-Footprints sind das verschiedene Punkte, s. FOOTPRINT_HOF).
-    Die Formel ist der Grund, warum die
-    Eintraege unten sowohl `pin1`/`drehung` als auch `flaeche` tragen:
-    der Test rechnet die eingetragene Flaeche aus den ersten beiden
-    nach und faengt so einen Zahlendreher ab.
-    """
+    """Footprint-relatives Rechteck in Platinenkoordinaten drehen.
+    KiCad-Konvention: Drehung gegen den Uhrzeigersinn in der Aufsicht,
+    y-Achse nach unten. Ein Punkt (fx, fy) landet bei
+        0   -> (px + fx, py + fy)      90  -> (px + fy, py - fx)
+        180 -> (px - fx, py - fy)      270 -> (px - fy, py + fx)
+    mit (px, py) = Lage von Kontakt 1."""
     x0, y0, x1, y1 = rechteck
     px, py = pin1
-    ecken = ((x0, y0), (x1, y0), (x1, y1), (x0, y1))
     aus = []
-    for fx, fy in ecken:
+    for fx, fy in ((x0, y0), (x1, y0), (x1, y1), (x0, y1)):
         if drehung == 0:
             aus.append((px + fx, py + fy))
         elif drehung == 90:
@@ -1195,1052 +296,195 @@ def LAGE(rechteck, pin1, drehung):
 
 
 def HOF(footprint, pin1, drehung):
-    """Hof (F.CrtYd) eines Footprints in Platinenkoordinaten."""
     return LAGE(FOOTPRINT_HOF[footprint], pin1, drehung)
 
 
 def HOEFE(footprints, pin1, drehung):
-    """Gemeinsamer Hof mehrerer Footprints am selben Ort.
-
-    Ein Steckerplatz traegt bei den SMD-Paaren ZWEI Bauteile (Buchse
-    oben, Stiftleiste unten) auf demselben Kontaktraster. Belegt ist
-    dann die Vereinigung beider Hoefe -- die eine Haelfte darf nicht
-    stillschweigend hinter der anderen verschwinden.
-    """
-    kaesten = [HOF(f, pin1, drehung) for f in footprints]
-    return (round(min(k[0] for k in kaesten), 3),
-            round(min(k[1] for k in kaesten), 3),
-            round(max(k[2] for k in kaesten), 3),
-            round(max(k[3] for k in kaesten), 3))
-
-
-RASTER = 2.54      # mm Rastermass aller drei Stecker (2,54 mm / 0,1")
-
-# Footprint -> (Spalten, Reihen). Zusammen mit RASTER ergibt das die
-# KONTAKT-Lagen. `pin1` in STECKER_POS ist dabei der RASTER-ANKER: der
-# linke obere Punkt des Kontaktgitters -- NICHT zwingend die Lage von
-# Kontakt 1 (s. SPALTEN_GESPIEGELT unten). FOOTPRINT_HOF und HOF()
-# beziehen sich auf denselben Anker.
-FOOTPRINT_RASTER = {
-    "Connector_PinHeader_2.54mm:PinHeader_2x20_P2.54mm_Vertical": (2, 20),
-    # Eine Spalte, 20 Reihen -- eine einzelne 1x20-Pinreihe (s.
-    # FOOTPRINT_HOF oben).
-    "Connector_PinSocket_2.54mm:PinSocket_1x20_P2.54mm_Vertical": (1, 20),
-    "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical_SMD_Pin1Left":
-        (1, 2),
-    "Connector_PinSocket_2.54mm:PinSocket_1x02_P2.54mm_Vertical_SMD_Pin1Left":
-        (1, 2),
-    "Connector_PinHeader_2.54mm:PinHeader_2x02_P2.54mm_Vertical_SMD": (2, 2),
-    "Connector_PinSocket_2.54mm:PinSocket_2x02_P2.54mm_Vertical_SMD": (2, 2),
-}
-
-# Footprints, deren Kontaktnummerierung in Platinenkoordinaten von
-# RECHTS nach links laeuft -- Kontakt 1 sitzt in der RECHTEN Spalte des
-# Gitters, nicht auf dem Anker.
-#
-# RULING (2026-09-01, nach Aufgabe 6 an der gebauten Platine gemessen).
-# Die alte Fassung dieses Blocks behauptete "Kontakt 1 links oben,
-# zeilenweise, an den echten .kicad_mod-Dateien nachgesehen" -- wirklich
-# nachgesehen war das nur beim 2x20-THT. Beim 2x02-SMD-Paar ist es
-# falsch, und zwar fuer BEIDE Haelften:
-#
-#   * Die Buchse (PinSocket_2x02_SMD) hat Pad 1 RECHTS (+2,520 im
-#     Footprint) -- ihr Kontakt 1 liegt in der rechten Gitterspalte.
-#   * Die Stiftleiste (PinHeader_2x02_SMD) hat Pad 1 links (-2,525),
-#     aber sie sitzt laut diesem Vertrag GESPIEGELT auf der UNTERSEITE
-#     ("Buchse oben, Stiftleiste unten") -- in Platinenkoordinaten
-#     landet ihr Kontakt 1 damit ebenfalls rechts. Die Bibliothek
-#     zeichnet die Haelften absichtlich gespiegelt zueinander, damit
-#     sie am selben Anker zusammenpassen.
-#
-# An der gebauten Sockelplatine bestaetigt (J4, Stifthaelfte auf B.Cu):
-# Pad 1 traegt /PWR24V und sein Kontakt liegt bei x = 57,24 -- die alte
-# PAD_LAGEN-Fassung veroeffentlichte fuer Kontakt 1 aber x = 54,70.
-# Exakt spiegelverkehrt, und STECKER_LEISTUNG legt auf die Spalten
-# VERSCHIEDENE Netze (Kontakt 1/3 = PWR24V, 2/4 = GND): wer nach der
-# alten Koordinate einen eigenen Footprint zeichnete, setzte 24 V
-# dorthin, wo der Stapel GND fuehrt.
-#
-# Fuer Platinen, die die KiCad-Standardfootprints benutzen, aendert
-# dieses Ruling NICHTS am Kupfer -- nur die veroeffentlichte Zuordnung
-# Nummer -> Ort wird der Wirklichkeit angepasst. Die 1x02-Paare sind
-# nicht betroffen (eine Spalte, Nummerierung laeuft ueber die Reihen;
-# an der gebauten Platine gegengeprueft: J3 Kontakt 1 liegt auf dem
-# Anker). Der 2x20-THT ist nicht betroffen (Pad 1 wirklich links oben).
-SPALTEN_GESPIEGELT = frozenset((
-    "Connector_PinHeader_2.54mm:PinHeader_2x02_P2.54mm_Vertical_SMD",
-    "Connector_PinSocket_2.54mm:PinSocket_2x02_P2.54mm_Vertical_SMD",
-))
+    k = [HOF(f, pin1, drehung) for f in footprints]
+    return (round(min(x[0] for x in k), 3), round(min(x[1] for x in k), 3),
+            round(max(x[2] for x in k), 3), round(max(x[3] for x in k), 3))
 
 
 def PAD_LAGEN(footprint, pin1, drehung):
-    """Kontakt-Nummer -> (x, y) in Platinenkoordinaten.
-
-    Gebraucht fuer die Verdreh-Probe (ob ein um 180 Grad verdreht
-    aufgesetztes Modul steckt, entscheidet nicht die Flaeche, sondern
-    ob ein Stift einen Kontakt trifft) und fuer die Steckerprobe an
-    der gebauten Platine (liegt Kontakt k wirklich dort, wo dieser
-    Vertrag es sagt).
-
-    Die MENGE der Punkte ist bei gespiegelter Nummerierung dieselbe --
-    die Verdreh-Probe haengt an dieser Korrektur deshalb nicht. Die
-    ZUORDNUNG Nummer -> Ort tut es: s. SPALTEN_GESPIEGELT.
-    """
+    """Kontakt-Nummer -> (x, y) in Platinenkoordinaten."""
     spalten, reihen = FOOTPRINT_RASTER[footprint]
-    gespiegelt = footprint in SPALTEN_GESPIEGELT
     aus = {}
     for reihe in range(reihen):
         for spalte in range(spalten):
             pin = reihe * spalten + spalte + 1
-            sp = (spalten - 1 - spalte) if gespiegelt else spalte
-            ecke = LAGE((sp * RASTER, reihe * RASTER,
-                         sp * RASTER, reihe * RASTER), pin1, drehung)
+            ecke = LAGE((spalte * RASTER, reihe * RASTER,
+                         spalte * RASTER, reihe * RASTER), pin1, drehung)
             aus[pin] = (ecke[0], ecke[1])
     return aus
 
 
 def MITTE(flaeche):
-    """Mittelpunkt einer Flaeche (x0, y0, x1, y1)."""
     x0, y0, x1, y1 = flaeche
     return (round((x0 + x1) / 2.0, 3), round((y0 + y1) / 2.0, 3))
 
 
 def VERDREHT(flaeche):
-    """Dieselbe Flaeche, nachdem die Platine um 180 Grad gedreht wurde.
-
-    Das Lochbild M3_HOLES ist punktsymmetrisch zur Platinenmitte -- ein
-    Modul laesst sich also verdreht anschrauben. Diese Funktion sagt,
-    wo ein Stecker dann liegt; s. Kommentar bei STECKER_POS.
-    """
+    """Dieselbe Flaeche nach 180-Grad-Drehung der Platine."""
     x0, y0, x1, y1 = flaeche
     return (round(BOARD_W - x1, 3), round(BOARD_H - y1, 3),
             round(BOARD_W - x0, 3), round(BOARD_H - y0, 3))
 
 
-# Die vier Vertragsstecker (v2: aus drei werden vier -- der 2x20-Block
-# wird zu zwei 1x20-Reihen, s. Modul-Docstring). `mitte`, `drehung` und
-# `flaeche` (der belegte Hof) sind das, was jede Platine einhalten
-# muss; `pin1` (Kontakt 1) und `footprints` sind die Herleitung dazu.
-#
-# `footprints` ist eine Liste, weil zwei der vier Plaetze ZWEI Bauteile
-# tragen: die SMD-Buchse oben und die SMD-Stiftleiste unten, auf
-# demselben Kontaktraster (Begruendung im Block bei STECKER_KETTE).
-# `flaeche` ist die Vereinigung beider Hoefe -- HOEFE() rechnet sie
-# nach.
-#
-# stapel_links/stapel_rechts: ZWEI 1x20-Buchsenreihen in echter
-# Pico-Geometrie statt eines 2x20-Blocks in freiem Raster. Die Namen
-# folgen der PICO-eigenen Seite, nicht einer Himmelsrichtung auf
-# unserer Platine: "links" traegt die Pico-Pins 1..20 (auf dem
-# Original-Pico die linke Stiftreihe, USB-Buchse oben gedacht),
-# "rechts" die Pins 21..40 (die rechte Reihe). Auf UNSERER Platine
-# liegen beide Reihen SENKRECHT (Pins laufen von oben nach unten,
-# genau wie auf dem Pico selbst -- keine 90-Grad-Drehung wie beim
-# alten 2x20-Block noetig, weil eine einzelne 1x20-Reihe mit 50,8 mm
-# Laenge bequem hochkant in die 65 mm Plattenhoehe passt) und stehen
-# nebeneinander, Mittenabstand GENAU 17,78 mm (Pico-Datenblatt,
-# Reihenabstand) -- das ist der Wert, den
-# tests/test_stack_spec.py als "Stapelreihen in Pico-Geometrie" prueft.
-# NICHT exakt ueber die Plattenbreite (75 mm) zentriert, sondern um
-# 2,0 mm nach rechts verschoben -- und das ist keine Geschmacksfrage,
-# sondern dieselbe Verdreh-Probe wie beim v1-Leistungsstecker (s.
-# Kommentar dort, "gescannt ... nicht geraten"): stapel_links und
-# stapel_rechts sind exakte Spiegelbilder voneinander (Reihenabstand
-# 17,78 mm = 7 x RASTER, s.o.), UND beide Reihen liegen auf demselben
-# Y-Raster (dieselben 20 Kontakthoehen, nur mit vertauschter
-# Zaehlrichtung). Eine exakt MITTIGE Platzierung (Rand links/rechts je
-# (75 - 22,88) / 2 = 26,06 mm) macht die 180-Grad-Drehung dadurch zur
-# perfekten X-Deckung: ein verdreht aufgestecktes Modul traefe
-# stapel_links exakt auf stapel_rechts in X, und der einzige
-# verbleibende Schutz waere der Y-Versatz -- der bei diesem Raster nie
-# ueber die Haelfte des Rastermasses (1,27 mm) hinauskommt, weit unter
-# der 2,5-mm-Reissleine, die tests/test_stack_spec.py seit Aufgabe 5e
-# fuer jede Steckerlage verlangt (Nachrechnung ergab dort real nur
-# 0,50 mm -- ROT). Um 2,0 mm aus der Mitte verschoben ergibt dagegen
-# einen X-Versatz von 2 x 2,0 = 4,0 mm (die Verschiebung wirkt doppelt,
-# weil sie BEIDE Reihen der gespiegelten Paarung gegeneinander
-# versetzt) -- allein das haelt die Verdreh-Probe komfortabel ueber der
-# Reissleine, unabhaengig vom Y-Versatz (nachgerechnet: 4,03 mm). Der
-# Rand zur linken Kante (28,84 mm, s. "flaeche" von stapel_links unten)
-# bleibt dabei weiterhin weit ueber der M3-Eckloch-Reichweite
-# (7,5 mm) -- das Reihenpaar kann so oder so nicht in ein Eckloch
-# hineinragen.
-# Die Reihe reicht von y = 0,5 bis y = 52,3 mm -- deutlich innerhalb der
-# 65 mm Plattenhoehe und mit reichlich Abstand zu den unteren
-# M3-Loechern (y = 61). Diese Zahlen sind der HOF des Footprints, der
-# wirklich gebaut wird, nicht ein gewuenschter Randabstand: eine
-# fruehere Fassung nannte hier y = 1,0 .. 51,8 mm und begruendete den
-# 1,0-mm-Rand mit Platz fuer Loetstopplack -- die Zahl stammte aber aus
-# einem falschen FOOTPRINT_HOF-Eintrag (s. dort, Fix-Runde 1 zu Aufgabe
-# 7) und verschob beim Bauen das Kupfer. Bei y = 0,5 ist das
-# vertragliche RAND-Minimum exakt eingehalten; wer mehr Rand will, muss
-# pin1 verschieben -- also die Zusage aendern -- und nicht das
-# Hof-Rechteck.
-#
-# Zaehlrichtung UND Drehung sind gekoppelt (s. auch den Kommentar
-# weiter oben, gleich nach PIN_ROLLE, "v2: footprint-lokale Kontakte ->
-# Pico-Pin"): stapel_links
-# steht bei Drehung 0, ihr footprint-lokaler Kontakt 1 liegt oben und
-# waechst nach unten (Pico-Pin k == Kontakt k, k=1..20, "oben->unten"
-# wie im Aufgabenzettel gefordert). stapel_rechts steht bei Drehung
-# 180 -- NICHT 0 --, damit ihr footprint-lokaler Kontakt 1 physisch UNTEN
-# landet und mit wachsendem Kontakt nach OBEN laeuft: genau das
-# "unten->oben" der Pico-Pins 21..40, und zwar OHNE dass irgendein
-# Aufrufer footprint-lokale Nummern erst umdrehen muesste (Pico-Pin
-# (20+k) == footprint-lokaler Kontakt k, k=1..20 -- dieselbe simple
-# Formel wie bei stapel_links, nur mit Offset 20). Die beiden Reihen
-# sind dazu exakt end-zu-end ausgerichtet: pin1 von stapel_rechts liegt
-# 48,26 mm (= Pinspanne, 19 x 2,54) unterhalb von pin1 von stapel_links,
-# sodass beide Hoefe denselben Y-Bereich [1,0 .. 51,8] belegen.
-#
-# kette und leistung wandern gegenueber v1 nur soweit, wie es die neue
-# Lage der Stapelzone erzwingt -- dieselbe Herleitungslogik wie in v1
-# (Kettenstecker nah am Stapel/D-Flipflop, links; Leistungsstecker so
-# weit wie moeglich vom Signalstecker weg, unten rechts), neu
-# angewendet auf den 75x65-Umriss und die jetzt SEITLICH statt oben
-# liegende Stapelzone:
-#
-# * Der Kettenstecker sitzt links NEBEN stapel_links (statt darueber
-#   wie in v1, weil "darueber" auf dem neuen Umriss die Plattenkante
-#   waere) -- 4,84 mm Luft zu dessen Hof (stapel_links.flaeche[0] -
-#   kette.flaeche[2] = 28,84 - 24,0 = 4,84 mm; die S.LUFT-Reissleine der
-#   Ueberlapp-Probe ist 0,6 mm), Hoehe unveraendert aus v1 uebernommen
-#   (0,87 .. 7,17 relativ zu pin1, s. FOOTPRINT_HOF), weil sich an der
-#   SMD-Paar-Geometrie selbst nichts geaendert hat.
-# * Der Leistungsstecker sitzt unten rechts, so weit vom naechsten
-#   Signalstecker (stapel_rechts) weg wie es der 75x65-Umriss erlaubt,
-#   und bleibt dabei mit 5,36 mm Rand zur rechten Kante (75 - 69,64)
-#   klar innerhalb des Vertrags-Randmasses (RAND = 0,5 mm) und weit
-#   ausserhalb der M3-Eckloch-Reichweite (7,5 mm) an allen vier Ecken
-#   -- nachgerechnet in tests/test_stack_spec.py wie in v1.
+# Stapelreihen: Pin-1-Lage, Drehung so, dass die Pins in die genannte
+# Richtung laufen (Footprint-Pins liegen lokal auf +y; 90 Grad ->
+# +x, 270 Grad -> -x). "flaeche" ist der Hof, von Tests nachgerechnet.
 STECKER_POS = {
-    "stapel_links": {
-        "zweck": "1x20-Buchsenreihe, Pico-Pins 1..20 (links, oben->unten)",
+    "stapel_unten": {
+        "zweck": "Stapelbuchse 1x20, Pico-Pins 1..20, nach +x",
         "stecker": "STECKER_STAPEL",
-        "footprints": (
-            "Connector_PinSocket_2.54mm:PinSocket_1x20_P2.54mm_Vertical",
-        ),
-        "pin1": (30.61, 2.27),
-        "drehung": 0,
-        "mitte": (30.61, 26.4),
-        # Fix-Runde 1 zu Aufgabe 7: war (28,06 | 1,0 | 33,16 | 51,8) --
-        # aus dem falschen FOOTPRINT_HOF-Eintrag gerechnet (s. dort).
-        # pin1 ist UNVERAENDERT: die Kontaktlage ist die Zusage an
-        # fremde Module, nur das Hof-Rechteck war falsch.
-        "flaeche": (28.84, 0.5, 32.38, 52.3),
+        "footprints": (FP_STAPEL_20,),
+        "pin1": PICO_PIN1,
+        "drehung": 90,
+        "pico_pins": tuple(range(1, 21)),
+        "flaeche": (7.23, 26.01, 59.03, 29.55),
     },
-    "stapel_rechts": {
-        "zweck": "1x20-Buchsenreihe, Pico-Pins 21..40 (rechts, unten->oben)",
+    "stapel_oben": {
+        "zweck": "Stapelbuchse 1x20, Pico-Pins 21..40, nach -x",
         "stecker": "STECKER_STAPEL",
-        "footprints": (
-            "Connector_PinSocket_2.54mm:PinSocket_1x20_P2.54mm_Vertical",
-        ),
-        "pin1": (48.39, 50.53),
-        "drehung": 180,
-        "mitte": (48.39, 26.4),
-        # Fix-Runde 1 zu Aufgabe 7, s. stapel_links: war
-        # (45,84 | 1,0 | 50,94 | 51,8).
-        "flaeche": (46.62, 0.5, 50.16, 52.3),
-    },
-    "kette": {
-        "zweck": "zweipoliger Kettenstecker, SEL + GND (STECKER_KETTE)",
-        "stecker": "STECKER_KETTE",
-        "footprints": (
-            # oben: Buchse, unten: Stiftleiste -- selber Ort
-            "Connector_PinSocket_2.54mm:PinSocket_1x02_P2.54mm_Vertical_SMD_Pin1Left",
-            "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical_SMD_Pin1Left",
-        ),
-        "pin1": (20.59, 2.75),
-        "drehung": 0,
-        "mitte": (20.59, 4.02),
-        "flaeche": (17.18, 0.87, 24.0, 7.17),
+        "footprints": (FP_STAPEL_20,),
+        "pin1": PICO_PIN21,
+        "drehung": 270,
+        "pico_pins": tuple(range(21, 41)),
+        "flaeche": (7.23, 8.23, 59.03, 11.77),
     },
     "leistung": {
-        "zweck": "2x2-Leistungsstecker, 24 V und GND je doppelt",
-        "stecker": "STECKER_LEISTUNG",
-        "footprints": (
-            "Connector_PinSocket_2.54mm:PinSocket_2x02_P2.54mm_Vertical_SMD",
-            "Connector_PinHeader_2.54mm:PinHeader_2x02_P2.54mm_Vertical_SMD",
-        ),
-        "pin1": (62.50, 45.50),
-        "drehung": 0,
-        "mitte": (63.77, 46.77),
-        "flaeche": (57.9, 43.72, 69.64, 49.82),
+        "zweck": "Stapelbuchse 1x4: VIN, VIN, GND, GND (Durchleitung)",
+        "stecker": "STECKER_STAPEL",
+        "footprints": (FP_STAPEL_4,),
+        "pin1": (26.00, 4.00),
+        "drehung": 90,
+        "pins": {1: "VIN", 2: "VIN", 3: "GND", 4: "GND"},
+        "flaeche": (24.23, 2.23, 35.39, 5.77),
     },
 }
 
-# PICO_POS gibt es in v2 NICHT mehr: es beschrieb in v1 die Lage EINES
-# aufgeloeteten Pico auf GENAU EINER Platine (der Sockelplatine) -- eine
-# Sonderrolle, die der Modul-Docstring oben ("v2: der Pico ist der
-# Stapel") aufhebt. Jedes Modul bekommt stattdessen seinen eigenen
-# Pico, gesteckt in STECKER_POS["stapel_links"]/["stapel_rechts"].
-#
-# Der WLAN-Antennen-Sperrbereich des Pico ist dagegen KEINE
-# v1-Besonderheit, sondern eine reale Pflicht aus dem Datenblatt --
-# RULING (Fix-Runde 1, 2026-09-08): er kommt zurueck in den Vertrag,
-# jetzt aus stapel_links/stapel_rechts hergeleitet statt aus einem
-# eigenen PICO_POS.
-#
-# PICO_SCHATTEN: der Umriss des STECKENDEN Pico selbst (51 x 21 mm,
-# Datenblatt "Raspberry Pi Pico W Datasheet", Raspberry Pi Ltd,
-# RP-008312-DS-2, Abschnitt 2 "Mechanical specification": "a single
-# sided 51 mm x 21 mm x 1 mm PCB" -- geprueft per Direktzugriff auf
-# https://datasheets.raspberrypi.com/picow/pico-w-datasheet.pdf,
-# Fix-Runde 1, 2026-09-08), zentriert auf dieselbe Achse wie die beiden
-# Buchsenreihen:
-#   Mitte X = Mittelpunkt der beiden Reihen-Mitten
-#           = (30,61 + 48,39) / 2 = 39,5
-#           -> X-Bereich 39,5 +- 21/2 = 29,0 .. 50,0
-#   Mitte Y = gemeinsame Reihenmitte (beide Reihen liegen exakt auf
-#             demselben Y-Bereich, s. STECKER_POS-Kommentar) = 26,4
-#           -> Y-Bereich 26,4 +- 51/2 = 0,9 .. 51,9
-# Nachprobe: weil PICO_SCHATTEN auf der eigenen Mitte des Reihenpaars
-# sitzt (39,5), nicht auf der Plattenmitte (37,5, die der 2,0-mm-
-# Verdreh-Versatz aus STECKER_POS gerade verlassen hat), liegt jede
-# Reihenmitte GENAU 1,61 mm von der ihr zugewandten PICO_SCHATTEN-Kante
-# entfernt: stapel_links 30,61 - 29,0 = 1,61 mm, stapel_rechts
-# 50,0 - 48,39 = 1,61 mm. Das ist kein Zufall, sondern die
-# Datenblattangabe selbst nachgerechnet: Boardbreite 21 mm minus
-# Reihenabstand 17,78 mm, halbiert -> (21 - 17,78) / 2 = 1,61 mm Rand
-# je Seite zwischen Kontaktachse und Pico-Kante.
-PICO_SCHATTEN = (29.0, 0.9, 50.0, 51.9)
-
-# ANTENNE_FREI: Teilstreifen von PICO_SCHATTEN am Pico-Ende der
-# Onboard-Antenne. Laut Datenblatt (Abschnitt 2, "Mechanical
-# specification"): "a ... PCB with a micro USB port overhanging the
-# top edge, and dual castellated/through-hole pins around the two long
-# edges. The onboard wireless antenna is located on the bottom edge."
-# -- die Antenne sitzt also am ENDE gegenueber der USB-Buchse, entlang
-# der Pinreihen. Pico-Pin 1 (stapel_links, s. STECKER_POS) liegt beim
-# echten Pico neben der USB-Buchse; das Antennen-Ende ist deshalb das
-# GEGENUEBERLIEGENDE Ende der Reihen, in unseren Platinenkoordinaten
-# also das obere Ende von PICO_SCHATTEN (y = 51.9), nicht das untere
-# (y = 0.9, wo Pin 1 sitzt).
-#
-# Streifentiefe: Abschnitt 2.2.1 "Keep-out area": "There is a cutout
-# for the antenna (14 mm x 9 mm)." -- 9,0 mm ist die Tiefe senkrecht
-# zur Kante (die 14 mm sind die Breite ENTLANG der Kante, schmaler als
-# die vollen 21 mm PICO_SCHATTEN-Breite; dieser Vertrag rundet
-# grosszuegig auf die volle Breite auf statt ein schmaleres
-# Teilrechteck zu fuehren -- dieselbe bewusste Uebervorsicht wie beim
-# quadratischen statt kreisrunden M3_KEEPOUT oben). Direkt aus der
-# offiziellen PDF-Quelle gelesen (nicht aus einer Sekundaerquelle
-# zitiert), s. Zeile oben bei PICO_SCHATTEN -- KEIN konservativer
-# Default noetig.
-ANTENNE_FREI = (29.0, 42.9, 50.0, 51.9)
-
-# Semantik, bindend fuer die Layout-Aufgaben: in ANTENNE_FREI darf auf
-# der Seite, auf der der Pico steckt, weder Kupfer noch ein Bauteil
-# liegen (keine Leiterbahn, kein Loetpad, kein Footprint-Hof) -- sonst
-# verstimmt es die Antenne (Datenblatt: "If anything is placed close
-# to the antenna (in any dimension) the effectiveness of the antenna
-# is reduced."). Auf der GEGENUEBERLIEGENDEN Seite der Platine gilt die
-# Regel nicht (die Antenne sitzt auf dem aufgesteckten Pico selbst,
-# nicht auf unserer Platine) -- eine Folgeaufgabe traegt diese
-# Unterscheidung in AUFLAGEN/LAYOUT_AUFLAGEN nach, sobald ein
-# Modul-Layout sie wirklich braucht.
-
-# --- v2.1: KLEMMENZONE (R1/R2/R4) ------------------------------------
-# Pflichtflaeche fuer ALLE Lastklemmen eines Moduls, an der unteren
-# Kante (y = BOARD_H), urspruenglich hergeleitet in
-# tools/platzprobe_v2_1.py / task-v21a-report.md Abschnitt 9 (auf
-# 34,40 x 12,20 mm, aus R1/R2/R4 allein). Die BREITE ist mit Aufgabe C1
-# KORRIGIERT (45,20 statt 34,40 mm) -- Herleitung und Rot-Nachweis
-# unten. Die TIEFE (12,20 mm, vom Motormodul-Fall gebunden) ist
-# unveraendert richtig.
-#
-# --- WARUM DIE BREITE KORRIGIERT WERDEN MUSSTE (Aufgabe C1,
-# 2026-09-10/11, Eskalation nach Vorgabe: "arithmetisch unmoeglich ...
-# mit Zahlen korrigieren, nicht zurechtbiegen"). ---
-#
-# Die urspruengliche 34,40-mm-Herleitung (R1/R2/R4) pruefte NIE gegen
-# LANDEPUNKTE_VERDREHT() -- und genau die Landepunkt-Spiegel von
-# stapel_links/stapel_rechts (je 20 Punkte, Spalten bei x = BOARD_W -
-# 30,61 = 51,39 und x = BOARD_W - 48,39 = 33,61) laufen ueber die GANZE
-# Hoehe der Platine, auch durch KLEMMENZONE hindurch (Spalten-y-Bereich
-# 20,7..72,5, KLEMMENZONE liegt bei y 60,80..73,00 -- vollstaendig
-# darin). Fuer Dimmer4 (vier KF350-Klemmen, 3,5-mm-Kontaktabstand,
-# lueckenlos in 34,40 mm gepackt) ist das ARITHMETISCH UNERFUELLBAR:
-#
-#   * Jede der beiden Spalten verbietet Kupfer (LANDE_SPERRRADIUS =
-#     1,5 mm plus Padradius 1,2 mm = 2,7 mm Mindestabstand des
-#     Kontaktzentrums) in einem 5,4 mm breiten Streifen um sich herum.
-#   * Ein KF350-Kontaktpaar hat nur 3,5 mm Abstand -- SCHMALER als der
-#     5,4-mm-Sperrstreifen. Eine einzelne Klemme kann einen Streifen
-#     also nie "ueberspannen" (beide Kontakte ausserhalb, waehrend die
-#     Klemme selbst darueber sitzt) -- sie muss ihn komplett umgehen.
-#   * Bei 34,40 mm Zonenbreite bleiben nach Abzug beider Streifen nur
-#     zwei nutzbare Restkorridore von 1,35 mm und 8,86 mm -- zusammen
-#     Platz fuer HOECHSTENS ZWEI Klemmen, nie fuer drei (Dimmer3) oder
-#     vier (Dimmer4). Rot-Nachweis (scratchpad-Suche, Aufgabe C1):
-#     mit den v2.1-Referenzpositionen (spec_dimmer_basis.py, Stand vor
-#     dieser Korrektur) meldete die Verdreht-Pruefung fuer Dimmer4
-#     "J6 nur 1,29 mm" und "J8 0,00 mm" (Landepunkt LIEGT im Pad).
-#
-# Das ist kein Platzierungsfehler von Aufgabe C1, sondern eine Luecke
-# in Aufgabe As/Bs Herleitung: beide pruefte KLEMMENZONE nur gegen
-# PICO_SCHATTEN und die M3-Freihaltequadrate, nie gegen die 46 Punkte
-# aus LANDEPUNKTE_VERDREHT() -- eine Pruefung, die es zum Zeitpunkt von
-# Aufgabe A noch gar nicht auf diese Zone angewendet gab.
-#
-# KORREKTUR: Breite auf 46,40 mm angehoben (x1 = 70,20 statt 58,20),
-# x0 unveraendert bei 23,80. Hergeleitet durch eine gierige
-# Links-nach-rechts-Platzierung gegen ALLE 46 Punkte aus
-# LANDEPUNKTE_VERDREHT() (scratchpad-Suche, Aufgabe C1) -- nicht nur
-# gegen die beiden Stapel-Spiegelspalten (33,61/51,39), sondern auch
-# gegen die Kette-Spiegelspalte (61,41|67,71..70,25): eine erste
-# Fassung dieser Korrektur pruefte nur gegen die Stapel-Spalten und
-# geriet mit Kanal 4 direkt in die Kette-Spalte (Rot-Nachweis: "J8 Pad
-# naeher als 1,5 mm (61,41|70,25)", gemessen 1,12 mm). Jede Klemme so
-# weit wie moeglich nach links, aber mit >= 1,6 mm PAD-Kupferabstand
-# (0,1 mm Reserve ueber der 1,5-mm-Reissleine, gegen die ECHTEN
-# Kontaktmitten der KF350-Klemme, nicht gegen ihren Hof -- s.
-# spec_dimmer_basis.py, "_klemme_pad_abstand"-Kommentar fuer die
-# Begruendung) zu JEDEM der 46 Punkte UND mindestens 0,8 mm
-# Klemmenabstand (R4) zur vorigen Klemme:
-#   Kanal 1: x0 = 23,80   Kanal 2: x0 = 34,17   Kanal 3: x0 = 51,95
-#   Kanal 4: x0 = 61,96  (Hofende 69,96, + 0,24 mm Reserve = 70,20)
-# Die grossen Luecken (23,80->34,17 = 10,37 mm, 42,17->51,95 = 9,78 mm,
-# 59,95->61,96 = 2,01 mm, alle ueber dem R4-Minimum 0,8 mm) sind KEIN
-# Verschwenden von Platz, sondern die einzige Art, wie eine Klemmen-
-# reihe an dieser Stelle der Platine ueberhaupt alle drei Landepunkt-
-# Spalten umgehen kann -- s. spec_dimmer_basis._klemme_x() fuer die
-# vollstaendige, pro Kanal nachgerechnete Platzierung.
-#
-# Warum NICHT stattdessen BOARD_W weiter wachsen lassen (die andere
-# denkbare Korrektur): die Landepunkt-Spalten haengen an
-# STECKER_POS[...]["pin1"] (frozen) UND an BOARD_W gleichzeitig
-# (Spiegelformel BOARD_W - pin1_x) -- waechst BOARD_W, wandern ALLE
-# Spalten um denselben Betrag nach rechts, UND KLEMMENZONEs eigene, auf
-# BOARD_W zentrierte Lage wandert um die HALBE Differenz mit.
-# Nachgerechnet verschiebt das die Spalten nicht aus der Zone heraus,
-# sondern nur relativ zueinander -- ein Board-Wachstum haette dasselbe
-# Problem an anderer Stelle reproduziert, nur mit anderen Zahlen, und
-# zusaetzlich RANDPAD_ZONE und das M3-Lochbild neu aufgerollt. Eine
-# reine KLEMMENZONE-Verbreiterung (BOARD_W unveraendert) loest das
-# Problem an der Wurzel, ohne Nebenwirkungen auf andere Vertragsteile
-# -- nachgerechnet bleibt bei x1 = 70,20 mm weiterhin 4,30 mm Luft zum
-# rechten M3-Freihaltequadrat (74,5 mm) und 5,40 mm zur RANDPAD_ZONE
-# (75,60 mm).
-#
-# ROT-NACHWEIS (Audit-Befund B1, Kanal-1-Klemme im PICO_SCHATTEN):
-# KLEMMENZONE beginnt bei y = 60,80 (73,00 - 12,20), PICO_SCHATTEN endet
-# bei y = 51,9 -- 8,9 mm Luft, die Zone liegt vollstaendig ausserhalb.
-# tests/test_stack_spec.py rechnet das nach (R1: kein Klemmen-Hof
-# schneidet PICO_SCHATTEN).
-#
-# ROT-NACHWEIS gegen die M3-Eckloecher (jetzt BEWEGLICH, s.
-# M3_HOLES_FUER): Luft zum linken unteren Loch (4|69) = 23,80 -
-# (4 + M3_KEEPOUT/2) = 23,80 - 7,50 = 16,30 mm; zum rechten (78|69) =
-# (78 - 3,50) - 70,20 = 4,30 mm -- beide weit ueber 0.
-KLEMMENZONE = (23.80, 60.80, 70.20, 73.00)   # 46,40 x 12,20 mm
-
-# --- v2.1: RANDPAD_ZONE (R5/R8) ---------------------------------------
-# Pflichtflaeche fuer die 22 RANDPADS auf F.Cu, nahe der rechten Kante.
-# Hergeleitet in tools/platzprobe_v2_1.py, task-v21a-report.md
-# Abschnitt 9. Lauflaenge: 22 Loecher x RAND_RASTER (2,54 mm) = 55,88 mm
-# (bewusst n x Raster statt (n-1) x Raster -- das laesst ein halbes
-# Rastermass (1,27 mm) Marge an JEDEM Ende fuer Padbreite und
-# Silk-Label, s. RAND_Y0-Kommentar). Zonentiefe 4,0 mm (RAND_PAD_B plus
-# Silk-Label-Platz).
-#
-# Lage in x: unmittelbar rechts der ALTEN Kante (x = 75,0, w0 des
-# Wachstums) plus 0,6 mm Puffer, dann 4,0 mm Zonentiefe, dann mindestens
-# R5 = 2,0 mm Kupferabstand zur NEUEN Kante (x = 82,0):
-#   x0 = 75,60, x1 = 79,60. Kantenabstand = 82,0 - 79,60 = 2,40 mm >= 2,0
-#   (R5 erfuellt, mit 0,40 mm Reserve).
-#
-# Lage in y: DAS ist der eigentliche Engpass von v2.1 (s. Moduldocstring
-# und tools/platzprobe_v2_1.py). Die beiden RECHTEN M3-Loecher wandern
-# mit der Kante (M3_HOLES_FUER), ihre Freihaltequadrate liegen also im
-# SELBEN X-Bereich wie diese Zone -- die Trennung muss ueber Y laufen.
-# Bei BOARD_H = 73,0 sind die rechten Loecher bei y = 4,0 und y = 69,0;
-# frei ab y = 4,0 + M3_KEEPOUT/2 + 0,6 mm = 8,10 mm, frei bis
-# y = 69,0 - M3_KEEPOUT/2 - 0,6 mm = 64,90 mm -- 56,80 mm verfuegbar
-# gegen 55,88 mm Bedarf (0,92 mm Reserve). Zentriert in diesem Fenster:
-#   y0 = 8,56, y1 = 8,56 + 55,88 = 64,44.
-#
-# ROT-NACHWEIS gegen die 1,5-mm-Verdreh-Klausel (R1-Aufgabenbrief: "wird
-# NICHT aufgeweicht"): der naechste Punkt aus LANDEPUNKTE_VERDREHT() zu
-# irgendeinem tatsaechlichen Randpad (RAND_X|RAND_Y0 + i*RAND_RASTER)
-# liegt bei 16,81 mm Zentrumsabstand, abzueglich RAND_PAD_B/2 (0,45 mm)
-# also 16,36 mm bis zur Kupferkante -- weit ueber LANDE_SPERRRADIUS
-# (1,5 mm) und deutlich mehr, als die im Aufgabenbrief zitierten
-# "≥21 mm" der (durch Aufgabe A ueberholten) ERSTEN Fassung mit
-# eingefrorenem M3-Lochbild: diese Zone ist die neu abgeleitete, fuer
-# das bewegliche Lochbild gueltige Rechnung, nicht mehr jene Fassung.
-# tests/test_stack_spec.py rechnet das fuer alle 22 Pads einzeln nach.
-RANDPAD_ZONE = (75.60, 8.56, 79.60, 64.44)   # 4,00 x 55,88 mm, F.Cu
-
-# --- Wieviel Platz bleibt uebrig ------------------------------------
-# Ein Vertrag, der die Stecker so hinlegt, dass kein Modul mehr
-# hineinpasst, ist wertlos. Untergrenze, hergeleitet statt geraten:
-#
-# MODUL_HOF_SUMME_MM2 ist die Summe der Bauteil-Hoefe des heute
-# anspruchsvollsten Moduls (Motormodul, hardware/kicad/motor/
-# Motormodul.kicad_sch, 43 Bauteile) OHNE die Vertragsstecker (in v1
-# drei, in v2 vier -- die Zahl selbst ist unveraendert aus v1
-# uebernommen, s. Aufgabe 2, weil ihre Herleitung -- Motormodul minus
-# Vertragsstecker -- unabhaengig davon gilt, wie viele Vertragsstecker
-# es gerade sind) -- gemessen aus denselben echten Footprints wie
-# FOOTPRINT_HOF oben. tools/platzprobe_v2.py rechnet fuer Aufgabe 1
-# unabhaengig davon dieselbe Motor-Nutzlast neu nach (935,3 mm2 vor
-# Reserve) und bestaetigt damit dieselbe Groessenordnung, statt sie nur
-# abzuschreiben.
-MODUL_HOF_SUMME_MM2 = 956.8
-# BELEGUNGSGRAD_ERPROBT ist der Anteil der Platinenflaeche, den die
-# Hoefe auf einer WIRKLICH gebauten, verlegten und DRC-sauberen
-# 2-Lagen-Platine desselben Umrisses belegen: die Vereinigung aller
-# Hoefe in PecheAuxCanards/tools/pcb/spec.py (PLACEMENT) deckt
-# 2172,8 mm2 von 64 x 60 = 3840 mm2. Mehr als das passt erfahrungs-
-# gemaess nicht mehr, ohne dass die Verdrahtung nicht mehr aufgeht.
-BELEGUNGSGRAD_ERPROBT = 0.566
-# Daraus die Untergrenze: 956,8 / 0,566 = 1690,5 mm2, aufgerundet.
-FREIE_FLAECHE_MINDEST = 1700.0
-# SOCKEL_HOF_SUMME_MM2 war in v1 dieselbe Rechnung fuer die
-# Sockelplatine, die zusaetzlich den Pico und dessen Antennen-
-# Sperrbereich verlor: ihre eigenen acht Bauteile (J1, D1, C3, C1, C2,
-# R1, R2, U2 -- ohne die drei Vertragsstecker und ohne den Pico selbst)
-# summierten sich auf 437,8 mm2 Hof. Der Wert bleibt hier stehen (kein
-# Beleg wird geloescht), ist aber in v2 UNBENUTZT: es gibt keine
-# Sockelplatine mehr, gegen die er noch etwas pruefen koennte (s.
-# Modul-Docstring, "der Pico ist der Stapel") -- die zugehoerige
-# Pruefung ("Sockel: ...") ist deshalb aus
-# tests/test_stack_spec.py entfernt, nicht abgeschwaecht.
-SOCKEL_HOF_SUMME_MM2 = 437.8
-# Die hier festgelegte Anordnung laesst einem Modul 3013,0 mm2 am
-# Stueck (78,5 % der Platine), groesstes freies Rechteck 1852,2 mm2
-# -- Faktor 1,77 ueber der Untergrenze. Bis Aufgabe 5e waren es
-# 3077,7 mm2; die 64,7 mm2 Unterschied sind der Preis der breiteren
-# SMD-Hoefe. Der Sockelplatine bleiben 1711,5 mm2 (vorher 1776,2),
-# gegen 773,5 mm2 Bedarf. Nachgerechnet in tests/test_stack_spec.py
-# mit tools/pcb/geometry.freie_flaeche().
-
-# --- Verdreht aufgesteckt --------------------------------------------
-# M3_HOLES ist punktsymmetrisch zur Platinenmitte (v2: (4|4) und
-# (71|61) tauschen unter einer 180-Grad-Drehung die Plaetze, (4|61) und
-# (71|4) ebenso). Ein Modul laesst sich also seitenrichtig, aber um
-# 180 Grad verdreht auf die Abstandsbolzen schrauben. Auf den beiden
-# Stapelreihen wuerde das Pico-Pin 1 auf Pico-Pin 40 legen -- VBUS auf
-# FLASH_TX -- und den Stapel zerstoeren. Der Umriss ist Vertrag und
-# laesst sich nicht unsymmetrisch machen; die Steckerlage dagegen
-# schon, und genau dafuer liegen die vier Steckerplaetze oben BEWUSST
-# UNSYMMETRISCH:
-#
-#   VERDREHT(...) der vier Flaechen ergibt bei BOARD_W/H = 82,0/73,0
-#   (v2.1 -- STECKER_POS["flaeche"] ist frozen, aber VERDREHT() spiegelt
-#   an BOARD_W/BOARD_H, also aendern sich diese Ergebnisse mit dem
-#   waechsenden Umriss, obwohl an den Steckern selbst nichts geaendert
-#   wurde):
-#     stapel_links  -> (49.62, 20.7, 53.16, 72.5)
-#     stapel_rechts -> (31.84, 20.7, 35.38, 72.5)
-#     kette         -> (58.0, 65.83, 64.82, 72.13)
-#     leistung      -> (12.36, 23.18, 24.1, 29.28)
-#
-#   Keine dieser vier Flaechen deckt sich mit der eines Steckers.
-#   Entscheidend ist aber nicht die Flaeche, sondern das Raster: der
-#   kleinste Abstand zwischen einem verdrehten Kontakt und irgendeinem
-#   Kontakt betraegt bei 82x73 nur noch 3,002 mm (v2/75x65: 4,031 mm;
-#   v1, bis Aufgabe 5e: 2,755 mm). Der groesste Teil davon kommt NICHT
-#   aus dem Y-Versatz (der ist beim 2,54-mm-Raster niemals mehr als die
-#   Haelfte, 1,27 mm), sondern aus dem bewussten seitlichen Versatz von
-#   stapel_links/rechts um 2,0 mm aus der Plattenmitte (s. Kommentar bei
-#   STECKER_POS, "stapel_links"/"stapel_rechts") -- WACHSENDE Plattenmitte
-#   ist aber nicht dasselbe wie WACHSENDER Abstand: die Mitte wandert mit
-#   BOARD_W (37,5 -> 41,0), die frozen Stecker-Koordinaten tun das nicht,
-#   und genau diese Verschiebung der Mitte GEGEN feste Stecker verkleinert
-#   den Sicherheitsabstand, statt ihn zu vergroessern. Das ist mehr als
-#   das halbe Raster (1,27 mm), das ein Stift braucht, um in einen
-#   Buchsenkontakt zu finden, und bleibt ueber der 2,5-mm-Reissleine des
-#   Tests -- ein verdreht aufgesetztes Modul steckt weiterhin NIRGENDS.
-#   Es bleibt tot, statt kaputtzugehen.
-#   tests/test_stack_spec.py rechnet beides nach, damit eine kuenftige
-#   Verschiebung das nicht stillschweigend aufhebt.
-#
-#   BEDENKEN (Aufgabe B, 2026-09-10): die Reserve ist von 4,031 auf
-#   3,002 mm gesunken (-25,5 %), obwohl der Umriss GEWACHSEN ist -- der
-#   naive Reflex "groesser ist sicherer" traegt hier nicht, weil sich die
-#   Plattenmitte gegen den frozen Stapelvertrag verschiebt. Ein
-#   weiterer Rechts-/Unten-Zuwachs in einer Folgeaufgabe MUSS diese Zahl
-#   neu pruefen, statt sie fuer selbstverstaendlich steigend zu halten.
-#
-# Tot ist besser als kaputt, aber nicht gut genug: sichtbar wird der
-# Fehler dadurch nicht. Die zugehoerige Layout-Auflage steht in
-# AUFLAGEN unten (Pin-1-Kennzeichnung, kein freiliegendes Kupfer in den
-# vier verdrehten Flaechen).
-VERDREHT_MINDESTABSTAND_MM = 3.002   # gerechnet, s. Test
-
-# --- Belegte Bauhoehen im Stapelspalt (gegen STAPEL_ABSTAND) --------
-# Beide Werte aus echten Datenblaettern gelesen, nicht geschaetzt --
-# Herleitung siehe Kommentar bei STAPEL_ABSTAND und hardware/bauteile-1b.md,
-# Beleg 6, zweite Runde.
-KLEMME_HOEHE_MM = 10.10   # DB128L-5.08-2P/-3P (C395868/C395869), Datenblatt
-                          # DORABO "DB128L-5.08-XXP-C-S" (2022.11.25),
-                          # Seitenansicht, Bemassung "10.10" -- ein
-                          # Zeichnungssatz fuer alle Polzahlen, Hoehe
-                          # unabhaengig von der Polzahl XX.
-K7805_HOEHE_MM = 10.2     # K7805-2000R3 (C2931187), SIP-3, Datenblatt DEXU
-                          # Electronics "K78xx-2000R3", Rev. A0-2018.12,
-                          # S. 2, Tabelle "外观尺寸": "长*宽*高
-                          # 11.6*7.5*10.2mm" (Laenge*Breite*Hoehe).
-
-# --- Auflagen an die Modulfirmware ----------------------------------
-# Teil des Vertrags, aber keine Geometrie und keine Pinnummer: Regeln,
-# die Modulfirmware einhalten muss, damit ein fremdes Modul den Stapel
-# nicht lahmlegt.
-AUFLAGEN = (
-    "Ausserhalb des Flash-Modus darf ein Modul die Leitung FLASH_RX "
-    "nicht treiben. FLASH_RX ist der Empfangspin des Pico und damit "
-    "die gemeinsame Sendeleitung aller Module. Im Normalbetrieb sind "
-    "alle Module gleichzeitig wach; treibt mehr als eines diese "
-    "Leitung, fallen sie einander ins Wort und koennen einander im "
-    "Gegentakt beschaedigen. Senden darf ein Modul nur, solange es "
-    "ueber die Auswahlkette ausgewaehlt ist (FLASH_MODE = 1 und das "
-    "eigene Flipflop Q = 1). Sonst bleibt der Pin hochohmig.",
-)
-
-# Auflagen an das LAYOUT eines Moduls -- ebenfalls Vertrag, aber
-# Kupfer und Bestueckungsdruck statt Software. Getrennt von
-# AUFLAGEN, weil das eine der Firmware gilt und das andere der
-# Platine.
-# --- Wo die Stifte eines verdreht aufgesteckten Aufbaus landen ------
-# Praezisierung der Kupferklausel in LAYOUT_AUFLAGEN (RULING 2026-09-01,
-# waehrend Aufgabe 7). Die alte Fassung verbot freiliegendes Kupfer in
-# den drei GANZEN Flaechen VERDREHT(STECKER_POS[...]["flaeche"]). Das
-# war in sich unerfuellbar: die eigenen Loetpads des Stapelsteckers
-# ragen 0,17 mm in VERDREHT(leistung) hinein -- der Vertrag verletzte
-# seine eigene Auflage auf jeder Platine, gebaut oder nicht.
-#
-# Physisch drueckt aber keine Flaeche, sondern es druecken STIFTE, und
-# die landen an ausrechenbaren PUNKTEN: an VERDREHT() jedes einzelnen
-# Kontakts der (v2: vier) Steckerplaetze -- weiterhin 46 Punkte
-# (20 + 20 + 2 + 4, s. STECKER_POS). Der bestehende Vertragstest
-# sichert bereits, dass jeder Landepunkt mindestens
-# VERDREHT_MINDESTABSTAND_MM (v2.1: 3,002 mm, v2/75x65: 4,031 mm) von
-# jedem Kontakt entfernt bleibt; bis zur KUPFERKANTE des naechsten
-# Steckerpads sind es mindestens ebenso viel abzueglich des Padradius
-# (v1: 1,90 mm bei 0,85 mm Padradius -- fuer v2/v2.1 nicht neu
-# nachgerechnet, da LANDE_SPERRRADIUS unten mit 1,5 mm weiterhin klar
-# unter dem gesunkenen v2.1-Wert bleibt). Die Regel wird
-# deshalb: kein freiliegendes Kupfer naeher als LANDE_SPERRRADIUS an
-# einem Landepunkt. 1,5 mm lassen dem stumpfen Stiftende (0,64 mm
-# Vierkant, halbe Diagonale 0,45 mm) rund 1 mm Montagetoleranz.
-# tools/pcb/steckerprobe.py misst das an der gebauten Platine nach.
-LANDE_SPERRRADIUS = 1.5    # mm um jeden Landepunkt, bis zur Kupferkante
-
-
-def LANDEPUNKTE_VERDREHT():
-    """Alle 46 Punkte, an denen ein verdreht aufgesteckter Aufbau mit
-    seinen Stiften auf der Oberseite dieser Platine aufsetzt."""
-    aus = []
-    for eintrag in STECKER_POS.values():
-        lagen = PAD_LAGEN(eintrag["footprints"][0], eintrag["pin1"],
-                          eintrag["drehung"])
-        for x, y in lagen.values():
-            aus.append((round(BOARD_W - x, 3), round(BOARD_H - y, 3)))
-    return tuple(aus)
-
-
-# RULING (2026-09-01, Aufgabe 7) zur Zugentlastungs-Auflage unten: es
-# gilt das FUEGEVERFAHREN -- die Platinen werden ERST gesteckt und DANN
-# auf die Abstandsbolzen geschraubt. Begruendung: null Platinenflaeche
-# und null Bauteile, und nach dem Verschrauben tragen die M3-Bolzen
-# jede Steck- und Zugkraft; die Loetstellen sehen nur den einen
-# kontrollierten Fuegevorgang. Zusaetzliche Befestigungspunkte je
-# Stecker haetten auf 64 x 60 mm zweimal vier Bohrungen gekostet --
-# mitten in den Flaechen, die den Modulen gehoeren. Kosten wenn
-# falsch: die Regel steht im Vertragsdokument, eine Montageanweisung,
-# kein Kupfer -- jederzeit aenderbar.
-MONTAGE_REGEL = (
-    "ERST stecken, DANN auf die Abstandsbolzen schrauben. Die "
-    "Zugentlastung der SMD-Steckerpaare ist die Verschraubung des "
-    "Stapels; ein bereits verschraubter Stapel darf nicht "
-    "auseinandergezogen werden, ohne zuerst die Bolzen zu loesen."
-)
-
-# v2.1 (Aufgabe C2, Audit-Befund W4): der zweite Text hiess bis hierher
-# woertlich "KLEMMEN" -- das verspricht "hier sind die Klemmen", haelt
-# es aber auf keinem der vier Boards ein (Motormodul/Dimmer1: der Text
-# stand ueber der unbestueckten Randpad-Reihe, nirgends nahe einer
-# echten Klemme; Dimmer3/4: nur zufaellig zwischen zwei von mehreren
-# Klemmen). Der AUDIT selbst nennt die Loesung: den Text in seiner
-# tatsaechlichen Rolle benennen. Die Rolle ist eine reine
-# Verdreh-Orientierungsmarke (welche Kante ist unten, s. Begruendung
-# unten) -- deshalb jetzt "UNTEN" statt "KLEMMEN". Jede Klemme bekommt
-# stattdessen ihre EIGENE Funktionsbeschriftung (R7, build.
-# funktionsbeschriftung()) direkt an ihrer eigenen Position -- das war
-# der eigentliche Zweck, den "KLEMMEN" nie erfuellt hat.
-LAYOUT_AUFLAGEN = (
-    "Jede Platine traegt neben Pin 1 des Stapelsteckers eine "
-    "Kennzeichnung im Bestueckungsdruck (Dreieck plus Text \"1\") und "
-    "an der Klemmenkante (untere Kante, y = BOARD_H) die "
-    "Orientierungsmarke \"UNTEN\" (v2.1: vorher \"KLEMMEN\", s. "
-    "Audit-Befund W4 -- die Marke zeigt nur die Verdreh-Orientierung "
-    "an, keine bestimmte Klemme; jede Klemme traegt ihre eigene "
-    "Funktionsbeschriftung, s. R7/funktionsbeschriftung()). Grund: das "
-    "M3-Lochbild ist punktsymmetrisch, ein Modul laesst sich also um "
-    "180 Grad verdreht anschrauben. Die Steckerlage (STECKER_POS) ist "
-    "bewusst so unsymmetrisch, dass dann kein einziger Stift in einen "
-    "Buchsenkontakt findet -- das verhindert den Schaden, macht den "
-    "Fehler aber nicht sichtbar. Ausserdem darf auf der OBERSEITE "
-    "eines Moduls im Umkreis von LANDE_SPERRRADIUS um jeden der "
-    "Punkte aus LANDEPUNKTE_VERDREHT() kein freiliegendes Kupfer "
-    "liegen (keine Testpunkte, keine offenen Pads, keine unbedeckten "
-    "Durchkontaktierungen): genau dort setzen die "
-    "Stifte eines verdreht aufgesteckten Aufbaus auf. Die "
-    "Sockelplatine ist von dieser Kupferregel ausgenommen -- sie "
-    "sitzt zuoberst, auf ihre Oberseite drueckt nie ein Stift.",
-
-    "Ketten- und Leistungsstecker sind SMD-Paare: Buchse auf der "
-    "Oberseite, Stiftleiste auf der Unterseite, auf demselben "
-    "Kontaktraster und OHNE Durchkontaktierung zwischen den beiden "
-    "Kontaktflaechen. Beim Kettenstecker ist die fehlende "
-    "Durchkontaktierung die eigentliche Funktion: oben liegt SEL_IN, "
-    "unten SEL_OUT: waeren sie verbunden, waere die Auswahlkette "
-    "kurzgeschlossen und das Schieberegister (tools/kette.py) "
-    "wirkungslos. Beim Leistungsstecker fuehren beide Seiten dasselbe "
-    "Netz; dort ist die Verbindung erlaubt, aber sie gehoert dann in "
-    "eine eigene Durchkontaktierung neben dem Pad, nicht in das "
-    "SMD-Pad selbst.",
-
-    "Beide SMD-Steckerpaare brauchen eine Zugentlastung: die "
-    "Steckkraft eines ganzen Stapels darf nicht an den Loetstellen "
-    "haengen. Zulaessig sind zwei zusaetzliche, mechanisch "
-    "verschraubte oder verklebte Befestigungspunkte je Stecker, oder "
-    "ein Fuegeverfahren, bei dem die Platinen ERST gesteckt und DANN "
-    "auf die Abstandsbolzen geschraubt werden. Welches von beiden, "
-    "entscheidet die Layout-Aufgabe -- aber nicht keines von beiden. "
-    "Bedrahtete Stecker haetten das nicht gebraucht; sie sind hier "
-    "aber ausgeschlossen (s. Block bei STECKER_KETTE).",
-)
-
-# --- v2.1: Layoutregeln R1-R9 (pruefbare Zusagen an jedes Modullayout) -
-# WARUM DIESER BLOCK EXISTIERT. Der Audit `.superpowers/sdd/
-# 2026-09-07-picostack-v2/audit-layout-v2.md` fand einen Blocker und
-# sieben Wichtig-Befunde, alle Varianten desselben Grundproblems: das
-# Layout hatte keine PRUEFBAREN Regeln, an denen es sich haette messen
-# lassen -- Klemmenposition, Bauteilhoehe, Beschriftung standen nirgends
-# als Zusage, nur als Ergebnis der jeweils naechstbesten Platzierung.
-# Die Recherche `.superpowers/sdd/2026-09-07-picostack-v2/
-# recherche-hat-layout.md` leitet daraus neun Regeln ab, jede mit einem
-# eigenen Belegstatus -- von woertlich zitiertem Datenblatt bis reine
-# Projektkonvention. LAYOUT_REGELN macht sie zu Zusagen im selben Stil
-# wie VERSORGUNG oben, damit eine spaetere Pruefung (Aufgabe C/D) und
-# jedes fremde Modul-Layout dieselbe, maschinenlesbare Quelle haben statt
-# eine Regel aus dem Fliesstext einer Recherche neu abzutippen.
-#
-# NIEMALS eine Konvention als Norm ausgeben: wo die Recherche eine Zahl
-# ausdruecklich als "unbelegt"/"Konvention" markiert (R5, R6, R8, R9),
-# steht das auch hier woertlich so -- ein "beleg"-Feld, das eine
-# Konvention als "belegt" tarnte, waere schlimmer als gar keines.
-# --- v2.1: Wo die Drahtoeffnung einer Klemme liegt ------------------
-#
-# Diese Zahl entscheidet, in welche Richtung eine Klemme gedreht wird,
-# und sie ist mit v2.1 NACHGEMESSEN worden, nachdem ein Sichtbefund des
-# Nutzers ("die Anschlussklemmen sollten wirklich am Boardrand liegen")
-# eine falsche Drehung auf allen vier Brettern aufgedeckt hat.
-#
-# WAS VORHER GALT UND WARUM ES FALSCH WAR. spec_motor.PLACEMENT["J5"]
-# leitete die Drehung aus der Asymmetrie des Hofes ab: "die GROESSERE
-# Haelfte zeigt zur Platinenkante". Derselbe Kommentar raeumt ein, dass
-# er vorne und hinten NICHT unterscheiden kann ("R5 haelt in JEDER
-# denkbaren Zuordnung von 'vorne'/'hinten' bei dieser Bauform") -- er
-# prueft dann die Regel, die in beiden Lesarten haelt (R5, Kupfer-
-# abstand), und nicht die, die von der Zuordnung abhaengt (R1,
-# Drahtoeffnung nach aussen). Die groessere Haelfte ist in Wahrheit der
-# RUECKEN: hinter dem Klemmkaefig sitzt der Rest des Gehaeuses.
-#
-# WAS NICHT ALS BELEG TAUGT. Das gefuellte Dreieck, das der
-# KiCad-Footprintgenerator auf F.SilkS setzt, sieht wie eine
-# Richtungsmarke aus, ist aber keine: ueber die 105 Horizontal-
-# Footprints der Bibliothek TerminalBlock_Phoenix liegt es 75-mal auf
-# der flacheren und 30-mal auf der tieferen Gehaeuseseite, korreliert
-# also nicht mit der Bauform, und dieselbe Marke steht auch auf
-# VERTIKALEN Klemmen, die ueberhaupt keine waagerechte Oeffnung haben.
-#
-# WAS GEMESSEN WURDE. Im STEP-Modell der Bauform (kicad-packages3d,
-# TerminalBlock_Phoenix.3dshapes) gibt es genau ein Merkmal, das die
-# Drahtseite eindeutig macht: eine EBENE FLAECHE MIT INNENKONTUR --
-# im B-Rep eine ADVANCED_FACE mit mehr als einer Begrenzung, also der
-# Aussenkontur plus dem Loch. Die Rueckwand hat nur eine Begrenzung.
-# Gefunden wurde sie bei beiden Bauformen mit Normale entlang y:
-#
-#   PT-1,5-2-3.5-H : Flaeche bei Modell-y -2,00, z 0,65..5,05
-#   MKDS-3-2-5.08  : Flaechen bei Modell-y -5,28 und -2,00, z 3,30..8,00
-#
-# Die z-OBERGRENZE dieser Flaechen ist bei beiden GENAU die Hoehe der
-# Schraubenbohrung (aus denselben Modellen: Zylinder mit senkrechter
-# Achse bei z=5,05 bzw. z=8,00) -- die Flaeche ist der Klemmkaefig, in
-# den der Draht laeuft. Das ist Herstellergeometrie, keine
-# Zeichenkonvention.
-#
-# ACHSENLAGE (die Stelle, an der man sich vertun kann): KiCad-3D-
-# Modelle stehen gegenueber den Footprintkoordinaten in y GESPIEGELT.
-# Nicht angenommen, sondern an den Koerperausdehnungen beider Modelle
-# nachgerechnet:
-#
-#   PT   Footprint F.Fab y -3,10..+4,50   Modell y -4,50..+3,05
-#   MKDS Footprint F.Fab y -5,90..+4,80   Modell y -5,28..+5,92
-#
-# Beide Male faellt die tiefe Seite des Footprints auf die negative
-# Seite des Modells (4,50 <-> -4,50 und -5,90 <-> +5,92, auf 0,05 mm).
-# Modell-y = -Footprint-y. Die Oeffnung liegt im Modell auf -y, also
-# im FOOTPRINT auf +y -- bei beiden Bauformen.
-#
-# DRITTER, UNABHAENGIGER BELEG: die Lastklemmen J5..J8 der Dimmer
-# wurden in Aufgabe C1 bewusst mit ihrer lokalen +y-Seite buendig an
-# die Unterkante gesetzt, um R1 zu erfuellen. Sie sind die einzigen
-# Klemmen des Projekts, die schon vor v2.1 richtig herum standen.
-#
-# Angegeben ist der Einheitsvektor der Oeffnung in LOKALEN
-# Footprintkoordinaten (vor Drehung/Spiegelung). klemmenprobe.py dreht
-# ihn mit der tatsaechlichen Bauteillage.
-KLEMME_OEFFNUNG = {
-    "TerminalBlock_Phoenix_PT-1,5-2-3.5-H_1x02_P3.50mm_Horizontal":
-        (0.0, 1.0),
-    "TerminalBlock_Phoenix_MKDS-3-2-5.08_1x02_P5.08mm_Horizontal":
-        (0.0, 1.0),
+STECKER_LEISTUNG = {
+    "typ": "Stapelbuchse 1x4 (STECKER_STAPEL, abgelaengt)",
+    "pins": STECKER_POS["leistung"]["pins"],
+    "strom_pro_kontakt_a": STECKER_STAPEL["strom_pro_kontakt_a"],
+    "kontakte_je_ader": 2,
 }
 
+# Qwiic und User-Header sind keine Stapelstecker; ihre Lage darf ein
+# Modul frei waehlen (Empfehlung: obere Kante). Pinbelegung ist Vertrag.
+QWIIC_PINS = {1: "GND", 2: "3V3", 3: "I2C_SDA", 4: "I2C_SCL"}
+USER_PINS = {1: "GP0", 2: "GP1", 3: "GP2", 4: "GP3", 5: "3V3", 6: "GND"}
+
+
+def VERDREHT_STECKT_NIRGENDS(mindestabstand=2.0):
+    """Ein um 180 Grad verdreht aufgesetztes Modul darf mit keinem Stift
+    einen Buchsenkontakt treffen. Liefert den kleinsten Abstand
+    zwischen einem verdrehten Stift und einem Kontakt."""
+    kontakte = []
+    for e in STECKER_POS.values():
+        kontakte += list(PAD_LAGEN(e["footprints"][0], e["pin1"],
+                                   e["drehung"]).values())
+    d_min = float("inf")
+    for x, y in kontakte:
+        vx, vy = BOARD_W - x, BOARD_H - y
+        for kx, ky in kontakte:
+            d_min = min(d_min, math.hypot(vx - kx, vy - ky))
+    return round(d_min, 3), d_min >= mindestabstand
+
+
+# --- Klemmen ------------------------------------------------------------------
+FP_KLEMME_35 = ("TerminalBlock_Phoenix:"
+                "TerminalBlock_Phoenix_PT-1,5-2-3.5-H_1x02_P3.50mm_Horizontal")
+FP_KLEMME_508 = ("TerminalBlock_Phoenix:"
+                 "TerminalBlock_Phoenix_MKDS-3-2-5.08_1x02_P5.08mm_Horizontal")
+KLEMME_OEFFNUNG = {
+    FP_KLEMME_35.split(":")[1]: (0.0, 1.0),
+    FP_KLEMME_508.split(":")[1]: (0.0, 1.0),
+}
+KLEMME_KANTENABSTAND_MAX = 0.10
+KLEMME_UEBERSTAND_MAX = 0.00
+# Klemmenreihe: untere Kante, zwischen den M3-Freihaltekreisen.
+# Tiefe = Hof der PT-1,5-Klemme (8,60 mm) + Reserve.
+KLEMMENZONE = (7.5, 41.0, 66.5, 50.0)
+
+
 def KLEMME_OEFFNUNG_GLOBAL(footprint, drehung_grad, gespiegelt=False):
-    """Oeffnungsrichtung einer Klemme in PLATINENkoordinaten.
-
-    Nimmt den gemessenen lokalen Vektor aus KLEMME_OEFFNUNG und dreht
-    ihn in die Lage, in der das Bauteil wirklich sitzt. Steht hier und
-    nicht in klemmenprobe.py, damit die Rechnung ohne KiCad pruefbar
-    ist -- klemmenprobe.py braucht pcbnew, tests/ nicht.
-
-    KiCad dreht in der Aufsicht gegen den Uhrzeigersinn, die y-Achse
-    zeigt nach unten; ein lokaler Vektor (x,y) landet damit bei
-    (x cos + y sin, -x sin + y cos).
-
-    Wirft KeyError, wenn die Bauform nicht vermessen ist. Das ist
-    Absicht: eine unbekannte Klemme still durchzulassen waere genau der
-    Fehler, der J90 auf vier Brettern verdreht stehen liess.
-
-    GESPIEGELTE KLEMMEN werden ABGELEHNT statt gerechnet. KiCad
-    spiegelt beim Umsetzen auf die Rueckseite den Footprint UND kehrt
-    den Drehwinkel um; welche der beiden Umkehrungen in
-    GetOrientationDegrees() schon enthalten ist, haette ich raten
-    muessen -- und Raten an genau dieser Stelle hat die verdrehten
-    Klemmen ueberhaupt erst verursacht. Kein Brett dieses Projekts hat
-    eine Klemme auf der Rueckseite (alle sind bedrahtet und oben
-    bestueckt), es gibt also nichts nachzumessen und nichts zu
-    verlieren. Wer je eine SMD-Klemme unten bestueckt, bekommt hier
-    einen Fehler und muss die Regel VORHER an einem echten Brett
-    nachmessen -- lieber rot als still falsch.
-    """
-    import math
-
+    """Oeffnungsrichtung einer Klemme in Platinenkoordinaten."""
     if gespiegelt:
         raise NotImplementedError(
             "Oeffnungsrichtung einer auf der Rueckseite bestueckten "
-            "Klemme ist in diesem Projekt nie nachgemessen worden "
-            "(es gibt keine) -- erst messen, dann rechnen")
+            "Klemme ist nie nachgemessen worden -- erst messen")
     lx, ly = KLEMME_OEFFNUNG[footprint.split(":")[-1]]
     w = math.radians(drehung_grad)
     c, s = math.cos(w), math.sin(w)
     return (round(lx * c + ly * s, 9), round(-lx * s + ly * c, 9))
 
 
-# Wie weit eine Klemme hoechstens hinter der Platinenkante zurueckstehen
-# darf. KONVENTION, ausdruecklich keine Norm -- in derselben Weise
-# gekennzeichnet wie R5/R6/R8/R9.
-#
-# Herleitung: R1 sagt "buendig". Der einzige Grund, ueberhaupt eine
-# Toleranz zuzulassen, ist die Rundung der Platzierungsrechnung; die
-# laeuft im Projekt auf 0,001 mm. 0,10 mm liegt zwei Zehnerpotenzen
-# darueber und damit sicher ueber jedem Rundungsrest, aber weit unter
-# jedem Mass, das mechanisch etwas aendern koennte. Ein groesserer Wert
-# waere eine verdeckte Erlaubnis, Klemmen nach innen zu ruecken -- und
-# genau das war der Befund, der diese Zusage ausgeloest hat.
-#
-# Ueberstand nach AUSSEN ist nicht erlaubt (0,00 mm): eine Klemme, die
-# ueber den Umriss ragt, kollidiert im Nutzen mit dem Fraesschlitz.
-KLEMME_KANTENABSTAND_MAX = 0.10
-KLEMME_UEBERSTAND_MAX = 0.00
-
+# --- Layoutregeln (pruefbar) ------------------------------------------------------
 LAYOUT_REGELN = {
-    "R1": {
-        "text": "Klemmen an der Kante: Klemmenkoerper buendig zur "
-                "Platinenkante, Drahtoeffnung nach aussen; kein "
-                "Klemmen-Hof (F.CrtYd) schneidet PICO_SCHATTEN.",
-        "keepout": "PICO_SCHATTEN",
-        "beleg": "belegt -- Hardware design with RP2040 (Raspberry Pi): "
-                 "\"You must make sure that the height of any components "
-                 "added underneath are less than the gap needed by the "
-                 "socket or header used\", und fuer aufgeloetete Bauteile "
-                 "sogar \"the entire footprint will have to have a "
-                 "component keepout underneath\". Eine Klemme braucht "
-                 "ausserdem Schraubendreher-Zugriff von oben, den ein "
-                 "gestecktes Pico-Board blockiert (recherche-hat-"
-                 "layout.md, Abschnitt 1, ableitbare Regel 1). Direkte "
-                 "Antwort auf Audit-Befund B1 (Blocker).",
-    },
-    "R2": {
-        "text": "Eine Reihe je Funktionsgruppe: alle Lastklemmen eines "
-                "Moduls auf EINER Kante, in Kanalreihenfolge, "
-                "vollstaendig innerhalb KLEMMENZONE.",
-        "zone": "KLEMMENZONE",
-        "beleg": "belegt -- Pimoroni Automation HAT und Adafruit 5095/"
-                 "DFRobot 2591 (Referenzboards): alle Klemmen laufen dort "
-                 "als eine durchgehende Reihe entlang einer einzigen "
-                 "Kante (recherche-hat-layout.md, Abschnitt 4, ableitbare "
-                 "Regel 3).",
-    },
-    "R3": {
-        "text": "Bauteilhoehe unter dem Pico: nichts im PICO_SCHATTEN "
-                "hoeher als der Steckabstand des Stapelsteckers.",
-        "max_bauteilhoehe_mm": STECKER_STAPEL["gehaeusehoehe_mm"],  # 8,5
-        "beleg": "belegt (qualitativ, kein Norm-Zahlenwert) -- Hardware "
-                 "design with RP2040: \"You must make sure that the "
-                 "height of any components added underneath are less "
-                 "than the gap needed by the socket or header used.\" "
-                 "Der Designguide selbst nennt keine mm-Zahl; die hier "
-                 "eingetragene Zahl (8,5 mm) ist "
-                 "STECKER_STAPEL['gehaeusehoehe_mm'] -- die Isolations-"
-                 "hoehe der Buchse, die genau den Spalt bildet, den die "
-                 "Guide-Regel meint (Bauform-Zielwert, noch kein "
-                 "bestelltes 1x20-Teil, s. RULING bei STECKER_STAPEL).",
-    },
-    "R4": {
-        "text": "Klemmenabstaende: Luft-/Kriechstrecke zwischen "
-                "benachbarten Klemmenkontakten.",
-        "mindestabstand_mm": 0.8,
-        "beleg": "belegt -- IEC 60664, zitiert bei andwinpcb.com: "
-                 "0,8 mm bei 50 V. Fuer PicoStacks 6-30-V-Klemme "
-                 "konservativ unveraendert uebernommen: IEC 60664 "
-                 "verlangt bei NIEDRIGERER Spannung nie MEHR Abstand, "
-                 "0,8 mm bei 50 V deckt also jeden Wert bis 30 V mit ab. "
-                 "Staerker als das generische COURTYARD_GAP (0,6 mm) -- "
-                 "eine Klemmenplatzierung, die auf COURTYARD_GAP "
-                 "zurueckfaellt, verletzt diese Regel.",
-    },
-    "R5": {
-        "text": "Kupferabstand zur Platinenkante.",
-        "mindestabstand_mm": 2.0,
-        "beleg": "teilweise belegt -- Eurocircuits Component Clearances "
-                 "nennt 2,00 mm fuer Card-Edge-Steckverbinder-Finger; die "
-                 "Uebertragung auf Klemmenreihen/Randpads ist eine "
-                 "eigene Schlussfolgerung der Recherche, KEINE "
-                 "wortgleiche Norm fuer Klemmen (recherche-hat-"
-                 "layout.md, ableitbare Regel 6, dort ausdruecklich so "
-                 "markiert: \"Konvention, teilweise belegt\"). Gilt fuer "
-                 "das KUPFER (Loetpads, Leiterbahnen) -- der "
-                 "Klemmenkoerper selbst darf laut R1 trotzdem "
-                 "kantenbuendig sitzen: die realen Loetpads einer "
-                 "Phoenix-Klemme dieser Bauform liegen gegenueber der "
-                 "Gehaeusevorderkante zurueckgesetzt (mehrere mm) -- "
-                 "eine Bauform-Annahme, kein in diesem Vertrag "
-                 "nachgerechneter Pad-Abstand (s. task-v21a-report.md, "
-                 "Abschnitt 8, Bedenken).",
-    },
-    "R6": {
-        "text": "Jedes bestueckte Bauteil traegt seinen "
-                "Referenzbezeichner sichtbar auf F.Silkscreen (nicht "
-                "F.Fab/B.Fab, nicht unsichtbar geschaltet).",
-        "layer": "F.Silkscreen",
-        "sichtbar": True,
-        "beleg": "Konvention, unbelegt als Norm -- IPC-2221 regelt nur "
-                 "allgemeine Silkscreen-Lesbarkeit, nichts Referenz-"
-                 "spezifisches (recherche-hat-layout.md, Abschnitt 5). "
-                 "Direkte Antwort auf Audit-Befund W1 (auf drei von vier "
-                 "Boards trug KEIN einziges Bauteil eine lesbare "
-                 "Referenz).",
-    },
-    "R7": {
-        "text": "Jede Klemme und jeder Stecker traegt seine Funktion "
-                "(Netz-/Pinname) im Siebdruck daneben, in "
-                "Anschlussreihenfolge.",
-        "layer": "F.Silkscreen",
-        "beleg": "belegt -- Adafruit 5095/DFRobot 2591: jede Klemme "
-                 "traegt den exakten Pico-Pinnamen, in Pinout-Reihenfolge "
-                 "(recherche-hat-layout.md, Abschnitt 5, ableitbare Regel "
-                 "5). Antwort auf Audit-Befund W2 (Notaus unbeschriftet) "
-                 "und W5 (keine Klemme traegt eine Funktion).",
-    },
-    "R8": {
-        "text": "Jedes Randpad traegt sein GP-/Netzlabel im Siebdruck, "
-                "auf DERSELBEN Seite wie sein Kupfer (v2.1: F.Cu, "
-                "vorher B.Cu/B.Silkscreen).",
-        "layer": RAND_LABEL_LAYER,
-        "kupfer_layer": RAND_LAYER,
-        "beleg": "Konvention (Fortschreibung von R7 auf die Randpads) -- "
-                 "keine eigene Norm gefunden, aber DFRobot bewirbt klare "
-                 "Pro-Pin-Beschriftung ausdruecklich als "
-                 "Grundanforderung an ein brauchbares Board "
-                 "(recherche-hat-layout.md, Abschnitt 5). Antwort auf "
-                 "Audit-Befund W3 (22 unbeschriftete Randpads auf allen "
-                 "vier Boards).",
-    },
-    "R9": {
-        "text": "Board-Identitaet: Modulname, Vertragsversion und "
-                "Modultyp stehen lesbar im Siebdruck (z. B. neben der "
-                "Pin-1-Marke).",
-        "layer": "F.Silkscreen",
-        "pflichtfelder": ("modulname", "vertrag_version", "modultyp"),
-        "beleg": "Konvention, unbelegt als Norm -- es gibt keine "
-                 "offizielle Pico-HAT-Spezifikation, an der sich eine "
-                 "Identitaetspflicht ablesen liesse (recherche-hat-"
-                 "layout.md, ableitbare Regel 12). Antwort auf "
-                 "Audit-Befund W7 (alle vier Boards trugen identischen, "
-                 "unetikettierten Text -- von aussen ununterscheidbar).",
-    },
+    "R1": {"text": "Klemmen kantenbuendig an der unteren Kante, Oeffnung "
+                   "nach aussen; kein Klemmen-Hof schneidet PICO_SCHATTEN.",
+           "keepout": "PICO_SCHATTEN",
+           "beleg": "Hardware design with RP2040 (Raspberry Pi): Bauteile "
+                    "unter dem Pico niedriger als der Steckabstand; eine "
+                    "Klemme braucht Schraubendreher-Zugriff von oben."},
+    "R2": {"text": "Alle Lastklemmen eines Moduls in EINER Reihe in "
+                   "Kanalreihenfolge von links, Einspeisung ganz rechts, "
+                   "vollstaendig in KLEMMENZONE.",
+           "zone": "KLEMMENZONE",
+           "beleg": "Pimoroni Automation HAT, Adafruit 5095, Kitronik 5331."},
+    "R3": {"text": "Bauteilhoehe unter dem Pico <= 8,0 mm, sonst <= 9,5 mm.",
+           "max_bauteilhoehe_mm": BAUTEILHOEHE_PICO_SCHATTEN_MAX,
+           "beleg": "Buchsenhoehe 8,5 mm; STAPEL_ABSTAND-Rechnung oben."},
+    "R4": {"text": "Luft-/Kriechstrecke zwischen Klemmenkontakten >= 0,8 mm.",
+           "mindestabstand_mm": 0.8,
+           "beleg": "IEC 60664, 0,8 mm bei 50 V."},
+    "R5": {"text": "Kupfer mindestens 0,5 mm von der Platinenkante.",
+           "mindestabstand_mm": 0.5,
+           "beleg": "JLCPCB-Designregel 0,3 mm plus Reserve."},
+    "R6": {"text": "Jedes Bauteil traegt seine Referenz sichtbar auf F.Silkscreen.",
+           "layer": "F.Silkscreen", "sichtbar": True,
+           "beleg": "Konvention (Audit v2 W1)."},
+    "R7": {"text": "Jede Klemme, jeder Stecker und jede Matrix-Spalte traegt "
+                   "ihre Funktion im Siebdruck.",
+           "layer": "F.Silkscreen",
+           "beleg": "Adafruit 5095 / DFRobot 2591: Pinnamen an jeder Klemme."},
+    "R9": {"text": "Modulname, Vertragsversion und Bank-Vorgabe stehen "
+                   "lesbar im Siebdruck.",
+           "layer": "F.Silkscreen",
+           "pflichtfelder": ("modulname", "vertrag_version", "bank"),
+           "beleg": "Konvention (Audit v2 W7)."},
+    # Platzierung nach Stromfluss (Bericht 04, A1-A12): als Zahlen,
+    # damit die Beschreibung KiCad-frei geprueft werden kann.
+    "P1": {"text": "Abblockkondensator <= 5 mm vom Versorgungspin seines IC, "
+                   "gleiche Lage.",
+           "max_mm": 5.0, "beleg": "TI SLVA959B 5.3.1 (< 0,5 cm)."},
+    "P2": {"text": "Schaltregler: Spule, Freilaufdiode und Eingangs-Keramik "
+                   "<= 6 mm vom IC (kleinste Schleife).",
+           "max_mm": 6.0, "beleg": "TI SLVS632L Layout-Beispiel; SLVA959B 6.3.2."},
+    "P3": {"text": "Schalter (FET/Treiber) <= 15 mm von seiner Lastklemme.",
+           "max_mm": 15.0, "beleg": "Adafruit/SparkFun 10-12 mm (Konvention)."},
+    "P4": {"text": "Gate-Widerstand <= 5 mm vom Gate.",
+           "max_mm": 5.0, "beleg": "Adafruit 2,5 mm, SparkFun 3,8 mm (Konvention)."},
+    "P5": {"text": "Keine Schaltregler-Teile und kein Kupfer in ANTENNE_FREI.",
+           "zone": "ANTENNE_FREI", "beleg": "Pico-Datenblatt 2.2.1."},
 }
 
-# --- Projektidentitaet (R9, Audit-Befund W7) --------------------------
-# EIN Name fuer alle Boards -- build.board_identity() druckt ihn
-# zusammen mit MODULNAME/MODULTYP/VERTRAG_VERSION auf jede Platine
-# (s. build.py). Hier und nicht in jeder spec_*.py, weil der Projektname
-# keine Modul-Eigenschaft ist, sondern fuer den gesamten Vertrag gilt --
-# dieselbe Ueberlegung wie bei VERTRAG_VERSION selbst.
-PROJEKTNAME = "PicoStack"
-
-# --- Modultypen -----------------------------------------------------
-# 0x00 ist ungueltig (ein unbeschriebener Kennwiderstand liest 0).
-# 0x80 und darueber bleibt fremden Modulen vorbehalten.
-MODULTYPEN = {
-    0x01: {"name": "Motor",    "kanaele": 1},
-    0x10: {"name": "Dimmer1",  "kanaele": 1},
-    0x11: {"name": "Dimmer3",  "kanaele": 3},
-    0x12: {"name": "Dimmer4",  "kanaele": 4},
-}
-
-# --- Kennwiderstaende -----------------------------------------------
-# Zwei Teiler gegen einen festen Oberwiderstand, je 16 Stufen aus der
-# E24-Reihe. Die Stufen sind so gewaehlt, dass sich benachbarte
-# Spannungsteiler um mehr als 3 % unterscheiden -- weit mehr als die
-# Streuung von 1-%-Widerstaenden und die Aufloesung des ADC.
-# Die Werte sind nicht die E24-Reihe der Reihe nach, sondern so
-# gewaehlt, dass die SPANNUNGSTEILER gleichmaessig liegen. Nimmt man
-# stumpf E24, draengen sich die oberen Stufen: zwischen 150 k und 220 k
-# liegen nur 1,9 % Spannungsunterschied, weniger als die Streuung von
-# 1-%-Widerstaenden zusammen mit dem ADC-Fehler.
-ID_OBEN = 10000.0
-ID_WIDERSTAENDE = (
-    0.0, 680.0, 1500.0, 2200.0, 3300.0, 4700.0, 6200.0, 7500.0,
-    10000.0, 13000.0, 16000.0, 22000.0, 30000.0, 43000.0, 68000.0,
-    150000.0,
+LAYOUT_AUFLAGEN = (
+    "Jede Platine traegt neben Pin 1 der unteren Stapelreihe eine "
+    "Kennzeichnung im Bestueckungsdruck (Dreieck plus \"1\") und an der "
+    "Klemmenkante die Marke \"UNTEN\". Das M3-Lochbild ist "
+    "punktsymmetrisch; ein verdreht angeschraubtes Modul steckt nirgends "
+    "(VERDREHT_STECKT_NIRGENDS), bleibt also tot statt kaputt -- die "
+    "Marke macht den Fehler sichtbar.",
+    "ERST stecken, DANN auf die Abstandsbolzen schrauben.",
 )
+MONTAGE_REGEL = LAYOUT_AUFLAGEN[1]
 
-
-def ID_ANTEIL(r):
-    """Spannungsanteil am ADC fuer einen Kennwiderstand."""
-    return r / (r + ID_OBEN)
-
-
-def TYPCODE_WIDERSTAENDE(typcode):
-    """(R_ID0, R_ID1) in Ohm fuer einen Modultyp-Code.
-
-    Kodierung, hiermit festgelegt: das NIEDRIGE Nibble waehlt die
-    Stufe des ID0-Kennwiderstands (R100), das HOHE Nibble die des
-    ID1-Kennwiderstands (R101). Stufe 0 ist 0 Ohm (Bruecke) --
-    deshalb ist Typ 0x00 unzulaessig: er ist von einer leeren
-    Platine nicht zu unterscheiden (beide Teiler lesen 0).
-
-    Beispiel Motor (0x01): R100 = 680 Ohm, R101 = Bruecke.
-    """
-    if typcode not in MODULTYPEN:
-        raise ValueError("unbekannter Modultyp 0x%02x" % typcode)
-    lo, hi = typcode & 0x0F, (typcode >> 4) & 0x0F
-    return ID_WIDERSTAENDE[lo], ID_WIDERSTAENDE[hi]
+# --- Modultypen -------------------------------------------------------------------
+MODULTYPEN = {
+    0x01: {"name": "Motor",   "familie": "Motor",  "kanaele": 1, "signale": 4, "adc": True},
+    0x10: {"name": "Dimmer1", "familie": "Dimmer", "kanaele": 1, "signale": 1, "adc": False},
+    0x11: {"name": "Dimmer3", "familie": "Dimmer", "kanaele": 3, "signale": 3, "adc": False},
+    0x12: {"name": "Dimmer4", "familie": "Dimmer", "kanaele": 4, "signale": 4, "adc": False},
+}

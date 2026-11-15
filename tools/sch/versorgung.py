@@ -1,74 +1,41 @@
 # -*- coding: utf-8 -*-
-"""Die Versorgungszelle: Verpolschutz, TVS, 5V-Regler, VSYS-Diode.
+"""Die Versorgungszelle v3: Klemme -> Verpolschutz -> TVS -> Buck 5 V -> VSYS.
 
-Implementiert woertlich stack_spec.VERSORGUNG (Task 3, PicoStack v2):
+Implementiert stack_spec.VERSORGUNG woertlich:
 
-    schutz_drain_an = "PWR_IN"        -- Q90-Drain an der Einspeisung
-    gate_teiler_an  = "+24V_LOKAL"    -- R90/R91-Teiler an der lokalen Schiene
-    vsys_diode      = True            -- D91 vor VSYS
-    eingang_v       = (6.0, 30.0)     -- Eingangsfenster des Reglers U90
+    Klemme J90 (6-30 V)          PWR_IN, GND
+    Q90 AOD409 (P-Kanal)         Drain an PWR_IN, Source an VIN (lokal)
+    R91 100 k Gate->GND, D92 Zener 12 V Gate-Source
+                                 Vgs = -min(Vin, 12 V): bei 6 V voll
+                                 durchgesteuert, bei 30 V unter dem
+                                 20-V-Gate-Limit. (v2 hatte einen
+                                 10k/10k-Teiler: bei 6 V nur -3 V, der
+                                 IRFR5305 war dort nicht sicher offen --
+                                 Bericht 03, 2026-10-14.)
+    D90 SMCJ30A (TVS)            VIN -> GND, nur Transienten
+    C90 47 uF/50 V SMD-Elko, C91/C92 2x 10 uF/50 V 1210  an VIN
+    U90 TPS5430DDAR              VIN -> PH; Boot C93 10 nF; L90 15 uH;
+                                 D93 SS36C Freilauf; C94 100 uF/16 V
+                                 Ausgang; R92 10 k / R93 3,3 k -> 4,92 V
+    D91 SS36C                    +5V_LOKAL -> VSYS (Pico Pin 39)
+    LED90 + R94 10 k             "VIN"-Anzeige an der lokalen Schiene
 
-DER V1-FEHLER, DEN DIESE ZELLE BEHEBT. tools/sch/motormodul.py
-(`_endstufe_leistung()`, Q1/R11/R12, aus dem Altprojekt uebernommen)
-schaltete den P-Kanal-Verpolschutz genau umgekehrt: Q1s SOURCE lag an
-der rohen Einspeisung ("PWR24V"), Q1s DRAIN an der bereits geschuetzten,
-lokalen Schiene ("+24V") -- und der Gate-Teiler (R11/R12) haengt dort
-ebenfalls an PWR24V, nicht an der lokalen Schiene. Bei einer P-Kanal-
-Schutzschaltung ist die Reihenfolge kein Geschmacksdetail:
+WARUM EIN BUCK UND KEIN SIP-3-MODUL MEHR: K7805-1000R3 (C909765) und
+K7805-2000R3 (C2931187) sind bei LCSC ausverkauft (2026-10-14 und
+2026-11-15 geprueft); die lieferbaren Geschwister beginnen bei 7 V und
+verletzen die 6-V-Zusage. TPS5430 ist JLC-Basic (C9864), 5,5-36 V, 3 A.
+Preis der Entscheidung: ein Schaltregler-Layout (Schleife IC-L-Diode-
+Cin eng, PowerPAD mit Vias) -- Regel P2 des Vertrags.
 
-  * Ein MOSFET hat eine parasitaere Body-Diode zwischen Source und
-    Drain, die in der Sperrichtung des Kanals ohnehin leitet (beim
-    P-Kanal-Typ: Anode am Drain, Kathode an Source). Sitzt die Source
-    an der Einspeisung, leitet diese Body-Diode bei VERPOLTER
-    Einspeisung direkt in die lokale Schiene durch -- der Transistor
-    kann das gar nicht verhindern, er wird von seiner eigenen Diode
-    umgangen.
-  * Zusaetzlich haengt in der v1-Schaltung die TVS-Diode (D1) an der
-    JETZT vorwaertsgespeisten lokalen Schiene. Bei verpolter
-    Einspeisung wird sie DURCH die leitende Body-Diode in
-    Durchlassrichtung betrieben und leitet ihrerseits kraeftig --
-    zusammen bilden Body-Diode und TVS einen Kurzschluss-Pfad
-    ("Crowbar") von der verpolten Einspeisung nach Masse, statt den
-    Rueckstrom zu sperren. Der Schutz schuetzt in genau dem Fall nichts,
-    fuer den er gedacht ist.
+USB PARALLEL: Der Pico speist VSYS aus VBUS ueber seine eigene
+Schottky-Diode; diese Zelle speist VSYS ueber D91. Liegen beide an,
+gewinnt die hoehere Spannung, keine Quelle speist in die andere
+zurueck. Liegt nur USB an, ist der Buck stromlos (kein Rueckweg: D91
+sperrt). Das erfuellt die Vorgabe "programmieren ohne Netzteil".
 
-RICHTIGE TOPOLOGIE (diese Datei, Q90/R90/R91):
-  * Q90-Drain (Pin 2) an PWR_IN (der rohen Einspeisung, VOR jedem
-    eigenen Schutz/Regler) -- die Body-Diode zeigt jetzt so, dass sie
-    bei verpolter Einspeisung SPERRT (Anode am Drain/PWR_IN, das bei
-    Verpolung negativ liegt; Kathode an Source/+24V), statt
-    durchzuschalten.
-  * Q90-Source (Pin 3) an +24V (der lokalen, bereits geschuetzten
-    Schiene) -- alles, was danach kommt (D90, C90, U90 und jeder
-    Verbraucher der Zelle, die diese Schiene bezieht), liegt HINTER dem
-    Schutz.
-  * Gate-Teiler R90 (Gate<->+24V) UND R91 (Gate<->GND) haengen an der
-    LOKALEN Schiene, nicht an PWR_IN: haenge R90 stattdessen an PWR_IN,
-    koennte eine verpolte Einspeisung das Gate direkt falsch ansteuern
-    (Source auf +24V waere dann ueber R90 mit dem NEGATIVEN PWR_IN
-    verbunden, VGS wird stark positiv -- bei einem P-Kanal-MOSFET
-    schaltet das den Kanal AUS, gerade wenn er am dringendsten sperren
-    soll) und den Schutz umgehen, den er gerade herstellen soll --
-    exakt der Fall, den stack_spec.VERSORGUNG["gate_teiler_an"] =
-    "+24V_LOKAL" ausschliesst.
-
-tests/test_versorgung.py haelt die vier Kern-Pruefungen des Task-3-
-Briefs UND einen Rot-Nachweis fest, der denselben Drain-Check
-tatsaechlich gegen die generierte motormodul.py-Netzliste laufen laesst
-und dort bestaetigt, dass er (Stand vor dieser Etappe) fehlschlaegt.
-
-Herkunft der Bauteil-Muster (Task-3-Brief, woertlich uebernommen):
-  * FP_KLEMME_2 (KF350/PT-1,5-3.5mm-Klemmen-Footprint) aus
-    tools/sch/dimmermodul.py.
-  * FP_SMC ("Diode_SMD:D_SMC", das MASCHINELLE Padset, nicht die
-    Handloet-Variante) ebenfalls aus dimmermodul.py -- dort auch die
-    SS36C-"C" vs. SS36-"SMA"-Unterscheidung dokumentiert.
-  * Q_PMOS_GDS (generisches P-Kanal-Symbol, Pins 1=G/2=D/3=S) und
-    FP_TO252 aus tools/sch/motormodul.py/sockelplatine.py.
-  * FP_RECOM + die K7805-1000R3-Herleitung (NACHTRAG 2026-09-07) aus
-    tools/sch/sockelplatine.py -- unten woertlich uebernommen, weil
-    dieselbe Bauteilentscheidung (abgekuendigter 2-A-Typ, Ersatz durch
-    den 1-A-Bruder derselben Baureihe) hier genauso gilt.
+Netzliste-Zusagen (tests/test_versorgung.py prueft sie am erzeugten
+Blatt): Q90-Drain an PWR_IN; D92 zwischen Q90-Gate und Q90-Source;
+D91 zwischen +5V_LOKAL und VSYS; Teiler R92/R93 an VSENSE.
 """
 import os
 import sys
@@ -77,181 +44,186 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 for _d in (HERE, os.path.join(HERE, "..")):
     if _d not in sys.path:
         sys.path.insert(0, _d)
-import modulsockel      # noqa: E402  (FP_R0805/FP_C0805-Konstanten)
 
-# -------------------------------------------------------------- Footprints
-FP_R0805 = modulsockel.FP_R0805
-FP_C0805 = modulsockel.FP_C0805
-FP_TO252 = "Package_TO_SOT_SMD:TO-252-3_TabPin2"                # Q90
-FP_CP_RADIAL = "Capacitor_THT:CP_Radial_D8.0mm_P3.50mm"          # C90
-# Standard-Padset (maschinell bestueckt), nicht die Handloet-Variante des
-# Motormoduls -- dieselbe Wahl wie tools/sch/dimmermodul.py (FP_TVS_SMC)
-# fuer D90 (TVS) UND D91 (Schottky, gleiches DO-214AB-Gehaeuse).
+import stack_spec as S  # noqa: E402
+
+FP_R0805 = "Resistor_SMD:R_0805_2012Metric"
+FP_C0805 = "Capacitor_SMD:C_0805_2012Metric"
+FP_C1210 = "Capacitor_SMD:C_1210_3225Metric"
+FP_CP_63 = "Capacitor_SMD:CP_Elec_6.3x7.7"
+# AOD409: Pin 1 = G, Pin 2 = D (Tab), Pin 3 = S -- dasselbe Padbild
+# wie der Kanal-FET (Q_PMOS_GDS 1=G, 2=D, 3=S).
+FP_TO252 = "Package_TO_SOT_SMD:TO-252-3_TabPin2"
 FP_SMC = "Diode_SMD:D_SMC"
-# KF350-3.5-2P (C474892) und PT-1,5-2-3.5 (dimmermodul.py, SS36C-
-# Nachbarbauteil) sind fuer diese Pruefung austauschbar: beide sind
-# zweipolige 3,5-mm-Raster-Schraubklemmen mit identischem Lochbild --
-# derselbe Footprint-String wie tools/sch/dimmermodul.py.FP_KLEMME_2
-# (dort fuer die LED-Kanal-Klemmen dokumentiert) wird deshalb hier
-# woertlich uebernommen, statt eine zweite, geometrisch gleiche
-# .kicad_mod-Angabe fuer J90 zu erfinden.
-FP_KLEMME_2 = ("TerminalBlock_Phoenix:TerminalBlock_Phoenix_PT-1,5-2-3.5-H_1x02_P3.50mm_Horizontal")
-# K7805-2000R3 (SIP-3) hat in den KiCad-Standardbibliotheken kein eigenes
-# Symbol/Footprint. Wie tools/sch/sockelplatine.py wird deshalb Symbol
-# UND Footprint des Recom-Bauteils (identische SIP-3-Pinbelegung
-# IN/GND/OUT) wiederverwendet -- der WERT des platzierten Bauteils nennt
-# trotzdem den tatsaechlich einzukaufenden Typ (K7805-1000R3), nicht den
-# Recom-Platzhalter.
-#
-# NACHTRAG 2026-09-07 (Bestellrunde, woertlich aus sockelplatine.py
-# uebernommen -- dieselbe Bauteilentscheidung gilt hier unveraendert):
-# Der 2-A-Typ K7805-2000R3 ist als DEXU C2931187 ABGEKUENDIGT ("no
-# longer manufactured" laut JLC-Seiten-JSON), und der einzige lieferbare
-# 2-A-Namensvetter (JETEKPS C5378008) vertraegt laut LCSC-Rohdaten nur
-# 7-18 V Eingang -- an der 24-V-Schiene unbrauchbar, gleiche
-# Typenbezeichnung hin oder her. Bestueckt wird darum der 1-A-Bruder
-# derselben DEXU-Baureihe, K7805-1000R3 (LCSC C909765): DEXU-Datenblatt
-# "K78xx-1000R3" (REV A0-2018.12, selbst gelesen), Auswahltabelle S. 1:
-# K7805-1000R3 Eingang "6.0-30V (24)", 5 V / 1000 mA, gleiche Bauform
-# 11,6 x 7,5 x 10,2, LM78xx-Pinout -- exakt das Fenster, das
-# stack_spec.VERSORGUNG["eingang_v"] = (6.0, 30.0) festhaelt. 1 A statt
-# 2 A traegt die 5-V-Schiene locker: sie versorgt nur Logik (Pico,
-# je Modul das kleine MCU-Nest, einzelne Optokoppler-LEDs).
-FP_RECOM = "Converter_DCDC:Converter_DCDC_RECOM_R-78B-2.0_THT"
+FP_SOD123 = "Diode_SMD:D_SOD-123"
+FP_L6045 = "Inductor_SMD:L_Sunlord_SWPA6045S"
+FP_SOIC8EP = "Package_SO:SOIC-8-1EP_3.9x4.9mm_P1.27mm_EP2.29x3mm_ThermalVias"
+FP_LED0805 = "LED_SMD:LED_0805_2012Metric"
+FP_KLEMME_35 = S.FP_KLEMME_35
 
-# ------------------------------------------------------------ Bauteilwerte
-Q90_WERT = "IRFR5305"    # Verpolungsschutz, LCSC C2624 -- Herleitung s.
-                         # motormodul.py::_endstufe_leistung (Sperrspannung,
-                         # Gatespannung, Durchlassverlust bereits nachgerechnet;
-                         # dieselbe Bauteilwahl, nur richtig gepolt)
-R90_WERT = "10k"         # Gate<->+24V (lokal!) -- Reverse-Polarity-Schutz
-R91_WERT = "10k"         # Gate<->GND -- schaltet Q90 im Normalfall durch
-D90_WERT = "SMCJ30A"     # TVS, LCSC C340696 -- Herleitung s. sockelplatine.py
-                         # (D1): Vrwm 30V, Vbr 36.8V min., Vc 48.4V max.
-U90_WERT = "K7805-1000R3"   # LCSC C909765, s. NACHTRAG oben
-D91_WERT = "SS36C"       # Schottky 60V 3A, DO-214AB, LCSC C16237 -- das
-                         # "C" unterscheidet das SMC-Gehaeuse vom SMA-"SS36"
-C90_WERT = "220u"        # radial, Stuetzung an der lokalen 24-V-Schiene
-C91_WERT = "22u"         # 0805, Ausgangskondensator der 5-V-Schiene
+# Bauteil -> (Wert, Footprint, LCSC). LCSC nur, wo eine Produktseite
+# gesichtet wurde (Bericht 03, 2026-10-14; jlcpcb-parts, 2026-11-15);
+# sonst leer, Beschreibung traegt dann die Auswahl.
+TEILE = {
+    "J90": ("Versorgung 6-30V", FP_KLEMME_35, "C474892"),      # KF350-3.5-2P
+    "Q90": ("AOD409", FP_TO252, "C36220"),
+    "R91": ("100k", FP_R0805, "C149504"),
+    "D92": ("BZT52C12", FP_SOD123, "C19077410"),
+    "D90": ("SMCJ30A", FP_SMC, "C340696"),
+    "C90": ("47u/50V", FP_CP_63, ""),
+    "C91": ("10u/50V", FP_C1210, ""),
+    "C92": ("10u/50V", FP_C1210, ""),
+    "U90": ("TPS5430DDAR", FP_SOIC8EP, "C9864"),
+    "C93": ("10n", FP_C0805, ""),
+    "L90": ("15u", FP_L6045, "C83374"),                         # SWPA6045S150MT
+    "D93": ("SS36C", FP_SMC, "C16237"),
+    "C94": ("100u/16V", FP_CP_63, ""),
+    "R92": ("10k", FP_R0805, "C17414"),
+    "R93": ("3.3k", FP_R0805, "C26010"),
+    "D91": ("SS36C", FP_SMC, "C16237"),
+    "LED90": ("gruen", FP_LED0805, ""),
+    "R94": ("10k", FP_R0805, "C17414"),
+}
+
+
+def _felder(ref):
+    lcsc = TEILE[ref][2]
+    return {"LCSC": lcsc} if lcsc else None
 
 
 def _load_libs(sch):
     sch.lib("Device:R", "Device.kicad_sym", "R")
     sch.lib("Device:C", "Device.kicad_sym", "C")
     sch.lib("Device:C_Polarized", "Device.kicad_sym", "C_Polarized")
+    sch.lib("Device:L", "Device.kicad_sym", "L")
+    sch.lib("Device:LED", "Device.kicad_sym", "LED")
     sch.lib("Device:D_Zener", "Device.kicad_sym", "D_Zener")
     sch.lib("Device:D_Schottky", "Device.kicad_sym", "D_Schottky")
-    # Generisches P-Kanal-Symbol (Pins 1=G, 2=D, 3=S) -- der Typ steht im
-    # Wertfeld (IRFR5305), dieselbe Begruendung wie motormodul.py/
-    # dimmermodul.py: die KiCad-Bibliothek fuehrt kein eigenes IRFR5305-
-    # Symbol, und ein Symbolname, der einen anderen Typ nennt als die
-    # Stueckliste, waere genau der Fehler, den diese Zelle vermeiden soll.
-    sch.lib("Transistor_FET:Q_PMOS_GDS", "Transistor_FET.kicad_sym",
-            "Q_PMOS_GDS")
+    sch.lib("Transistor_FET:Q_PMOS_GDS", "Transistor_FET.kicad_sym", "Q_PMOS_GDS")
+    sch.lib("Regulator_Switching:TPS5430DDA", "Regulator_Switching.kicad_sym",
+            "TPS5430DDA")
     sch.lib("Connector:Screw_Terminal_01x02", "Connector.kicad_sym",
             "Screw_Terminal_01x02")
-    sch.lib_extends("Converter_DCDC:R-78B5.0-2.0", "Converter_DCDC.kicad_sym",
-                     "R-78B1.2-2.0", "R-78B5.0-2.0")
     sch.lib("power:PWR_FLAG", "power.kicad_sym", "PWR_FLAG")
 
 
-def bauen(sch, ox, oy):
-    """Baut die Versorgungszelle bei (ox, oy) in `sch` ein.
+def _b(sch, ref, libid, pos, rot=0, roff=(2.54, -2.54), voff=(2.54, 2.54)):
+    wert, fp, _ = TEILE[ref]
+    sch.bauteil(ref, libid, pos, wert, fp, rot=rot, roff=roff, voff=voff,
+                felder=_felder(ref))
 
-    Reihenfolge im Layout (links -> rechts): Einspeisung (J90) ->
-    Verpolschutz (Q90/R90/R91) -> lokale 24-V-Schiene mit TVS+Elko
-    (D90/C90) -> 5-V-Regler (U90) mit Ausgangskondensator (C91) ->
-    VSYS-Entkopplung (D91).
-    """
+
+def bauen(sch, ox, oy):
+    """Baut die Versorgungszelle bei (ox, oy) ein (Breite ~200, Hoehe ~90)."""
     _load_libs(sch)
 
-    # ---------------------------------------------------- J90 Einspeisung
-    # Klemme 2-polig (KF350-3.5-2P, LCSC C474892) -> PWR_IN/GND. PWR_IN
-    # ist die ROHE Einspeisung, VOR jedem Schutz/Regler dieser Zelle --
-    # stack_spec.VERSORGUNG["schutz_drain_an"] == "PWR_IN" verlangt
-    # genau das als Bezugspunkt fuer Q90s Drain.
-    j90x, j90y = ox, oy
-    sch.bauteil("J90", "Connector:Screw_Terminal_01x02", (j90x, j90y),
-                "Versorgung Eingang", FP_KLEMME_2, rot=0,
-                roff=(2.54, -6.35), voff=(2.54, -3.81))
+    # ------------------------------------------------------ J90 Einspeisung
+    _b(sch, "J90", "Connector:Screw_Terminal_01x02", (ox, oy), roff=(2.54, -6.35),
+       voff=(2.54, -3.81))
     sch.netz("J90", "1", "R", "PWR_IN")
     sch.netz("J90", "2", "R", "GND", laenge=7.62)
-
-    # PWR_FLAG auf PWR_IN: J90/Q90-Drain sind beide "passive"-Pins --
-    # ohne einen power_out-Pin irgendwo im Netz meldet die ERC "Input
-    # Power pin not driven" (dasselbe Muster wie sockelplatine.py #FLG1
-    # auf PWR24V).
-    sch.bauteil("#FLG90", "power:PWR_FLAG", (j90x + 12.7, j90y - 15.24),
-                "PWR_FLAG", "")
+    sch.bauteil("#FLG90", "power:PWR_FLAG", (ox + 12.7, oy - 15.24), "PWR_FLAG", "")
     sch.netz("#FLG90", "1", "D", "PWR_IN")
 
-    # ---------------------------------------------- Q90/R90/R91 Verpolschutz
-    # RICHTIGE Topologie (s. Moduldoku oben, im Unterschied zu
-    # motormodul.py Q1): Drain an PWR_IN (Einspeisung), Source an +24V
-    # (lokal, geschuetzt), Gate-Teiler an der LOKALEN Schiene.
+    # ------------------------------------------------ Q90 / R91 / D92 Schutz
     qx, qy = ox + 30.48, oy + 12.7
-    sch.bauteil("Q90", "Transistor_FET:Q_PMOS_GDS", (qx, qy), Q90_WERT,
-                FP_TO252, rot=0, roff=(2.54, 2.54), voff=(2.54, 5.08))
+    _b(sch, "Q90", "Transistor_FET:Q_PMOS_GDS", (qx, qy), roff=(2.54, 2.54),
+       voff=(2.54, 5.08))
     sch.netz("Q90", "1", "L", "Q90_GATE")   # G
     sch.netz("Q90", "2", "U", "PWR_IN")     # D -> Einspeisung (schutz_drain_an)
-    sch.netz("Q90", "3", "D", "+24V")       # S -> lokale, geschuetzte Schiene
-
-    sch.bauteil("R90", "Device:R", (qx + 15.24, qy + 15.24), R90_WERT,
-                FP_R0805, rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
-    sch.netz("R90", "1", "U", "Q90_GATE")
-    sch.netz("R90", "2", "D", "+24V")        # gate_teiler_an == "+24V_LOKAL"
-    sch.bauteil("R91", "Device:R", (qx + 15.24, qy - 15.24), R91_WERT,
-                FP_R0805, rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
+    sch.netz("Q90", "3", "D", "VIN")        # S -> lokale, geschuetzte Schiene
+    # VIN speist U90s Power-Input-Pin; ohne power_out-Pin im Netz
+    # meldet der ERC "Input Power pin not driven".
+    sch.bauteil("#FLG92", "power:PWR_FLAG", (qx + 30.48, qy - 30.48), "PWR_FLAG", "")
+    sch.netz("#FLG92", "1", "D", "VIN")
+    _b(sch, "R91", "Device:R", (qx + 15.24, qy + 17.78), roff=(2.54, -1.27),
+       voff=(2.54, 1.27))
     sch.netz("R91", "1", "U", "Q90_GATE")
     sch.netz("R91", "2", "D", "GND")
+    # Zener: Kathode an der Source (VIN), Anode am Gate -> Vgs = -Vz.
+    _b(sch, "D92", "Device:D_Zener", (qx + 15.24, qy - 17.78), rot=0)
+    sch.netz("D92", "1", "L", "VIN")        # K
+    sch.netz("D92", "2", "R", "Q90_GATE")   # A
 
-    # -------------------------------------------------- D90/C90 lokale 24V
-    # TVS (Kathode -> +24V, Anode -> GND) und Stuetzkondensator, JETZT
-    # hinter dem Schutz -- beide profitieren davon, dass Q90 bei
-    # Verpolung sperrt, statt (wie in v1) selbst Teil des Crowbar-Pfads
-    # zu sein.
-    dx, dy = qx + 40.64, qy + 20.32
-    sch.bauteil("D90", "Device:D_Zener", (dx, dy), D90_WERT, FP_SMC,
-                rot=270, roff=(2.54, -2.54), voff=(2.54, 2.54))
-    sch.netz("D90", "1", "U", "+24V")
-    sch.netz("D90", "2", "D", "GND")
+    # ------------------------------------------------ D90 / C90..C92 an VIN
+    dx, dy = qx + 45.72, qy + 20.32
+    _b(sch, "D90", "Device:D_Zener", (dx, dy), rot=270, roff=(2.54, -2.54),
+       voff=(2.54, 2.54))
+    sch.netz("D90", "1", "U", "VIN")        # K
+    sch.netz("D90", "2", "D", "GND")        # A
+    for i, ref in enumerate(("C90", "C91", "C92")):
+        lib = "Device:C_Polarized" if ref == "C90" else "Device:C"
+        _b(sch, ref, lib, (dx + 15.24 * (i + 1), dy), rot=0, roff=(2.54, -1.27),
+           voff=(2.54, 1.27))
+        sch.netz(ref, "1", "U", "VIN")      # C_Polarized: Pin 1 = "+"
+        sch.netz(ref, "2", "D", "GND")
 
-    sch.bauteil("C90", "Device:C_Polarized", (dx, qy - 5.08), C90_WERT,
-                FP_CP_RADIAL, rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
-    sch.netz("C90", "1", "U", "+24V")   # Pin 1 = "+" (Device:C_Polarized)
-    sch.netz("C90", "2", "D", "GND")
+    # ---------------------------------------------------- U90 Buck
+    # 139,7 statt 124,46: bei 124,46 lag U90s GND-Stummel (Pin 6) genau
+    # auf C92s VIN-Stummel -- ERC meldete "GND und VIN am selben Netz"
+    # (Rot-Nachweis dafuer, dass der ERC Kurzschluesse durch
+    # Stummel-Ueberlappung findet).
+    ux, uy = ox + 139.7, oy + 12.7
+    _b(sch, "U90", "Regulator_Switching:TPS5430DDA", (ux, uy), roff=(-10.16, -15.24),
+       voff=(-10.16, -12.7))
+    sch.netz("U90", "7", "L", "VIN")        # VIN
+    # EN (ENA): interner Pull-up, offen = ein. NICHT an VIN legen -- der
+    # Pin vertraegt laut Datenblatt (SLVS632L, Abs. Max.) nur -0,3..7 V.
+    sch.nc("U90", "5")
+    sch.nc("U90", "2")
+    sch.nc("U90", "3")
+    sch.netz("U90", "6", "D", "GND")        # GND
+    pins = sch.PINS["Regulator_Switching:TPS5430DDA"]
+    if "9" in pins:
+        sch.netz("U90", "9", "D", "GND")    # PowerPAD
+    sch.netz("U90", "1", "R", "BOOT")       # BOOT
+    sch.netz("U90", "8", "R", "VSW")        # PH
+    sch.netz("U90", "4", "R", "FB")         # VSENSE
 
-    # ---------------------------------------------------- U90 5-V-Regler
-    ux, uy = ox + 96.52, oy
-    sch.bauteil("U90", "Converter_DCDC:R-78B5.0-2.0", (ux, uy), U90_WERT,
-                FP_RECOM, rot=0, roff=(-7.62, -13.97), voff=(-7.62, -11.43))
-    sch.netz("U90", "1", "L", "+24V")        # IN
-    sch.netz("U90", "2", "D", "GND")         # GND
-    sch.netz("U90", "3", "R", "+5V_LOKAL")   # OUT
-
-    sch.bauteil("C91", "Device:C", (ux + 22.86, uy + 12.7), C91_WERT,
-                FP_C0805, rot=0, roff=(2.54, -1.27), voff=(2.54, 1.27))
-    sch.netz("C91", "1", "U", "+5V_LOKAL")
-    sch.netz("C91", "2", "D", "GND")
+    # Boot-Kondensator BOOT -> VSW
+    _b(sch, "C93", "Device:C", (ux + 27.94, uy + 2.54), rot=0, roff=(2.54, -1.27),
+       voff=(2.54, 1.27))
+    sch.netz("C93", "1", "U", "BOOT")
+    sch.netz("C93", "2", "D", "VSW")
+    # Freilauf: Kathode an VSW, Anode an GND
+    _b(sch, "D93", "Device:D_Schottky", (ux + 43.18, uy + 15.24), rot=270)
+    sch.netz("D93", "1", "U", "VSW")
+    sch.netz("D93", "2", "D", "GND")
+    # Spule VSW -> +5V_LOKAL
+    # rot=90: Pin 1 liegt links, Pin 2 rechts (gen.xf: (X - py, Y - px)).
+    _b(sch, "L90", "Device:L", (ux + 58.42, uy), rot=90, roff=(0, -5.08),
+       voff=(0, 5.08))
+    sch.netz("L90", "1", "L", "VSW")
+    sch.netz("L90", "2", "R", "+5V_LOKAL")
+    # Ausgangskondensator
+    _b(sch, "C94", "Device:C_Polarized", (ux + 73.66, uy + 15.24), rot=0,
+       roff=(2.54, -1.27), voff=(2.54, 1.27))
+    sch.netz("C94", "1", "U", "+5V_LOKAL")
+    sch.netz("C94", "2", "D", "GND")
+    # Teiler +5V_LOKAL -> FB -> GND
+    _b(sch, "R92", "Device:R", (ux + 88.9, uy + 5.08), rot=0, roff=(2.54, -1.27),
+       voff=(2.54, 1.27))
+    sch.netz("R92", "1", "U", "+5V_LOKAL")
+    sch.netz("R92", "2", "D", "FB")
+    _b(sch, "R93", "Device:R", (ux + 88.9, uy + 25.4), rot=0, roff=(2.54, -1.27),
+       voff=(2.54, 1.27))
+    sch.netz("R93", "1", "U", "FB")
+    sch.netz("R93", "2", "D", "GND")
+    sch.bauteil("#FLG91", "power:PWR_FLAG", (ux + 73.66, uy - 15.24), "PWR_FLAG", "")
+    sch.netz("#FLG91", "1", "D", "+5V_LOKAL")
 
     # ---------------------------------------------------- D91 VSYS-Diode
-    # Schottky (SS36C), Anode an +5V_LOKAL (Regler-Ausgang dieser Zelle),
-    # Kathode an VSYS (Pico Pin 39) -- stack_spec.VERSORGUNG["vsys_diode"]
-    # == True: sperrt in Richtung dieser Zelle, falls der Pico
-    # stattdessen ueber USB-VBUS versorgt wird. Ohne sie speisten zwei
-    # Quellen (dieser Regler UND der Pico-eigene USB-Regler) denselben
-    # VSYS-Knoten gegeneinander.
-    d91x, d91y = ux + 45.72, uy + 20.32
-    sch.bauteil("D91", "Device:D_Schottky", (d91x, d91y), D91_WERT, FP_SMC,
-                rot=270, roff=(2.54, -2.54), voff=(2.54, 2.54))
-    sch.netz("D91", "1", "U", "VSYS")        # K -> VSYS
-    sch.netz("D91", "2", "D", "+5V_LOKAL")   # A -> +5V_LOKAL
+    # rot=180: Anode links (+5V_LOKAL), Kathode rechts (VSYS).
+    _b(sch, "D91", "Device:D_Schottky", (ux + 109.22, uy), rot=180)
+    sch.netz("D91", "1", "R", "VSYS")        # K -> VSYS
+    sch.netz("D91", "2", "L", "+5V_LOKAL")   # A
 
-
-# ------------------------------------------------------- Erzeugen
-# Kein eigenstaendiges Blatt: die Versorgungszelle wird von jedem
-# Modul-Generator (dimmermodul.py, motormodul.py, ...) in dessen eigenes
-# Blatt eingebaut (versorgung.bauen(sch, ox, oy)), genau wie
-# sockelplatine.py seine 24-V-Kette selbst haelt. Ein `erzeugen()` mit
-# eigenem ZIEL-Pfad gaebe es fuer ein Blatt, das nie fuer sich allein
-# gefertigt wird -- deshalb bewusst kein __main__-Block hier.
+    # ---------------------------------------------------- LED "VIN"
+    _b(sch, "R94", "Device:R", (ox + 15.24, oy + 45.72), rot=0, roff=(2.54, -1.27),
+       voff=(2.54, 1.27))
+    sch.netz("R94", "1", "U", "VIN")
+    sch.netz("R94", "2", "D", "LED90_A")
+    _b(sch, "LED90", "Device:LED", (ox + 15.24, oy + 66.04), rot=90, roff=(2.54, -2.54),
+       voff=(2.54, 2.54))
+    sch.netz("LED90", "2", "U", "LED90_A")   # A
+    sch.netz("LED90", "1", "D", "GND")       # K
